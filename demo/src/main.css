@@ -1,0 +1,93 @@
+/*
+  elm-hot creates an additional div wrapper around the app to make HMR possible.
+  This could break styling in development mode if you are using Elm UI.
+
+  More context in the issue:
+    https://github.com/halfzebra/create-elm-app/issues/320
+*/
+[data-elm-hot="true"] {
+  height: inherit;
+}
+
+body {
+  font-family: 'Source Sans Pro', 'Trebuchet MS', 'Lucida Grande', 'Bitstream Vera Sans', 'Helvetica Neue', sans-serif;
+  margin: 0;
+  text-align: center;
+  color: #293c4b;
+}
+
+h1 {
+  font-size: 30px;
+}
+
+
+td, th {
+  border: 1px solid #ccc;
+}
+
+.rte-main {
+  margin-top: 16px;
+  min-height: 100px;
+  text-align: left;
+  outline: none;
+  user-select: text;
+  -webkit-user-select: text;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.rte-main img {
+  min-width: 20px;
+  min-height: 20px;
+  max-width: 200px;
+  border: 1px solid #f2f2f2;
+}
+
+.rte-hide-caret {
+  caret-color: transparent;
+}
+
+.page-main {
+  background:
+          rgb(255, 255, 255) none repeat scroll 0% 0%;
+  max-width: 42em;
+  margin: 20px auto;
+  padding: 20px;
+}
+
+.rte-button {
+  color: #999;
+  cursor: pointer;
+  margin-right: 16px;
+  padding: 2px 0;
+  display: inline-block;
+}
+
+.rte-button-selected {
+  color: #5890ff
+}
+
+.rte-controls {
+  text-align: center;
+  font-size: 14px;
+  padding-bottom: 8px;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+.rte-controls-container {
+  border-bottom: 1px solid #f2f2f2;
+}
+
+.editor-container {
+  padding: 16px;
+  border: 1px solid #f2f2f2;
+  min-width: 400px;
+  max-width: 600px;
+}
+
+.rte-selected {
+  outline: 2px solid #8cf;
+}
