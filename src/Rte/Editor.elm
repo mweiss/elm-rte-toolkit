@@ -12,6 +12,8 @@ import Rte.EditorUtils exposing (forceRerender, zeroWidthSpace)
 import Rte.KeyDown
 import Rte.Marks
 import Rte.Model exposing (..)
+import Rte.Selection exposing (caretSelection)
+import Rte.Spec exposing (childNodesPlaceholder, findNodeDefinitionFromSpec)
 
 
 updateSelection : Maybe Selection -> Editor msg -> Editor msg
@@ -300,25 +302,6 @@ onClickSelect decoder nodePath =
     Html.Events.onClick (decoder <| SelectionEvent (Just (caretSelection nodePath 0)))
 
 
-defaultToHtml : ElementParameters -> HtmlNode
-defaultToHtml elementParameters =
-    ElementNode elementParameters.name
-        (List.map
-            (\attr ->
-                case attr of
-                    StringAttribute k v ->
-                        ( k, v )
-            )
-            elementParameters.attributes
-        )
-        childNodesPlaceholder
-
-
-findNodeDefinitionFromSpec : String -> Spec -> NodeDefinition
-findNodeDefinitionFromSpec name spec =
-    Maybe.withDefault { name = name, toHtmlNode = defaultToHtml } (List.Extra.find (\n -> n.name == name) spec.nodes)
-
-
 renderHtmlNode : HtmlNode -> List (Html msg) -> Html msg
 renderHtmlNode node vdomChildren =
     case node of
@@ -372,7 +355,7 @@ renderElementFromSpec spec elementParameters backwardsNodePath children =
 renderEditorBlockNode : Spec -> DecoderFunc msg -> NodePath -> EditorBlockNode -> Html msg
 renderEditorBlockNode spec decoderFunc backwardsPath node =
     renderElementFromSpec spec
-        node.contents
+        node.parameters
         backwardsPath
         (case node.childNodes of
             BlockList l ->

@@ -78,7 +78,7 @@ type alias ElementParameters =
 have other block nodes as children, have all inline leaf nodes as children, or be a leaf node.
 -}
 type alias EditorBlockNode =
-    { contents : ElementParameters
+    { parameters : ElementParameters
     , childNodes : ChildNodes
     }
 
@@ -104,22 +104,6 @@ type EditorInlineLeaf
 -}
 type alias TextLeafContents =
     { text : String, marks : List Mark }
-
-
-type alias BlockNodeContents =
-    { name : String
-    , attributes : List EditorAttribute
-    , marks : List Mark
-    , childNodes : List EditorBlockNode
-    }
-
-
-type alias TextBlockNodeContents =
-    { name : String
-    , attributes : List EditorAttribute
-    , marks : List Mark
-    , childNodes : List EditorInlineLeaf
-    }
 
 
 {-| TextNodeContents represents the attributes that can be in a text node. The core attributes
@@ -220,38 +204,6 @@ type alias Selection =
     }
 
 
-{-| This is a helper method for constructing a caret selection.
--}
-caretSelection : NodePath -> Int -> Selection
-caretSelection nodePath offset =
-    singleNodeRangeSelection nodePath offset offset
-
-
-{-| This is a helper method for determining if a selection is collapsed.
--}
-isCollapsed : Selection -> Bool
-isCollapsed selection =
-    selection.anchorOffset == selection.focusOffset && selection.anchorNode == selection.focusNode
-
-
-{-| This is a helper method for creating a range selection
--}
-rangeSelection : NodePath -> Int -> NodePath -> Int -> Selection
-rangeSelection anchorNode anchorOffset focusNode focusOffset =
-    { anchorOffset = anchorOffset
-    , anchorNode = anchorNode
-    , focusOffset = focusOffset
-    , focusNode = focusNode
-    }
-
-
-{-| This is a helper method for creating a selection over a single node
--}
-singleNodeRangeSelection : NodePath -> Int -> Int -> Selection
-singleNodeRangeSelection node anchorOffset focusOffset =
-    rangeSelection node anchorOffset node focusOffset
-
-
 {-| The decoder function is used to translate the messages the editor needs to your overall application.
 A typical use case might be:
 
@@ -325,10 +277,6 @@ in the definition because this type is just for the structural content of the ed
 -}
 type HtmlNode
     = ElementNode String (List HtmlAttribute) (List HtmlNode)
-
-
-childNodesPlaceholder =
-    [ ElementNode "__child_node_marker__" [] [] ]
 
 
 type alias HtmlAttribute =

@@ -27,7 +27,7 @@ type alias Model =
 
 initialEditorNode : EditorBlockNode
 initialEditorNode =
-    { contents =
+    { parameters =
         { name = "p"
         , attributes = []
         , marks = []
