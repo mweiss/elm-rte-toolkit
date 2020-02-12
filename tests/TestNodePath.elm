@@ -117,10 +117,37 @@ domToEditorTests =
         , test "Test more complicated custom toHtmlNode" <|
             \_ ->
                 Expect.equal (Just [ 0 ]) (domToEditor simpleSpec crazyBlockNode [ 2, 0 ])
-        , test "Test more complicated custom toHtmlNode part ii" <|
+        , test "Test more complicated custom toHtmlNode but select the parent in the dom tree" <|
             \_ ->
                 Expect.equal (Just []) (domToEditor simpleSpec crazyBlockNode [ 2 ])
-        , test "Test more complicated custom toHtmlNode part iii" <|
+        , test "Test more complicated custom toHtmlNode but select a sibling node in the dom tree" <|
             \_ ->
                 Expect.equal (Just []) (domToEditor simpleSpec crazyBlockNode [ 1, 0 ])
+        ]
+
+
+editorToDomTests : Test
+editorToDomTests =
+    describe "Tests the transformation function from an editor node path to a dom node path"
+        [ test "Test that an empty spec returns the same path" <|
+            \_ ->
+                Expect.equal (Just [ 0 ]) (editorToDom emptySpec paragraphNode [ 0 ])
+        , test "Test the empty path" <|
+            \_ ->
+                Expect.equal (Just []) (editorToDom emptySpec paragraphNode [])
+        , test "Test invalid path" <|
+            \_ ->
+                Expect.equal Nothing (editorToDom emptySpec paragraphNode [ 1 ])
+        , test "Test node spec with custom toHtmlNode" <|
+            \_ ->
+                Expect.equal (Just [ 0, 0 ]) (editorToDom simpleSpec codeBlockNode [ 0 ])
+        , test "Test invalid node with custom toHtmlNode" <|
+            \_ ->
+                Expect.equal Nothing (editorToDom simpleSpec codeBlockNode [ 1 ])
+        , test "Test bold spec with custom toHtmlNode" <|
+            \_ ->
+                Expect.equal (Just [ 0, 0 ]) (editorToDom simpleSpec boldParagraphNode [ 0 ])
+        , test "Test more complicated custom toHtmlNode" <|
+            \_ ->
+                Expect.equal (Just [ 2, 0 ]) (editorToDom simpleSpec crazyBlockNode [ 0 ])
         ]
