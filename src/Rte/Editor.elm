@@ -7,12 +7,12 @@ import Html.Keyed
 import Json.Decode as D
 import List.Extra
 import Rte.BeforeInput
-import Rte.DOMNode exposing (DOMNode(..), decodeDOMNode, extractRootEditorBlockNode)
+import Rte.DOMNode exposing (decodeDOMNode, extractRootEditorBlockNode)
 import Rte.EditorUtils exposing (forceRerender, zeroWidthSpace)
 import Rte.KeyDown
 import Rte.Marks
 import Rte.Model exposing (..)
-import Rte.Selection exposing (caretSelection)
+import Rte.Selection exposing (caretSelection, domToEditor, editorToDom)
 import Rte.Spec exposing (childNodesPlaceholder, findNodeDefinitionFromSpec)
 
 
@@ -22,12 +22,12 @@ updateSelection maybeSelection editor =
         editorState =
             editor.editorState
     in
-    case Debug.log "maybeSelection" maybeSelection of
+    case maybeSelection of
         Nothing ->
             { editor | editorState = { editorState | selection = maybeSelection } }
 
         Just selection ->
-            { editor | editorState = { editorState | selection = maybeSelection } }
+            { editor | editorState = { editorState | selection = domToEditor editor.spec editorState.root selection } }
 
 
 internalUpdate : InternalEditorMsg -> Editor msg -> Editor msg
@@ -54,6 +54,10 @@ internalUpdate msg editor =
 
 isSameStructure : EditorBlockNode -> DOMNode -> ( Bool, Bool )
 isSameStructure editorNodes domNodes =
+    let
+        x =
+            Debug.log "isSameStructure" ( editorNodes, domNodes )
+    in
     ( True, True )
 
 
@@ -99,7 +103,7 @@ updateChangeEvent change editor =
                 else
                     let
                         newEditorState =
-                            { editorState | selection = change.selection, root = replaceText editorState.root editorRootDOMNode }
+                            { editorState | selection = change.selection |> Maybe.andThen (domToEditor editor.spec editorState.root), root = replaceText editorState.root editorRootDOMNode }
                     in
                     if editor.isComposing then
                         { editor | bufferedEditorState = Just newEditorState }
@@ -265,6 +269,16 @@ markCaretSelectionOnEditorNodes editorState =
     editorState.root
 
 
+editorToDomSelection : Editor msg -> Maybe Selection
+editorToDomSelection editor =
+    case editor.editorState.selection of
+        Nothing ->
+            Nothing
+
+        Just selection ->
+            editorToDom editor.spec editor.editorState.root selection
+
+
 renderEditor : Editor msg -> Html msg
 renderEditor editor =
     Html.Keyed.node "elm-editor"
@@ -292,7 +306,7 @@ renderEditor editor =
                 ]
           )
         , ( "selectionstate"
-          , Html.node "selection-state" [ Html.Attributes.attribute "selection" (selectionAttribute editor.editorState.selection editor.renderCount editor.selectionCount) ] []
+          , Html.node "selection-state" [ Html.Attributes.attribute "selection" (selectionAttribute (editorToDomSelection editor) editor.renderCount editor.selectionCount) ] []
           )
         ]
 
@@ -319,6 +333,9 @@ renderHtmlNode node vdomChildren =
                 (List.map (\( k, v ) -> Html.Attributes.attribute k v) attributes)
                 childNodes
 
+        TextNode v ->
+            Html.text v
+
 
 renderMarkFromSpec : Spec -> NodePath -> Mark -> Html msg -> Html msg
 renderMarkFromSpec spec backwardsNodePath mark child =
@@ -329,7 +346,7 @@ renderMarkFromSpec spec backwardsNodePath mark child =
         Just definition ->
             let
                 node =
-                    definition.toHtmlNode mark
+                    definition.toHtmlNode mark childNodesPlaceholder
             in
             renderHtmlNode node [ child ]
 
@@ -341,7 +358,7 @@ renderElementFromSpec spec elementParameters backwardsNodePath children =
             findNodeDefinitionFromSpec elementParameters.name spec
 
         node =
-            definition.toHtmlNode elementParameters
+            definition.toHtmlNode elementParameters childNodesPlaceholder
 
         nodeHtml =
             renderHtmlNode node children

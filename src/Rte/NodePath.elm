@@ -31,7 +31,7 @@ domToEditor spec node path =
                 findMarkDefinitionsFromSpec node.parameters.marks spec
 
             structure =
-                nodeDefinition.toHtmlNode node.parameters
+                nodeDefinition.toHtmlNode node.parameters childNodesPlaceholder
 
             maybePathWithMarksRemoved =
                 List.foldl
@@ -43,7 +43,7 @@ domToEditor spec node path =
                             Just pathSoFar ->
                                 let
                                     markStructure =
-                                        markDefinition.toHtmlNode mark
+                                        markDefinition.toHtmlNode mark childNodesPlaceholder
                                 in
                                 removePathUpToChildContents markStructure pathSoFar
                     )
@@ -176,6 +176,9 @@ removePathUpToChildContents node path =
                             Just child ->
                                 removePathUpToChildContents child xs
 
+        TextNode _ ->
+            Nothing
+
 
 
 {- Helper method to return a node path to the which should contain the child contents. -}
@@ -206,6 +209,9 @@ pathToChildContents node =
                     Nothing
                     (List.indexedMap Tuple.pair children)
 
+        TextNode _ ->
+            Nothing
+
 
 
 {- Helper method that returns the path to the child contents from a list of marks -}
@@ -226,7 +232,7 @@ pathToChildContentsFromMarks spec marks =
                 Just pathSoFar ->
                     let
                         markStructure =
-                            markDefinition.toHtmlNode mark
+                            markDefinition.toHtmlNode mark childNodesPlaceholder
                     in
                     case pathToChildContents markStructure of
                         Nothing ->
@@ -250,7 +256,7 @@ pathToChildContentsFromElementParameters spec parameters =
             findNodeDefinitionFromSpec parameters.name spec
 
         nodeStructure =
-            nodeDefinition.toHtmlNode parameters
+            nodeDefinition.toHtmlNode parameters childNodesPlaceholder
 
         maybePathToChildContents =
             pathToChildContentsFromMarks spec parameters.marks

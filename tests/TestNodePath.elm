@@ -3,7 +3,7 @@ module TestNodePath exposing (..)
 import Expect
 import Rte.Model exposing (ChildNodes(..), EditorBlockNode, EditorInlineLeaf(..), ElementParameters, HtmlNode(..), Mark, Spec)
 import Rte.NodePath exposing (domToEditor, editorToDom)
-import Rte.Spec exposing (childNodesPlaceholder, emptySpec)
+import Rte.Spec exposing (emptySpec)
 import Test exposing (..)
 
 
@@ -60,27 +60,27 @@ codeBlockNode =
     }
 
 
-codeBlockToHtmlNode : ElementParameters -> HtmlNode
-codeBlockToHtmlNode parameters =
+codeBlockToHtmlNode : ElementParameters -> List HtmlNode -> HtmlNode
+codeBlockToHtmlNode parameters children =
     ElementNode "pre"
         []
-        [ ElementNode "code" [] childNodesPlaceholder
+        [ ElementNode "code" [] children
         ]
 
 
-crazyBlockToHtmlNode : ElementParameters -> HtmlNode
-crazyBlockToHtmlNode parameters =
+crazyBlockToHtmlNode : ElementParameters -> List HtmlNode -> HtmlNode
+crazyBlockToHtmlNode parameters children =
     ElementNode "div"
         []
         [ ElementNode "img" [] []
         , ElementNode "div" [] [ ElementNode "hr" [] [] ]
-        , ElementNode "div" [] childNodesPlaceholder
+        , ElementNode "div" [] children
         ]
 
 
-boldToHtmlNode : Mark -> HtmlNode
-boldToHtmlNode mark =
-    ElementNode "b" [] childNodesPlaceholder
+boldToHtmlNode : Mark -> List HtmlNode -> HtmlNode
+boldToHtmlNode mark children =
+    ElementNode "b" [] children
 
 
 simpleSpec : Spec

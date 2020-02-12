@@ -1,6 +1,7 @@
 module Main exposing (..)
 
 import BasicEditorControls exposing (EditorMsg(..), InsertImageModal, InsertLinkModal)
+import BasicSpecs exposing (simpleSpec)
 import Browser
 import Html exposing (Html, div)
 import Html.Attributes
@@ -8,6 +9,7 @@ import Rte.Commands exposing (backspaceKey, enterKey, inputEvent, key, returnKey
 import Rte.Editor exposing (internalUpdate)
 import Rte.List exposing (ListType)
 import Rte.Model exposing (ChildNodes(..), Editor, EditorAttribute(..), EditorBlockNode, EditorInlineLeaf(..), InternalEditorMsg(..))
+import Rte.Spec exposing (emptySpec)
 
 
 headerElements =
@@ -28,7 +30,7 @@ type alias Model =
 initialEditorNode : EditorBlockNode
 initialEditorNode =
     { parameters =
-        { name = "p"
+        { name = "crazy_block"
         , attributes = []
         , marks = []
         }
@@ -49,7 +51,7 @@ initEditor =
     , isComposing = False
     , decoder = InternalMsg
     , commandMap = commandBindings
-    , spec = { nodes = [], marks = [] }
+    , spec = simpleSpec
     , editorState =
         { root = initialEditorNode
         , selection = Nothing
@@ -156,59 +158,57 @@ handleInsertCode model =
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-    Debug.log "update.after"
-        (case Debug.log "update.msg" msg of
-            InternalMsg internalEditorMsg ->
-                ( { model | editor = internalUpdate internalEditorMsg model.editor }, Cmd.none )
+    case msg of
+        InternalMsg internalEditorMsg ->
+            ( { model | editor = internalUpdate internalEditorMsg model.editor }, Cmd.none )
 
-            ToggleStyle style ->
-                ( handleToggleStyle style model, Cmd.none )
+        ToggleStyle style ->
+            ( handleToggleStyle style model, Cmd.none )
 
-            InsertCode ->
-                ( handleInsertCode model, Cmd.none )
+        InsertCode ->
+            ( handleInsertCode model, Cmd.none )
 
-            ShowInsertLinkModal ->
-                ( handleShowInsertLinkModal model, Cmd.none )
+        ShowInsertLinkModal ->
+            ( handleShowInsertLinkModal model, Cmd.none )
 
-            InsertLink ->
-                ( handleInsertLink model, Cmd.none )
+        InsertLink ->
+            ( handleInsertLink model, Cmd.none )
 
-            UpdateLinkHref href ->
-                ( handleUpdateLinkHref href model, Cmd.none )
+        UpdateLinkHref href ->
+            ( handleUpdateLinkHref href model, Cmd.none )
 
-            UpdateLinkTitle title ->
-                ( handleUpdateLinkTitle title model, Cmd.none )
+        UpdateLinkTitle title ->
+            ( handleUpdateLinkTitle title model, Cmd.none )
 
-            ShowInsertImageModal ->
-                ( handleShowInsertImageModal model, Cmd.none )
+        ShowInsertImageModal ->
+            ( handleShowInsertImageModal model, Cmd.none )
 
-            InsertImage ->
-                ( handleInsertImage model, Cmd.none )
+        InsertImage ->
+            ( handleInsertImage model, Cmd.none )
 
-            UpdateImageSrc src ->
-                ( handleUpdateImageSrc src model, Cmd.none )
+        UpdateImageSrc src ->
+            ( handleUpdateImageSrc src model, Cmd.none )
 
-            UpdateImageAlt alt ->
-                ( handleUpdateImageAlt alt model, Cmd.none )
+        UpdateImageAlt alt ->
+            ( handleUpdateImageAlt alt model, Cmd.none )
 
-            WrapInBlockQuote ->
-                ( handleWrapBlockNode model, Cmd.none )
+        WrapInBlockQuote ->
+            ( handleWrapBlockNode model, Cmd.none )
 
-            InsertHorizontalRule ->
-                ( handleInsertHorizontalRule model, Cmd.none )
+        InsertHorizontalRule ->
+            ( handleInsertHorizontalRule model, Cmd.none )
 
-            LiftOutOfBlock ->
-                ( handleLiftBlock model, Cmd.none )
+        LiftOutOfBlock ->
+            ( handleLiftBlock model, Cmd.none )
 
-            ToggleBlock block ->
-                ( handleToggleBlock block model, Cmd.none )
+        ToggleBlock block ->
+            ( handleToggleBlock block model, Cmd.none )
 
-            WrapInList listType ->
-                ( handleWrapInList listType model, Cmd.none )
+        WrapInList listType ->
+            ( handleWrapInList listType model, Cmd.none )
 
-            _ ->
-                ( model, Cmd.none )
-        )
+        _ ->
+            ( model, Cmd.none )
 
 
 handleLiftBlock : Model -> Model

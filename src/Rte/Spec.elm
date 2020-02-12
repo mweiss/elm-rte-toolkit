@@ -13,8 +13,8 @@ childNodesPlaceholder =
     [ ElementNode "__child_node_marker__" [] [] ]
 
 
-defaultToHtml : ElementParameters -> HtmlNode
-defaultToHtml elementParameters =
+defaultToHtml : ElementParameters -> List HtmlNode -> HtmlNode
+defaultToHtml elementParameters children =
     ElementNode elementParameters.name
         (List.map
             (\attr ->
@@ -24,7 +24,7 @@ defaultToHtml elementParameters =
             )
             elementParameters.attributes
         )
-        childNodesPlaceholder
+        children
 
 
 findNodeDefinitionFromSpec : String -> Spec -> NodeDefinition

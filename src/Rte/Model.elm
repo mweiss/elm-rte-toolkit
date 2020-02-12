@@ -32,7 +32,6 @@ module Rte.Model exposing (..)
 
 import Dict exposing (Dict)
 import Html
-import Rte.DOMNode exposing (DOMNode)
 
 
 {-| Represents a rich text editor. The state of the editor, along with render information,
@@ -277,6 +276,7 @@ in the definition because this type is just for the structural content of the ed
 -}
 type HtmlNode
     = ElementNode String (List HtmlAttribute) (List HtmlNode)
+    | TextNode String
 
 
 type alias HtmlAttribute =
@@ -285,13 +285,13 @@ type alias HtmlAttribute =
 
 type alias MarkDefinition =
     { name : String
-    , toHtmlNode : Mark -> HtmlNode
+    , toHtmlNode : Mark -> List HtmlNode -> HtmlNode
     }
 
 
 type alias NodeDefinition =
     { name : String
-    , toHtmlNode : ElementParameters -> HtmlNode
+    , toHtmlNode : ElementParameters -> List HtmlNode -> HtmlNode
     }
 
 
@@ -299,3 +299,22 @@ type alias Spec =
     { marks : List MarkDefinition
     , nodes : List NodeDefinition
     }
+
+
+{-| A minimal representation of DOMNode. It's purpose is to validate the contents of the DOM for any
+unexpected structural changes that can happen in a contenteditable node before applying changes that may
+effect to the virtual DOM.
+-}
+type alias DOMNodeContents =
+    { nodeType : Int
+    , tagName : Maybe String
+    , nodeValue : Maybe String
+    , childNodes : Maybe (List DOMNode)
+    }
+
+
+{-| A minimal representation of a DOMNode. Since the structure of DOMNodeContents is recursive,
+we need to define a literal type to avoid infinite recursion.
+-}
+type DOMNode
+    = DOMNode DOMNodeContents

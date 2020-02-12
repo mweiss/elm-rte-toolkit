@@ -2,6 +2,8 @@ module Rte.DOMNode exposing (..)
 
 import Json.Decode as D
 import Json.Decode.Extra as DE
+import Rte.EditorUtils exposing (zeroWidthSpace)
+import Rte.Model exposing (DOMNode(..), DOMNodeContents, HtmlNode(..), NodePath)
 
 
 {-| The DOM text node nodeType value as specified by the w3c spec [w3c spec][w3c-custom-types-text-node]
@@ -16,25 +18,6 @@ domTextNodeType =
 -}
 domElementNodeType =
     1
-
-
-{-| A minimal representation of DOMNode. It's purpose is to validate the contents of the DOM for any
-unexpected structural changes that can happen in a contenteditable node before applying changes that may
-effect to the virtual DOM.
--}
-type alias DOMNodeContents =
-    { nodeType : Int
-    , tagName : Maybe String
-    , nodeValue : Maybe String
-    , childNodes : Maybe (List DOMNode)
-    }
-
-
-{-| A minimal representation of a DOMNode. Since the structure of DOMNodeContents is recursive,
-we need to define a literal type to avoid infinite recursion.
--}
-type DOMNode
-    = DOMNode DOMNodeContents
 
 
 decodeDOMNode : D.Decoder DOMNode
@@ -67,3 +50,83 @@ extractRootEditorBlockNode domNode =
 
                 Just childNodes ->
                     List.head childNodes
+
+
+type alias TextChange =
+    ( NodePath, String )
+
+
+
+-- TODO: fill this in
+
+
+findTextChanges : HtmlNode -> DOMNode -> Maybe (List TextChange)
+findTextChanges htmlNode domNode =
+    findTextChangesRec htmlNode domNode []
+
+
+findTextChangesRec : HtmlNode -> DOMNode -> NodePath -> Maybe (List TextChange)
+findTextChangesRec htmlNode domNode backwardsNodePath =
+    case domNode of
+        DOMNode domNodeContents ->
+            case htmlNode of
+                ElementNode tag attributes children ->
+                    let
+                        domChildNodes =
+                            Maybe.withDefault [] domNodeContents.childNodes
+                    in
+                    if
+                        domNodeContents.nodeType
+                            /= domElementNodeType
+                            || Just (String.toUpper tag)
+                            /= domNodeContents.tagName
+                            && List.length domChildNodes
+                            /= List.length children
+                    then
+                        Nothing
+
+                    else
+                        let
+                            indexedNodePairs =
+                                List.indexedMap Tuple.pair <| List.map2 Tuple.pair children domChildNodes
+                        in
+                        List.foldl
+                            (\( i, ( htmlChild, domChild ) ) maybeTextChangeList ->
+                                case maybeTextChangeList of
+                                    Nothing ->
+                                        Nothing
+
+                                    Just x ->
+                                        case findTextChangesRec htmlChild domChild (i :: backwardsNodePath) of
+                                            Nothing ->
+                                                Nothing
+
+                                            Just y ->
+                                                Just (x ++ y)
+                            )
+                            (Just [])
+                            indexedNodePairs
+
+                TextNode textNodeText ->
+                    if domNodeContents.nodeType /= domTextNodeType then
+                        Nothing
+
+                    else
+                        case domNodeContents.nodeValue of
+                            Nothing ->
+                                Nothing
+
+                            Just domNodeText ->
+                                let
+                                    domNodeSanitizedText =
+                                        if domNodeText == zeroWidthSpace then
+                                            ""
+
+                                        else
+                                            domNodeText
+                                in
+                                if domNodeSanitizedText /= textNodeText then
+                                    Just [ ( List.reverse backwardsNodePath, domNodeSanitizedText ) ]
+
+                                else
+                                    Nothing
