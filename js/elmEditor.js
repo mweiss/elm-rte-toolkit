@@ -193,14 +193,44 @@ class ElmEditor extends HTMLElement {
         this._observer.disconnect();
     }
 
+    /**
+     * Returns a list of selection path and text if all the mutations are characterData.  Otherwise
+     * returns null.
+     */
+    characterDataMutations(mutationsList) {
+        if (!mutationsList) {
+            return null;
+        }
+
+
+        let mutations = mutationsList.map((mutation) => {
+            if (mutation.type !== "characterData") {
+                return null;
+            }
+            return {
+                path: getSelectionPath(mutation.target, this, 0),
+                text: mutation.target.nodeValue
+            }
+        });
+
+        for (let mutation of mutationsList) {
+            if (mutation === null) {
+                return null
+            }
+        }
+        return mutations;
+    }
+
     mutationObserverCallback(mutationsList, observer) {
         let element = this.querySelector('[data-rte-main="true"]');
         let selection = this.childNodes[1].getSelectionObject();
 
+        let characterDataMutations = this.characterDataMutations(mutationsList);
         let event = new CustomEvent("editorchange", {
             detail: {
                 root: element,
-                selection: selection
+                selection: selection,
+                characterDataMutations: characterDataMutations
             }
         });
         this.dispatchEvent(event);

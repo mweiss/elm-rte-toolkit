@@ -55,37 +55,37 @@ internalUpdate msg editor =
             Rte.KeyDown.handleKeyDown e editor
 
 
-textChanges : Spec -> EditorBlockNode -> DomNode -> Maybe (List TextChange)
-textChanges spec editorNode domNode =
+textChangesDomToEditor : Spec -> EditorBlockNode -> List TextChange -> Maybe (List TextChange)
+textChangesDomToEditor spec editorNode changes =
+    List.foldl
+        (\( p, text ) maybeAgg ->
+            case maybeAgg of
+                Nothing ->
+                    Nothing
+
+                Just agg ->
+                    case NodePath.domToEditor spec editorNode p of
+                        Nothing ->
+                            Nothing
+
+                        Just translatedPath ->
+                            Just (( translatedPath, text ) :: agg)
+        )
+        (Just [])
+        changes
+
+
+deriveTextChanges : Spec -> EditorBlockNode -> DomNode -> Maybe (List TextChange)
+deriveTextChanges spec editorNode domNode =
     let
         htmlNode =
             editorBlockNodeToHtmlNode spec editorNode
     in
-    case findTextChanges htmlNode domNode of
-        Nothing ->
-            Nothing
-
-        Just changes ->
-            List.foldl
-                (\( p, text ) maybeAgg ->
-                    case maybeAgg of
-                        Nothing ->
-                            Nothing
-
-                        Just agg ->
-                            case NodePath.domToEditor spec editorNode p of
-                                Nothing ->
-                                    Nothing
-
-                                Just translatedPath ->
-                                    Just (( translatedPath, text ) :: agg)
-                )
-                (Just [])
-                changes
+    findTextChanges htmlNode domNode
 
 
-applyForceRerenderEditor : (Editor msg -> Editor msg) -> Editor msg -> Editor msg
-applyForceRerenderEditor rerenderFunc editor =
+applyForceFunctionOnEditor : (Editor msg -> Editor msg) -> Editor msg -> Editor msg
+applyForceFunctionOnEditor rerenderFunc editor =
     rerenderFunc
         (case editor.bufferedEditorState of
             Nothing ->
@@ -98,49 +98,74 @@ applyForceRerenderEditor rerenderFunc editor =
 
 updateChangeEvent : EditorChange -> Editor msg -> Editor msg
 updateChangeEvent change editor =
-    case extractRootEditorBlockNode change.root of
+    case change.characterDataMutations of
         Nothing ->
-            applyForceRerenderEditor forceCompleteRerender editor
+            case D.decodeValue decodeDomNode change.root of
+                Err _ ->
+                    editor
 
-        Just editorRootDomNode ->
-            if needCompleteRerender change.root then
-                applyForceRerenderEditor forceCompleteRerender editor
+                Ok root ->
+                    updateChangeEventFullScan root change.selection editor
+
+        Just characterDataMutations ->
+            updateChangeEventTextChanges characterDataMutations change.selection editor
+
+
+updateChangeEventTextChanges : List TextChange -> Maybe Selection -> Editor msg -> Editor msg
+updateChangeEventTextChanges textChanges selection editor =
+    case textChangesDomToEditor editor.spec editor.editorState.root textChanges of
+        Nothing ->
+            applyForceFunctionOnEditor forceRerender editor
+
+        Just changes ->
+            let
+                editorState =
+                    editor.editorState
+            in
+            if List.isEmpty changes then
+                editor
 
             else
-                case textChanges editor.spec editor.editorState.root editorRootDomNode of
-                    Just changes ->
+                case replaceText editorState.root changes of
+                    Nothing ->
+                        applyForceFunctionOnEditor forceRerender editor
+
+                    Just replacedEditorNodes ->
                         let
-                            editorState =
-                                editor.editorState
+                            newEditorState =
+                                { editorState
+                                    | selection = selection |> Maybe.andThen (domToEditor editor.spec editorState.root)
+                                    , root = replacedEditorNodes
+                                }
                         in
-                        if List.isEmpty changes then
-                            editor
+                        if editor.isComposing then
+                            { editor | bufferedEditorState = Just newEditorState }
 
                         else
-                            case replaceText editorState.root changes of
-                                Nothing ->
-                                    applyForceRerenderEditor forceRerender editor
+                            let
+                                newEditor =
+                                    { editor | editorState = newEditorState }
+                            in
+                            applyForceFunctionOnEditor forceReselection newEditor
 
-                                Just replacedEditorNodes ->
-                                    let
-                                        newEditorState =
-                                            { editorState
-                                                | selection = change.selection |> Maybe.andThen (domToEditor editor.spec editorState.root)
-                                                , root = replacedEditorNodes
-                                            }
-                                    in
-                                    if editor.isComposing then
-                                        { editor | bufferedEditorState = Just newEditorState }
 
-                                    else
-                                        let
-                                            newEditor =
-                                                { editor | editorState = newEditorState }
-                                        in
-                                        applyForceRerenderEditor forceReselection newEditor
+updateChangeEventFullScan : DomNode -> Maybe Selection -> Editor msg -> Editor msg
+updateChangeEventFullScan domRoot selection editor =
+    case extractRootEditorBlockNode domRoot of
+        Nothing ->
+            applyForceFunctionOnEditor forceCompleteRerender editor
+
+        Just editorRootDomNode ->
+            if needCompleteRerender domRoot then
+                applyForceFunctionOnEditor forceCompleteRerender editor
+
+            else
+                case deriveTextChanges editor.spec editor.editorState.root editorRootDomNode of
+                    Just changes ->
+                        updateChangeEventTextChanges changes selection editor
 
                     Nothing ->
-                        applyForceRerenderEditor forceRerender editor
+                        applyForceFunctionOnEditor forceRerender editor
 
 
 forceReselection : Editor msg -> Editor msg
@@ -162,10 +187,16 @@ needCompleteRerender root =
 editorChangeDecoder : D.Decoder InternalEditorMsg
 editorChangeDecoder =
     D.map ChangeEvent
-        (D.map2 EditorChange
-            (D.at [ "detail", "root" ] decodeDomNode)
+        (D.map3 EditorChange
+            (D.at [ "detail", "root" ] D.value)
             (D.at [ "detail", "selection" ] selectionDecoder)
+            (D.maybe (D.at [ "detail", "characterDataMutations" ] characterDataMutationsDecoder))
         )
+
+
+characterDataMutationsDecoder : D.Decoder (List TextChange)
+characterDataMutationsDecoder =
+    D.list (D.map2 Tuple.pair (D.field "path" (D.list D.int)) (D.field "text" D.string))
 
 
 onEditorChange : (InternalEditorMsg -> msg) -> Html.Attribute msg

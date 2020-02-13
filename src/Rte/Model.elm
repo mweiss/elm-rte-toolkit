@@ -32,6 +32,7 @@ module Rte.Model exposing (..)
 
 import Array exposing (Array)
 import Dict exposing (Dict)
+import Json.Encode as E
 
 
 {-| Represents a rich text editor. The state of the editor, along with render information,
@@ -235,8 +236,9 @@ change event so that the VirtualDOM doesn't try to render when the DOM is not in
 it's expecting.
 -}
 type alias EditorChange =
-    { root : DomNode
+    { root : E.Value
     , selection : Maybe Selection
+    , characterDataMutations : Maybe (List TextChange)
     }
 
 
