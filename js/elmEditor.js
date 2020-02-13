@@ -183,7 +183,6 @@ class ElmEditor extends HTMLElement {
         super();
         this.mutationObserverCallback = this.mutationObserverCallback.bind(this);
         this._observer = new MutationObserver(this.mutationObserverCallback);
-        this.willFlushChanges = false
     }
 
     connectedCallback() {

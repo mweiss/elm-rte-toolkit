@@ -235,7 +235,7 @@ change event so that the VirtualDOM doesn't try to render when the DOM is not in
 it's expecting.
 -}
 type alias EditorChange =
-    { root : DOMNode
+    { root : DomNode
     , selection : Maybe Selection
     }
 
@@ -301,23 +301,23 @@ type alias Spec =
     }
 
 
-{-| A minimal representation of DOMNode. It's purpose is to validate the contents of the DOM for any
+{-| A minimal representation of DomNode. It's purpose is to validate the contents of the DOM for any
 unexpected structural changes that can happen in a contenteditable node before applying changes that may
 effect to the virtual DOM.
 -}
-type alias DOMNodeContents =
+type alias DomNodeContents =
     { nodeType : Int
     , tagName : Maybe String
     , nodeValue : Maybe String
-    , childNodes : Maybe (List DOMNode)
+    , childNodes : Maybe (List DomNode)
     }
 
 
-{-| A minimal representation of a DOMNode. Since the structure of DOMNodeContents is recursive,
+{-| A minimal representation of a DomNode. Since the structure of DomNodeContents is recursive,
 we need to define a literal type to avoid infinite recursion.
 -}
-type DOMNode
-    = DOMNode DOMNodeContents
+type DomNode
+    = DomNode DomNodeContents
 
 
 {-|

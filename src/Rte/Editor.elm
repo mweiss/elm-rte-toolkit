@@ -7,7 +7,7 @@ import Html.Keyed
 import Json.Decode as D
 import List.Extra
 import Rte.BeforeInput
-import Rte.DOMNode exposing (decodeDOMNode, extractRootEditorBlockNode, findTextChanges)
+import Rte.DomNode exposing (decodeDomNode, extractRootEditorBlockNode, findTextChanges)
 import Rte.EditorUtils exposing (forceRerender, zeroWidthSpace)
 import Rte.HtmlNode exposing (editorBlockNodeToHtmlNode)
 import Rte.KeyDown
@@ -55,7 +55,7 @@ internalUpdate msg editor =
             Rte.KeyDown.handleKeyDown e editor
 
 
-textChanges : Spec -> EditorBlockNode -> DOMNode -> Maybe (List TextChange)
+textChanges : Spec -> EditorBlockNode -> DomNode -> Maybe (List TextChange)
 textChanges spec editorNode domNode =
     let
         htmlNode =
@@ -102,12 +102,12 @@ updateChangeEvent change editor =
         Nothing ->
             applyForceRerenderEditor forceCompleteRerender editor
 
-        Just editorRootDOMNode ->
+        Just editorRootDomNode ->
             if needCompleteRerender change.root then
                 applyForceRerenderEditor forceCompleteRerender editor
 
             else
-                case textChanges editor.spec editor.editorState.root editorRootDOMNode of
+                case textChanges editor.spec editor.editorState.root editorRootDomNode of
                     Just changes ->
                         let
                             editorState =
@@ -148,10 +148,10 @@ forceReselection editor =
     { editor | selectionCount = editor.selectionCount + 1 }
 
 
-needCompleteRerender : DOMNode -> Bool
+needCompleteRerender : DomNode -> Bool
 needCompleteRerender root =
     case root of
-        DOMNode v ->
+        DomNode v ->
             let
                 cnodes =
                     Maybe.withDefault [] v.childNodes
@@ -163,7 +163,7 @@ editorChangeDecoder : D.Decoder InternalEditorMsg
 editorChangeDecoder =
     D.map ChangeEvent
         (D.map2 EditorChange
-            (D.at [ "detail", "root" ] decodeDOMNode)
+            (D.at [ "detail", "root" ] decodeDomNode)
             (D.at [ "detail", "selection" ] selectionDecoder)
         )
 

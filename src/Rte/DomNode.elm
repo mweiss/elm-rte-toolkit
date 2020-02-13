@@ -1,9 +1,9 @@
-module Rte.DOMNode exposing (..)
+module Rte.DomNode exposing (..)
 
 import Json.Decode as D
 import Json.Decode.Extra as DE
 import Rte.EditorUtils exposing (zeroWidthSpace)
-import Rte.Model exposing (DOMNode(..), DOMNodeContents, HtmlNode(..), NodePath, TextChange)
+import Rte.Model exposing (DomNode(..), DomNodeContents, HtmlNode(..), NodePath, TextChange)
 
 
 {-| The DOM text node nodeType value as specified by the w3c spec [w3c spec][w3c-custom-types-text-node]
@@ -20,30 +20,30 @@ domElementNodeType =
     1
 
 
-decodeDOMNode : D.Decoder DOMNode
-decodeDOMNode =
-    D.map DOMNode
-        (D.map4 DOMNodeContents
+decodeDomNode : D.Decoder DomNode
+decodeDomNode =
+    D.map DomNode
+        (D.map4 DomNodeContents
             (D.field "nodeType" D.int)
             (D.maybe (D.field "tagName" D.string))
             (D.maybe (D.field "nodeValue" D.string))
-            (D.maybe (D.field "childNodes" (DE.collection (D.lazy (\_ -> decodeDOMNode)))))
+            (D.maybe (D.field "childNodes" (DE.collection (D.lazy (\_ -> decodeDomNode)))))
         )
 
 
 
 {-
    This method extracts the editor nodes by taking the first child of the root node,
-   and then the first child of that node.  The DOMNodes we receive from the change event start
+   and then the first child of that node.  The DomNodes we receive from the change event start
    at the beginning of the content editable, and it should contain one immediate child node that
    contains the rendered editor nodes.
 -}
 
 
-extractRootEditorBlockNode : DOMNode -> Maybe DOMNode
+extractRootEditorBlockNode : DomNode -> Maybe DomNode
 extractRootEditorBlockNode domNode =
     case domNode of
-        DOMNode node ->
+        DomNode node ->
             case node.childNodes of
                 Nothing ->
                     Nothing
@@ -52,19 +52,15 @@ extractRootEditorBlockNode domNode =
                     List.head childNodes
 
 
-
--- TODO: fill this in
-
-
-findTextChanges : HtmlNode -> DOMNode -> Maybe (List TextChange)
+findTextChanges : HtmlNode -> DomNode -> Maybe (List TextChange)
 findTextChanges htmlNode domNode =
     findTextChangesRec htmlNode domNode []
 
 
-findTextChangesRec : HtmlNode -> DOMNode -> NodePath -> Maybe (List TextChange)
+findTextChangesRec : HtmlNode -> DomNode -> NodePath -> Maybe (List TextChange)
 findTextChangesRec htmlNode domNode backwardsNodePath =
     case domNode of
-        DOMNode domNodeContents ->
+        DomNode domNodeContents ->
             case htmlNode of
                 ElementNode tag _ children ->
                     let

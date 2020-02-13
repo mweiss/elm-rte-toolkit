@@ -10,6 +10,8 @@ type NodeResult
     | NoResult
 
 
+{-| findNode returns the node at the specified NodePath if it exists.
+-}
 findNode : NodePath -> EditorBlockNode -> NodeResult
 findNode path node =
     case path of
