@@ -11,10 +11,11 @@ import Rte.DOMNode exposing (decodeDOMNode, extractRootEditorBlockNode, findText
 import Rte.EditorUtils exposing (forceRerender, zeroWidthSpace)
 import Rte.HtmlNode exposing (editorBlockNodeToHtmlNode)
 import Rte.KeyDown
-import Rte.Marks
+import Rte.Marks exposing (selectableMark)
 import Rte.Model exposing (..)
 import Rte.NodePath as NodePath
-import Rte.Selection exposing (caretSelection, domToEditor, editorToDom)
+import Rte.NodeUtils exposing (NodeResult(..), findNode)
+import Rte.Selection exposing (caretSelection, domToEditor, editorToDom, isCollapsed)
 import Rte.Spec exposing (childNodesPlaceholder, findNodeDefinitionFromSpec)
 
 
@@ -326,7 +327,29 @@ readOnlyAttribute =
 
 shouldHideCaret : EditorState -> Bool
 shouldHideCaret editorState =
-    False
+    case editorState.selection of
+        Nothing ->
+            True
+
+        Just selection ->
+            if not <| isCollapsed selection then
+                False
+
+            else
+                case findNode selection.anchorNode editorState.root of
+                    NoResult ->
+                        False
+
+                    BlockNodeResult blockNode ->
+                        True
+
+                    InlineLeafResult leaf ->
+                        case leaf of
+                            InlineLeaf params ->
+                                True
+
+                            _ ->
+                                False
 
 
 markCaretSelectionOnEditorNodes : EditorState -> EditorBlockNode

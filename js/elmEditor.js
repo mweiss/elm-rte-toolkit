@@ -1,6 +1,6 @@
 
 
-const getSelectionPath = (node, editor) => {
+const getSelectionPath = (node, editor, offset) => {
     let originalNode = node;
     if (!node) {
         return null;
@@ -32,6 +32,10 @@ const getSelectionPath = (node, editor) => {
             index += 1;
         }
         indexPath.unshift(index);
+    }
+
+    if (originalNode.nodeType === Node.ELEMENT_NODE && offset > 0) {
+        indexPath.push(offset - 1)
     }
 
     if (indexPath.length <= 2) {
@@ -76,9 +80,11 @@ let adjustOffsetReverse = (node, offset) => {
 };
 
 let adjustOffset = (node, offset) => {
-    if (node.nodeType === Node.TEXT_NODE && node.nodeValue === "\u200B") {
+    if ((node.nodeType === Node.TEXT_NODE && node.nodeValue === "\u200B")
+        || node.nodeType === Node.ELEMENT_NODE) {
         return 0;
     }
+
     return offset;
 };
 
@@ -131,8 +137,8 @@ class SelectionState extends HTMLElement {
         document.removeEventListener("selectionchange", this.selectionChange)
     }
 
-    getSelectionPath(node) {
-        return getSelectionPath(node, this.parentNode)
+    getSelectionPath(node, offset) {
+        return getSelectionPath(node, this.parentNode, offset)
     }
 
     findNodeFromPath(path) {
@@ -145,9 +151,8 @@ class SelectionState extends HTMLElement {
         if (!selectionObj) {
             return selection
         }
-        console.log(selectionObj)
-        let anchorPath = this.getSelectionPath(selectionObj.anchorNode);
-        let focusPath = this.getSelectionPath(selectionObj.focusNode);
+        let anchorPath = this.getSelectionPath(selectionObj.anchorNode, selectionObj.anchorOffset);
+        let focusPath = this.getSelectionPath(selectionObj.focusNode, selectionObj.focusOffset);
         if (!anchorPath || !focusPath) {
             return selection
         }
@@ -163,9 +168,7 @@ class SelectionState extends HTMLElement {
     }
 
     selectionChange(e) {
-        console.log('selectionchange', e);
         let selection = this.getSelectionObject(e);
-        console.log('selectionchange', selection);
 
         if (!selection.selectionExists) {
             return;
@@ -184,7 +187,7 @@ class ElmEditor extends HTMLElement {
     }
 
     connectedCallback() {
-        this._observer.observe(this,  { characterDataOldValue: true, attributeOldValue: true, attributes: true, childList: true, subtree: true, characterData: true });
+        this._observer.observe(this,  { characterDataOldValue: true, attributeOldValue: false, attributes: false, childList: true, subtree: true, characterData: true });
     }
 
     disconnectedCallback() {

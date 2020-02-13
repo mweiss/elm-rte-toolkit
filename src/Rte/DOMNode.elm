@@ -66,7 +66,7 @@ findTextChangesRec htmlNode domNode backwardsNodePath =
     case domNode of
         DOMNode domNodeContents ->
             case htmlNode of
-                ElementNode tag attributes children ->
+                ElementNode tag _ children ->
                     let
                         domChildNodes =
                             Maybe.withDefault [] domNodeContents.childNodes
