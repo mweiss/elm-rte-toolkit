@@ -1,5 +1,6 @@
 module Main exposing (..)
 
+import Array
 import BasicEditorControls exposing (EditorMsg(..), InsertImageModal, InsertLinkModal)
 import BasicSpecs exposing (simpleSpec)
 import Browser
@@ -34,7 +35,7 @@ initialEditorNode =
         , attributes = []
         , marks = []
         }
-    , childNodes = InlineLeafList [ TextLeaf { text = "This is some sample text", marks = [] } ]
+    , childNodes = InlineLeafArray (Array.fromList [ TextLeaf { text = "This is some sample text", marks = [] } ])
     }
 
 

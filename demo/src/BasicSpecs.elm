@@ -1,28 +1,30 @@
 module BasicSpecs exposing (..)
 
+import Array exposing (Array)
 import Rte.Model exposing (ElementParameters, HtmlNode(..), Mark, Spec)
 import Rte.Spec exposing (childNodesPlaceholder)
 
 
-codeBlockToHtmlNode : ElementParameters -> List HtmlNode -> HtmlNode
+codeBlockToHtmlNode : ElementParameters -> Array HtmlNode -> HtmlNode
 codeBlockToHtmlNode parameters children =
     ElementNode "pre"
         []
-        [ ElementNode "code" [] children
-        ]
+        (Array.fromList [ ElementNode "code" [] children ])
 
 
-crazyBlockToHtmlNode : ElementParameters -> List HtmlNode -> HtmlNode
+crazyBlockToHtmlNode : ElementParameters -> Array HtmlNode -> HtmlNode
 crazyBlockToHtmlNode parameters children =
     ElementNode "div"
         []
-        [ ElementNode "img" [] []
-        , ElementNode "div" [] [ ElementNode "hr" [] [] ]
-        , ElementNode "div" [] children
-        ]
+    <|
+        Array.fromList
+            [ ElementNode "img" [] Array.empty
+            , ElementNode "div" [] (Array.fromList [ ElementNode "hr" [] Array.empty ])
+            , ElementNode "div" [] children
+            ]
 
 
-boldToHtmlNode : Mark -> List HtmlNode -> HtmlNode
+boldToHtmlNode : Mark -> Array HtmlNode -> HtmlNode
 boldToHtmlNode mark children =
     ElementNode "b" [] children
 

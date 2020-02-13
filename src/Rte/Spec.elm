@@ -1,5 +1,6 @@
 module Rte.Spec exposing (..)
 
+import Array exposing (Array)
 import List.Extra
 import Rte.Model exposing (EditorAttribute(..), ElementParameters, HtmlNode(..), Mark, MarkDefinition, NodeDefinition, Spec)
 
@@ -10,10 +11,11 @@ emptySpec =
 
 
 childNodesPlaceholder =
-    [ ElementNode "__child_node_marker__" [] [] ]
+    Array.fromList
+        [ ElementNode "__child_node_marker__" [] Array.empty ]
 
 
-defaultToHtml : ElementParameters -> List HtmlNode -> HtmlNode
+defaultToHtml : ElementParameters -> Array HtmlNode -> HtmlNode
 defaultToHtml elementParameters children =
     ElementNode elementParameters.name
         (List.map

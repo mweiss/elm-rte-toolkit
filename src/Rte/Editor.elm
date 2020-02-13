@@ -1,5 +1,6 @@
 module Rte.Editor exposing (..)
 
+import Array exposing (Array)
 import Html exposing (Html)
 import Html.Attributes
 import Html.Events
@@ -11,7 +12,6 @@ import Rte.DomNode exposing (decodeDomNode, extractRootEditorBlockNode, findText
 import Rte.EditorUtils exposing (forceRerender, zeroWidthSpace)
 import Rte.HtmlNode exposing (editorBlockNodeToHtmlNode)
 import Rte.KeyDown
-import Rte.Marks exposing (selectableMark)
 import Rte.Model exposing (..)
 import Rte.NodePath as NodePath
 import Rte.NodeUtils exposing (NodeResult(..), findNode)
@@ -154,9 +154,9 @@ needCompleteRerender root =
         DomNode v ->
             let
                 cnodes =
-                    Maybe.withDefault [] v.childNodes
+                    Maybe.withDefault Array.empty v.childNodes
             in
-            List.length cnodes /= 1
+            Array.length cnodes /= 1
 
 
 editorChangeDecoder : D.Decoder InternalEditorMsg
@@ -228,8 +228,8 @@ applyTextChange editorNode ( path, text ) =
 
         x :: xs ->
             case editorNode.childNodes of
-                BlockList list ->
-                    case List.Extra.getAt x list of
+                BlockArray list ->
+                    case Array.get x list of
                         Nothing ->
                             Nothing
 
@@ -239,21 +239,21 @@ applyTextChange editorNode ( path, text ) =
                                     Nothing
 
                                 Just textChangeNode ->
-                                    Just { editorNode | childNodes = BlockList <| List.Extra.setAt x textChangeNode list }
+                                    Just { editorNode | childNodes = BlockArray <| Array.set x textChangeNode list }
 
-                InlineLeafList list ->
+                InlineLeafArray list ->
                     if not <| List.isEmpty xs then
                         Nothing
 
                     else
-                        case List.Extra.getAt x list of
+                        case Array.get x list of
                             Nothing ->
                                 Nothing
 
                             Just inlineNode ->
                                 case inlineNode of
                                     TextLeaf contents ->
-                                        Just { editorNode | childNodes = InlineLeafList <| List.Extra.setAt x (TextLeaf { contents | text = text }) list }
+                                        Just { editorNode | childNodes = InlineLeafArray <| Array.set x (TextLeaf { contents | text = text }) list }
 
                                     _ ->
                                         Nothing
@@ -404,7 +404,7 @@ onClickSelect decoder nodePath =
     Html.Events.onClick (decoder <| SelectionEvent (Just (caretSelection nodePath 0)))
 
 
-renderHtmlNode : HtmlNode -> List (Html msg) -> Html msg
+renderHtmlNode : HtmlNode -> Array (Html msg) -> Html msg
 renderHtmlNode node vdomChildren =
     case node of
         ElementNode name attributes children ->
@@ -414,12 +414,12 @@ renderHtmlNode node vdomChildren =
                         vdomChildren
 
                     else
-                        List.map (\n -> renderHtmlNode n vdomChildren) children
+                        Array.map (\n -> renderHtmlNode n vdomChildren) children
             in
             Html.node
                 name
                 (List.map (\( k, v ) -> Html.Attributes.attribute k v) attributes)
-                childNodes
+                (Array.toList childNodes)
 
         TextNode v ->
             Html.text v
@@ -436,10 +436,10 @@ renderMarkFromSpec spec backwardsNodePath mark child =
                 node =
                     definition.toHtmlNode mark childNodesPlaceholder
             in
-            renderHtmlNode node [ child ]
+            renderHtmlNode node (Array.fromList [ child ])
 
 
-renderElementFromSpec : Spec -> ElementParameters -> NodePath -> List (Html msg) -> Html msg
+renderElementFromSpec : Spec -> ElementParameters -> NodePath -> Array (Html msg) -> Html msg
 renderElementFromSpec spec elementParameters backwardsNodePath children =
     let
         definition =
@@ -463,14 +463,14 @@ renderEditorBlockNode spec decoderFunc backwardsPath node =
         node.parameters
         backwardsPath
         (case node.childNodes of
-            BlockList l ->
-                List.map (renderEditorBlockNode spec decoderFunc backwardsPath) l
+            BlockArray l ->
+                Array.map (renderEditorBlockNode spec decoderFunc backwardsPath) l
 
-            InlineLeafList l ->
-                List.map (renderInlineLeaf spec decoderFunc backwardsPath) l
+            InlineLeafArray l ->
+                Array.map (renderInlineLeaf spec decoderFunc backwardsPath) l
 
             Leaf ->
-                []
+                Array.empty
         )
 
 
@@ -493,7 +493,7 @@ renderInlineLeaf : Spec -> DecoderFunc msg -> NodePath -> EditorInlineLeaf -> Ht
 renderInlineLeaf spec decoderFunc backwardsPath leaf =
     case leaf of
         InlineLeaf elementParameters ->
-            renderElementFromSpec spec elementParameters backwardsPath []
+            renderElementFromSpec spec elementParameters backwardsPath Array.empty
 
         TextLeaf v ->
             renderText spec v backwardsPath

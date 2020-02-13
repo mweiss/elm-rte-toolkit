@@ -1,6 +1,6 @@
 module Rte.NodeUtils exposing (..)
 
-import List.Extra
+import Array
 import Rte.Model exposing (ChildNodes(..), EditorBlockNode, EditorInlineLeaf, NodePath)
 
 
@@ -20,16 +20,16 @@ findNode path node =
 
         x :: xs ->
             case node.childNodes of
-                BlockList list ->
-                    case List.Extra.getAt x list of
+                BlockArray list ->
+                    case Array.get x list of
                         Nothing ->
                             NoResult
 
                         Just childNode ->
                             findNode xs childNode
 
-                InlineLeafList list ->
-                    case List.Extra.getAt x list of
+                InlineLeafArray list ->
+                    case Array.get x list of
                         Nothing ->
                             NoResult
 

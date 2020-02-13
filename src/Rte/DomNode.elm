@@ -1,5 +1,7 @@
 module Rte.DomNode exposing (..)
 
+import Array
+import Array.Extra
 import Json.Decode as D
 import Json.Decode.Extra as DE
 import Rte.EditorUtils exposing (zeroWidthSpace)
@@ -27,7 +29,7 @@ decodeDomNode =
             (D.field "nodeType" D.int)
             (D.maybe (D.field "tagName" D.string))
             (D.maybe (D.field "nodeValue" D.string))
-            (D.maybe (D.field "childNodes" (DE.collection (D.lazy (\_ -> decodeDomNode)))))
+            (D.maybe (D.field "childNodes" (D.map Array.fromList (DE.collection (D.lazy (\_ -> decodeDomNode))))))
         )
 
 
@@ -49,7 +51,7 @@ extractRootEditorBlockNode domNode =
                     Nothing
 
                 Just childNodes ->
-                    List.head childNodes
+                    Array.get 0 childNodes
 
 
 findTextChanges : HtmlNode -> DomNode -> Maybe (List TextChange)
@@ -65,24 +67,24 @@ findTextChangesRec htmlNode domNode backwardsNodePath =
                 ElementNode tag _ children ->
                     let
                         domChildNodes =
-                            Maybe.withDefault [] domNodeContents.childNodes
+                            Maybe.withDefault Array.empty domNodeContents.childNodes
                     in
                     if
                         domNodeContents.nodeType
                             /= domElementNodeType
                             || Just (String.toUpper tag)
                             /= domNodeContents.tagName
-                            || List.length domChildNodes
-                            /= List.length children
+                            || Array.length domChildNodes
+                            /= Array.length children
                     then
                         Nothing
 
                     else
                         let
                             indexedNodePairs =
-                                List.indexedMap Tuple.pair <| List.map2 Tuple.pair children domChildNodes
+                                Array.indexedMap Tuple.pair <| Array.Extra.map2 Tuple.pair children domChildNodes
                         in
-                        List.foldl
+                        Array.foldl
                             (\( i, ( htmlChild, domChild ) ) maybeTextChangeList ->
                                 case maybeTextChangeList of
                                     Nothing ->

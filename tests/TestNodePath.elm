@@ -1,5 +1,6 @@
 module TestNodePath exposing (..)
 
+import Array exposing (Array)
 import Expect
 import Rte.Model exposing (ChildNodes(..), EditorBlockNode, EditorInlineLeaf(..), ElementParameters, HtmlNode(..), Mark, Spec)
 import Rte.NodePath exposing (domToEditor, editorToDom)
@@ -25,60 +26,66 @@ boldMark =
 
 paragraphNode =
     { parameters = paragraphParams
-    , childNodes = InlineLeafList [ TextLeaf { text = "sample", marks = [] } ]
+    , childNodes = InlineLeafArray <| Array.fromList [ TextLeaf { text = "sample", marks = [] } ]
     }
 
 
 boldParagraphNode =
     { parameters = paragraphParams
     , childNodes =
-        InlineLeafList
-            [ TextLeaf
-                { text = "sample"
-                , marks =
-                    [ boldMark ]
-                }
-            ]
+        InlineLeafArray <|
+            Array.fromList
+                [ TextLeaf
+                    { text = "sample"
+                    , marks =
+                        [ boldMark ]
+                    }
+                ]
     }
 
 
 crazyBlockNode =
     { parameters = crazyBlockParams
     , childNodes =
-        InlineLeafList
-            [ TextLeaf
-                { text = "sample"
-                , marks = []
-                }
-            ]
+        InlineLeafArray <|
+            Array.fromList
+                [ TextLeaf
+                    { text = "sample"
+                    , marks = []
+                    }
+                ]
     }
 
 
 codeBlockNode =
     { parameters = codeBlockParams
-    , childNodes = InlineLeafList [ TextLeaf { text = "sample", marks = [] } ]
+    , childNodes = InlineLeafArray <| Array.fromList [ TextLeaf { text = "sample", marks = [] } ]
     }
 
 
-codeBlockToHtmlNode : ElementParameters -> List HtmlNode -> HtmlNode
+codeBlockToHtmlNode : ElementParameters -> Array HtmlNode -> HtmlNode
 codeBlockToHtmlNode parameters children =
     ElementNode "pre"
         []
-        [ ElementNode "code" [] children
-        ]
+    <|
+        Array.fromList
+            [ ElementNode "code" [] children
+            ]
 
 
-crazyBlockToHtmlNode : ElementParameters -> List HtmlNode -> HtmlNode
+crazyBlockToHtmlNode : ElementParameters -> Array HtmlNode -> HtmlNode
 crazyBlockToHtmlNode parameters children =
     ElementNode "div"
         []
-        [ ElementNode "img" [] []
-        , ElementNode "div" [] [ ElementNode "hr" [] [] ]
-        , ElementNode "div" [] children
-        ]
+    <|
+        Array.fromList
+            [ ElementNode "img" [] Array.empty
+            , ElementNode "div" [] <| Array.fromList [ ElementNode "hr" [] Array.empty ]
+            , ElementNode "div" [] children
+            ]
 
 
-boldToHtmlNode : Mark -> List HtmlNode -> HtmlNode
+boldToHtmlNode : Mark -> Array HtmlNode -> HtmlNode
 boldToHtmlNode mark children =
     ElementNode "b" [] children
 

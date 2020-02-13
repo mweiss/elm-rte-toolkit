@@ -30,8 +30,8 @@ module Rte.Model exposing (..)
 
 -}
 
+import Array exposing (Array)
 import Dict exposing (Dict)
-import Html
 
 
 {-| Represents a rich text editor. The state of the editor, along with render information,
@@ -86,8 +86,8 @@ type alias EditorBlockNode =
 other block nodes as children, inline leaf nodes as children, or it may be a leaf itself.
 -}
 type ChildNodes
-    = BlockList (List EditorBlockNode)
-    | InlineLeafList (List EditorInlineLeaf)
+    = BlockArray (Array EditorBlockNode)
+    | InlineLeafArray (Array EditorInlineLeaf)
     | Leaf
 
 
@@ -275,7 +275,7 @@ because we can't inspect a node after it has been created. Note that we also don
 in the definition because this type is just for the structural content of the editor.
 -}
 type HtmlNode
-    = ElementNode String (List HtmlAttribute) (List HtmlNode)
+    = ElementNode String (List HtmlAttribute) (Array HtmlNode)
     | TextNode String
 
 
@@ -285,13 +285,13 @@ type alias HtmlAttribute =
 
 type alias MarkDefinition =
     { name : String
-    , toHtmlNode : Mark -> List HtmlNode -> HtmlNode
+    , toHtmlNode : Mark -> Array HtmlNode -> HtmlNode
     }
 
 
 type alias NodeDefinition =
     { name : String
-    , toHtmlNode : ElementParameters -> List HtmlNode -> HtmlNode
+    , toHtmlNode : ElementParameters -> Array HtmlNode -> HtmlNode
     }
 
 
@@ -309,7 +309,7 @@ type alias DomNodeContents =
     { nodeType : Int
     , tagName : Maybe String
     , nodeValue : Maybe String
-    , childNodes : Maybe (List DomNode)
+    , childNodes : Maybe (Array DomNode)
     }
 
 

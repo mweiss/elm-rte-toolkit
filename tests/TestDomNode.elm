@@ -1,5 +1,6 @@
 module TestDomNode exposing (..)
 
+import Array
 import Expect
 import Rte.DomNode exposing (domElementNodeType, domTextNodeType, findTextChanges)
 import Rte.Model exposing (DomNode(..), HtmlNode(..))
@@ -7,19 +8,19 @@ import Test exposing (Test, describe, test)
 
 
 pHtmlNode =
-    ElementNode "p" [] [ TextNode "sample" ]
+    ElementNode "p" [] <| Array.fromList [ TextNode "sample" ]
 
 
 pHtmlNodeDifferentText =
-    ElementNode "p" [] [ TextNode "sample2" ]
+    ElementNode "p" [] <| Array.fromList [ TextNode "sample2" ]
 
 
 pWithImgHtmlNode =
-    ElementNode "p" [] [ ElementNode "img" [] [], TextNode "sample" ]
+    ElementNode "p" [] <| Array.fromList [ ElementNode "img" [] Array.empty, TextNode "sample" ]
 
 
 divHtmlNode =
-    ElementNode "div" [] [ TextNode "sample" ]
+    ElementNode "div" [] <| Array.fromList [ TextNode "sample" ]
 
 
 pWithImgDomNode =
@@ -27,10 +28,11 @@ pWithImgDomNode =
         { nodeValue = Nothing
         , nodeType = domElementNodeType
         , childNodes =
-            Just
-                [ DomNode { nodeValue = Nothing, nodeType = domElementNodeType, childNodes = Just [], tagName = Just "IMG" }
-                , DomNode { nodeValue = Just "sample", nodeType = domTextNodeType, childNodes = Nothing, tagName = Nothing }
-                ]
+            Just <|
+                Array.fromList
+                    [ DomNode { nodeValue = Nothing, nodeType = domElementNodeType, childNodes = Just Array.empty, tagName = Just "IMG" }
+                    , DomNode { nodeValue = Just "sample", nodeType = domTextNodeType, childNodes = Nothing, tagName = Nothing }
+                    ]
         , tagName = Just "P"
         }
 
@@ -40,9 +42,10 @@ pDomNode =
         { nodeValue = Nothing
         , nodeType = domElementNodeType
         , childNodes =
-            Just
-                [ DomNode { nodeValue = Just "sample", nodeType = domTextNodeType, childNodes = Nothing, tagName = Nothing }
-                ]
+            Just <|
+                Array.fromList
+                    [ DomNode { nodeValue = Just "sample", nodeType = domTextNodeType, childNodes = Nothing, tagName = Nothing }
+                    ]
         , tagName = Just "P"
         }
 

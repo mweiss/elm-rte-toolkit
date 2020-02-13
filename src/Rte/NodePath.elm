@@ -9,7 +9,7 @@ module Rte.NodePath exposing (domToEditor, editorToDom)
 
 -}
 
-import List.Extra
+import Array
 import Rte.Model exposing (ChildNodes(..), EditorBlockNode, EditorInlineLeaf(..), ElementParameters, HtmlNode(..), Mark, NodePath, Selection, Spec)
 import Rte.Spec exposing (childNodesPlaceholder, findMarkDefinitionsFromSpec, findNodeDefinitionFromSpec)
 
@@ -66,8 +66,8 @@ domToEditor spec node path =
 
                             Just i ->
                                 case node.childNodes of
-                                    BlockList l ->
-                                        case List.Extra.getAt i l of
+                                    BlockArray l ->
+                                        case Array.get i l of
                                             Nothing ->
                                                 Nothing
 
@@ -79,8 +79,8 @@ domToEditor spec node path =
                                                     Just p ->
                                                         Just (i :: p)
 
-                                    InlineLeafList l ->
-                                        case List.Extra.getAt i l of
+                                    InlineLeafArray l ->
+                                        case Array.get i l of
                                             Nothing ->
                                                 Nothing
 
@@ -109,8 +109,8 @@ editorToDom spec node path =
 
                 Just childPath ->
                     case node.childNodes of
-                        BlockList l ->
-                            case List.Extra.getAt x l of
+                        BlockArray l ->
+                            case Array.get x l of
                                 Nothing ->
                                     Nothing
 
@@ -122,8 +122,8 @@ editorToDom spec node path =
                                         Just p ->
                                             Just (childPath ++ (x :: p))
 
-                        InlineLeafList l ->
-                            case List.Extra.getAt x l of
+                        InlineLeafArray l ->
+                            case Array.get x l of
                                 Nothing ->
                                     Nothing
 
@@ -169,7 +169,7 @@ removePathUpToChildContents node path =
                         Just path
 
                     x :: xs ->
-                        case List.Extra.getAt x children of
+                        case Array.get x children of
                             Nothing ->
                                 Nothing
 
@@ -192,7 +192,7 @@ pathToChildContents node =
                 Just []
 
             else
-                List.foldl
+                Array.foldl
                     (\( i, childNode ) maybePath ->
                         case maybePath of
                             Nothing ->
@@ -207,7 +207,7 @@ pathToChildContents node =
                                 maybePath
                     )
                     Nothing
-                    (List.indexedMap Tuple.pair children)
+                    (Array.indexedMap Tuple.pair children)
 
         TextNode _ ->
             Nothing

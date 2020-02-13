@@ -1,5 +1,6 @@
 module Rte.HtmlNode exposing (..)
 
+import Array exposing (Array)
 import Rte.Model exposing (ChildNodes(..), EditorBlockNode, EditorInlineLeaf(..), ElementParameters, HtmlNode(..), Mark, Spec, TextNodeContents)
 import Rte.Spec exposing (findMarkDefinitionsFromSpec, findNodeDefinitionFromSpec)
 
@@ -13,14 +14,14 @@ marksToHtmlNode spec marks node =
             findMarkDefinitionsFromSpec marks spec
     in
     List.foldr
-        (\( mark, markDefinition ) htmlNode -> markDefinition.toHtmlNode mark [ htmlNode ])
+        (\( mark, markDefinition ) htmlNode -> markDefinition.toHtmlNode mark (Array.fromList [ htmlNode ]))
         node
         marksAndDefinitions
 
 
 {-| Renders element parameters to their HtmlNode representation.
 -}
-elementToHtmlNode : Spec -> ElementParameters -> List HtmlNode -> HtmlNode
+elementToHtmlNode : Spec -> ElementParameters -> Array HtmlNode -> HtmlNode
 elementToHtmlNode spec parameters children =
     let
         nodeDefinition =
@@ -41,17 +42,17 @@ editorBlockNodeToHtmlNode spec node =
 
 {-| Renders child nodes to their HtmlNode representation.
 -}
-childNodesToHtmlNode : Spec -> ChildNodes -> List HtmlNode
+childNodesToHtmlNode : Spec -> ChildNodes -> Array HtmlNode
 childNodesToHtmlNode spec childNodes =
     case childNodes of
-        BlockList blockList ->
-            List.map (editorBlockNodeToHtmlNode spec) blockList
+        BlockArray blockArray ->
+            Array.map (editorBlockNodeToHtmlNode spec) blockArray
 
-        InlineLeafList inlineLeafList ->
-            List.map (editorInlineLeafToHtmlNode spec) inlineLeafList
+        InlineLeafArray inlineLeafArray ->
+            Array.map (editorInlineLeafToHtmlNode spec) inlineLeafArray
 
         Leaf ->
-            []
+            Array.empty
 
 
 {-| Renders text nodes to their HtmlNode representation.
@@ -70,4 +71,4 @@ editorInlineLeafToHtmlNode spec node =
             textToHtmlNode spec contents
 
         InlineLeaf parameters ->
-            elementToHtmlNode spec parameters []
+            elementToHtmlNode spec parameters Array.empty

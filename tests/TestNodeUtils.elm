@@ -1,5 +1,6 @@
 module TestNodeUtils exposing (..)
 
+import Array
 import Expect
 import Rte.Model exposing (ChildNodes(..), EditorInlineLeaf(..))
 import Rte.NodeUtils exposing (NodeResult(..), findNode)
@@ -9,16 +10,16 @@ import Test exposing (Test, describe, test)
 rootNode =
     { parameters = { name = "div", attributes = [], marks = [] }
     , childNodes =
-        BlockList
-            [ pHtmlNode ]
+        BlockArray <|
+            Array.fromList [ pHtmlNode ]
     }
 
 
 pHtmlNode =
     { parameters = { name = "div", attributes = [], marks = [] }
     , childNodes =
-        InlineLeafList
-            [ textNode1, textNode2 ]
+        InlineLeafArray <|
+            Array.fromList [ textNode1, textNode2 ]
     }
 
 
