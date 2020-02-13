@@ -318,3 +318,12 @@ we need to define a literal type to avoid infinite recursion.
 -}
 type DOMNode
     = DOMNode DOMNodeContents
+
+
+{-|
+
+    A represents a text change at the given path in a editor node or DOM tree.
+
+-}
+type alias TextChange =
+    ( NodePath, String )

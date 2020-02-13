@@ -3,7 +3,7 @@ module Rte.DOMNode exposing (..)
 import Json.Decode as D
 import Json.Decode.Extra as DE
 import Rte.EditorUtils exposing (zeroWidthSpace)
-import Rte.Model exposing (DOMNode(..), DOMNodeContents, HtmlNode(..), NodePath)
+import Rte.Model exposing (DOMNode(..), DOMNodeContents, HtmlNode(..), NodePath, TextChange)
 
 
 {-| The DOM text node nodeType value as specified by the w3c spec [w3c spec][w3c-custom-types-text-node]
@@ -52,10 +52,6 @@ extractRootEditorBlockNode domNode =
                     List.head childNodes
 
 
-type alias TextChange =
-    ( NodePath, String )
-
-
 
 -- TODO: fill this in
 
@@ -80,7 +76,7 @@ findTextChangesRec htmlNode domNode backwardsNodePath =
                             /= domElementNodeType
                             || Just (String.toUpper tag)
                             /= domNodeContents.tagName
-                            && List.length domChildNodes
+                            || List.length domChildNodes
                             /= List.length children
                     then
                         Nothing
@@ -129,4 +125,4 @@ findTextChangesRec htmlNode domNode backwardsNodePath =
                                     Just [ ( List.reverse backwardsNodePath, domNodeSanitizedText ) ]
 
                                 else
-                                    Nothing
+                                    Just []

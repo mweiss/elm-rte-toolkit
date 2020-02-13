@@ -7,11 +7,13 @@ import Html.Keyed
 import Json.Decode as D
 import List.Extra
 import Rte.BeforeInput
-import Rte.DOMNode exposing (decodeDOMNode, extractRootEditorBlockNode)
+import Rte.DOMNode exposing (decodeDOMNode, extractRootEditorBlockNode, findTextChanges)
 import Rte.EditorUtils exposing (forceRerender, zeroWidthSpace)
+import Rte.HtmlNode exposing (editorBlockNodeToHtmlNode)
 import Rte.KeyDown
 import Rte.Marks
 import Rte.Model exposing (..)
+import Rte.NodePath as NodePath
 import Rte.Selection exposing (caretSelection, domToEditor, editorToDom)
 import Rte.Spec exposing (childNodesPlaceholder, findNodeDefinitionFromSpec)
 
@@ -52,81 +54,92 @@ internalUpdate msg editor =
             Rte.KeyDown.handleKeyDown e editor
 
 
-isSameStructure : EditorBlockNode -> DOMNode -> ( Bool, Bool )
-isSameStructure editorNodes domNodes =
+textChanges : Spec -> EditorBlockNode -> DOMNode -> Maybe (List TextChange)
+textChanges spec editorNode domNode =
     let
-        x =
-            Debug.log "isSameStructure" ( editorNodes, domNodes )
+        htmlNode =
+            editorBlockNodeToHtmlNode spec editorNode
     in
-    ( True, True )
+    case findTextChanges htmlNode domNode of
+        Nothing ->
+            Nothing
+
+        Just changes ->
+            List.foldl
+                (\( p, text ) maybeAgg ->
+                    case maybeAgg of
+                        Nothing ->
+                            Nothing
+
+                        Just agg ->
+                            case NodePath.domToEditor spec editorNode p of
+                                Nothing ->
+                                    Nothing
+
+                                Just translatedPath ->
+                                    Just (( translatedPath, text ) :: agg)
+                )
+                (Just [])
+                changes
+
+
+applyForceRerenderEditor : (Editor msg -> Editor msg) -> Editor msg -> Editor msg
+applyForceRerenderEditor rerenderFunc editor =
+    rerenderFunc
+        (case editor.bufferedEditorState of
+            Nothing ->
+                editor
+
+            Just bufferedEditorState ->
+                { editor | editorState = bufferedEditorState, bufferedEditorState = Nothing, isComposing = False }
+        )
 
 
 updateChangeEvent : EditorChange -> Editor msg -> Editor msg
 updateChangeEvent change editor =
     case extractRootEditorBlockNode change.root of
         Nothing ->
-            forceCompleteRerender
-                (case editor.bufferedEditorState of
-                    Nothing ->
-                        editor
-
-                    Just bufferedEditorState ->
-                        { editor | bufferedEditorState = Nothing, editorState = bufferedEditorState }
-                )
+            applyForceRerenderEditor forceCompleteRerender editor
 
         Just editorRootDOMNode ->
-            let
-                rerenderEverything =
-                    needCompleteRerender change.root
-
-                ( sameStructure, sameText ) =
-                    isSameStructure editor.editorState.root editorRootDOMNode
-            in
-            if rerenderEverything then
-                forceCompleteRerender
-                    (case editor.bufferedEditorState of
-                        Nothing ->
-                            editor
-
-                        Just bufferedEditorState ->
-                            { editor | bufferedEditorState = Nothing, editorState = bufferedEditorState }
-                    )
-
-            else if sameStructure then
-                let
-                    editorState =
-                        editor.editorState
-                in
-                if sameText then
-                    editor
-
-                else
-                    let
-                        newEditorState =
-                            { editorState | selection = change.selection |> Maybe.andThen (domToEditor editor.spec editorState.root), root = replaceText editorState.root editorRootDOMNode }
-                    in
-                    if editor.isComposing then
-                        { editor | bufferedEditorState = Just newEditorState }
-
-                    else
-                        forceReselection
-                            (case editor.bufferedEditorState of
-                                Nothing ->
-                                    { editor | editorState = newEditorState }
-
-                                Just bufferedEditorState ->
-                                    { editor | bufferedEditorState = Nothing, editorState = bufferedEditorState }
-                            )
+            if needCompleteRerender change.root then
+                applyForceRerenderEditor forceCompleteRerender editor
 
             else
-                forceRerender
-                    (case editor.bufferedEditorState of
-                        Nothing ->
+                case textChanges editor.spec editor.editorState.root editorRootDOMNode of
+                    Just changes ->
+                        let
+                            editorState =
+                                editor.editorState
+                        in
+                        if List.isEmpty changes then
                             editor
 
-                        Just bufferedEditorState ->
-                            { editor | editorState = bufferedEditorState, bufferedEditorState = Nothing, isComposing = False }
-                    )
+                        else
+                            case replaceText editorState.root changes of
+                                Nothing ->
+                                    applyForceRerenderEditor forceRerender editor
+
+                                Just replacedEditorNodes ->
+                                    let
+                                        newEditorState =
+                                            { editorState
+                                                | selection = change.selection |> Maybe.andThen (domToEditor editor.spec editorState.root)
+                                                , root = replacedEditorNodes
+                                            }
+                                    in
+                                    if editor.isComposing then
+                                        { editor | bufferedEditorState = Just newEditorState }
+
+                                    else
+                                        let
+                                            newEditor =
+                                                { editor | editorState = newEditorState }
+                                        in
+                                        applyForceRerenderEditor forceReselection newEditor
+
+                    Nothing ->
+                        applyForceRerenderEditor forceRerender editor
 
 
 forceReselection : Editor msg -> Editor msg
@@ -191,9 +204,61 @@ onEditorSelectionChange msgFunc =
     Html.Events.on "editorselectionchange" (D.map msgFunc editorSelectionChangeDecoder)
 
 
-replaceText : EditorBlockNode -> DOMNode -> EditorBlockNode
-replaceText editorNode domNode =
-    editorNode
+replaceText : EditorBlockNode -> List TextChange -> Maybe EditorBlockNode
+replaceText editorNode changes =
+    List.foldl
+        (\change maybeNode ->
+            case maybeNode of
+                Nothing ->
+                    Nothing
+
+                Just node ->
+                    applyTextChange node change
+        )
+        (Just editorNode)
+        changes
+
+
+applyTextChange : EditorBlockNode -> TextChange -> Maybe EditorBlockNode
+applyTextChange editorNode ( path, text ) =
+    case path of
+        [] ->
+            Nothing
+
+        x :: xs ->
+            case editorNode.childNodes of
+                BlockList list ->
+                    case List.Extra.getAt x list of
+                        Nothing ->
+                            Nothing
+
+                        Just cblock ->
+                            case applyTextChange cblock ( xs, text ) of
+                                Nothing ->
+                                    Nothing
+
+                                Just textChangeNode ->
+                                    Just { editorNode | childNodes = BlockList <| List.Extra.setAt x textChangeNode list }
+
+                InlineLeafList list ->
+                    if not <| List.isEmpty xs then
+                        Nothing
+
+                    else
+                        case List.Extra.getAt x list of
+                            Nothing ->
+                                Nothing
+
+                            Just inlineNode ->
+                                case inlineNode of
+                                    TextLeaf contents ->
+                                        Just { editorNode | childNodes = InlineLeafList <| List.Extra.setAt x (TextLeaf { contents | text = text }) list }
+
+                                    _ ->
+                                        Nothing
+
+                Leaf ->
+                    Nothing
 
 
 
@@ -364,7 +429,7 @@ renderElementFromSpec spec elementParameters backwardsNodePath children =
             renderHtmlNode node children
 
         nodeHtmlWithMarks =
-            List.foldl (renderMarkFromSpec spec backwardsNodePath) nodeHtml elementParameters.marks
+            List.foldr (renderMarkFromSpec spec backwardsNodePath) nodeHtml elementParameters.marks
     in
     nodeHtmlWithMarks
 
