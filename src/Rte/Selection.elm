@@ -1,7 +1,9 @@
-module Rte.Selection exposing (caretSelection, domToEditor, editorToDom, isCollapsed, rangeSelection, singleNodeRangeSelection)
+module Rte.Selection exposing (caretSelection, domToEditor, editorToDom, isCollapsed, markSelection, normalizeSelection, rangeSelection, singleNodeRangeSelection)
 
+import Rte.Marks exposing (ToggleAction(..), selectionMark, toggleMarkAtPath)
 import Rte.Model exposing (ChildNodes(..), EditorBlockNode, EditorInlineLeaf(..), ElementParameters, HtmlNode(..), Mark, NodePath, Selection, Spec)
 import Rte.NodePath as Path
+import Rte.NodeUtils exposing (findNode)
 
 
 domToEditor : Spec -> EditorBlockNode -> Selection -> Maybe Selection
@@ -59,3 +61,30 @@ rangeSelection anchorNode anchorOffset focusNode focusOffset =
 singleNodeRangeSelection : NodePath -> Int -> Int -> Selection
 singleNodeRangeSelection node anchorOffset focusOffset =
     rangeSelection node anchorOffset node focusOffset
+
+
+{-| Sorts the selection's anchor to be before the focus. This method is helpful because in the selection
+API, a selection's anchor node is not always before a selection's focus node, but when reasoning about editor
+operations, we want the anchor to be before the focus.
+-}
+normalizeSelection : Selection -> Selection
+normalizeSelection selection =
+    case compare selection.anchorNode selection.focusNode of
+        EQ ->
+            { selection | anchorOffset = min selection.focusOffset selection.anchorOffset, focusOffset = max selection.focusOffset selection.anchorOffset }
+
+        LT ->
+            selection
+
+        GT ->
+            { selection | focusNode = selection.anchorNode, focusOffset = selection.anchorOffset, anchorNode = selection.focusNode, anchorOffset = selection.focusOffset }
+
+
+markSelection : Selection -> EditorBlockNode -> EditorBlockNode
+markSelection selection node =
+    addSelectionMarkAtPath selection.focusNode <| addSelectionMarkAtPath selection.anchorNode node
+
+
+addSelectionMarkAtPath : NodePath -> EditorBlockNode -> EditorBlockNode
+addSelectionMarkAtPath nodePath node =
+    Result.withDefault node (toggleMarkAtPath Add selectionMark nodePath node)

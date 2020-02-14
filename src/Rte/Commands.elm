@@ -1,7 +1,11 @@
 module Rte.Commands exposing (..)
 
 import Dict exposing (Dict)
+import Rte.CommandUtils exposing (removeTextAtRange)
 import Rte.Model exposing (CommandBinding(..), CommandFunc, CommandMap, Editor, EditorState)
+import Rte.NodePath exposing (decrementNodePath, incrementNodePath)
+import Rte.NodeUtils exposing (removeNodesInRange)
+import Rte.Selection exposing (caretSelection, isCollapsed, markSelection, normalizeSelection)
 
 
 altKey : String
@@ -83,11 +87,11 @@ otherwiseDo : CommandFunc -> CommandFunc -> CommandFunc
 otherwiseDo a b =
     \s ->
         case a s of
-            Nothing ->
+            Err _ ->
                 b s
 
-            Just v ->
-                Just v
+            Ok v ->
+                Ok v
 
 
 emptyCommandBinding =
@@ -106,49 +110,105 @@ defaultCommandBindings =
     emptyCommandBinding
         |> setCommand [ inputEvent "insertLineBreak", key [ shiftKey, enterKey ], key [ shiftKey, enterKey ] ] insertLineBreakCommand
         |> setCommand [ inputEvent "insertParagraph", key [ enterKey ], key [ returnKey ] ] splitBlockCommand
-        |> setCommand [ inputEvent "deleteContentBackward", key [ backspaceKey ] ] (backspaceBlockElementCommand |> otherwiseDo backspaceInlineElementCommand |> otherwiseDo backspaceCommand)
+        |> setCommand [ inputEvent "deleteContentBackward", key [ backspaceKey ] ] (removeRangeSelection |> otherwiseDo backspaceBlockElementCommand |> otherwiseDo backspaceInlineElementCommand |> otherwiseDo backspaceCommand)
+
+
+removeRangeSelection : CommandFunc
+removeRangeSelection editorState =
+    case editorState.selection of
+        Nothing ->
+            Err "Nothing is selected"
+
+        Just selection ->
+            if isCollapsed selection then
+                Err "Cannot remove contents of collapsed selection"
+
+            else
+                let
+                    normalizedSelection =
+                        normalizeSelection selection
+                in
+                if normalizedSelection.anchorNode == normalizedSelection.focusNode then
+                    case removeTextAtRange normalizedSelection.anchorNode normalizedSelection.anchorOffset (Just normalizedSelection.focusOffset) editorState.root of
+                        Ok newRoot ->
+                            let
+                                newSelection =
+                                    caretSelection normalizedSelection.anchorNode normalizedSelection.anchorOffset
+                            in
+                            Ok { editorState | root = newRoot, selection = Just newSelection }
+
+                        Err s ->
+                            Err s
+
+                else
+                    let
+                        markedSelection =
+                            markSelection selection editorState.root
+                    in
+                    -- TODO: implement the case where this is not a text selection
+                    case removeTextAtRange normalizedSelection.focusNode 0 (Just normalizedSelection.focusOffset) markedSelection of
+                        Err s ->
+                            Err s
+
+                        Ok removedEnd ->
+                            case removeTextAtRange normalizedSelection.anchorNode normalizedSelection.anchorOffset Nothing removedEnd of
+                                Err s ->
+                                    Err s
+
+                                Ok removedStart ->
+                                    let
+                                        removedNodes =
+                                            removeNodesInRange
+                                                (incrementNodePath normalizedSelection.anchorNode)
+                                                (decrementNodePath normalizedSelection.focusNode)
+                                                removedStart
+
+                                        newSelection =
+                                            caretSelection normalizedSelection.anchorNode normalizedSelection.anchorOffset
+                                    in
+                                    Ok { editorState | root = removedNodes, selection = Just newSelection }
 
 
 insertLineBreakCommand : CommandFunc
 insertLineBreakCommand editorState =
-    Nothing
+    Err "Not implemented"
 
 
 splitBlockCommand : CommandFunc
 splitBlockCommand editorState =
-    Nothing
+    Err "Not implemented"
 
 
 headerToNewParagraphCommand : List String -> String -> CommandFunc
 headerToNewParagraphCommand headerElements paragraphElement editorState =
-    Nothing
+    Err "Not implemented"
 
 
 backspaceBlockElementCommand : CommandFunc
 backspaceBlockElementCommand editorState =
-    Nothing
+    Err "Not implemented"
 
 
 backspaceInlineElementCommand : CommandFunc
 backspaceInlineElementCommand editorState =
-    Nothing
+    Err "Not implemented"
 
 
 backspaceCommand : CommandFunc
 backspaceCommand editorState =
-    Nothing
+    Err "Not implemented"
 
 
 backspaceWord : CommandFunc
 backspaceWord editorState =
-    Nothing
+    Err "Not implemented"
 
 
 delete : CommandFunc
 delete editorState =
-    Nothing
+    Err "Not implemented"
 
 
 deleteWord : CommandFunc
 deleteWord editorState =
-    Nothing
+    Err "Not implemented"

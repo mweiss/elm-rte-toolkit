@@ -36,6 +36,8 @@ const getSelectionPath = (node, editor, offset) => {
 
     if (originalNode.nodeType === Node.ELEMENT_NODE && offset > 0) {
         indexPath.push(offset - 1)
+    } else if (originalNode.nodeType === Node.ELEMENT_NODE && originalNode.childNodes[0]) {
+        indexPath.push(0)
     }
 
     if (indexPath.length <= 2) {
@@ -80,9 +82,15 @@ let adjustOffsetReverse = (node, offset) => {
 };
 
 let adjustOffset = (node, offset) => {
-    if ((node.nodeType === Node.TEXT_NODE && node.nodeValue === "\u200B")
-        || node.nodeType === Node.ELEMENT_NODE) {
+    if ((node.nodeType === Node.TEXT_NODE && node.nodeValue === "\u200B")) {
         return 0;
+    }
+
+    if (node.nodeType === Node.ELEMENT_NODE) {
+        let childNode = node.childNodes[offset - 1];
+        if (childNode && childNode.nodeType === Node.TEXT_NODE) {
+            return (childNode.nodeValue || "").length
+        }
     }
 
     return offset;
@@ -173,6 +181,7 @@ class SelectionState extends HTMLElement {
         if (!selection.selectionExists) {
             return;
         }
+        console.log(selection);
         let event = new CustomEvent("editorselectionchange", { detail: selection });
         this.parentNode.dispatchEvent(event);
     };
@@ -202,21 +211,15 @@ class ElmEditor extends HTMLElement {
             return null;
         }
 
-
-        let mutations = mutationsList.map((mutation) => {
+        let mutations = [];
+        for (let mutation of mutationsList) {
             if (mutation.type !== "characterData") {
                 return null;
             }
-            return {
+            mutations.push({
                 path: getSelectionPath(mutation.target, this, 0),
                 text: mutation.target.nodeValue
-            }
-        });
-
-        for (let mutation of mutationsList) {
-            if (mutation === null) {
-                return null
-            }
+            });
         }
         return mutations;
     }

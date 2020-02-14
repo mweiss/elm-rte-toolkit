@@ -54,12 +54,12 @@ extractRootEditorBlockNode domNode =
                     Array.get 0 childNodes
 
 
-findTextChanges : HtmlNode -> DomNode -> Maybe (List TextChange)
+findTextChanges : HtmlNode -> DomNode -> Result String (List TextChange)
 findTextChanges htmlNode domNode =
     findTextChangesRec htmlNode domNode []
 
 
-findTextChangesRec : HtmlNode -> DomNode -> NodePath -> Maybe (List TextChange)
+findTextChangesRec : HtmlNode -> DomNode -> NodePath -> Result String (List TextChange)
 findTextChangesRec htmlNode domNode backwardsNodePath =
     case domNode of
         DomNode domNodeContents ->
@@ -69,15 +69,22 @@ findTextChangesRec htmlNode domNode backwardsNodePath =
                         domChildNodes =
                             Maybe.withDefault Array.empty domNodeContents.childNodes
                     in
-                    if
-                        domNodeContents.nodeType
-                            /= domElementNodeType
-                            || Just (String.toUpper tag)
-                            /= domNodeContents.tagName
-                            || Array.length domChildNodes
-                            /= Array.length children
-                    then
-                        Nothing
+                    if domNodeContents.nodeType /= domElementNodeType then
+                        Err "Dom node is a text node, but I was expecting an element node"
+
+                    else if Just (String.toUpper tag) /= domNodeContents.tagName then
+                        Err <|
+                            "Dom node's tag was "
+                                ++ Maybe.withDefault "" domNodeContents.tagName
+                                ++ ", but I was expecting "
+                                ++ tag
+
+                    else if Array.length domChildNodes /= Array.length children then
+                        Err <|
+                            "Dom node's children length was "
+                                ++ (String.fromInt <| Array.length domChildNodes)
+                                ++ ", but I was expecting "
+                                ++ (String.fromInt <| Array.length children)
 
                     else
                         let
@@ -85,30 +92,30 @@ findTextChangesRec htmlNode domNode backwardsNodePath =
                                 Array.indexedMap Tuple.pair <| Array.Extra.map2 Tuple.pair children domChildNodes
                         in
                         Array.foldl
-                            (\( i, ( htmlChild, domChild ) ) maybeTextChangeList ->
-                                case maybeTextChangeList of
-                                    Nothing ->
-                                        Nothing
+                            (\( i, ( htmlChild, domChild ) ) resultTextChangeList ->
+                                case resultTextChangeList of
+                                    Err s ->
+                                        Err s
 
-                                    Just x ->
+                                    Ok x ->
                                         case findTextChangesRec htmlChild domChild (i :: backwardsNodePath) of
-                                            Nothing ->
-                                                Nothing
+                                            Err s ->
+                                                Err s
 
-                                            Just y ->
-                                                Just (x ++ y)
+                                            Ok y ->
+                                                Ok (x ++ y)
                             )
-                            (Just [])
+                            (Ok [])
                             indexedNodePairs
 
                 TextNode textNodeText ->
                     if domNodeContents.nodeType /= domTextNodeType then
-                        Nothing
+                        Err "Dom node was an element node, but I was expecting a text node"
 
                     else
                         case domNodeContents.nodeValue of
                             Nothing ->
-                                Nothing
+                                Err "Dom node is a text node, but has no value"
 
                             Just domNodeText ->
                                 let
@@ -120,7 +127,7 @@ findTextChangesRec htmlNode domNode backwardsNodePath =
                                             domNodeText
                                 in
                                 if domNodeSanitizedText /= textNodeText then
-                                    Just [ ( List.reverse backwardsNodePath, domNodeSanitizedText ) ]
+                                    Ok [ ( List.reverse backwardsNodePath, domNodeSanitizedText ) ]
 
                                 else
-                                    Just []
+                                    Ok []

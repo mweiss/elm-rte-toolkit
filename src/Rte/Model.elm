@@ -8,16 +8,13 @@ module Rte.Model exposing (..)
     @docs Editor, EditorState
 
     # Editor node
-    @docs NodePath, EditorNode, TextNodeContents, ElementNodeContents, EditorAttribute, DisplayType, Mark
+    @docs NodePath, TextNodeContents, ElementNodeContents, EditorAttribute, DisplayType, Mark
 
     # Editor node helpers
     @docs blockNode, blockNodeWithMarks, inlineNode, inlineNodeWithMarks, plainTextNode
 
     # Selection
     @docs Selection
-
-    # Selection helpers
-    @docs caretSelection, isCollapsed, rangeSelection, singleNodeRangeSelection
 
     # Commands
     @docs CommandMap, CommandBinding, CommandFunc, KeyMap, InputEventMapType
@@ -117,13 +114,6 @@ type alias TextNodeContents =
     }
 
 
-{-| An editor fragment is a list of editor nodes. Along with EditorNode, it's one of the
-core types used to manipulate and render the editor.
--}
-type alias EditorFragment =
-    List EditorBlockNode
-
-
 {-| An editor attribute is a key value pair. It's used to store information on a node or mark,
 like color, font type, or image or link locations.
 -}
@@ -175,7 +165,7 @@ emptyCommandBinding
 
 -}
 type alias CommandFunc =
-    EditorState -> Maybe EditorState
+    EditorState -> Result String EditorState
 
 
 {-| A key map is a dictionary of sorted keys to a command function. Keys should be created with the

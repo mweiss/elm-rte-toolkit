@@ -55,17 +55,17 @@ testFindTextChanges =
     describe "Tests the function which finds any text changes between the HtmlNode representation and the actual DOM representation"
         [ test "Test the same structure returns the no text change" <|
             \_ ->
-                Expect.equal (Just []) (findTextChanges pHtmlNode pDomNode)
-        , test "Different type of node results in Nothing" <|
+                Expect.equal (Ok []) (findTextChanges pHtmlNode pDomNode)
+        , test "Different type of node results in Error" <|
             \_ ->
-                Expect.equal Nothing (findTextChanges divHtmlNode pDomNode)
-        , test "Extra html node results in Nothing" <|
+                Expect.equal (Err "Dom node's tag was P, but I was expecting div") (findTextChanges divHtmlNode pDomNode)
+        , test "Extra html node results in Error" <|
             \_ ->
-                Expect.equal Nothing (findTextChanges pWithImgHtmlNode pDomNode)
-        , test "Extra dom node results in Nothing" <|
+                Expect.equal (Err "Dom node's children length was 1, but I was expecting 2") (findTextChanges pWithImgHtmlNode pDomNode)
+        , test "Extra dom node results in Error" <|
             \_ ->
-                Expect.equal Nothing (findTextChanges pHtmlNode pWithImgDomNode)
-        , test "Text changes" <|
+                Expect.equal (Err "Dom node's children length was 2, but I was expecting 1") (findTextChanges pHtmlNode pWithImgDomNode)
+        , test "Finds text changes" <|
             \_ ->
-                Expect.equal (Just [ ( [ 0 ], "sample" ) ]) (findTextChanges pHtmlNodeDifferentText pDomNode)
+                Expect.equal (Ok [ ( [ 0 ], "sample" ) ]) (findTextChanges pHtmlNodeDifferentText pDomNode)
         ]

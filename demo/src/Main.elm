@@ -28,6 +28,17 @@ type alias Model =
     }
 
 
+doubleInitNode : EditorBlockNode
+doubleInitNode =
+    { parameters =
+        { name = "div"
+        , attributes = []
+        , marks = []
+        }
+    , childNodes = BlockArray (Array.fromList [ initialEditorNode, initialEditorNode ])
+    }
+
+
 initialEditorNode : EditorBlockNode
 initialEditorNode =
     { parameters =
@@ -54,7 +65,7 @@ initEditor =
     , commandMap = commandBindings
     , spec = simpleSpec
     , editorState =
-        { root = initialEditorNode
+        { root = doubleInitNode
         , selection = Nothing
         }
     }

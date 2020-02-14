@@ -13,7 +13,7 @@ import Rte.EditorUtils exposing (forceRerender, zeroWidthSpace)
 import Rte.HtmlNode exposing (editorBlockNodeToHtmlNode)
 import Rte.KeyDown
 import Rte.Model exposing (..)
-import Rte.NodePath as NodePath
+import Rte.NodePath as NodePath exposing (toString)
 import Rte.NodeUtils exposing (NodeResult(..), findNode)
 import Rte.Selection exposing (caretSelection, domToEditor, editorToDom, isCollapsed)
 import Rte.Spec exposing (childNodesPlaceholder, findNodeDefinitionFromSpec)
@@ -75,7 +75,7 @@ textChangesDomToEditor spec editorNode changes =
         changes
 
 
-deriveTextChanges : Spec -> EditorBlockNode -> DomNode -> Maybe (List TextChange)
+deriveTextChanges : Spec -> EditorBlockNode -> DomNode -> Result String (List TextChange)
 deriveTextChanges spec editorNode domNode =
     let
         htmlNode =
@@ -161,10 +161,10 @@ updateChangeEventFullScan domRoot selection editor =
 
             else
                 case deriveTextChanges editor.spec editor.editorState.root editorRootDomNode of
-                    Just changes ->
+                    Ok changes ->
                         updateChangeEventTextChanges changes selection editor
 
-                    Nothing ->
+                    Err _ ->
                         applyForceFunctionOnEditor forceRerender editor
 
 
@@ -293,15 +293,6 @@ applyTextChange editorNode ( path, text ) =
                     Nothing
 
 
-
--- First unwrap the editor node
-
-
-serializeNodePath : NodePath -> String
-serializeNodePath nodePath =
-    String.join ":" (List.map String.fromInt nodePath)
-
-
 selectionAttribute : Maybe Selection -> Int -> Int -> String
 selectionAttribute maybeSelection renderCount selectionCount =
     case maybeSelection of
@@ -311,9 +302,9 @@ selectionAttribute maybeSelection renderCount selectionCount =
         Just selection ->
             String.join ","
                 [ "anchor-offset=" ++ String.fromInt selection.anchorOffset
-                , "anchor-node=" ++ serializeNodePath selection.anchorNode
+                , "anchor-node=" ++ toString selection.anchorNode
                 , "focus-offset=" ++ String.fromInt selection.focusOffset
-                , "focus-node=" ++ serializeNodePath selection.focusNode
+                , "focus-node=" ++ toString selection.focusNode
                 , "render-count=" ++ String.fromInt renderCount
                 , "selection-count=" ++ String.fromInt selectionCount
                 ]

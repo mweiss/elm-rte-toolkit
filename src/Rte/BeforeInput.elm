@@ -48,7 +48,12 @@ handleInputEvent inputEventTypeMap editorState inputType =
             Nothing
 
         Just command ->
-            command editorState
+            case command editorState of
+                Err _ ->
+                    Nothing
+
+                Ok v ->
+                    Just v
 
 
 handleBeforeInput : InputEvent -> Editor msg -> Editor msg

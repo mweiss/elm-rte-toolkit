@@ -1,4 +1,4 @@
-module Rte.NodePath exposing (domToEditor, editorToDom)
+module Rte.NodePath exposing (decrementNodePath, domToEditor, editorToDom, incrementNodePath, toString)
 
 {-|
 
@@ -10,6 +10,7 @@ module Rte.NodePath exposing (domToEditor, editorToDom)
 -}
 
 import Array
+import List.Extra
 import Rte.Model exposing (ChildNodes(..), EditorBlockNode, EditorInlineLeaf(..), ElementParameters, HtmlNode(..), Mark, NodePath, Selection, Spec)
 import Rte.Spec exposing (childNodesPlaceholder, findMarkDefinitionsFromSpec, findNodeDefinitionFromSpec)
 
@@ -149,6 +150,26 @@ editorToDom spec node path =
                             Nothing
 
 
+incrementNodePath : NodePath -> NodePath
+incrementNodePath np =
+    case List.Extra.last np of
+        Nothing ->
+            []
+
+        Just i ->
+            List.take (List.length np - 1) np ++ [ i + 1 ]
+
+
+decrementNodePath : NodePath -> NodePath
+decrementNodePath np =
+    case List.Extra.last np of
+        Nothing ->
+            []
+
+        Just i ->
+            List.take (List.length np - 1) np ++ [ i - 1 ]
+
+
 
 {- Helper method to traverse the give node with the node path and return
    the node path that remains after finding the child nodes placeholder.  If no
@@ -272,3 +293,8 @@ pathToChildContentsFromElementParameters spec parameters =
 
                 Just nodePath ->
                     Just <| markPath ++ nodePath
+
+
+toString : NodePath -> String
+toString nodePath =
+    String.join ":" <| List.map String.fromInt nodePath

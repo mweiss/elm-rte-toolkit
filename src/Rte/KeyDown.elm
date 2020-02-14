@@ -98,7 +98,12 @@ handleKeyDownEvent keyMap editorState keyboardEvent =
             Nothing
 
         Just command ->
-            command editorState
+            case command editorState of
+                Err _ ->
+                    Nothing
+
+                Ok v ->
+                    Just v
 
 
 handleKeyDown : KeyboardEvent -> Editor msg -> Editor msg
