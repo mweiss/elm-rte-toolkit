@@ -1,7 +1,7 @@
 module Rte.Marks exposing (..)
 
 import Rte.Model exposing (EditorBlockNode, EditorInlineLeaf(..), Mark, NodePath)
-import Rte.NodeUtils exposing (EditorNode(..), NodeResult(..), findNode, replaceNode)
+import Rte.NodeUtils exposing (EditorNode(..), NodeResult(..), nodeAt, replaceNode)
 
 
 selectionMark : Mark
@@ -26,35 +26,37 @@ findMarksFromInlineLeaf leaf =
 
 toggleMarkAtPath : ToggleAction -> Mark -> NodePath -> EditorBlockNode -> Result String EditorBlockNode
 toggleMarkAtPath action mark path node =
-    case findNode path node of
-        BlockNodeResult blockNode ->
-            let
-                parameters =
-                    blockNode.parameters
-
-                newBlock =
-                    { blockNode | parameters = { parameters | marks = toggleMark action mark parameters.marks } }
-            in
-            replaceNode path (BlockNodeWrapper newBlock) node
-
-        InlineLeafResult inlineLeaf ->
-            case inlineLeaf of
-                TextLeaf l ->
-                    let
-                        newLeaf =
-                            { l | marks = toggleMark action mark l.marks }
-                    in
-                    replaceNode path (InlineLeafWrapper (TextLeaf newLeaf)) node
-
-                InlineLeaf l ->
-                    let
-                        newLeaf =
-                            { l | marks = toggleMark action mark l.marks }
-                    in
-                    replaceNode path (InlineLeafWrapper (InlineLeaf newLeaf)) node
-
-        NoResult ->
+    case nodeAt path node of
+        Nothing ->
             Err "No block found at path"
+
+        Just n ->
+            case n of
+                BlockNodeWrapper blockNode ->
+                    let
+                        parameters =
+                            blockNode.parameters
+
+                        newBlock =
+                            { blockNode | parameters = { parameters | marks = toggleMark action mark parameters.marks } }
+                    in
+                    replaceNode path (BlockNodeWrapper newBlock) node
+
+                InlineLeafWrapper inlineLeaf ->
+                    case inlineLeaf of
+                        TextLeaf l ->
+                            let
+                                newLeaf =
+                                    { l | marks = toggleMark action mark l.marks }
+                            in
+                            replaceNode path (InlineLeafWrapper (TextLeaf newLeaf)) node
+
+                        InlineLeaf l ->
+                            let
+                                newLeaf =
+                                    { l | marks = toggleMark action mark l.marks }
+                            in
+                            replaceNode path (InlineLeafWrapper (InlineLeaf newLeaf)) node
 
 
 type ToggleAction

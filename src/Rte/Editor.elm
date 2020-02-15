@@ -14,7 +14,7 @@ import Rte.HtmlNode exposing (editorBlockNodeToHtmlNode)
 import Rte.KeyDown
 import Rte.Model exposing (..)
 import Rte.NodePath as NodePath exposing (toString)
-import Rte.NodeUtils exposing (NodeResult(..), findNode)
+import Rte.NodeUtils exposing (EditorNode(..), NodeResult(..), nodeAt)
 import Rte.Selection exposing (caretSelection, domToEditor, editorToDom, isCollapsed)
 import Rte.Spec exposing (childNodesPlaceholder, findNodeDefinitionFromSpec)
 
@@ -358,20 +358,22 @@ shouldHideCaret editorState =
                 False
 
             else
-                case findNode selection.anchorNode editorState.root of
-                    NoResult ->
+                case nodeAt selection.anchorNode editorState.root of
+                    Nothing ->
                         False
 
-                    BlockNodeResult blockNode ->
-                        True
-
-                    InlineLeafResult leaf ->
-                        case leaf of
-                            InlineLeaf params ->
+                    Just node ->
+                        case node of
+                            BlockNodeWrapper _ ->
                                 True
 
-                            _ ->
-                                False
+                            InlineLeafWrapper leaf ->
+                                case leaf of
+                                    InlineLeaf _ ->
+                                        True
+
+                                    _ ->
+                                        False
 
 
 markCaretSelectionOnEditorNodes : EditorState -> EditorBlockNode

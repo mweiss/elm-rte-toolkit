@@ -1,4 +1,4 @@
-module Rte.NodeUtils exposing (EditorNode(..), NodeResult(..), findNode, foldl, removeNodesInRange, replaceNode, replaceNodeWithFragment)
+module Rte.NodeUtils exposing (EditorNode(..), NodeResult(..), findTextBlockNodeAncestor, foldl, nodeAt, removeNodesInRange, replaceNode, replaceNodeWithFragment)
 
 import Array exposing (Array)
 import Array.Extra
@@ -21,13 +21,245 @@ type EditorFragment
     | InlineLeafFragment (Array EditorInlineLeaf)
 
 
+findLastPath : EditorBlockNode -> ( NodePath, EditorNode )
+findLastPath node =
+    case node.childNodes of
+        BlockArray a ->
+            let
+                lastIndex =
+                    Array.length a - 1
+            in
+            case Array.get lastIndex a of
+                Nothing ->
+                    ( [], BlockNodeWrapper node )
+
+                Just b ->
+                    let
+                        ( p, n ) =
+                            findLastPath b
+                    in
+                    ( lastIndex :: p, n )
+
+        InlineLeafArray a ->
+            let
+                lastIndex =
+                    Array.length a - 1
+            in
+            case Array.get lastIndex a of
+                Nothing ->
+                    ( [], BlockNodeWrapper node )
+
+                Just l ->
+                    ( [ lastIndex ], InlineLeafWrapper l )
+
+        Leaf ->
+            ( [], BlockNodeWrapper node )
+
+
+type alias Iterator =
+    NodePath -> EditorBlockNode -> Maybe ( NodePath, EditorNode )
+
+
+previous : Iterator
+previous path node =
+    case path of
+        [] ->
+            Nothing
+
+        [ x ] ->
+            let
+                prevIndex =
+                    x - 1
+            in
+            case node.childNodes of
+                BlockArray a ->
+                    case Array.get prevIndex a of
+                        Nothing ->
+                            Nothing
+
+                        Just b ->
+                            let
+                                ( p, n ) =
+                                    findLastPath b
+                            in
+                            Just ( prevIndex :: p, n )
+
+                InlineLeafArray a ->
+                    case Array.get prevIndex a of
+                        Nothing ->
+                            Nothing
+
+                        Just l ->
+                            Just ( [ prevIndex ], InlineLeafWrapper l )
+
+                Leaf ->
+                    Nothing
+
+        x :: xs ->
+            case node.childNodes of
+                BlockArray a ->
+                    case Array.get x a of
+                        Nothing ->
+                            Nothing
+
+                        Just b ->
+                            case previous xs b of
+                                Nothing ->
+                                    Just ( [ x ], BlockNodeWrapper b )
+
+                                Just ( p, n ) ->
+                                    Just ( x :: p, n )
+
+                InlineLeafArray a ->
+                    case Array.get (x - 1) a of
+                        Nothing ->
+                            Nothing
+
+                        Just l ->
+                            Just ( [ x - 1 ], InlineLeafWrapper l )
+
+                Leaf ->
+                    Nothing
+
+
+next : Iterator
+next path node =
+    case path of
+        [] ->
+            case node.childNodes of
+                BlockArray a ->
+                    case Array.get 0 a of
+                        Nothing ->
+                            Nothing
+
+                        Just b ->
+                            Just ( [ 0 ], BlockNodeWrapper b )
+
+                InlineLeafArray a ->
+                    case Array.get 0 a of
+                        Nothing ->
+                            Nothing
+
+                        Just b ->
+                            Just ( [ 0 ], InlineLeafWrapper b )
+
+                Leaf ->
+                    Nothing
+
+        x :: xs ->
+            case node.childNodes of
+                BlockArray a ->
+                    case Array.get x a of
+                        Nothing ->
+                            Nothing
+
+                        Just b ->
+                            case next xs b of
+                                Nothing ->
+                                    case Array.get (x + 1) a of
+                                        Nothing ->
+                                            Nothing
+
+                                        Just bNext ->
+                                            Just ( [ x + 1 ], BlockNodeWrapper bNext )
+
+                                Just ( p, n ) ->
+                                    Just ( x :: p, n )
+
+                InlineLeafArray a ->
+                    case Array.get (x + 1) a of
+                        Nothing ->
+                            Nothing
+
+                        Just b ->
+                            Just ( [ x + 1 ], InlineLeafWrapper b )
+
+                Leaf ->
+                    Nothing
+
+
+findNodeFromExclusive : Iterator -> (NodePath -> EditorNode -> Bool) -> NodePath -> EditorBlockNode -> Maybe ( NodePath, EditorNode )
+findNodeFromExclusive iterator pred path node =
+    case iterator path node of
+        Nothing ->
+            Nothing
+
+        Just ( nextPath, _ ) ->
+            findNodeFrom iterator pred nextPath node
+
+
+findNodeFrom : Iterator -> (NodePath -> EditorNode -> Bool) -> NodePath -> EditorBlockNode -> Maybe ( NodePath, EditorNode )
+findNodeFrom iterator pred path node =
+    case nodeAt path node of
+        Just n ->
+            if pred path n then
+                Just ( path, n )
+
+            else
+                findNodeFromExclusive iterator pred path node
+
+        Nothing ->
+            Nothing
+
+
+map : (NodePath -> EditorNode -> EditorNode) -> EditorNode -> EditorNode
+map =
+    mapRec []
+
+
+mapRec : NodePath -> (NodePath -> EditorNode -> EditorNode) -> EditorNode -> EditorNode
+mapRec path func node =
+    let
+        applied =
+            func path node
+    in
+    case applied of
+        BlockNodeWrapper blockNode ->
+            BlockNodeWrapper
+                { blockNode
+                    | childNodes =
+                        case blockNode.childNodes of
+                            BlockArray a ->
+                                BlockArray <|
+                                    Array.indexedMap
+                                        (\i v ->
+                                            case mapRec (path ++ [ i ]) func (BlockNodeWrapper v) of
+                                                BlockNodeWrapper b ->
+                                                    b
+
+                                                _ ->
+                                                    v
+                                        )
+                                        a
+
+                            InlineLeafArray a ->
+                                InlineLeafArray <|
+                                    Array.indexedMap
+                                        (\i v ->
+                                            case mapRec (path ++ [ i ]) func (InlineLeafWrapper v) of
+                                                InlineLeafWrapper b ->
+                                                    b
+
+                                                _ ->
+                                                    v
+                                        )
+                                        a
+
+                            Leaf ->
+                                Leaf
+                }
+
+        InlineLeafWrapper inlineLeaf ->
+            InlineLeafWrapper inlineLeaf
+
+
 foldl : (NodePath -> EditorNode -> b -> b) -> b -> EditorNode -> b
-foldl func acc fragment =
-    foldlRec func acc fragment []
+foldl =
+    foldlRec []
 
 
-foldlRec : (NodePath -> EditorNode -> b -> b) -> b -> EditorNode -> NodePath -> b
-foldlRec func acc node path =
+foldlRec : NodePath -> (NodePath -> EditorNode -> b -> b) -> b -> EditorNode -> b
+foldlRec path func acc node =
     case node of
         BlockNodeWrapper blockNode ->
             let
@@ -45,7 +277,7 @@ foldlRec func acc node path =
             in
             Array.foldl
                 (\( index, childNode ) agg ->
-                    foldlRec func agg childNode (path ++ [ index ])
+                    foldlRec (path ++ [ index ]) func agg childNode
                 )
                 (func path node acc)
                 children
@@ -157,38 +389,89 @@ replaceNode path node root =
             replaceNodeWithFragment path fragment root
 
 
-{-| findNode returns the node at the specified NodePath if it exists.
+{-| Finds the closest node ancestor with inline content.
 -}
-findNode : NodePath -> EditorBlockNode -> NodeResult
-findNode path node =
+findTextBlockNodeAncestor : NodePath -> EditorBlockNode -> Maybe EditorBlockNode
+findTextBlockNodeAncestor =
+    findAncestorFromPath
+        (\n ->
+            case n.childNodes of
+                InlineLeafArray _ ->
+                    True
+
+                _ ->
+                    False
+        )
+
+
+{-| Find ancestor from path finds the closest ancestor from the given NodePath that matches the
+predicate.
+-}
+findAncestorFromPath : (EditorBlockNode -> Bool) -> NodePath -> EditorBlockNode -> Maybe EditorBlockNode
+findAncestorFromPath pred path node =
     case path of
         [] ->
-            BlockNodeResult node
+            Nothing
+
+        x :: xs ->
+            case node.childNodes of
+                BlockArray a ->
+                    case Array.get x a of
+                        Nothing ->
+                            Nothing
+
+                        Just childNode ->
+                            case findAncestorFromPath pred xs childNode of
+                                Nothing ->
+                                    if pred node then
+                                        Just node
+
+                                    else
+                                        Nothing
+
+                                Just result ->
+                                    Just result
+
+                _ ->
+                    if pred node then
+                        Just node
+
+                    else
+                        Nothing
+
+
+{-| nodeAt returns the node at the specified NodePath if it exists.
+-}
+nodeAt : NodePath -> EditorBlockNode -> Maybe EditorNode
+nodeAt path node =
+    case path of
+        [] ->
+            Just <| BlockNodeWrapper node
 
         x :: xs ->
             case node.childNodes of
                 BlockArray list ->
                     case Array.get x list of
                         Nothing ->
-                            NoResult
+                            Nothing
 
                         Just childNode ->
-                            findNode xs childNode
+                            nodeAt xs childNode
 
                 InlineLeafArray list ->
                     case Array.get x list of
                         Nothing ->
-                            NoResult
+                            Nothing
 
                         Just childLeafNode ->
                             if List.isEmpty xs then
-                                InlineLeafResult childLeafNode
+                                Just <| InlineLeafWrapper childLeafNode
 
                             else
-                                NoResult
+                                Nothing
 
                 Leaf ->
-                    NoResult
+                    Nothing
 
 
 

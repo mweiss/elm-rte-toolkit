@@ -4,7 +4,7 @@ import Dict exposing (Dict)
 import Rte.CommandUtils exposing (removeTextAtRange)
 import Rte.Model exposing (CommandBinding(..), CommandFunc, CommandMap, Editor, EditorState)
 import Rte.NodePath exposing (decrementNodePath, incrementNodePath)
-import Rte.NodeUtils exposing (removeNodesInRange)
+import Rte.NodeUtils exposing (findTextBlockNodeAncestor, removeNodesInRange)
 import Rte.Selection exposing (caretSelection, isCollapsed, markSelection, normalizeSelection)
 
 
@@ -113,6 +113,20 @@ defaultCommandBindings =
         |> setCommand [ inputEvent "deleteContentBackward", key [ backspaceKey ] ] (removeRangeSelection |> otherwiseDo backspaceBlockElementCommand |> otherwiseDo backspaceInlineElementCommand |> otherwiseDo backspaceCommand)
 
 
+joinForward : CommandFunc
+joinForward editorState =
+    case editorState.selection of
+        Nothing ->
+            Err "Nothing is selected"
+
+        Just selection ->
+            if not <| isCollapsed selection then
+                Err "I cannot join a range selection"
+
+            else
+                Err "Not implemented"
+
+
 removeRangeSelection : CommandFunc
 removeRangeSelection editorState =
     case editorState.selection of
@@ -142,11 +156,13 @@ removeRangeSelection editorState =
 
                 else
                     let
-                        markedSelection =
-                            markSelection selection editorState.root
+                        anchorTextBlock =
+                            findTextBlockNodeAncestor normalizedSelection.anchorNode editorState.root
+
+                        focusTextBlock =
+                            findTextBlockNodeAncestor normalizedSelection.focusNode editorState.root
                     in
-                    -- TODO: implement the case where this is not a text selection
-                    case removeTextAtRange normalizedSelection.focusNode 0 (Just normalizedSelection.focusOffset) markedSelection of
+                    case removeTextAtRange normalizedSelection.focusNode 0 (Just normalizedSelection.focusOffset) editorState.root of
                         Err s ->
                             Err s
 
@@ -165,8 +181,15 @@ removeRangeSelection editorState =
 
                                         newSelection =
                                             caretSelection normalizedSelection.anchorNode normalizedSelection.anchorOffset
+
+                                        newEditorState =
+                                            { editorState | root = removedNodes, selection = Just newSelection }
                                     in
-                                    Ok { editorState | root = removedNodes, selection = Just newSelection }
+                                    if anchorTextBlock == Nothing || anchorTextBlock == focusTextBlock then
+                                        Ok newEditorState
+
+                                    else
+                                        Ok <| Result.withDefault newEditorState (joinForward newEditorState)
 
 
 insertLineBreakCommand : CommandFunc

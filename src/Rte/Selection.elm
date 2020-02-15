@@ -1,9 +1,9 @@
-module Rte.Selection exposing (caretSelection, domToEditor, editorToDom, isCollapsed, markSelection, normalizeSelection, rangeSelection, singleNodeRangeSelection)
+module Rte.Selection exposing (caretSelection, domToEditor, editorToDom, isCollapsed, markSelection, normalizeSelection, rangeSelection, selectionFromMarks, singleNodeRangeSelection)
 
 import Rte.Marks exposing (ToggleAction(..), selectionMark, toggleMarkAtPath)
 import Rte.Model exposing (ChildNodes(..), EditorBlockNode, EditorInlineLeaf(..), ElementParameters, HtmlNode(..), Mark, NodePath, Selection, Spec)
 import Rte.NodePath as Path
-import Rte.NodeUtils exposing (findNode)
+import Rte.NodeUtils exposing (EditorNode(..), foldl, nodeAt)
 
 
 domToEditor : Spec -> EditorBlockNode -> Selection -> Maybe Selection
@@ -88,3 +88,54 @@ markSelection selection node =
 addSelectionMarkAtPath : NodePath -> EditorBlockNode -> EditorBlockNode
 addSelectionMarkAtPath nodePath node =
     Result.withDefault node (toggleMarkAtPath Add selectionMark nodePath node)
+
+
+getMarksFromNode : EditorNode -> List Mark
+getMarksFromNode node =
+    case node of
+        BlockNodeWrapper blockNode ->
+            blockNode.parameters.marks
+
+        InlineLeafWrapper inlineLeaf ->
+            case inlineLeaf of
+                InlineLeaf p ->
+                    p.marks
+
+                TextLeaf p ->
+                    p.marks
+
+
+selectionFromMarks : EditorBlockNode -> Int -> Int -> Maybe Selection
+selectionFromMarks node anchorOffset focusOffset =
+    case findNodeRangeFromSelectionMarks node of
+        Nothing ->
+            Nothing
+
+        Just ( start, end ) ->
+            Just (rangeSelection start anchorOffset end focusOffset)
+
+
+findNodeRangeFromSelectionMarks : EditorBlockNode -> Maybe ( NodePath, NodePath )
+findNodeRangeFromSelectionMarks node =
+    let
+        marks =
+            foldl
+                (\path n agg ->
+                    if List.member selectionMark <| getMarksFromNode n then
+                        path :: agg
+
+                    else
+                        agg
+                )
+                []
+                (BlockNodeWrapper node)
+    in
+    case marks of
+        [] ->
+            Nothing
+
+        [ x ] ->
+            Just ( x, x )
+
+        end :: start :: _ ->
+            Just ( start, end )

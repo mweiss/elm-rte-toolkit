@@ -2,31 +2,33 @@ module Rte.CommandUtils exposing (..)
 
 import Rte.Model exposing (EditorBlockNode, EditorInlineLeaf(..), NodePath, Selection)
 import Rte.NodePath exposing (toString)
-import Rte.NodeUtils exposing (EditorNode(..), NodeResult(..), findNode, replaceNode)
+import Rte.NodeUtils exposing (EditorNode(..), NodeResult(..), nodeAt, replaceNode)
 
 
 removeTextAtRange : NodePath -> Int -> Maybe Int -> EditorBlockNode -> Result String EditorBlockNode
 removeTextAtRange nodePath start maybeEnd root =
-    case findNode nodePath root of
-        InlineLeafResult leaf ->
-            case leaf of
-                InlineLeaf l ->
-                    Err "I was expecting a text leaf, but instead I got an inline leaf"
+    case nodeAt nodePath root of
+        Just node ->
+            case node of
+                BlockNodeWrapper _ ->
+                    Err "I was expecting a text node, but instead I got a block node"
 
-                TextLeaf v ->
-                    let
-                        textNode =
-                            case maybeEnd of
-                                Nothing ->
-                                    TextLeaf { v | text = String.left start v.text }
+                InlineLeafWrapper leaf ->
+                    case leaf of
+                        InlineLeaf l ->
+                            Err "I was expecting a text leaf, but instead I got an inline leaf"
 
-                                Just end ->
-                                    TextLeaf { v | text = String.left start v.text ++ String.dropLeft end v.text }
-                    in
-                    replaceNode nodePath (InlineLeafWrapper textNode) root
+                        TextLeaf v ->
+                            let
+                                textNode =
+                                    case maybeEnd of
+                                        Nothing ->
+                                            TextLeaf { v | text = String.left start v.text }
 
-        BlockNodeResult _ ->
-            Err "I was expecting a text node, but instead I got a block node"
+                                        Just end ->
+                                            TextLeaf { v | text = String.left start v.text ++ String.dropLeft end v.text }
+                            in
+                            replaceNode nodePath (InlineLeafWrapper textNode) root
 
-        NoResult ->
+        Nothing ->
             Err <| "There is no node at node path " ++ toString nodePath
