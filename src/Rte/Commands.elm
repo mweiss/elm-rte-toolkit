@@ -1,10 +1,11 @@
 module Rte.Commands exposing (..)
 
+import Array
 import Dict exposing (Dict)
 import Rte.CommandUtils exposing (removeTextAtRange)
-import Rte.Model exposing (CommandBinding(..), CommandFunc, CommandMap, Editor, EditorState)
-import Rte.NodePath exposing (decrementNodePath, incrementNodePath)
-import Rte.NodeUtils exposing (findTextBlockNodeAncestor, removeNodesInRange)
+import Rte.Model exposing (ChildNodes(..), CommandBinding(..), CommandFunc, CommandMap, Editor, EditorBlockNode, EditorState, NodePath)
+import Rte.NodePath as NodePath exposing (decrementNodePath, incrementNodePath)
+import Rte.NodeUtils exposing (EditorNode(..), findNodeForwardFromExclusive, findTextBlockNodeAncestor, removeNodeAndEmptyParents, removeNodesInRange, replaceNode)
 import Rte.Selection exposing (caretSelection, isCollapsed, markSelection, normalizeSelection)
 
 
@@ -124,7 +125,90 @@ joinForward editorState =
                 Err "I cannot join a range selection"
 
             else
-                Err "Not implemented"
+                case findTextBlockNodeAncestor selection.anchorNode editorState.root of
+                    Nothing ->
+                        Err "The selection has no text block ancestor"
+
+                    Just ( p1, n1 ) ->
+                        case findNextTextBlock selection.anchorNode editorState.root of
+                            Nothing ->
+                                Err "There is no text block I can join with"
+
+                            Just ( p2, n2 ) ->
+                                case joinBlocks n1 n2 of
+                                    Nothing ->
+                                        Err <|
+                                            "I could not join these two blocks at"
+                                                ++ NodePath.toString p1
+                                                ++ " ,"
+                                                ++ NodePath.toString p2
+
+                                    Just newBlock ->
+                                        let
+                                            removed =
+                                                removeNodeAndEmptyParents p2 editorState.root
+                                        in
+                                        case replaceNode p1 (BlockNodeWrapper newBlock) removed of
+                                            Err e ->
+                                                Err e
+
+                                            Ok b ->
+                                                Ok { editorState | root = b }
+
+
+joinBlocks : EditorBlockNode -> EditorBlockNode -> Maybe EditorBlockNode
+joinBlocks b1 b2 =
+    case b1.childNodes of
+        BlockArray a1 ->
+            case b2.childNodes of
+                BlockArray a2 ->
+                    Just { b1 | childNodes = BlockArray (Array.append a1 a2) }
+
+                _ ->
+                    Nothing
+
+        InlineLeafArray a1 ->
+            case b2.childNodes of
+                InlineLeafArray a2 ->
+                    Just { b1 | childNodes = InlineLeafArray (Array.append a1 a2) }
+
+                _ ->
+                    Nothing
+
+        Leaf ->
+            Nothing
+
+
+findNextTextBlock : NodePath -> EditorBlockNode -> Maybe ( NodePath, EditorBlockNode )
+findNextTextBlock nodePath blockNode =
+    case
+        findNodeForwardFromExclusive
+            (\_ n ->
+                case n of
+                    BlockNodeWrapper bn ->
+                        case bn.childNodes of
+                            InlineLeafArray _ ->
+                                True
+
+                            _ ->
+                                False
+
+                    _ ->
+                        False
+            )
+            nodePath
+            blockNode
+    of
+        Nothing ->
+            Nothing
+
+        Just ( p, n ) ->
+            case n of
+                BlockNodeWrapper bn ->
+                    Just ( p, bn )
+
+                _ ->
+                    Nothing
 
 
 removeRangeSelection : CommandFunc

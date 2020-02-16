@@ -1,4 +1,4 @@
-module Rte.NodeUtils exposing (EditorNode(..), NodeResult(..), findTextBlockNodeAncestor, foldl, nodeAt, removeNodesInRange, replaceNode, replaceNodeWithFragment)
+module Rte.NodeUtils exposing (EditorNode(..), NodeResult(..), findNodeBackwardFrom, findNodeBackwardFromExclusive, findNodeForwardFrom, findNodeForwardFromExclusive, findTextBlockNodeAncestor, foldl, nodeAt, removeNodeAndEmptyParents, removeNodesInRange, replaceNode, replaceNodeWithFragment)
 
 import Array exposing (Array)
 import Array.Extra
@@ -176,6 +176,26 @@ next path node =
 
                 Leaf ->
                     Nothing
+
+
+findNodeForwardFrom : (NodePath -> EditorNode -> Bool) -> NodePath -> EditorBlockNode -> Maybe ( NodePath, EditorNode )
+findNodeForwardFrom =
+    findNodeFrom next
+
+
+findNodeForwardFromExclusive : (NodePath -> EditorNode -> Bool) -> NodePath -> EditorBlockNode -> Maybe ( NodePath, EditorNode )
+findNodeForwardFromExclusive =
+    findNodeFromExclusive next
+
+
+findNodeBackwardFrom : (NodePath -> EditorNode -> Bool) -> NodePath -> EditorBlockNode -> Maybe ( NodePath, EditorNode )
+findNodeBackwardFrom =
+    findNodeFrom previous
+
+
+findNodeBackwardFromExclusive : (NodePath -> EditorNode -> Bool) -> NodePath -> EditorBlockNode -> Maybe ( NodePath, EditorNode )
+findNodeBackwardFromExclusive =
+    findNodeFromExclusive previous
 
 
 findNodeFromExclusive : Iterator -> (NodePath -> EditorNode -> Bool) -> NodePath -> EditorBlockNode -> Maybe ( NodePath, EditorNode )
@@ -391,7 +411,7 @@ replaceNode path node root =
 
 {-| Finds the closest node ancestor with inline content.
 -}
-findTextBlockNodeAncestor : NodePath -> EditorBlockNode -> Maybe EditorBlockNode
+findTextBlockNodeAncestor : NodePath -> EditorBlockNode -> Maybe ( NodePath, EditorBlockNode )
 findTextBlockNodeAncestor =
     findAncestorFromPath
         (\n ->
@@ -407,7 +427,7 @@ findTextBlockNodeAncestor =
 {-| Find ancestor from path finds the closest ancestor from the given NodePath that matches the
 predicate.
 -}
-findAncestorFromPath : (EditorBlockNode -> Bool) -> NodePath -> EditorBlockNode -> Maybe EditorBlockNode
+findAncestorFromPath : (EditorBlockNode -> Bool) -> NodePath -> EditorBlockNode -> Maybe ( NodePath, EditorBlockNode )
 findAncestorFromPath pred path node =
     case path of
         [] ->
@@ -424,17 +444,17 @@ findAncestorFromPath pred path node =
                             case findAncestorFromPath pred xs childNode of
                                 Nothing ->
                                     if pred node then
-                                        Just node
+                                        Just ( [], node )
 
                                     else
                                         Nothing
 
-                                Just result ->
-                                    Just result
+                                Just ( p, result ) ->
+                                    Just ( x :: p, result )
 
                 _ ->
                     if pred node then
-                        Just node
+                        Just ( [], node )
 
                     else
                         Nothing
@@ -595,3 +615,50 @@ removeNodesInRange start end node =
 
             Leaf ->
                 node
+
+
+removeNodeAndEmptyParents : NodePath -> EditorBlockNode -> EditorBlockNode
+removeNodeAndEmptyParents path node =
+    case path of
+        [] ->
+            node
+
+        [ x ] ->
+            case node.childNodes of
+                BlockArray a ->
+                    { node | childNodes = BlockArray <| Array.Extra.removeAt x a }
+
+                InlineLeafArray a ->
+                    { node | childNodes = InlineLeafArray <| Array.Extra.removeAt x a }
+
+                Leaf ->
+                    node
+
+        x :: xs ->
+            case node.childNodes of
+                BlockArray a ->
+                    case Array.get x a of
+                        Nothing ->
+                            node
+
+                        Just n ->
+                            let
+                                newNode =
+                                    removeNodeAndEmptyParents xs n
+                            in
+                            case newNode.childNodes of
+                                BlockArray newNodeChildren ->
+                                    if Array.isEmpty newNodeChildren then
+                                        { node | childNodes = BlockArray <| Array.Extra.removeAt x a }
+
+                                    else
+                                        { node | childNodes = BlockArray <| Array.set x newNode a }
+
+                                _ ->
+                                    newNode
+
+                InlineLeafArray a ->
+                    node
+
+                Leaf ->
+                    node
