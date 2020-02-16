@@ -310,14 +310,14 @@ selectionAttribute maybeSelection renderCount selectionCount =
                 ]
 
 
-onBeforeInput : InputEventTypeMap -> EditorState -> (InternalEditorMsg -> msg) -> Html.Attribute msg
-onBeforeInput inputEventTypeMap editorState msgFunc =
-    Html.Events.preventDefaultOn "beforeinput" (Rte.BeforeInput.preventDefaultOnBeforeInputDecoder inputEventTypeMap editorState msgFunc)
+onBeforeInput : Editor msg -> Html.Attribute msg
+onBeforeInput editor =
+    Html.Events.preventDefaultOn "beforeinput" (Rte.BeforeInput.preventDefaultOnBeforeInputDecoder editor)
 
 
-onKeyDown : KeyMap -> EditorState -> (InternalEditorMsg -> msg) -> Html.Attribute msg
-onKeyDown keyMap editorState msgFunc =
-    Html.Events.preventDefaultOn "keydown" (Rte.KeyDown.preventDefaultOnKeyDownDecoder keyMap editorState msgFunc)
+onKeyDown : Editor msg -> Html.Attribute msg
+onKeyDown editor =
+    Html.Events.preventDefaultOn "keydown" (Rte.KeyDown.preventDefaultOnKeyDownDecoder editor)
 
 
 handleCompositionStart : Editor msg -> Editor msg
@@ -405,8 +405,8 @@ renderEditor editor =
                 , Html.Attributes.class "rte-main"
                 , Html.Attributes.attribute "data-rte-main" "true"
                 , Html.Attributes.classList [ ( "rte-hide-caret", shouldHideCaret editor.editorState ) ]
-                , onBeforeInput editor.commandMap.inputEventTypeMap editor.editorState editor.decoder
-                , onKeyDown editor.commandMap.keyMap editor.editorState editor.decoder
+                , onBeforeInput editor
+                , onKeyDown editor
                 ]
                 [ ( String.fromInt editor.renderCount
                   , renderEditorBlockNode

@@ -1,4 +1,4 @@
-module Rte.NodeUtils exposing (EditorNode(..), NodeResult(..), findNodeBackwardFrom, findNodeBackwardFromExclusive, findNodeForwardFrom, findNodeForwardFromExclusive, findTextBlockNodeAncestor, foldl, nodeAt, removeNodeAndEmptyParents, removeNodesInRange, replaceNode, replaceNodeWithFragment)
+module Rte.NodeUtils exposing (EditorNode(..), NodeResult(..), findNodeBackwardFrom, findNodeBackwardFromExclusive, findNodeForwardFrom, findNodeForwardFromExclusive, findTextBlockNodeAncestor, foldl, map, nodeAt, removeNodeAndEmptyParents, removeNodesInRange, replaceNode, replaceNodeWithFragment)
 
 import Array exposing (Array)
 import Array.Extra

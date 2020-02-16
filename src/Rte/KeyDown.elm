@@ -3,32 +3,33 @@ module Rte.KeyDown exposing (..)
 import Dict
 import Json.Decode as D
 import Rte.Commands exposing (altKey, ctrlKey, metaKey, shiftKey)
+import Rte.EditorUtils exposing (applyCommand)
 import Rte.Model exposing (Editor, EditorState, InputEvent, InternalEditorMsg(..), KeyMap, KeyboardEvent)
 
 
-preventDefaultOn : KeyMap -> EditorState -> InternalEditorMsg -> ( InternalEditorMsg, Bool )
-preventDefaultOn keyMap editorState msg =
+preventDefaultOn : Editor msg -> InternalEditorMsg -> ( InternalEditorMsg, Bool )
+preventDefaultOn editor msg =
     case msg of
         KeyDownEvent key ->
-            ( msg, shouldPreventDefault keyMap editorState key )
+            ( msg, shouldPreventDefault editor key )
 
         _ ->
             ( msg, False )
 
 
-shouldPreventDefault : KeyMap -> EditorState -> KeyboardEvent -> Bool
-shouldPreventDefault keyMap editorState keyboardEvent =
-    case handleKeyDownEvent keyMap editorState keyboardEvent of
-        Nothing ->
+shouldPreventDefault : Editor msg -> KeyboardEvent -> Bool
+shouldPreventDefault editor keyboardEvent =
+    case handleKeyDownEvent editor keyboardEvent of
+        Err _ ->
             False
 
-        Just _ ->
+        Ok _ ->
             True
 
 
-preventDefaultOnKeyDownDecoder : KeyMap -> EditorState -> (InternalEditorMsg -> msg) -> D.Decoder ( msg, Bool )
-preventDefaultOnKeyDownDecoder keyMap editorState msgFunc =
-    D.map (\( i, b ) -> ( msgFunc i, b )) (D.map (preventDefaultOn keyMap editorState) keyDownDecoder)
+preventDefaultOnKeyDownDecoder : Editor msg -> D.Decoder ( msg, Bool )
+preventDefaultOnKeyDownDecoder editor =
+    D.map (\( i, b ) -> ( editor.decoder i, b )) (D.map (preventDefaultOn editor) keyDownDecoder)
 
 
 keyDownDecoder : D.Decoder InternalEditorMsg
@@ -91,26 +92,16 @@ addAltKey keyboardEvent keys =
         keys
 
 
-handleKeyDownEvent : KeyMap -> EditorState -> KeyboardEvent -> Maybe EditorState
-handleKeyDownEvent keyMap editorState keyboardEvent =
-    case Dict.get (keyboardEventToDictKey keyboardEvent) keyMap of
+handleKeyDownEvent : Editor msg -> KeyboardEvent -> Result String (Editor msg)
+handleKeyDownEvent editor keyboardEvent =
+    case Dict.get (keyboardEventToDictKey keyboardEvent) editor.commandMap.keyMap of
         Nothing ->
-            Nothing
+            Err <| "No keydown event"
 
         Just command ->
-            case command editorState of
-                Err _ ->
-                    Nothing
-
-                Ok v ->
-                    Just v
+            applyCommand command editor
 
 
 handleKeyDown : KeyboardEvent -> Editor msg -> Editor msg
 handleKeyDown keyboardEvent editor =
-    case handleKeyDownEvent editor.commandMap.keyMap editor.editorState keyboardEvent of
-        Nothing ->
-            editor
-
-        Just editorState ->
-            { editor | editorState = editorState }
+    Result.withDefault editor <| handleKeyDownEvent editor keyboardEvent
