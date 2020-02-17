@@ -3,7 +3,7 @@ module Rte.EditorState exposing (..)
 import Array exposing (Array)
 import List.Extra
 import Rte.Model exposing (ChildNodes(..), EditorBlockNode, EditorInlineLeaf(..), EditorState, NodePath)
-import Rte.NodeUtils exposing (EditorNode(..), findTextBlockNodeAncestor, map)
+import Rte.Node exposing (EditorNode(..), findTextBlockNodeAncestor, map)
 import Rte.Selection exposing (rangeSelection)
 
 

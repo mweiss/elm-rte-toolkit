@@ -3,10 +3,9 @@ module Rte.Commands exposing (..)
 import Array
 import Dict exposing (Dict)
 import List.Extra
-import Rte.CommandUtils exposing (removeTextAtRange)
 import Rte.Model exposing (ChildNodes(..), CommandBinding(..), CommandFunc, CommandMap, Editor, EditorBlockNode, EditorInlineLeaf(..), EditorState, NodePath, Selection)
-import Rte.NodePath as NodePath exposing (decrementNodePath, incrementNodePath)
-import Rte.NodeUtils exposing (EditorNode(..), findNodeBackwardFromExclusive, findNodeForwardFromExclusive, findTextBlockNodeAncestor, isSelectable, nodeAt, removeNodeAndEmptyParents, removeNodesInRange, replaceNode)
+import Rte.Node exposing (EditorNode(..), findNodeBackwardFromExclusive, findNodeForwardFromExclusive, findTextBlockNodeAncestor, isSelectable, nodeAt, removeNodeAndEmptyParents, removeNodesInRange, replaceNode)
+import Rte.NodePath as NodePath exposing (decrementNodePath, incrementNodePath, toString)
 import Rte.Selection exposing (caretSelection, isCollapsed, normalizeSelection)
 
 
@@ -442,6 +441,35 @@ isLeafNode path root =
 
                         TextLeaf _ ->
                             False
+
+
+removeTextAtRange : NodePath -> Int -> Maybe Int -> EditorBlockNode -> Result String EditorBlockNode
+removeTextAtRange nodePath start maybeEnd root =
+    case nodeAt nodePath root of
+        Just node ->
+            case node of
+                BlockNodeWrapper _ ->
+                    Err "I was expecting a text node, but instead I got a block node"
+
+                InlineLeafWrapper leaf ->
+                    case leaf of
+                        InlineLeaf l ->
+                            Err "I was expecting a text leaf, but instead I got an inline leaf"
+
+                        TextLeaf v ->
+                            let
+                                textNode =
+                                    case maybeEnd of
+                                        Nothing ->
+                                            TextLeaf { v | text = String.left start v.text }
+
+                                        Just end ->
+                                            TextLeaf { v | text = String.left start v.text ++ String.dropLeft end v.text }
+                            in
+                            replaceNode nodePath (InlineLeafWrapper textNode) root
+
+        Nothing ->
+            Err <| "There is no node at node path " ++ toString nodePath
 
 
 removeSelectedLeafElementCommand : CommandFunc

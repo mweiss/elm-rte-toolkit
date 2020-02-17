@@ -1,7 +1,7 @@
 module Rte.Marks exposing (..)
 
 import Rte.Model exposing (EditorBlockNode, EditorInlineLeaf(..), Mark, NodePath)
-import Rte.NodeUtils exposing (EditorNode(..), NodeResult(..), nodeAt, replaceNode)
+import Rte.Node exposing (EditorNode(..), NodeResult(..), nodeAt, replaceNode)
 
 
 findMarksFromInlineLeaf : EditorInlineLeaf -> List Mark

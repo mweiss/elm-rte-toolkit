@@ -1,6 +1,9 @@
-module Rte.NodeUtils exposing
-    ( EditorNode(..)
+module Rte.Node exposing
+    ( EditorFragment(..)
+    , EditorNode(..)
+    , Iterator
     , NodeResult(..)
+    , findAncestor
     , findNodeBackwardFrom
     , findNodeBackwardFromExclusive
     , findNodeForwardFrom
@@ -13,7 +16,9 @@ module Rte.NodeUtils exposing
     , indexedMap
     , isSelectable
     , map
+    , next
     , nodeAt
+    , previous
     , removeNodeAndEmptyParents
     , removeNodesInRange
     , replaceNode
@@ -95,7 +100,7 @@ previous path node =
                 BlockArray a ->
                     case Array.get prevIndex a of
                         Nothing ->
-                            Nothing
+                            Just ( [], BlockNodeWrapper node )
 
                         Just b ->
                             let
@@ -107,13 +112,13 @@ previous path node =
                 InlineLeafArray a ->
                     case Array.get prevIndex a of
                         Nothing ->
-                            Nothing
+                            Just ( [], BlockNodeWrapper node )
 
                         Just l ->
                             Just ( [ prevIndex ], InlineLeafWrapper l )
 
                 Leaf ->
-                    Nothing
+                    Just ( [], BlockNodeWrapper node )
 
         x :: xs ->
             case node.childNodes of
@@ -133,7 +138,7 @@ previous path node =
                 InlineLeafArray a ->
                     case Array.get (x - 1) a of
                         Nothing ->
-                            Nothing
+                            Just ( [], BlockNodeWrapper node )
 
                         Just l ->
                             Just ( [ x - 1 ], InlineLeafWrapper l )
@@ -489,7 +494,7 @@ replaceNodeWithFragment : NodePath -> EditorFragment -> EditorBlockNode -> Resul
 replaceNodeWithFragment path fragment root =
     case path of
         [] ->
-            Err "I cannot replace a node with a fragment"
+            Err "Invalid path"
 
         [ x ] ->
             case root.childNodes of
@@ -588,7 +593,7 @@ replaceNode path node root =
 -}
 findTextBlockNodeAncestor : NodePath -> EditorBlockNode -> Maybe ( NodePath, EditorBlockNode )
 findTextBlockNodeAncestor =
-    findAncestorFromPath
+    findAncestor
         (\n ->
             case n.childNodes of
                 InlineLeafArray _ ->
@@ -602,8 +607,8 @@ findTextBlockNodeAncestor =
 {-| Find ancestor from path finds the closest ancestor from the given NodePath that matches the
 predicate.
 -}
-findAncestorFromPath : (EditorBlockNode -> Bool) -> NodePath -> EditorBlockNode -> Maybe ( NodePath, EditorBlockNode )
-findAncestorFromPath pred path node =
+findAncestor : (EditorBlockNode -> Bool) -> NodePath -> EditorBlockNode -> Maybe ( NodePath, EditorBlockNode )
+findAncestor pred path node =
     case path of
         [] ->
             Nothing
@@ -616,7 +621,7 @@ findAncestorFromPath pred path node =
                             Nothing
 
                         Just childNode ->
-                            case findAncestorFromPath pred xs childNode of
+                            case findAncestor pred xs childNode of
                                 Nothing ->
                                     if pred node then
                                         Just ( [], node )

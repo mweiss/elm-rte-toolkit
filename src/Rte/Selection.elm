@@ -2,8 +2,8 @@ module Rte.Selection exposing (caretSelection, domToEditor, editorToDom, isColla
 
 import Rte.Marks exposing (ToggleAction(..), toggleMarkAtPath)
 import Rte.Model exposing (ChildNodes(..), EditorBlockNode, EditorInlineLeaf(..), ElementParameters, HtmlNode(..), Mark, NodePath, Selection, Spec, selectionMark)
+import Rte.Node exposing (EditorNode(..), indexedFoldl)
 import Rte.NodePath as Path
-import Rte.NodeUtils exposing (EditorNode(..), indexedFoldl)
 
 
 domToEditor : Spec -> EditorBlockNode -> Selection -> Maybe Selection
