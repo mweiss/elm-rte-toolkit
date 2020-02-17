@@ -3,7 +3,7 @@ module Rte.Selection exposing (caretSelection, domToEditor, editorToDom, isColla
 import Rte.Marks exposing (ToggleAction(..), toggleMarkAtPath)
 import Rte.Model exposing (ChildNodes(..), EditorBlockNode, EditorInlineLeaf(..), ElementParameters, HtmlNode(..), Mark, NodePath, Selection, Spec, selectionMark)
 import Rte.NodePath as Path
-import Rte.NodeUtils exposing (EditorNode(..), foldl, nodeAt)
+import Rte.NodeUtils exposing (EditorNode(..), indexedFoldl)
 
 
 domToEditor : Spec -> EditorBlockNode -> Selection -> Maybe Selection
@@ -119,7 +119,7 @@ findNodeRangeFromSelectionMarks : EditorBlockNode -> Maybe ( NodePath, NodePath 
 findNodeRangeFromSelectionMarks node =
     let
         marks =
-            foldl
+            indexedFoldl
                 (\path n agg ->
                     if List.member selectionMark <| getMarksFromNode n then
                         path :: agg

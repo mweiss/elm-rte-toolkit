@@ -1,4 +1,24 @@
-module Rte.NodeUtils exposing (EditorNode(..), NodeResult(..), findNodeBackwardFrom, findNodeBackwardFromExclusive, findNodeForwardFrom, findNodeForwardFromExclusive, findTextBlockNodeAncestor, foldl, isSelectable, map, nodeAt, removeNodeAndEmptyParents, removeNodesInRange, replaceNode, replaceNodeWithFragment)
+module Rte.NodeUtils exposing
+    ( EditorNode(..)
+    , NodeResult(..)
+    , findNodeBackwardFrom
+    , findNodeBackwardFromExclusive
+    , findNodeForwardFrom
+    , findNodeForwardFromExclusive
+    , findTextBlockNodeAncestor
+    , foldl
+    , foldr
+    , indexedFoldl
+    , indexedFoldr
+    , indexedMap
+    , isSelectable
+    , map
+    , nodeAt
+    , removeNodeAndEmptyParents
+    , removeNodesInRange
+    , replaceNode
+    , replaceNodeWithFragment
+    )
 
 import Array exposing (Array)
 import Array.Extra
@@ -198,8 +218,8 @@ findNodeBackwardFromExclusive =
     findNodeFromExclusive previous
 
 
-isSelectable : NodePath -> EditorNode -> Bool
-isSelectable path node =
+isSelectable : EditorNode -> Bool
+isSelectable node =
     case node of
         BlockNodeWrapper bn ->
             List.member selectableMark bn.parameters.marks
@@ -237,16 +257,11 @@ findNodeFrom iterator pred path node =
             Nothing
 
 
-map : (NodePath -> EditorNode -> EditorNode) -> EditorNode -> EditorNode
-map =
-    mapRec []
-
-
-mapRec : NodePath -> (NodePath -> EditorNode -> EditorNode) -> EditorNode -> EditorNode
-mapRec path func node =
+map : (EditorNode -> EditorNode) -> EditorNode -> EditorNode
+map func node =
     let
         applied =
-            func path node
+            func node
     in
     case applied of
         BlockNodeWrapper blockNode ->
@@ -256,9 +271,9 @@ mapRec path func node =
                         case blockNode.childNodes of
                             BlockArray a ->
                                 BlockArray <|
-                                    Array.indexedMap
-                                        (\i v ->
-                                            case mapRec (path ++ [ i ]) func (BlockNodeWrapper v) of
+                                    Array.map
+                                        (\v ->
+                                            case map func (BlockNodeWrapper v) of
                                                 BlockNodeWrapper b ->
                                                     b
 
@@ -269,9 +284,9 @@ mapRec path func node =
 
                             InlineLeafArray a ->
                                 InlineLeafArray <|
-                                    Array.indexedMap
-                                        (\i v ->
-                                            case mapRec (path ++ [ i ]) func (InlineLeafWrapper v) of
+                                    Array.map
+                                        (\v ->
+                                            case map func (InlineLeafWrapper v) of
                                                 InlineLeafWrapper b ->
                                                     b
 
@@ -288,13 +303,158 @@ mapRec path func node =
             InlineLeafWrapper inlineLeaf
 
 
-foldl : (NodePath -> EditorNode -> b -> b) -> b -> EditorNode -> b
-foldl =
-    foldlRec []
+indexedMap : (NodePath -> EditorNode -> EditorNode) -> EditorNode -> EditorNode
+indexedMap =
+    indexedMapRec []
 
 
-foldlRec : NodePath -> (NodePath -> EditorNode -> b -> b) -> b -> EditorNode -> b
-foldlRec path func acc node =
+indexedMapRec : NodePath -> (NodePath -> EditorNode -> EditorNode) -> EditorNode -> EditorNode
+indexedMapRec path func node =
+    let
+        applied =
+            func path node
+    in
+    case applied of
+        BlockNodeWrapper blockNode ->
+            BlockNodeWrapper
+                { blockNode
+                    | childNodes =
+                        case blockNode.childNodes of
+                            BlockArray a ->
+                                BlockArray <|
+                                    Array.indexedMap
+                                        (\i v ->
+                                            case indexedMapRec (path ++ [ i ]) func (BlockNodeWrapper v) of
+                                                BlockNodeWrapper b ->
+                                                    b
+
+                                                _ ->
+                                                    v
+                                        )
+                                        a
+
+                            InlineLeafArray a ->
+                                InlineLeafArray <|
+                                    Array.indexedMap
+                                        (\i v ->
+                                            case indexedMapRec (path ++ [ i ]) func (InlineLeafWrapper v) of
+                                                InlineLeafWrapper b ->
+                                                    b
+
+                                                _ ->
+                                                    v
+                                        )
+                                        a
+
+                            Leaf ->
+                                Leaf
+                }
+
+        InlineLeafWrapper inlineLeaf ->
+            InlineLeafWrapper inlineLeaf
+
+
+foldr : (EditorNode -> b -> b) -> b -> EditorNode -> b
+foldr func acc node =
+    func
+        node
+        (case node of
+            BlockNodeWrapper blockNode ->
+                let
+                    children =
+                        case blockNode.childNodes of
+                            Leaf ->
+                                Array.empty
+
+                            InlineLeafArray a ->
+                                Array.map InlineLeafWrapper a
+
+                            BlockArray a ->
+                                Array.map BlockNodeWrapper a
+                in
+                Array.foldr
+                    (\childNode agg ->
+                        foldr func agg childNode
+                    )
+                    acc
+                    children
+
+            InlineLeafWrapper _ ->
+                acc
+        )
+
+
+foldl : (EditorNode -> b -> b) -> b -> EditorNode -> b
+foldl func acc node =
+    case node of
+        BlockNodeWrapper blockNode ->
+            let
+                children =
+                    case blockNode.childNodes of
+                        Leaf ->
+                            Array.empty
+
+                        InlineLeafArray a ->
+                            Array.map InlineLeafWrapper a
+
+                        BlockArray a ->
+                            Array.map BlockNodeWrapper a
+            in
+            Array.foldl
+                (\childNode agg ->
+                    foldl func agg childNode
+                )
+                (func node acc)
+                children
+
+        InlineLeafWrapper _ ->
+            func node acc
+
+
+indexedFoldr : (NodePath -> EditorNode -> b -> b) -> b -> EditorNode -> b
+indexedFoldr =
+    indexedFoldrRec []
+
+
+indexedFoldrRec : NodePath -> (NodePath -> EditorNode -> b -> b) -> b -> EditorNode -> b
+indexedFoldrRec path func acc node =
+    func
+        path
+        node
+        (case node of
+            BlockNodeWrapper blockNode ->
+                let
+                    children =
+                        Array.indexedMap Tuple.pair <|
+                            case blockNode.childNodes of
+                                Leaf ->
+                                    Array.empty
+
+                                InlineLeafArray a ->
+                                    Array.map InlineLeafWrapper a
+
+                                BlockArray a ->
+                                    Array.map BlockNodeWrapper a
+                in
+                Array.foldr
+                    (\( index, childNode ) agg ->
+                        indexedFoldrRec (path ++ [ index ]) func agg childNode
+                    )
+                    acc
+                    children
+
+            InlineLeafWrapper _ ->
+                acc
+        )
+
+
+indexedFoldl : (NodePath -> EditorNode -> b -> b) -> b -> EditorNode -> b
+indexedFoldl =
+    indexedFoldlRec []
+
+
+indexedFoldlRec : NodePath -> (NodePath -> EditorNode -> b -> b) -> b -> EditorNode -> b
+indexedFoldlRec path func acc node =
     case node of
         BlockNodeWrapper blockNode ->
             let
@@ -312,7 +472,7 @@ foldlRec path func acc node =
             in
             Array.foldl
                 (\( index, childNode ) agg ->
-                    foldlRec (path ++ [ index ]) func agg childNode
+                    indexedFoldlRec (path ++ [ index ]) func agg childNode
                 )
                 (func path node acc)
                 children
@@ -669,8 +829,15 @@ removeNodeAndEmptyParents path node =
                                     else
                                         { node | childNodes = BlockArray <| Array.set x newNode a }
 
+                                InlineLeafArray newNodeChildren ->
+                                    if Array.isEmpty newNodeChildren then
+                                        { node | childNodes = BlockArray <| Array.Extra.removeAt x a }
+
+                                    else
+                                        { node | childNodes = BlockArray <| Array.set x newNode a }
+
                                 _ ->
-                                    newNode
+                                    { node | childNodes = BlockArray <| Array.set x newNode a }
 
                 InlineLeafArray a ->
                     node

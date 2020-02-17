@@ -38,7 +38,7 @@ reduceNode : EditorBlockNode -> EditorBlockNode
 reduceNode node =
     case
         map
-            (\p x ->
+            (\x ->
                 case x of
                     BlockNodeWrapper bn ->
                         case bn.childNodes of

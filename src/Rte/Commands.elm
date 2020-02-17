@@ -457,7 +457,7 @@ removeSelectedLeafElementCommand editorState =
             else if isLeafNode selection.anchorNode editorState.root then
                 let
                     newSelection =
-                        case findNodeBackwardFromExclusive isSelectable selection.anchorNode editorState.root of
+                        case findNodeBackwardFromExclusive (\_ n -> isSelectable n) selection.anchorNode editorState.root of
                             Nothing ->
                                 Nothing
 
