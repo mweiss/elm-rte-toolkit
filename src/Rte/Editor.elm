@@ -8,6 +8,7 @@ import Html.Keyed
 import Json.Decode as D
 import List.Extra
 import Rte.BeforeInput
+import Rte.Decorations exposing (getElementDecorators, getMarkDecorators)
 import Rte.DomNode exposing (decodeDomNode, extractRootEditorBlockNode, findTextChanges)
 import Rte.EditorUtils exposing (forceRerender, zeroWidthSpace)
 import Rte.HtmlNode exposing (editorBlockNodeToHtmlNode)
@@ -15,12 +16,12 @@ import Rte.KeyDown
 import Rte.Model exposing (..)
 import Rte.NodePath as NodePath exposing (toString)
 import Rte.NodeUtils exposing (EditorNode(..), NodeResult(..), nodeAt)
-import Rte.Selection exposing (caretSelection, domToEditor, editorToDom, isCollapsed)
+import Rte.Selection exposing (caretSelection, domToEditor, editorToDom, isCollapsed, markSelection)
 import Rte.Spec exposing (childNodesPlaceholder, findNodeDefinitionFromSpec)
 
 
-updateSelection : Maybe Selection -> Editor msg -> Editor msg
-updateSelection maybeSelection editor =
+updateSelection : Maybe Selection -> Bool -> Editor msg -> Editor msg
+updateSelection maybeSelection isDomPath editor =
     let
         editorState =
             editor.editorState
@@ -30,17 +31,25 @@ updateSelection maybeSelection editor =
             { editor | editorState = { editorState | selection = maybeSelection } }
 
         Just selection ->
-            { editor | editorState = { editorState | selection = domToEditor editor.spec editorState.root selection } }
+            let
+                translatedSelection =
+                    if isDomPath then
+                        domToEditor editor.spec editorState.root selection
+
+                    else
+                        Just selection
+            in
+            { editor | editorState = { editorState | selection = translatedSelection } }
 
 
 internalUpdate : InternalEditorMsg -> Editor msg -> Editor msg
 internalUpdate msg editor =
-    case msg of
+    case Debug.log "msg" msg of
         ChangeEvent change ->
             updateChangeEvent change editor
 
-        SelectionEvent selection ->
-            updateSelection selection editor
+        SelectionEvent selection isDomPath ->
+            updateSelection selection isDomPath editor
 
         BeforeInputEvent inputEvent ->
             Rte.BeforeInput.handleBeforeInput inputEvent editor
@@ -217,8 +226,9 @@ selectionDecoder =
 
 editorSelectionChangeDecoder : D.Decoder InternalEditorMsg
 editorSelectionChangeDecoder =
-    D.map SelectionEvent
+    D.map2 SelectionEvent
         (D.at [ "detail" ] selectionDecoder)
+        (D.succeed True)
 
 
 onCompositionStart : (InternalEditorMsg -> msg) -> Html.Attribute msg
@@ -378,7 +388,16 @@ shouldHideCaret editorState =
 
 markCaretSelectionOnEditorNodes : EditorState -> EditorBlockNode
 markCaretSelectionOnEditorNodes editorState =
-    editorState.root
+    case editorState.selection of
+        Nothing ->
+            editorState.root
+
+        Just selection ->
+            if isCollapsed selection then
+                markSelection selection editorState.root
+
+            else
+                editorState.root
 
 
 editorToDomSelection : Editor msg -> Maybe Selection
@@ -410,8 +429,7 @@ renderEditor editor =
                 ]
                 [ ( String.fromInt editor.renderCount
                   , renderEditorBlockNode
-                        editor.spec
-                        editor.decoder
+                        editor
                         []
                         (markCaretSelectionOnEditorNodes editor.editorState)
                   )
@@ -423,13 +441,8 @@ renderEditor editor =
         ]
 
 
-onClickSelect : DecoderFunc msg -> NodePath -> Html.Attribute msg
-onClickSelect decoder nodePath =
-    Html.Events.onClick (decoder <| SelectionEvent (Just (caretSelection nodePath 0)))
-
-
-renderHtmlNode : HtmlNode -> Array (Html msg) -> Html msg
-renderHtmlNode node vdomChildren =
+renderHtmlNode : HtmlNode -> List (NodePath -> List (Html.Attribute msg)) -> Array (Html msg) -> NodePath -> Html msg
+renderHtmlNode node decorators vdomChildren backwardsRelativePath =
     case node of
         ElementNode name attributes children ->
             let
@@ -438,20 +451,31 @@ renderHtmlNode node vdomChildren =
                         vdomChildren
 
                     else
-                        Array.map (\n -> renderHtmlNode n vdomChildren) children
+                        Array.indexedMap
+                            (\i n -> renderHtmlNode n [] vdomChildren (i :: backwardsRelativePath))
+                            children
             in
             Html.node
                 name
-                (List.map (\( k, v ) -> Html.Attributes.attribute k v) attributes)
+                (List.map (\( k, v ) -> Html.Attributes.attribute k v) attributes
+                    ++ List.concatMap (\d -> d (List.reverse backwardsRelativePath)) decorators
+                )
                 (Array.toList childNodes)
 
         TextNode v ->
             Html.text v
 
 
-renderMarkFromSpec : Spec -> NodePath -> Mark -> Html msg -> Html msg
-renderMarkFromSpec spec backwardsNodePath mark child =
-    case List.Extra.find (\m -> m.name == mark.name) spec.marks of
+renderMarkFromSpec : Editor msg -> NodePath -> Mark -> Html msg -> Html msg
+renderMarkFromSpec editor backwardsNodePath mark child =
+    let
+        markDecorators =
+            getMarkDecorators mark.name editor.decorations
+
+        decorators =
+            List.map (\d -> d editor.decoder (List.reverse backwardsNodePath) mark) markDecorators
+    in
+    case List.Extra.find (\m -> m.name == mark.name) editor.spec.marks of
         Nothing ->
             child
 
@@ -460,46 +484,52 @@ renderMarkFromSpec spec backwardsNodePath mark child =
                 node =
                     definition.toHtmlNode mark childNodesPlaceholder
             in
-            renderHtmlNode node (Array.fromList [ child ])
+            renderHtmlNode node decorators (Array.fromList [ child ]) []
 
 
-renderElementFromSpec : Spec -> ElementParameters -> NodePath -> Array (Html msg) -> Html msg
-renderElementFromSpec spec elementParameters backwardsNodePath children =
+renderElementFromSpec : Editor msg -> ElementParameters -> NodePath -> Array (Html msg) -> Html msg
+renderElementFromSpec editor elementParameters backwardsNodePath children =
     let
         definition =
-            findNodeDefinitionFromSpec elementParameters.name spec
+            findNodeDefinitionFromSpec elementParameters.name editor.spec
 
         node =
             definition.toHtmlNode elementParameters childNodesPlaceholder
 
+        elementDecorators =
+            getElementDecorators elementParameters.name editor.decorations
+
+        decorators =
+            List.map (\d -> d editor.decoder (List.reverse backwardsNodePath) elementParameters) elementDecorators
+
         nodeHtml =
-            renderHtmlNode node children
+            renderHtmlNode node decorators children []
 
         nodeHtmlWithMarks =
-            List.foldr (renderMarkFromSpec spec backwardsNodePath) nodeHtml elementParameters.marks
+            List.foldr (renderMarkFromSpec editor backwardsNodePath) nodeHtml elementParameters.marks
     in
     nodeHtmlWithMarks
 
 
-renderEditorBlockNode : Spec -> DecoderFunc msg -> NodePath -> EditorBlockNode -> Html msg
-renderEditorBlockNode spec decoderFunc backwardsPath node =
-    renderElementFromSpec spec
+renderEditorBlockNode : Editor msg -> NodePath -> EditorBlockNode -> Html msg
+renderEditorBlockNode editor backwardsPath node =
+    renderElementFromSpec editor
         node.parameters
         backwardsPath
         (case node.childNodes of
             BlockArray l ->
-                Array.map (renderEditorBlockNode spec decoderFunc backwardsPath) l
+                Array.indexedMap (\i n -> renderEditorBlockNode editor (i :: backwardsPath) n) l
 
             InlineLeafArray l ->
-                Array.map (renderInlineLeaf spec decoderFunc backwardsPath) l
+                Array.indexedMap (\i n -> renderInlineLeaf editor (i :: backwardsPath) n) l
 
             Leaf ->
                 Array.empty
         )
 
 
-renderText : Spec -> TextLeafContents -> NodePath -> Html msg
-renderText spec textLeafContents backwardsPath =
+renderText : Editor msg -> TextLeafContents -> NodePath -> Html msg
+renderText editor textLeafContents backwardsPath =
     let
         textHtml =
             Html.text
@@ -510,17 +540,17 @@ renderText spec textLeafContents backwardsPath =
                     textLeafContents.text
                 )
     in
-    List.foldl (renderMarkFromSpec spec backwardsPath) textHtml textLeafContents.marks
+    List.foldl (renderMarkFromSpec editor backwardsPath) textHtml textLeafContents.marks
 
 
-renderInlineLeaf : Spec -> DecoderFunc msg -> NodePath -> EditorInlineLeaf -> Html msg
-renderInlineLeaf spec decoderFunc backwardsPath leaf =
+renderInlineLeaf : Editor msg -> NodePath -> EditorInlineLeaf -> Html msg
+renderInlineLeaf editor backwardsPath leaf =
     case leaf of
         InlineLeaf elementParameters ->
-            renderElementFromSpec spec elementParameters backwardsPath Array.empty
+            renderElementFromSpec editor elementParameters backwardsPath Array.empty
 
         TextLeaf v ->
-            renderText spec v backwardsPath
+            renderText editor v backwardsPath
 
 
 forceCompleteRerender : Editor msg -> Editor msg

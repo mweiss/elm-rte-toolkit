@@ -29,7 +29,22 @@ module Rte.Model exposing (..)
 
 import Array exposing (Array)
 import Dict exposing (Dict)
+import Html
 import Json.Encode as E
+
+
+type alias Decorations msg =
+    { marks : Dict String (List (MarkDecoratorFunction msg))
+    , elements : Dict String (List (ElementDecoratorFunction msg))
+    }
+
+
+type alias ElementDecoratorFunction msg =
+    DecoderFunc msg -> NodePath -> ElementParameters -> NodePath -> List (Html.Attribute msg)
+
+
+type alias MarkDecoratorFunction msg =
+    DecoderFunc msg -> NodePath -> Mark -> NodePath -> List (Html.Attribute msg)
 
 
 {-| Represents a rich text editor. The state of the editor, along with render information,
@@ -43,6 +58,7 @@ type alias Editor msg =
     , isComposing : Bool
     , decoder : DecoderFunc msg
     , bufferedEditorState : Maybe EditorState
+    , decorations : Decorations msg
     , commandMap : CommandMap
     , spec : Spec
     }
@@ -254,7 +270,7 @@ type alias KeyboardEvent =
 {-| The internal events that an editor has to respond to. These events should be mapped via a DecoderFunc.
 -}
 type InternalEditorMsg
-    = SelectionEvent (Maybe Selection)
+    = SelectionEvent (Maybe Selection) Bool
     | ChangeEvent EditorChange
     | BeforeInputEvent InputEvent
     | KeyDownEvent KeyboardEvent
@@ -319,3 +335,13 @@ type DomNode
 -}
 type alias TextChange =
     ( NodePath, String )
+
+
+selectionMark : Mark
+selectionMark =
+    { name = "selection", attributes = [] }
+
+
+selectableMark : Mark
+selectableMark =
+    { name = "selectable", attributes = [] }

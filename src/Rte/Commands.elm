@@ -2,11 +2,12 @@ module Rte.Commands exposing (..)
 
 import Array
 import Dict exposing (Dict)
+import List.Extra
 import Rte.CommandUtils exposing (removeTextAtRange)
-import Rte.Model exposing (ChildNodes(..), CommandBinding(..), CommandFunc, CommandMap, Editor, EditorBlockNode, EditorState, NodePath)
+import Rte.Model exposing (ChildNodes(..), CommandBinding(..), CommandFunc, CommandMap, Editor, EditorBlockNode, EditorInlineLeaf(..), EditorState, NodePath, Selection)
 import Rte.NodePath as NodePath exposing (decrementNodePath, incrementNodePath)
-import Rte.NodeUtils exposing (EditorNode(..), findNodeForwardFromExclusive, findTextBlockNodeAncestor, removeNodeAndEmptyParents, removeNodesInRange, replaceNode)
-import Rte.Selection exposing (caretSelection, isCollapsed, markSelection, normalizeSelection)
+import Rte.NodeUtils exposing (EditorNode(..), findNodeBackwardFromExclusive, findNodeForwardFromExclusive, findTextBlockNodeAncestor, isSelectable, nodeAt, removeNodeAndEmptyParents, removeNodesInRange, replaceNode)
+import Rte.Selection exposing (caretSelection, isCollapsed, normalizeSelection)
 
 
 altKey : String
@@ -111,7 +112,118 @@ defaultCommandBindings =
     emptyCommandBinding
         |> setCommand [ inputEvent "insertLineBreak", key [ shiftKey, enterKey ], key [ shiftKey, enterKey ] ] insertLineBreakCommand
         |> setCommand [ inputEvent "insertParagraph", key [ enterKey ], key [ returnKey ] ] splitBlockCommand
-        |> setCommand [ inputEvent "deleteContentBackward", key [ backspaceKey ] ] (removeRangeSelection |> otherwiseDo backspaceBlockElementCommand |> otherwiseDo backspaceInlineElementCommand |> otherwiseDo backspaceCommand)
+        |> setCommand [ inputEvent "deleteContentBackward", key [ backspaceKey ] ] (removeRangeSelection |> otherwiseDo removeSelectedLeafElementCommand |> otherwiseDo backspaceInlineElementCommand |> otherwiseDo joinBackward |> otherwiseDo backspaceCommand)
+
+
+joinBackward : CommandFunc
+joinBackward editorState =
+    case editorState.selection of
+        Nothing ->
+            Err "Nothing is selected"
+
+        Just selection ->
+            if not <| selectionIsBeginningOfTextBlock selection editorState.root then
+                Err "I cannot join a range selection"
+
+            else
+                case findTextBlockNodeAncestor selection.anchorNode editorState.root of
+                    Nothing ->
+                        Err "There is no text block at the selection"
+
+                    Just ( textBlockPath, _ ) ->
+                        case findPreviousTextBlock textBlockPath editorState.root of
+                            Nothing ->
+                                Err "There is no text block I can join backward with"
+
+                            Just ( p, n ) ->
+                                -- We're going to transpose this into joinForward by setting the selection to the end of the
+                                -- given text block
+                                case n.childNodes of
+                                    InlineLeafArray a ->
+                                        case Array.get (Array.length a - 1) a of
+                                            Nothing ->
+                                                Err "There must be at least one element in the inline node to join with"
+
+                                            Just leaf ->
+                                                let
+                                                    newSelection =
+                                                        case leaf of
+                                                            TextLeaf tl ->
+                                                                caretSelection (p ++ [ Array.length a - 1 ]) (String.length tl.text)
+
+                                                            InlineLeaf _ ->
+                                                                caretSelection (p ++ [ Array.length a - 1 ]) 0
+                                                in
+                                                joinForward { editorState | selection = Just newSelection }
+
+                                    _ ->
+                                        Err "I can only join with text blocks"
+
+
+selectionIsBeginningOfTextBlock : Selection -> EditorBlockNode -> Bool
+selectionIsBeginningOfTextBlock selection root =
+    if not <| isCollapsed selection then
+        False
+
+    else
+        case findTextBlockNodeAncestor selection.anchorNode root of
+            Nothing ->
+                False
+
+            Just ( _, n ) ->
+                case n.childNodes of
+                    InlineLeafArray a ->
+                        case List.Extra.last selection.anchorNode of
+                            Nothing ->
+                                False
+
+                            Just i ->
+                                if i /= 0 || Array.isEmpty a then
+                                    False
+
+                                else
+                                    selection.anchorOffset == 0
+
+                    _ ->
+                        False
+
+
+selectionIsEndOfTextBlock : Selection -> EditorBlockNode -> Bool
+selectionIsEndOfTextBlock selection root =
+    if not <| isCollapsed selection then
+        False
+
+    else
+        case findTextBlockNodeAncestor selection.anchorNode root of
+            Nothing ->
+                False
+
+            Just ( _, n ) ->
+                case n.childNodes of
+                    InlineLeafArray a ->
+                        case List.Extra.last selection.anchorNode of
+                            Nothing ->
+                                False
+
+                            Just i ->
+                                if i /= Array.length a - 1 then
+                                    False
+
+                                else
+                                    case Array.get i a of
+                                        Nothing ->
+                                            False
+
+                                        Just leaf ->
+                                            case leaf of
+                                                TextLeaf tl ->
+                                                    String.length tl.text == selection.anchorOffset
+
+                                                InlineLeaf _ ->
+                                                    True
+
+                    _ ->
+                        False
 
 
 joinForward : CommandFunc
@@ -121,8 +233,8 @@ joinForward editorState =
             Err "Nothing is selected"
 
         Just selection ->
-            if not <| isCollapsed selection then
-                Err "I cannot join a range selection"
+            if not <| selectionIsEndOfTextBlock selection editorState.root then
+                Err "I cannot join a selection that is not at the end of a text block"
 
             else
                 case findTextBlockNodeAncestor selection.anchorNode editorState.root of
@@ -132,7 +244,7 @@ joinForward editorState =
                     Just ( p1, n1 ) ->
                         case findNextTextBlock selection.anchorNode editorState.root of
                             Nothing ->
-                                Err "There is no text block I can join with"
+                                Err "There is no text block I can join forward with"
 
                             Just ( p2, n2 ) ->
                                 case joinBlocks n1 n2 of
@@ -179,25 +291,32 @@ joinBlocks b1 b2 =
             Nothing
 
 
-findNextTextBlock : NodePath -> EditorBlockNode -> Maybe ( NodePath, EditorBlockNode )
-findNextTextBlock nodePath blockNode =
+isTextBlock : NodePath -> EditorNode -> Bool
+isTextBlock _ node =
+    case node of
+        BlockNodeWrapper bn ->
+            case bn.childNodes of
+                InlineLeafArray _ ->
+                    True
+
+                _ ->
+                    False
+
+        _ ->
+            False
+
+
+type alias FindFunc =
+    (NodePath -> EditorNode -> Bool) -> NodePath -> EditorBlockNode -> Maybe ( NodePath, EditorNode )
+
+
+findTextBlock : FindFunc -> NodePath -> EditorBlockNode -> Maybe ( NodePath, EditorBlockNode )
+findTextBlock findFunc path node =
     case
-        findNodeForwardFromExclusive
-            (\_ n ->
-                case n of
-                    BlockNodeWrapper bn ->
-                        case bn.childNodes of
-                            InlineLeafArray _ ->
-                                True
-
-                            _ ->
-                                False
-
-                    _ ->
-                        False
-            )
-            nodePath
-            blockNode
+        findFunc
+            isTextBlock
+            path
+            node
     of
         Nothing ->
             Nothing
@@ -209,6 +328,16 @@ findNextTextBlock nodePath blockNode =
 
                 _ ->
                     Nothing
+
+
+findNextTextBlock : NodePath -> EditorBlockNode -> Maybe ( NodePath, EditorBlockNode )
+findNextTextBlock =
+    findTextBlock findNodeForwardFromExclusive
+
+
+findPreviousTextBlock : NodePath -> EditorBlockNode -> Maybe ( NodePath, EditorBlockNode )
+findPreviousTextBlock =
+    findTextBlock findNodeBackwardFromExclusive
 
 
 removeRangeSelection : CommandFunc
@@ -291,9 +420,72 @@ headerToNewParagraphCommand headerElements paragraphElement editorState =
     Err "Not implemented"
 
 
-backspaceBlockElementCommand : CommandFunc
-backspaceBlockElementCommand editorState =
-    Err "Not implemented"
+isLeafNode : NodePath -> EditorBlockNode -> Bool
+isLeafNode path root =
+    case nodeAt path root of
+        Nothing ->
+            False
+
+        Just node ->
+            case node of
+                BlockNodeWrapper bn ->
+                    if bn.childNodes == Leaf then
+                        True
+
+                    else
+                        False
+
+                InlineLeafWrapper l ->
+                    case l of
+                        InlineLeaf _ ->
+                            True
+
+                        TextLeaf _ ->
+                            False
+
+
+removeSelectedLeafElementCommand : CommandFunc
+removeSelectedLeafElementCommand editorState =
+    case editorState.selection of
+        Nothing ->
+            Err "Nothing is selected"
+
+        Just selection ->
+            if not <| isCollapsed selection then
+                Err "I cannot remove a block element if it is not"
+
+            else if isLeafNode selection.anchorNode editorState.root then
+                let
+                    newSelection =
+                        case findNodeBackwardFromExclusive isSelectable selection.anchorNode editorState.root of
+                            Nothing ->
+                                Nothing
+
+                            Just ( p, n ) ->
+                                let
+                                    offset =
+                                        case n of
+                                            InlineLeafWrapper il ->
+                                                case il of
+                                                    TextLeaf t ->
+                                                        String.length t.text
+
+                                                    _ ->
+                                                        0
+
+                                            _ ->
+                                                0
+                                in
+                                Just (caretSelection p offset)
+                in
+                Ok
+                    { editorState
+                        | root = removeNodeAndEmptyParents selection.anchorNode editorState.root
+                        , selection = newSelection
+                    }
+
+            else
+                Err "There's no leaf node at the given selection"
 
 
 backspaceInlineElementCommand : CommandFunc

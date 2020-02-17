@@ -1,8 +1,8 @@
-module Rte.NodeUtils exposing (EditorNode(..), NodeResult(..), findNodeBackwardFrom, findNodeBackwardFromExclusive, findNodeForwardFrom, findNodeForwardFromExclusive, findTextBlockNodeAncestor, foldl, map, nodeAt, removeNodeAndEmptyParents, removeNodesInRange, replaceNode, replaceNodeWithFragment)
+module Rte.NodeUtils exposing (EditorNode(..), NodeResult(..), findNodeBackwardFrom, findNodeBackwardFromExclusive, findNodeForwardFrom, findNodeForwardFromExclusive, findTextBlockNodeAncestor, foldl, isSelectable, map, nodeAt, removeNodeAndEmptyParents, removeNodesInRange, replaceNode, replaceNodeWithFragment)
 
 import Array exposing (Array)
 import Array.Extra
-import Rte.Model exposing (ChildNodes(..), EditorBlockNode, EditorInlineLeaf, NodePath)
+import Rte.Model exposing (ChildNodes(..), EditorBlockNode, EditorInlineLeaf(..), HtmlNode(..), NodePath, selectableMark)
 
 
 type NodeResult
@@ -196,6 +196,21 @@ findNodeBackwardFrom =
 findNodeBackwardFromExclusive : (NodePath -> EditorNode -> Bool) -> NodePath -> EditorBlockNode -> Maybe ( NodePath, EditorNode )
 findNodeBackwardFromExclusive =
     findNodeFromExclusive previous
+
+
+isSelectable : NodePath -> EditorNode -> Bool
+isSelectable path node =
+    case node of
+        BlockNodeWrapper bn ->
+            List.member selectableMark bn.parameters.marks
+
+        InlineLeafWrapper ln ->
+            case ln of
+                TextLeaf _ ->
+                    True
+
+                InlineLeaf p ->
+                    List.member selectableMark p.marks
 
 
 findNodeFromExclusive : Iterator -> (NodePath -> EditorNode -> Bool) -> NodePath -> EditorBlockNode -> Maybe ( NodePath, EditorNode )

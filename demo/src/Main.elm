@@ -6,11 +6,11 @@ import BasicSpecs exposing (simpleSpec)
 import Browser
 import Html exposing (Html, div)
 import Html.Attributes
-import Rte.Commands exposing (backspaceKey, enterKey, inputEvent, key, returnKey)
+import Rte.Commands
+import Rte.Decorations exposing (addElementDecoration, emptyDecorations, selectableDecoration)
 import Rte.Editor exposing (internalUpdate)
 import Rte.List exposing (ListType)
-import Rte.Model exposing (ChildNodes(..), Editor, EditorAttribute(..), EditorBlockNode, EditorInlineLeaf(..), InternalEditorMsg(..))
-import Rte.Spec exposing (emptySpec)
+import Rte.Model exposing (ChildNodes(..), Editor, EditorAttribute(..), EditorBlockNode, EditorInlineLeaf(..), InternalEditorMsg(..), selectableMark)
 
 
 headerElements =
@@ -28,6 +28,25 @@ type alias Model =
     }
 
 
+inlineImageNode : EditorInlineLeaf
+inlineImageNode =
+    InlineLeaf
+        { name = "img"
+        , attributes = [ StringAttribute "src" "logo.svg" ]
+        , marks = [ selectableMark ]
+        }
+
+
+paragraphWithImage =
+    { parameters =
+        { name = "p"
+        , attributes = []
+        , marks = []
+        }
+    , childNodes = InlineLeafArray (Array.fromList [ TextLeaf { text = "", marks = [] }, inlineImageNode, TextLeaf { text = "", marks = [] } ])
+    }
+
+
 doubleInitNode : EditorBlockNode
 doubleInitNode =
     { parameters =
@@ -35,7 +54,7 @@ doubleInitNode =
         , attributes = []
         , marks = []
         }
-    , childNodes = BlockArray (Array.fromList [ initialEditorNode, initialEditorNode ])
+    , childNodes = BlockArray (Array.fromList [ initialEditorNode, paragraphWithImage, initialEditorNode ])
     }
 
 
@@ -54,6 +73,10 @@ commandBindings =
     Rte.Commands.defaultCommandBindings
 
 
+decorations =
+    addElementDecoration "img" selectableDecoration emptyDecorations
+
+
 initEditor : Editor EditorMsg
 initEditor =
     { renderCount = 0
@@ -62,6 +85,7 @@ initEditor =
     , selectionCount = 0
     , isComposing = False
     , decoder = InternalMsg
+    , decorations = decorations
     , commandMap = commandBindings
     , spec = simpleSpec
     , editorState =

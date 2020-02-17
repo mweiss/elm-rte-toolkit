@@ -4,16 +4,6 @@ import Rte.Model exposing (EditorBlockNode, EditorInlineLeaf(..), Mark, NodePath
 import Rte.NodeUtils exposing (EditorNode(..), NodeResult(..), nodeAt, replaceNode)
 
 
-selectionMark : Mark
-selectionMark =
-    { name = "selection", attributes = [] }
-
-
-selectableMark : Mark
-selectableMark =
-    { name = "selectable", attributes = [] }
-
-
 findMarksFromInlineLeaf : EditorInlineLeaf -> List Mark
 findMarksFromInlineLeaf leaf =
     case leaf of
