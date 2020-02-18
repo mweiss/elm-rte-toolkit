@@ -4,7 +4,7 @@ import Array
 import Dict exposing (Dict)
 import List.Extra
 import Rte.Model exposing (ChildNodes(..), CommandBinding(..), CommandFunc, CommandMap, Editor, EditorBlockNode, EditorInlineLeaf(..), EditorState, NodePath, Selection)
-import Rte.Node exposing (EditorFragment(..), EditorNode(..), findBackwardFromExclusive, findForwardFromExclusive, findTextBlockNodeAncestor, isSelectable, nodeAt, removeInRange, removeNodeAndEmptyParents, replace, replaceWithFragment, splitBlockAtPathAndOffset)
+import Rte.Node exposing (EditorFragment(..), EditorNode(..), findBackwardFromExclusive, findForwardFrom, findForwardFromExclusive, findTextBlockNodeAncestor, isSelectable, nodeAt, removeInRange, removeNodeAndEmptyParents, replace, replaceWithFragment, splitBlockAtPathAndOffset, splitTextLeaf)
 import Rte.NodePath as NodePath exposing (decrementNodePath, incrementNodePath, toString)
 import Rte.Selection exposing (caretSelection, isCollapsed, normalizeSelection)
 
@@ -405,8 +405,84 @@ removeRangeSelection editorState =
 
 
 insertLineBreak : CommandFunc
-insertLineBreak editorState =
-    Err "Not implemented"
+insertLineBreak =
+    insertInlineElement (InlineLeaf { name = "br", attributes = [], marks = [] })
+
+
+insertInlineElement : EditorInlineLeaf -> CommandFunc
+insertInlineElement leaf editorState =
+    case editorState.selection of
+        Nothing ->
+            Err "Nothing is selected"
+
+        Just selection ->
+            if not <| isCollapsed selection then
+                removeRangeSelection editorState |> Result.andThen splitBlock
+
+            else
+                case nodeAt selection.anchorNode editorState.root of
+                    Nothing ->
+                        Err "Invalid selection"
+
+                    Just node ->
+                        case node of
+                            InlineLeafWrapper il ->
+                                case il of
+                                    InlineLeaf l ->
+                                        case replace selection.anchorNode (InlineLeafWrapper leaf) editorState.root of
+                                            Err e ->
+                                                Err e
+
+                                            Ok newRoot ->
+                                                let
+                                                    newSelection =
+                                                        case
+                                                            findForwardFrom
+                                                                (\_ n -> isSelectable n)
+                                                                selection.anchorNode
+                                                                newRoot
+                                                        of
+                                                            Nothing ->
+                                                                Nothing
+
+                                                            Just ( p, _ ) ->
+                                                                Just (caretSelection p 0)
+                                                in
+                                                Ok { editorState | root = newRoot, selection = newSelection }
+
+                                    TextLeaf tl ->
+                                        let
+                                            ( before, after ) =
+                                                splitTextLeaf selection.anchorOffset tl
+                                        in
+                                        case
+                                            replaceWithFragment
+                                                selection.anchorNode
+                                                (InlineLeafFragment (Array.fromList [ TextLeaf before, leaf, TextLeaf after ]))
+                                                editorState.root
+                                        of
+                                            Err e ->
+                                                Err e
+
+                                            Ok newRoot ->
+                                                let
+                                                    newSelection =
+                                                        case
+                                                            findForwardFromExclusive
+                                                                (\_ n -> isSelectable n)
+                                                                selection.anchorNode
+                                                                newRoot
+                                                        of
+                                                            Nothing ->
+                                                                Nothing
+
+                                                            Just ( p, _ ) ->
+                                                                Just (caretSelection p 0)
+                                                in
+                                                Ok { editorState | root = newRoot, selection = newSelection }
+
+                            _ ->
+                                Err "I can not insert an inline element in a block node"
 
 
 splitBlock : CommandFunc

@@ -23,11 +23,12 @@ module Rte.Node exposing
     , replace
     , replaceWithFragment
     , splitBlockAtPathAndOffset
+    , splitTextLeaf
     )
 
 import Array exposing (Array)
 import Array.Extra
-import Rte.Model exposing (ChildNodes(..), EditorBlockNode, EditorInlineLeaf(..), HtmlNode(..), NodePath, selectableMark)
+import Rte.Model exposing (ChildNodes(..), EditorBlockNode, EditorInlineLeaf(..), HtmlNode(..), NodePath, TextLeafContents, selectableMark)
 
 
 type EditorNode
@@ -845,6 +846,11 @@ removeNodeAndEmptyParents path node =
                     node
 
 
+splitTextLeaf : Int -> TextLeafContents -> ( TextLeafContents, TextLeafContents )
+splitTextLeaf offset leaf =
+    ( { leaf | text = String.left offset leaf.text }, { leaf | text = String.dropLeft offset leaf.text } )
+
+
 splitBlockAtPathAndOffset : NodePath -> Int -> EditorBlockNode -> Maybe ( EditorBlockNode, EditorBlockNode )
 splitBlockAtPathAndOffset path offset node =
     case path of
@@ -892,15 +898,12 @@ splitBlockAtPathAndOffset path offset node =
                             case n of
                                 TextLeaf tl ->
                                     let
-                                        before =
-                                            TextLeaf { tl | text = String.left offset tl.text }
-
-                                        after =
-                                            TextLeaf { tl | text = String.dropLeft offset tl.text }
+                                        ( before, after ) =
+                                            splitTextLeaf offset tl
                                     in
                                     Just
-                                        ( { node | childNodes = InlineLeafArray (Array.set x before (Array.Extra.sliceUntil (x + 1) a)) }
-                                        , { node | childNodes = InlineLeafArray (Array.set 0 after (Array.Extra.sliceFrom x a)) }
+                                        ( { node | childNodes = InlineLeafArray (Array.set x (TextLeaf before) (Array.Extra.sliceUntil (x + 1) a)) }
+                                        , { node | childNodes = InlineLeafArray (Array.set 0 (TextLeaf after) (Array.Extra.sliceFrom x a)) }
                                         )
 
                                 InlineLeaf _ ->
