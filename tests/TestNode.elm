@@ -3,7 +3,7 @@ module TestNode exposing (..)
 import Array
 import Expect
 import Rte.Model exposing (ChildNodes(..), EditorAttribute(..), EditorInlineLeaf(..), Mark, NodePath, selectableMark)
-import Rte.Node exposing (EditorFragment(..), EditorNode(..), NodeResult(..), findAncestor, findNodeBackwardFrom, findNodeBackwardFromExclusive, findNodeForwardFrom, findNodeForwardFromExclusive, findTextBlockNodeAncestor, indexedFoldl, indexedFoldr, indexedMap, isSelectable, map, next, nodeAt, previous, removeNodeAndEmptyParents, removeNodesInRange, replaceNode, replaceNodeWithFragment)
+import Rte.Node exposing (EditorFragment(..), EditorNode(..), findAncestor, findBackwardFrom, findBackwardFromExclusive, findForwardFrom, findForwardFromExclusive, findTextBlockNodeAncestor, indexedFoldl, indexedFoldr, indexedMap, isSelectable, map, next, nodeAt, previous, removeInRange, removeNodeAndEmptyParents, replace, replaceWithFragment)
 import Rte.NodePath exposing (toString)
 import Test exposing (Test, describe, test)
 
@@ -278,91 +278,91 @@ findNodeWithName name _ node =
                     False
 
 
-testFindNodeBackwardFrom : Test
-testFindNodeBackwardFrom =
-    describe "Tests that findNodeBackwardFrom works as expected"
+testFindBackwardFrom : Test
+testFindBackwardFrom =
+    describe "Tests that findBackwardFrom works as expected"
         [ test "Tests that the path is correctly passed in" <|
             \_ ->
                 Expect.equal (Just ( [ 0, 0 ], InlineLeafWrapper textNode1 ))
-                    (findNodeBackwardFrom (findNodeAtPath [ 0, 0 ]) [ 0, 1 ] rootNode)
+                    (findBackwardFrom (findNodeAtPath [ 0, 0 ]) [ 0, 1 ] rootNode)
         , test "Tests that the function includes the passed in path" <|
             \_ ->
                 Expect.equal (Just ( [ 0, 0 ], InlineLeafWrapper textNode1 ))
-                    (findNodeBackwardFrom (findNodeAtPath [ 0, 0 ]) [ 0, 0 ] rootNode)
+                    (findBackwardFrom (findNodeAtPath [ 0, 0 ]) [ 0, 0 ] rootNode)
         , test "Tests that the function returns Nothing if nothing is found" <|
             \_ ->
                 Expect.equal Nothing
-                    (findNodeBackwardFrom (findNodeAtPath [ 1, 0 ]) [ 0, 1 ] rootNode)
+                    (findBackwardFrom (findNodeAtPath [ 1, 0 ]) [ 0, 1 ] rootNode)
         , test "Tests that the function passes in the node parameter correctly" <|
             \_ ->
                 Expect.equal (Just ( [], BlockNodeWrapper rootNode ))
-                    (findNodeBackwardFrom (findNodeWithName "div") [ 0, 1 ] rootNode)
+                    (findBackwardFrom (findNodeWithName "div") [ 0, 1 ] rootNode)
         ]
 
 
-testFindNodeBackwardFromExclusive : Test
-testFindNodeBackwardFromExclusive =
-    describe "Tests that findNodeBackwardFromExclusive works as expected"
+testFindBackwardFromExclusive : Test
+testFindBackwardFromExclusive =
+    describe "Tests that findBackwardFromExclusive works as expected"
         [ test "Tests that the path is correctly passed in" <|
             \_ ->
                 Expect.equal (Just ( [ 0, 0 ], InlineLeafWrapper textNode1 ))
-                    (findNodeBackwardFromExclusive (findNodeAtPath [ 0, 0 ]) [ 0, 1 ] rootNode)
+                    (findBackwardFromExclusive (findNodeAtPath [ 0, 0 ]) [ 0, 1 ] rootNode)
         , test "Tests that the function excludes the passed in path" <|
             \_ ->
                 Expect.equal Nothing
-                    (findNodeBackwardFromExclusive (findNodeAtPath [ 0, 0 ]) [ 0, 0 ] rootNode)
+                    (findBackwardFromExclusive (findNodeAtPath [ 0, 0 ]) [ 0, 0 ] rootNode)
         , test "Tests that the function returns Nothing if nothing is found" <|
             \_ ->
                 Expect.equal Nothing
-                    (findNodeBackwardFromExclusive (findNodeAtPath [ 1, 0 ]) [ 0, 1 ] rootNode)
+                    (findBackwardFromExclusive (findNodeAtPath [ 1, 0 ]) [ 0, 1 ] rootNode)
         , test "Tests that the function passes in the node parameter correctly" <|
             \_ ->
                 Expect.equal (Just ( [], BlockNodeWrapper rootNode ))
-                    (findNodeBackwardFromExclusive (findNodeWithName "div") [ 0, 1 ] rootNode)
+                    (findBackwardFromExclusive (findNodeWithName "div") [ 0, 1 ] rootNode)
         ]
 
 
-testFindNodeForwardFrom : Test
-testFindNodeForwardFrom =
+testFindForwardFrom : Test
+testFindForwardFrom =
     describe "Tests that findNodeForwardFrom works as expected"
         [ test "Tests that the path is correctly passed in" <|
             \_ ->
                 Expect.equal (Just ( [ 0, 0 ], InlineLeafWrapper textNode1 ))
-                    (findNodeForwardFrom (findNodeAtPath [ 0, 0 ]) [ 0 ] rootNode)
+                    (findForwardFrom (findNodeAtPath [ 0, 0 ]) [ 0 ] rootNode)
         , test "Tests that the function includes the passed in path" <|
             \_ ->
                 Expect.equal (Just ( [ 0, 0 ], InlineLeafWrapper textNode1 ))
-                    (findNodeForwardFrom (findNodeAtPath [ 0, 0 ]) [ 0, 0 ] rootNode)
+                    (findForwardFrom (findNodeAtPath [ 0, 0 ]) [ 0, 0 ] rootNode)
         , test "Tests that the function returns Nothing if nothing is found" <|
             \_ ->
                 Expect.equal Nothing
-                    (findNodeForwardFrom (findNodeAtPath [ 1, 0 ]) [ 0, 1 ] rootNode)
+                    (findForwardFrom (findNodeAtPath [ 1, 0 ]) [ 0, 1 ] rootNode)
         , test "Tests that the function passes in the node parameter correctly" <|
             \_ ->
                 Expect.equal (Just ( [], BlockNodeWrapper rootNode ))
-                    (findNodeForwardFrom (findNodeWithName "div") [] rootNode)
+                    (findForwardFrom (findNodeWithName "div") [] rootNode)
         ]
 
 
-testFindNodeForwardFromExclusive : Test
-testFindNodeForwardFromExclusive =
+testFindForwardFromExclusive : Test
+testFindForwardFromExclusive =
     describe "Tests that findNodeForwardFromExclusive works as expected"
         [ test "Tests that the path is correctly passed in" <|
             \_ ->
                 Expect.equal (Just ( [ 0, 0 ], InlineLeafWrapper textNode1 ))
-                    (findNodeForwardFromExclusive (findNodeAtPath [ 0, 0 ]) [ 0 ] rootNode)
+                    (findForwardFromExclusive (findNodeAtPath [ 0, 0 ]) [ 0 ] rootNode)
         , test "Tests that the function excludes the passed in path" <|
             \_ ->
                 Expect.equal Nothing
-                    (findNodeForwardFromExclusive (findNodeAtPath [ 0, 0 ]) [ 0, 0 ] rootNode)
+                    (findForwardFromExclusive (findNodeAtPath [ 0, 0 ]) [ 0, 0 ] rootNode)
         , test "Tests that the function returns Nothing if nothing is found" <|
             \_ ->
                 Expect.equal Nothing
-                    (findNodeForwardFromExclusive (findNodeAtPath [ 1, 0 ]) [ 0, 1 ] rootNode)
+                    (findForwardFromExclusive (findNodeAtPath [ 1, 0 ]) [ 0, 1 ] rootNode)
         , test "Tests that the function passes in the node parameter correctly" <|
             \_ ->
                 Expect.equal (Just ( [ 0 ], BlockNodeWrapper pHtmlNode ))
-                    (findNodeForwardFromExclusive (findNodeWithName "p") [] rootNode)
+                    (findForwardFromExclusive (findNodeWithName "p") [] rootNode)
         ]
 
 
@@ -448,17 +448,17 @@ testRemoveNodeAndEmptyParents =
         ]
 
 
-testRemoveNodesInRange : Test
-testRemoveNodesInRange =
-    describe "Tests that removeNodesInRange works as expected"
+testRemoveInRange : Test
+testRemoveInRange =
+    describe "Tests that removeInRange works as expected"
         [ test "Tests that we remove elements we want" <|
             \_ ->
                 Expect.equal removedRootAll
-                    (removeNodesInRange [ 0 ] [ 0 ] rootNode)
+                    (removeInRange [ 0 ] [ 0 ] rootNode)
         , test "Tests that we remove elements we want, part ii" <|
             \_ ->
                 Expect.equal removedRootNodeRemovedPNodeAll
-                    (removeNodesInRange [ 0, 0 ] [ 0, 1 ] rootNode)
+                    (removeInRange [ 0, 0 ] [ 0, 1 ] rootNode)
         ]
 
 
@@ -478,21 +478,21 @@ replacePNode =
     }
 
 
-testReplaceNode : Test
-testReplaceNode =
-    describe "Tests that replaceNode works as expected"
+testReplace : Test
+testReplace =
+    describe "Tests that replace works as expected"
         [ test "Tests that we replace the element we want" <|
             \_ ->
                 Expect.equal (Ok replaceRootPNode)
-                    (replaceNode [ 0, 0 ] (InlineLeafWrapper textNode2) rootNode)
+                    (replace [ 0, 0 ] (InlineLeafWrapper textNode2) rootNode)
         ]
 
 
-testReplaceNodeWithFragment : Test
-testReplaceNodeWithFragment =
-    describe "Tests that replaceNodeWithFragment works as expected"
+testReplaceWithFragment : Test
+testReplaceWithFragment =
+    describe "Tests that replaceWithFragment works as expected"
         [ test "Tests that we replace the element we want" <|
             \_ ->
                 Expect.equal (Ok replaceRootPNode)
-                    (replaceNodeWithFragment [ 0, 0 ] (InlineLeafFragment <| Array.fromList [ textNode2 ]) rootNode)
+                    (replaceWithFragment [ 0, 0 ] (InlineLeafFragment <| Array.fromList [ textNode2 ]) rootNode)
         ]

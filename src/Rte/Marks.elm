@@ -1,7 +1,7 @@
 module Rte.Marks exposing (..)
 
 import Rte.Model exposing (EditorBlockNode, EditorInlineLeaf(..), Mark, NodePath)
-import Rte.Node exposing (EditorNode(..), NodeResult(..), nodeAt, replaceNode)
+import Rte.Node exposing (EditorNode(..), nodeAt, replace)
 
 
 findMarksFromInlineLeaf : EditorInlineLeaf -> List Mark
@@ -30,7 +30,7 @@ toggleMarkAtPath action mark path node =
                         newBlock =
                             { blockNode | parameters = { parameters | marks = toggleMark action mark parameters.marks } }
                     in
-                    replaceNode path (BlockNodeWrapper newBlock) node
+                    replace path (BlockNodeWrapper newBlock) node
 
                 InlineLeafWrapper inlineLeaf ->
                     case inlineLeaf of
@@ -39,14 +39,14 @@ toggleMarkAtPath action mark path node =
                                 newLeaf =
                                     { l | marks = toggleMark action mark l.marks }
                             in
-                            replaceNode path (InlineLeafWrapper (TextLeaf newLeaf)) node
+                            replace path (InlineLeafWrapper (TextLeaf newLeaf)) node
 
                         InlineLeaf l ->
                             let
                                 newLeaf =
                                     { l | marks = toggleMark action mark l.marks }
                             in
-                            replaceNode path (InlineLeafWrapper (InlineLeaf newLeaf)) node
+                            replace path (InlineLeafWrapper (InlineLeaf newLeaf)) node
 
 
 type ToggleAction

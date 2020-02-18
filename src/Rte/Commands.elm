@@ -4,7 +4,7 @@ import Array
 import Dict exposing (Dict)
 import List.Extra
 import Rte.Model exposing (ChildNodes(..), CommandBinding(..), CommandFunc, CommandMap, Editor, EditorBlockNode, EditorInlineLeaf(..), EditorState, NodePath, Selection)
-import Rte.Node exposing (EditorNode(..), findNodeBackwardFromExclusive, findNodeForwardFromExclusive, findTextBlockNodeAncestor, isSelectable, nodeAt, removeNodeAndEmptyParents, removeNodesInRange, replaceNode)
+import Rte.Node exposing (EditorFragment(..), EditorNode(..), findBackwardFromExclusive, findForwardFromExclusive, findTextBlockNodeAncestor, isSelectable, nodeAt, removeInRange, removeNodeAndEmptyParents, replace, replaceWithFragment, splitBlockAtPathAndOffset)
 import Rte.NodePath as NodePath exposing (decrementNodePath, incrementNodePath, toString)
 import Rte.Selection exposing (caretSelection, isCollapsed, normalizeSelection)
 
@@ -44,8 +44,8 @@ backspaceKey =
     "Backspace"
 
 
-setCommand : List CommandBinding -> CommandFunc -> CommandMap -> CommandMap
-setCommand bindings func map =
+set : List CommandBinding -> CommandFunc -> CommandMap -> CommandMap
+set bindings func map =
     List.foldl
         (\binding accMap ->
             case binding of
@@ -59,8 +59,8 @@ setCommand bindings func map =
         bindings
 
 
-stackCommands : List CommandBinding -> CommandFunc -> CommandMap -> CommandMap
-stackCommands bindings func map =
+stack : List CommandBinding -> CommandFunc -> CommandMap -> CommandMap
+stack bindings func map =
     List.foldl
         (\binding accMap ->
             case binding of
@@ -109,9 +109,9 @@ key keys =
 
 defaultCommandBindings =
     emptyCommandBinding
-        |> setCommand [ inputEvent "insertLineBreak", key [ shiftKey, enterKey ], key [ shiftKey, enterKey ] ] insertLineBreakCommand
-        |> setCommand [ inputEvent "insertParagraph", key [ enterKey ], key [ returnKey ] ] splitBlockCommand
-        |> setCommand [ inputEvent "deleteContentBackward", key [ backspaceKey ] ] (removeRangeSelection |> otherwiseDo removeSelectedLeafElementCommand |> otherwiseDo backspaceInlineElementCommand |> otherwiseDo joinBackward |> otherwiseDo backspaceCommand)
+        |> set [ inputEvent "insertLineBreak", key [ shiftKey, enterKey ], key [ shiftKey, enterKey ] ] insertLineBreak
+        |> set [ inputEvent "insertParagraph", key [ enterKey ], key [ returnKey ] ] splitBlock
+        |> set [ inputEvent "deleteContentBackward", key [ backspaceKey ] ] (removeRangeSelection |> otherwiseDo removeSelectedLeafElementCommand |> otherwiseDo backspaceInlineElement |> otherwiseDo joinBackward |> otherwiseDo backspace)
 
 
 joinBackward : CommandFunc
@@ -259,7 +259,7 @@ joinForward editorState =
                                             removed =
                                                 removeNodeAndEmptyParents p2 editorState.root
                                         in
-                                        case replaceNode p1 (BlockNodeWrapper newBlock) removed of
+                                        case replace p1 (BlockNodeWrapper newBlock) removed of
                                             Err e ->
                                                 Err e
 
@@ -331,12 +331,12 @@ findTextBlock findFunc path node =
 
 findNextTextBlock : NodePath -> EditorBlockNode -> Maybe ( NodePath, EditorBlockNode )
 findNextTextBlock =
-    findTextBlock findNodeForwardFromExclusive
+    findTextBlock findForwardFromExclusive
 
 
 findPreviousTextBlock : NodePath -> EditorBlockNode -> Maybe ( NodePath, EditorBlockNode )
 findPreviousTextBlock =
-    findTextBlock findNodeBackwardFromExclusive
+    findTextBlock findBackwardFromExclusive
 
 
 removeRangeSelection : CommandFunc
@@ -386,7 +386,7 @@ removeRangeSelection editorState =
                                 Ok removedStart ->
                                     let
                                         removedNodes =
-                                            removeNodesInRange
+                                            removeInRange
                                                 (incrementNodePath normalizedSelection.anchorNode)
                                                 (decrementNodePath normalizedSelection.focusNode)
                                                 removedStart
@@ -404,18 +404,53 @@ removeRangeSelection editorState =
                                         Ok <| Result.withDefault newEditorState (joinForward newEditorState)
 
 
-insertLineBreakCommand : CommandFunc
-insertLineBreakCommand editorState =
+insertLineBreak : CommandFunc
+insertLineBreak editorState =
     Err "Not implemented"
 
 
-splitBlockCommand : CommandFunc
-splitBlockCommand editorState =
-    Err "Not implemented"
+splitBlock : CommandFunc
+splitBlock editorState =
+    case editorState.selection of
+        Nothing ->
+            Err "Nothing is selected"
+
+        Just selection ->
+            if not <| isCollapsed selection then
+                removeRangeSelection editorState |> Result.andThen splitBlock
+
+            else
+                case findTextBlockNodeAncestor selection.anchorNode editorState.root of
+                    Nothing ->
+                        Err "I can only split nodes that have a text block ancestor"
+
+                    Just ( textBlockPath, textBlockNode ) ->
+                        let
+                            relativePath =
+                                List.drop (List.length textBlockPath) selection.anchorNode
+                        in
+                        case splitBlockAtPathAndOffset relativePath selection.anchorOffset textBlockNode of
+                            Nothing ->
+                                Err <| "Can not split block at path " ++ toString selection.anchorNode
+
+                            Just ( before, after ) ->
+                                case replaceWithFragment textBlockPath (BlockNodeFragment (Array.fromList [ before, after ])) editorState.root of
+                                    Err s ->
+                                        Err s
+
+                                    Ok newRoot ->
+                                        let
+                                            newSelectionPath =
+                                                incrementNodePath textBlockPath ++ [ 0 ]
+
+                                            newSelection =
+                                                caretSelection newSelectionPath 0
+                                        in
+                                        Ok { editorState | root = newRoot, selection = Just newSelection }
 
 
-headerToNewParagraphCommand : List String -> String -> CommandFunc
-headerToNewParagraphCommand headerElements paragraphElement editorState =
+headerToNewParagraph : List String -> String -> CommandFunc
+headerToNewParagraph headerElements paragraphElement editorState =
     Err "Not implemented"
 
 
@@ -466,7 +501,7 @@ removeTextAtRange nodePath start maybeEnd root =
                                         Just end ->
                                             TextLeaf { v | text = String.left start v.text ++ String.dropLeft end v.text }
                             in
-                            replaceNode nodePath (InlineLeafWrapper textNode) root
+                            replace nodePath (InlineLeafWrapper textNode) root
 
         Nothing ->
             Err <| "There is no node at node path " ++ toString nodePath
@@ -485,7 +520,7 @@ removeSelectedLeafElementCommand editorState =
             else if isLeafNode selection.anchorNode editorState.root then
                 let
                     newSelection =
-                        case findNodeBackwardFromExclusive (\_ n -> isSelectable n) selection.anchorNode editorState.root of
+                        case findBackwardFromExclusive (\_ n -> isSelectable n) selection.anchorNode editorState.root of
                             Nothing ->
                                 Nothing
 
@@ -516,13 +551,13 @@ removeSelectedLeafElementCommand editorState =
                 Err "There's no leaf node at the given selection"
 
 
-backspaceInlineElementCommand : CommandFunc
-backspaceInlineElementCommand editorState =
+backspaceInlineElement : CommandFunc
+backspaceInlineElement editorState =
     Err "Not implemented"
 
 
-backspaceCommand : CommandFunc
-backspaceCommand editorState =
+backspace : CommandFunc
+backspace editorState =
     Err "Not implemented"
 
 

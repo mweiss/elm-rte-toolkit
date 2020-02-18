@@ -14,9 +14,9 @@ import Rte.EditorUtils exposing (forceRerender, zeroWidthSpace)
 import Rte.HtmlNode exposing (editorBlockNodeToHtmlNode)
 import Rte.KeyDown
 import Rte.Model exposing (..)
-import Rte.Node exposing (EditorNode(..), NodeResult(..), nodeAt)
+import Rte.Node exposing (EditorNode(..), nodeAt)
 import Rte.NodePath as NodePath exposing (toString)
-import Rte.Selection exposing (caretSelection, domToEditor, editorToDom, isCollapsed, markSelection)
+import Rte.Selection exposing (domToEditor, editorToDom, isCollapsed, markSelection)
 import Rte.Spec exposing (childNodesPlaceholder, findNodeDefinitionFromSpec)
 
 

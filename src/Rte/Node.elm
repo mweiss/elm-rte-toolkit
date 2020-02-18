@@ -2,12 +2,11 @@ module Rte.Node exposing
     ( EditorFragment(..)
     , EditorNode(..)
     , Iterator
-    , NodeResult(..)
     , findAncestor
-    , findNodeBackwardFrom
-    , findNodeBackwardFromExclusive
-    , findNodeForwardFrom
-    , findNodeForwardFromExclusive
+    , findBackwardFrom
+    , findBackwardFromExclusive
+    , findForwardFrom
+    , findForwardFromExclusive
     , findTextBlockNodeAncestor
     , foldl
     , foldr
@@ -19,21 +18,16 @@ module Rte.Node exposing
     , next
     , nodeAt
     , previous
+    , removeInRange
     , removeNodeAndEmptyParents
-    , removeNodesInRange
-    , replaceNode
-    , replaceNodeWithFragment
+    , replace
+    , replaceWithFragment
+    , splitBlockAtPathAndOffset
     )
 
 import Array exposing (Array)
 import Array.Extra
 import Rte.Model exposing (ChildNodes(..), EditorBlockNode, EditorInlineLeaf(..), HtmlNode(..), NodePath, selectableMark)
-
-
-type NodeResult
-    = BlockNodeResult EditorBlockNode
-    | InlineLeafResult EditorInlineLeaf
-    | NoResult
 
 
 type EditorNode
@@ -203,23 +197,23 @@ next path node =
                     Nothing
 
 
-findNodeForwardFrom : (NodePath -> EditorNode -> Bool) -> NodePath -> EditorBlockNode -> Maybe ( NodePath, EditorNode )
-findNodeForwardFrom =
+findForwardFrom : (NodePath -> EditorNode -> Bool) -> NodePath -> EditorBlockNode -> Maybe ( NodePath, EditorNode )
+findForwardFrom =
     findNodeFrom next
 
 
-findNodeForwardFromExclusive : (NodePath -> EditorNode -> Bool) -> NodePath -> EditorBlockNode -> Maybe ( NodePath, EditorNode )
-findNodeForwardFromExclusive =
+findForwardFromExclusive : (NodePath -> EditorNode -> Bool) -> NodePath -> EditorBlockNode -> Maybe ( NodePath, EditorNode )
+findForwardFromExclusive =
     findNodeFromExclusive next
 
 
-findNodeBackwardFrom : (NodePath -> EditorNode -> Bool) -> NodePath -> EditorBlockNode -> Maybe ( NodePath, EditorNode )
-findNodeBackwardFrom =
+findBackwardFrom : (NodePath -> EditorNode -> Bool) -> NodePath -> EditorBlockNode -> Maybe ( NodePath, EditorNode )
+findBackwardFrom =
     findNodeFrom previous
 
 
-findNodeBackwardFromExclusive : (NodePath -> EditorNode -> Bool) -> NodePath -> EditorBlockNode -> Maybe ( NodePath, EditorNode )
-findNodeBackwardFromExclusive =
+findBackwardFromExclusive : (NodePath -> EditorNode -> Bool) -> NodePath -> EditorBlockNode -> Maybe ( NodePath, EditorNode )
+findBackwardFromExclusive =
     findNodeFromExclusive previous
 
 
@@ -490,8 +484,8 @@ indexedFoldlRec path func acc node =
 {- replaceNodeWithFragment replaces the node at the node path with the given fragment -}
 
 
-replaceNodeWithFragment : NodePath -> EditorFragment -> EditorBlockNode -> Result String EditorBlockNode
-replaceNodeWithFragment path fragment root =
+replaceWithFragment : NodePath -> EditorFragment -> EditorBlockNode -> Result String EditorBlockNode
+replaceWithFragment path fragment root =
     case path of
         [] ->
             Err "Invalid path"
@@ -547,7 +541,7 @@ replaceNodeWithFragment path fragment root =
                             Err "I received an invalid path, I can't find a block node at the given index."
 
                         Just node ->
-                            case replaceNodeWithFragment xs fragment node of
+                            case replaceWithFragment xs fragment node of
                                 Ok n ->
                                     Ok { root | childNodes = BlockArray (Array.set x n a) }
 
@@ -565,8 +559,8 @@ replaceNodeWithFragment path fragment root =
 {- replaceNode replaces the node at the nodepath with the given editor node -}
 
 
-replaceNode : NodePath -> EditorNode -> EditorBlockNode -> Result String EditorBlockNode
-replaceNode path node root =
+replace : NodePath -> EditorNode -> EditorBlockNode -> Result String EditorBlockNode
+replace path node root =
     case path of
         [] ->
             case node of
@@ -586,7 +580,7 @@ replaceNode path node root =
                         InlineLeafWrapper n ->
                             InlineLeafFragment <| Array.fromList [ n ]
             in
-            replaceNodeWithFragment path fragment root
+            replaceWithFragment path fragment root
 
 
 {-| Finds the closest node ancestor with inline content.
@@ -680,8 +674,8 @@ nodeAt path node =
 -}
 
 
-removeNodesInRange : NodePath -> NodePath -> EditorBlockNode -> EditorBlockNode
-removeNodesInRange start end node =
+removeInRange : NodePath -> NodePath -> EditorBlockNode -> EditorBlockNode
+removeInRange start end node =
     let
         startIndex =
             Maybe.withDefault 0 (List.head start)
@@ -721,7 +715,7 @@ removeNodesInRange start end node =
                             node
 
                         Just b ->
-                            { node | childNodes = BlockArray <| Array.set startIndex (removeNodesInRange startRest endRest b) a }
+                            { node | childNodes = BlockArray <| Array.set startIndex (removeInRange startRest endRest b) a }
 
             InlineLeafArray a ->
                 if List.isEmpty startRest && List.isEmpty endRest then
@@ -753,7 +747,7 @@ removeNodesInRange start end node =
                                     Array.empty
 
                                 Just b ->
-                                    Array.fromList [ removeNodesInRange startRest endRest b ]
+                                    Array.fromList [ removeInRange startRest endRest b ]
 
                     rightRest =
                         if List.isEmpty endRest then
@@ -765,7 +759,7 @@ removeNodesInRange start end node =
                                     Array.empty
 
                                 Just b ->
-                                    Array.fromList [ removeNodesInRange startRest endRest b ]
+                                    Array.fromList [ removeInRange startRest endRest b ]
                 in
                 { node | childNodes = BlockArray <| List.foldr Array.append Array.empty [ left, leftRest, rightRest, right ] }
 
@@ -844,8 +838,76 @@ removeNodeAndEmptyParents path node =
                                 _ ->
                                     { node | childNodes = BlockArray <| Array.set x newNode a }
 
-                InlineLeafArray a ->
+                InlineLeafArray _ ->
                     node
 
                 Leaf ->
                     node
+
+
+splitBlockAtPathAndOffset : NodePath -> Int -> EditorBlockNode -> Maybe ( EditorBlockNode, EditorBlockNode )
+splitBlockAtPathAndOffset path offset node =
+    case path of
+        [] ->
+            case node.childNodes of
+                BlockArray a ->
+                    Just
+                        ( { node | childNodes = BlockArray (Array.Extra.sliceUntil offset a) }
+                        , { node | childNodes = BlockArray (Array.Extra.sliceFrom offset a) }
+                        )
+
+                InlineLeafArray a ->
+                    Just
+                        ( { node | childNodes = InlineLeafArray (Array.Extra.sliceUntil offset a) }
+                        , { node | childNodes = InlineLeafArray (Array.Extra.sliceFrom offset a) }
+                        )
+
+                Leaf ->
+                    Just ( node, node )
+
+        x :: xs ->
+            case node.childNodes of
+                BlockArray a ->
+                    case Array.get x a of
+                        Nothing ->
+                            Nothing
+
+                        Just n ->
+                            case splitBlockAtPathAndOffset xs offset n of
+                                Nothing ->
+                                    Nothing
+
+                                Just ( before, after ) ->
+                                    Just
+                                        ( { node | childNodes = BlockArray (Array.set x before a) }
+                                        , { node | childNodes = BlockArray (Array.set x after a) }
+                                        )
+
+                InlineLeafArray a ->
+                    case Array.get x a of
+                        Nothing ->
+                            Nothing
+
+                        Just n ->
+                            case n of
+                                TextLeaf tl ->
+                                    let
+                                        before =
+                                            TextLeaf { tl | text = String.left offset tl.text }
+
+                                        after =
+                                            TextLeaf { tl | text = String.dropLeft offset tl.text }
+                                    in
+                                    Just
+                                        ( { node | childNodes = InlineLeafArray (Array.set x before (Array.Extra.sliceUntil (x + 1) a)) }
+                                        , { node | childNodes = InlineLeafArray (Array.set 0 after (Array.Extra.sliceFrom x a)) }
+                                        )
+
+                                InlineLeaf _ ->
+                                    Just
+                                        ( { node | childNodes = InlineLeafArray (Array.Extra.sliceUntil x a) }
+                                        , { node | childNodes = InlineLeafArray (Array.Extra.sliceFrom x a) }
+                                        )
+
+                Leaf ->
+                    Nothing
