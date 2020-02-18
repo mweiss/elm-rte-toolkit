@@ -4,9 +4,9 @@ import Array
 import Dict exposing (Dict)
 import List.Extra
 import Rte.Model exposing (ChildNodes(..), CommandBinding(..), CommandFunc, CommandMap, Editor, EditorBlockNode, EditorInlineLeaf(..), EditorState, NodePath, Selection)
-import Rte.Node exposing (EditorFragment(..), EditorNode(..), findBackwardFromExclusive, findForwardFrom, findForwardFromExclusive, findTextBlockNodeAncestor, isSelectable, nodeAt, removeInRange, removeNodeAndEmptyParents, replace, replaceWithFragment, splitBlockAtPathAndOffset, splitTextLeaf)
+import Rte.Node exposing (EditorFragment(..), EditorNode(..), findBackwardFromExclusive, findForwardFrom, findForwardFromExclusive, findTextBlockNodeAncestor, isSelectable, nodeAt, previous, removeInRange, removeNodeAndEmptyParents, replace, replaceWithFragment, splitBlockAtPathAndOffset, splitTextLeaf)
 import Rte.NodePath as NodePath exposing (decrementNodePath, incrementNodePath, toString)
-import Rte.Selection exposing (caretSelection, isCollapsed, normalizeSelection)
+import Rte.Selection exposing (caretSelection, isCollapsed, normalizeSelection, singleNodeRangeSelection)
 
 
 altKey : String
@@ -111,7 +111,7 @@ defaultCommandBindings =
     emptyCommandBinding
         |> set [ inputEvent "insertLineBreak", key [ shiftKey, enterKey ], key [ shiftKey, enterKey ] ] insertLineBreak
         |> set [ inputEvent "insertParagraph", key [ enterKey ], key [ returnKey ] ] splitBlock
-        |> set [ inputEvent "deleteContentBackward", key [ backspaceKey ] ] (removeRangeSelection |> otherwiseDo removeSelectedLeafElementCommand |> otherwiseDo backspaceInlineElement |> otherwiseDo joinBackward |> otherwiseDo backspace)
+        |> set [ inputEvent "deleteContentBackward", key [ backspaceKey ] ] (removeRangeSelection |> otherwiseDo removeSelectedLeafElementCommand |> otherwiseDo backspaceInlineElement |> otherwiseDo joinBackward |> otherwiseDo backspaceText)
 
 
 joinBackward : CommandFunc
@@ -632,9 +632,83 @@ backspaceInlineElement editorState =
     Err "Not implemented"
 
 
-backspace : CommandFunc
-backspace editorState =
+backspaceBlockElement : CommandFunc
+backspaceBlockElement editorState =
     Err "Not implemented"
+
+
+backspaceText : CommandFunc
+backspaceText editorState =
+    case editorState.selection of
+        Nothing ->
+            Err "Nothing is selected"
+
+        Just selection ->
+            if not <| isCollapsed selection then
+                Err "I can only backspace a collapsed selection"
+
+            else if selection.anchorOffset > 1 then
+                Err "When the offset is greater than 1, we'll allow the default browser behavior to occur"
+
+            else
+                case nodeAt selection.anchorNode editorState.root of
+                    Nothing ->
+                        Err "Invalid selection"
+
+                    Just node ->
+                        case node of
+                            BlockNodeWrapper _ ->
+                                Err "I cannot backspace a block node"
+
+                            InlineLeafWrapper il ->
+                                case il of
+                                    InlineLeaf _ ->
+                                        Err "I cannot backspace an inline leaf"
+
+                                    TextLeaf tl ->
+                                        if selection.anchorOffset == 1 then
+                                            case replace selection.anchorNode (InlineLeafWrapper (TextLeaf { tl | text = String.dropLeft 1 tl.text })) editorState.root of
+                                                Err s ->
+                                                    Err s
+
+                                                Ok newRoot ->
+                                                    let
+                                                        newSelection =
+                                                            caretSelection selection.anchorNode 0
+                                                    in
+                                                    Ok { editorState | root = newRoot, selection = Just newSelection }
+
+                                        else
+                                            case previous selection.anchorNode editorState.root of
+                                                Nothing ->
+                                                    Err "No previous node to delete"
+
+                                                Just ( previousPath, previousNode ) ->
+                                                    case previousNode of
+                                                        InlineLeafWrapper previousInlineLeafWrapper ->
+                                                            case previousInlineLeafWrapper of
+                                                                TextLeaf previousTextLeaf ->
+                                                                    let
+                                                                        l =
+                                                                            String.length previousTextLeaf.text
+
+                                                                        newSelection =
+                                                                            singleNodeRangeSelection previousPath l (max 0 (l - 1))
+                                                                    in
+                                                                    removeRangeSelection { editorState | selection = Just newSelection }
+
+                                                                InlineLeaf _ ->
+                                                                    Err "Cannot backspace the text of an inline leaf"
+
+                                                        BlockNodeWrapper _ ->
+                                                            Err "Cannot backspace the text of a block node"
+
+
+
+-- backspace logic for text
+-- offset = 0, try to delete the previous text node's text
+-- offset = 1, set the text node to empty
+-- other offset, allow browser to do the default behavior
 
 
 backspaceWord : CommandFunc
