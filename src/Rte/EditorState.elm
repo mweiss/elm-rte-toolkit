@@ -2,9 +2,39 @@ module Rte.EditorState exposing (..)
 
 import Array exposing (Array)
 import List.Extra
-import Rte.Model exposing (ChildNodes(..), EditorBlockNode, EditorInlineLeaf(..), EditorState, NodePath)
+import Rte.Model exposing (ChildNodes(..), EditorBlockNode, EditorInlineLeaf(..), EditorState, NodePath, selectionMark)
 import Rte.Node exposing (EditorNode(..), findTextBlockNodeAncestor, map)
 import Rte.Selection exposing (rangeSelection)
+
+
+removeExtraEmptyTextLeaves : List EditorInlineLeaf -> List EditorInlineLeaf
+removeExtraEmptyTextLeaves inlineLeaves =
+    case inlineLeaves of
+        [] ->
+            inlineLeaves
+
+        [ _ ] ->
+            inlineLeaves
+
+        x :: y :: xs ->
+            case x of
+                TextLeaf xL ->
+                    case y of
+                        TextLeaf yL ->
+                            if String.isEmpty xL.text && (not <| List.member selectionMark xL.marks) then
+                                removeExtraEmptyTextLeaves (y :: xs)
+
+                            else if String.isEmpty yL.text && (not <| List.member selectionMark yL.marks) then
+                                removeExtraEmptyTextLeaves (x :: xs)
+
+                            else
+                                x :: removeExtraEmptyTextLeaves (y :: xs)
+
+                        InlineLeaf _ ->
+                            x :: removeExtraEmptyTextLeaves (y :: xs)
+
+                InlineLeaf _ ->
+                    x :: removeExtraEmptyTextLeaves (y :: xs)
 
 
 mergeSimilarInlineLeaves : List EditorInlineLeaf -> List EditorInlineLeaf
@@ -21,11 +51,12 @@ mergeSimilarInlineLeaves inlineLeaves =
                 TextLeaf xL ->
                     case y of
                         TextLeaf yL ->
-                            if xL.marks == yL.marks then
-                                mergeSimilarInlineLeaves (TextLeaf { xL | text = xL.text ++ yL.text } :: xs)
+                            Debug.log "whut" <|
+                                if xL.marks == yL.marks then
+                                    mergeSimilarInlineLeaves (TextLeaf { xL | text = xL.text ++ yL.text } :: xs)
 
-                            else
-                                x :: mergeSimilarInlineLeaves (y :: xs)
+                                else
+                                    x :: mergeSimilarInlineLeaves (y :: xs)
 
                         InlineLeaf _ ->
                             x :: mergeSimilarInlineLeaves (y :: xs)
@@ -43,7 +74,13 @@ reduceNode node =
                     BlockNodeWrapper bn ->
                         case bn.childNodes of
                             InlineLeafArray a ->
-                                BlockNodeWrapper { bn | childNodes = InlineLeafArray <| Array.fromList (mergeSimilarInlineLeaves (Array.toList a)) }
+                                BlockNodeWrapper
+                                    { bn
+                                        | childNodes =
+                                            InlineLeafArray <|
+                                                Array.fromList
+                                                    (removeExtraEmptyTextLeaves (mergeSimilarInlineLeaves (Array.toList a)))
+                                    }
 
                             _ ->
                                 x

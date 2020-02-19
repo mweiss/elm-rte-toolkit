@@ -506,7 +506,7 @@ renderElementFromSpec editor elementParameters backwardsNodePath children =
             renderHtmlNode node decorators children []
 
         nodeHtmlWithMarks =
-            List.foldr (renderMarkFromSpec editor backwardsNodePath) nodeHtml elementParameters.marks
+            List.foldl (renderMarkFromSpec editor backwardsNodePath) nodeHtml elementParameters.marks
     in
     nodeHtmlWithMarks
 
