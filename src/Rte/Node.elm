@@ -2,6 +2,8 @@ module Rte.Node exposing
     ( EditorFragment(..)
     , EditorNode(..)
     , Iterator
+    , allRange
+    , anyRange
     , findAncestor
     , findBackwardFrom
     , findBackwardFromExclusive
@@ -914,3 +916,32 @@ splitBlockAtPathAndOffset path offset node =
 
                 Leaf ->
                     Nothing
+
+
+allRange : (EditorNode -> Bool) -> NodePath -> NodePath -> EditorBlockNode -> Bool
+allRange pred start end root =
+    if start > end then
+        True
+
+    else
+        case nodeAt start root of
+            Nothing ->
+                -- In the case of an invalid path, just return true.
+                True
+
+            Just node ->
+                if pred node then
+                    case next start root of
+                        Nothing ->
+                            True
+
+                        Just ( nextPath, _ ) ->
+                            allRange pred nextPath end root
+
+                else
+                    False
+
+
+anyRange : (EditorNode -> Bool) -> NodePath -> NodePath -> EditorBlockNode -> Bool
+anyRange pred start end root =
+    not <| allRange (\x -> not <| pred x) start end root

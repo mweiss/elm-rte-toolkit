@@ -14,6 +14,11 @@ findMarksFromInlineLeaf leaf =
             l.marks
 
 
+hasMarkWithName : String -> List Mark -> Bool
+hasMarkWithName name marks =
+    List.any (\m -> m.name == name) marks
+
+
 toggleMarkAtPath : ToggleAction -> Mark -> NodePath -> EditorBlockNode -> Result String EditorBlockNode
 toggleMarkAtPath action mark path node =
     case nodeAt path node of

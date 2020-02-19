@@ -29,11 +29,19 @@ boldToHtmlNode mark children =
     ElementNode "b" [] children
 
 
+italicToHtmlNode : Mark -> Array HtmlNode -> HtmlNode
+italicToHtmlNode mark children =
+    ElementNode "i" [] children
+
+
 simpleSpec : Spec
 simpleSpec =
     { nodes =
         [ { name = "code_block", toHtmlNode = codeBlockToHtmlNode }
         , { name = "crazy_block", toHtmlNode = crazyBlockToHtmlNode }
         ]
-    , marks = [ { name = "bold", toHtmlNode = boldToHtmlNode } ]
+    , marks =
+        [ { name = "bold", toHtmlNode = boldToHtmlNode }
+        , { name = "italic", toHtmlNode = italicToHtmlNode }
+        ]
     }

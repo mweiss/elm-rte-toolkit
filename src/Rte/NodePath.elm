@@ -1,4 +1,4 @@
-module Rte.NodePath exposing (decrementNodePath, domToEditor, editorToDom, incrementNodePath, toString)
+module Rte.NodePath exposing (decrementNodePath, domToEditor, editorToDom, incrementNodePath, parentPath, toString)
 
 {-|
 
@@ -298,3 +298,8 @@ pathToChildContentsFromElementParameters spec parameters =
 toString : NodePath -> String
 toString nodePath =
     String.join ":" <| List.map String.fromInt nodePath
+
+
+parentPath : NodePath -> NodePath
+parentPath path =
+    List.take (List.length path - 1) path

@@ -6,11 +6,12 @@ import BasicSpecs exposing (simpleSpec)
 import Browser
 import Html exposing (Html, div)
 import Html.Attributes
-import Rte.Commands
+import Rte.Commands exposing (toggleMarkOnInlineNodes)
 import Rte.Decorations exposing (addElementDecoration, emptyDecorations, selectableDecoration)
 import Rte.Editor exposing (internalUpdate)
+import Rte.EditorUtils exposing (applyCommand)
 import Rte.List exposing (ListType)
-import Rte.Model exposing (ChildNodes(..), Editor, EditorAttribute(..), EditorBlockNode, EditorInlineLeaf(..), InternalEditorMsg(..), selectableMark)
+import Rte.Model exposing (ChildNodes(..), Editor, EditorAttribute(..), EditorBlockNode, EditorInlineLeaf(..), InternalEditorMsg(..), Mark, selectableMark)
 
 
 headerElements =
@@ -184,7 +185,23 @@ handleInsertImage model =
 
 handleToggleStyle : String -> Model -> Model
 handleToggleStyle style model =
-    model
+    let
+        markName =
+            case style of
+                "Bold" ->
+                    "bold"
+
+                "Italic" ->
+                    "italic"
+
+                _ ->
+                    "bold"
+    in
+    { model
+        | editor =
+            Result.withDefault model.editor <|
+                applyCommand (toggleMarkOnInlineNodes (Mark markName [])) model.editor
+    }
 
 
 handleInsertCode : Model -> Model

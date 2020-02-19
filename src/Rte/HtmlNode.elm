@@ -13,7 +13,7 @@ marksToHtmlNode spec marks node =
         marksAndDefinitions =
             findMarkDefinitionsFromSpec marks spec
     in
-    List.foldr
+    List.foldl
         (\( mark, markDefinition ) htmlNode -> markDefinition.toHtmlNode mark (Array.fromList [ htmlNode ]))
         node
         marksAndDefinitions

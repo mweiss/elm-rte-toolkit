@@ -44,7 +44,7 @@ updateSelection maybeSelection isDomPath editor =
 
 internalUpdate : InternalEditorMsg -> Editor msg -> Editor msg
 internalUpdate msg editor =
-    case Debug.log "msg" msg of
+    case msg of
         ChangeEvent change ->
             updateChangeEvent change editor
 
