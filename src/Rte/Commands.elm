@@ -5,8 +5,8 @@ import Dict exposing (Dict)
 import List.Extra
 import Rte.Marks as ToggleAction exposing (ToggleAction, findMarksFromInlineLeaf, hasMarkWithName, toggleMark)
 import Rte.Model exposing (ChildNodes(..), CommandBinding(..), CommandFunc, CommandMap, Editor, EditorBlockNode, EditorInlineLeaf(..), EditorState, ElementParameters, Mark, NodePath, Selection)
-import Rte.Node exposing (EditorFragment(..), EditorNode(..), allRange, findBackwardFromExclusive, findForwardFrom, findForwardFromExclusive, findTextBlockNodeAncestor, indexedMap, isSelectable, next, nodeAt, previous, removeInRange, removeNodeAndEmptyParents, replace, replaceWithFragment, splitBlockAtPathAndOffset, splitTextLeaf)
-import Rte.NodePath as NodePath exposing (decrementNodePath, incrementNodePath, parentPath, toString)
+import Rte.Node exposing (EditorFragment(..), EditorNode(..), allRange, findAncestor, findBackwardFromExclusive, findForwardFrom, findForwardFromExclusive, findTextBlockNodeAncestor, indexedMap, isSelectable, map, next, nodeAt, previous, removeInRange, removeNodeAndEmptyParents, replace, replaceWithFragment, splitBlockAtPathAndOffset, splitTextLeaf)
+import Rte.NodePath as NodePath exposing (decrementNodePath, incrementNodePath, parent, toString)
 import Rte.Selection exposing (caretSelection, isCollapsed, normalizeSelection, rangeSelection, singleNodeRangeSelection)
 
 
@@ -641,7 +641,7 @@ backspaceText editorState =
                 Err "I can only backspace a collapsed selection"
 
             else if selection.anchorOffset > 1 then
-                Err "When the offset is greater than 1, we'll allow the default browser behavior to occur"
+                removeRangeSelection { editorState | selection = Just <| singleNodeRangeSelection selection.anchorNode (selection.anchorOffset - 1) selection.anchorOffset }
 
             else
                 case nodeAt selection.anchorNode editorState.root of
@@ -697,21 +697,6 @@ backspaceText editorState =
                                                             Err "Cannot backspace the text of a block node"
 
 
-backspaceWord : CommandFunc
-backspaceWord editorState =
-    Err "Not implemented"
-
-
-delete : CommandFunc
-delete editorState =
-    Err "Not implemented"
-
-
-deleteWord : CommandFunc
-deleteWord editorState =
-    Err "Not implemented"
-
-
 isBlockOrInlineNodeWithMark : String -> EditorNode -> Bool
 isBlockOrInlineNodeWithMark markName node =
     case node of
@@ -724,94 +709,95 @@ isBlockOrInlineNodeWithMark markName node =
 
 toggleMarkSingleInlineNode : Mark -> ToggleAction -> EditorState -> Result String EditorState
 toggleMarkSingleInlineNode mark action editorState =
-    case editorState.selection of
-        Nothing ->
-            Err "Nothing is selected"
+    Debug.log "toggleMarkSingleInlineNode" <|
+        case editorState.selection of
+            Nothing ->
+                Err "Nothing is selected"
 
-        Just selection ->
-            if selection.anchorNode /= selection.focusNode then
-                Err "I can only toggle a single inline node"
+            Just selection ->
+                if selection.anchorNode /= selection.focusNode then
+                    Err "I can only toggle a single inline node"
 
-            else
-                let
-                    normalizedSelection =
-                        normalizeSelection selection
-                in
-                case nodeAt normalizedSelection.anchorNode editorState.root of
-                    Nothing ->
-                        Err "No node at selection"
+                else
+                    let
+                        normalizedSelection =
+                            normalizeSelection selection
+                    in
+                    case nodeAt normalizedSelection.anchorNode editorState.root of
+                        Nothing ->
+                            Err "No node at selection"
 
-                    Just node ->
-                        case node of
-                            BlockNodeWrapper _ ->
-                                Err "Cannot toggle a block node"
+                        Just node ->
+                            case node of
+                                BlockNodeWrapper _ ->
+                                    Err "Cannot toggle a block node"
 
-                            InlineLeafWrapper il ->
-                                let
-                                    newMarks =
-                                        toggleMark action mark (findMarksFromInlineLeaf il)
+                                InlineLeafWrapper il ->
+                                    let
+                                        newMarks =
+                                            toggleMark action mark (findMarksFromInlineLeaf il)
 
-                                    leaves =
-                                        case il of
-                                            InlineLeaf leaf ->
-                                                [ InlineLeaf { leaf | marks = newMarks } ]
+                                        leaves =
+                                            case il of
+                                                InlineLeaf leaf ->
+                                                    [ InlineLeaf { leaf | marks = newMarks } ]
 
-                                            TextLeaf leaf ->
-                                                if String.length leaf.text == normalizedSelection.focusOffset && normalizedSelection.anchorOffset == 0 then
-                                                    [ TextLeaf { leaf | marks = newMarks } ]
-
-                                                else
-                                                    let
-                                                        newNode =
-                                                            TextLeaf
-                                                                { leaf
-                                                                    | marks = newMarks
-                                                                    , text =
-                                                                        String.slice
-                                                                            normalizedSelection.anchorOffset
-                                                                            normalizedSelection.focusOffset
-                                                                            leaf.text
-                                                                }
-
-                                                        left =
-                                                            TextLeaf { leaf | text = String.left normalizedSelection.anchorOffset leaf.text }
-
-                                                        right =
-                                                            TextLeaf { leaf | text = String.dropLeft normalizedSelection.focusOffset leaf.text }
-                                                    in
-                                                    if normalizedSelection.anchorOffset == 0 then
-                                                        [ newNode, right ]
-
-                                                    else if String.length leaf.text == normalizedSelection.focusOffset then
-                                                        [ left, newNode ]
+                                                TextLeaf leaf ->
+                                                    if String.length leaf.text == normalizedSelection.focusOffset && normalizedSelection.anchorOffset == 0 then
+                                                        [ TextLeaf { leaf | marks = newMarks } ]
 
                                                     else
-                                                        [ left, newNode, right ]
+                                                        let
+                                                            newNode =
+                                                                TextLeaf
+                                                                    { leaf
+                                                                        | marks = newMarks
+                                                                        , text =
+                                                                            String.slice
+                                                                                normalizedSelection.anchorOffset
+                                                                                normalizedSelection.focusOffset
+                                                                                leaf.text
+                                                                    }
 
-                                    path =
-                                        if normalizedSelection.anchorOffset == 0 then
+                                                            left =
+                                                                TextLeaf { leaf | text = String.left normalizedSelection.anchorOffset leaf.text }
+
+                                                            right =
+                                                                TextLeaf { leaf | text = String.dropLeft normalizedSelection.focusOffset leaf.text }
+                                                        in
+                                                        if normalizedSelection.anchorOffset == 0 then
+                                                            [ newNode, right ]
+
+                                                        else if String.length leaf.text == normalizedSelection.focusOffset then
+                                                            [ left, newNode ]
+
+                                                        else
+                                                            [ left, newNode, right ]
+
+                                        path =
+                                            if normalizedSelection.anchorOffset == 0 then
+                                                normalizedSelection.anchorNode
+
+                                            else
+                                                incrementNodePath normalizedSelection.anchorNode
+
+                                        newSelection =
+                                            singleNodeRangeSelection
+                                                path
+                                                0
+                                                (normalizedSelection.focusOffset - normalizedSelection.anchorOffset)
+                                    in
+                                    case
+                                        replaceWithFragment
                                             normalizedSelection.anchorNode
+                                            (InlineLeafFragment <| Array.fromList leaves)
+                                            editorState.root
+                                    of
+                                        Err s ->
+                                            Err s
 
-                                        else
-                                            incrementNodePath normalizedSelection.anchorNode
-
-                                    newSelection =
-                                        singleNodeRangeSelection
-                                            path
-                                            0
-                                            (normalizedSelection.focusOffset - normalizedSelection.anchorOffset)
-                                in
-                                case
-                                    replaceWithFragment
-                                        normalizedSelection.anchorNode
-                                        (InlineLeafFragment <| Array.fromList leaves)
-                                        editorState.root
-                                of
-                                    Err s ->
-                                        Err s
-
-                                    Ok newRoot ->
-                                        Ok { editorState | selection = Just newSelection, root = newRoot }
+                                        Ok newRoot ->
+                                            Ok { editorState | selection = Just newSelection, root = newRoot }
 
 
 toggleMarkOnInlineNodes : Mark -> CommandFunc
@@ -921,7 +907,7 @@ toggleMarkOnInlineNodes mark editorState =
                         normalizedSelection.anchorOffset /= 0
 
                     anchorAndFocusHaveSameParent =
-                        parentPath normalizedSelection.anchorNode == parentPath normalizedSelection.focusNode
+                        parent normalizedSelection.anchorNode == parent normalizedSelection.focusNode
 
                     newSelection =
                         rangeSelection
@@ -941,6 +927,93 @@ toggleMarkOnInlineNodes mark editorState =
                             normalizedSelection.focusOffset
                 in
                 Ok { modifiedStartNodeEditorState | selection = Just newSelection }
+
+
+findClosestBlockPath : NodePath -> EditorBlockNode -> NodePath
+findClosestBlockPath path node =
+    case nodeAt path node of
+        Nothing ->
+            []
+
+        Just n ->
+            case n of
+                BlockNodeWrapper bn ->
+                    path
+
+                InlineLeafWrapper il ->
+                    parent path
+
+
+toggleBlock : List String -> String -> String -> CommandFunc
+toggleBlock allowedBlocks onTag offTag editorState =
+    case editorState.selection of
+        Nothing ->
+            Err "Nothing is selected."
+
+        Just selection ->
+            let
+                normalizedSelection =
+                    normalizeSelection selection
+
+                anchorPath =
+                    findClosestBlockPath normalizedSelection.anchorNode editorState.root
+
+                focusPath =
+                    findClosestBlockPath normalizedSelection.focusNode editorState.root
+
+                doOffBehavior =
+                    allRange
+                        (\node ->
+                            case node of
+                                BlockNodeWrapper bn ->
+                                    bn.parameters.name == onTag
+
+                                _ ->
+                                    True
+                        )
+                        anchorPath
+                        focusPath
+                        editorState.root
+
+                newTag =
+                    if doOffBehavior then
+                        offTag
+
+                    else
+                        onTag
+
+                newRoot =
+                    case
+                        indexedMap
+                            (\path node ->
+                                if path < anchorPath || path > focusPath then
+                                    node
+
+                                else
+                                    case node of
+                                        BlockNodeWrapper bn ->
+                                            let
+                                                p =
+                                                    bn.parameters
+                                            in
+                                            if List.member p.name allowedBlocks then
+                                                BlockNodeWrapper { bn | parameters = { p | name = newTag } }
+
+                                            else
+                                                node
+
+                                        InlineLeafWrapper _ ->
+                                            node
+                            )
+                            (BlockNodeWrapper editorState.root)
+                    of
+                        BlockNodeWrapper bn ->
+                            bn
+
+                        _ ->
+                            editorState.root
+            in
+            Ok { editorState | root = newRoot }
 
 
 wrapIn : ElementParameters -> CommandFunc
@@ -970,4 +1043,19 @@ backspaceInlineElement editorState =
 
 backspaceBlockElement : CommandFunc
 backspaceBlockElement editorState =
+    Err "Not implemented"
+
+
+backspaceWord : CommandFunc
+backspaceWord editorState =
+    Err "Not implemented"
+
+
+delete : CommandFunc
+delete editorState =
+    Err "Not implemented"
+
+
+deleteWord : CommandFunc
+deleteWord editorState =
     Err "Not implemented"

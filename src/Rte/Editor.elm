@@ -10,7 +10,7 @@ import List.Extra
 import Rte.BeforeInput
 import Rte.Decorations exposing (getElementDecorators, getMarkDecorators)
 import Rte.DomNode exposing (decodeDomNode, extractRootEditorBlockNode, findTextChanges)
-import Rte.EditorUtils exposing (forceRerender, zeroWidthSpace)
+import Rte.EditorUtils exposing (forceRerender, forceReselection, zeroWidthSpace)
 import Rte.HtmlNode exposing (editorBlockNodeToHtmlNode)
 import Rte.KeyDown
 import Rte.Model exposing (..)
@@ -177,11 +177,6 @@ updateChangeEventFullScan domRoot selection editor =
                         applyForceFunctionOnEditor forceRerender editor
 
 
-forceReselection : Editor msg -> Editor msg
-forceReselection editor =
-    { editor | selectionCount = editor.selectionCount + 1 }
-
-
 needCompleteRerender : DomNode -> Bool
 needCompleteRerender root =
     case root of
@@ -294,7 +289,7 @@ applyTextChange editorNode ( path, text ) =
                             Just inlineNode ->
                                 case inlineNode of
                                     TextLeaf contents ->
-                                        Just { editorNode | childNodes = InlineLeafArray <| Array.set x (TextLeaf { contents | text = text }) list }
+                                        Just { editorNode | childNodes = InlineLeafArray <| Array.set x (TextLeaf { contents | text = String.replace zeroWidthSpace "" text }) list }
 
                                     _ ->
                                         Nothing

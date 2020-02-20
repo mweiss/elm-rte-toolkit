@@ -1,8 +1,8 @@
-module Rte.Selection exposing (caretSelection, domToEditor, editorToDom, isCollapsed, markSelection, normalizeSelection, rangeSelection, selectionFromMarks, singleNodeRangeSelection)
+module Rte.Selection exposing (caretSelection, clearSelectionMarks, domToEditor, editorToDom, isCollapsed, markSelection, normalizeSelection, rangeSelection, selectionFromMarks, singleNodeRangeSelection)
 
-import Rte.Marks exposing (ToggleAction(..), toggleMarkAtPath)
+import Rte.Marks as ToggleAction exposing (ToggleAction(..), toggleMark, toggleMarkAtPath)
 import Rte.Model exposing (ChildNodes(..), EditorBlockNode, EditorInlineLeaf(..), ElementParameters, HtmlNode(..), Mark, NodePath, Selection, Spec, selectionMark)
-import Rte.Node exposing (EditorNode(..), indexedFoldl)
+import Rte.Node exposing (EditorNode(..), indexedFoldl, map)
 import Rte.NodePath as Path
 
 
@@ -88,6 +88,36 @@ markSelection selection node =
 addSelectionMarkAtPath : NodePath -> EditorBlockNode -> EditorBlockNode
 addSelectionMarkAtPath nodePath node =
     Result.withDefault node (toggleMarkAtPath Add selectionMark nodePath node)
+
+
+clearSelectionMarks : EditorBlockNode -> EditorBlockNode
+clearSelectionMarks root =
+    case map removeSelectionMark (BlockNodeWrapper root) of
+        BlockNodeWrapper bn ->
+            bn
+
+        _ ->
+            root
+
+
+removeSelectionMark : EditorNode -> EditorNode
+removeSelectionMark node =
+    case node of
+        BlockNodeWrapper bn ->
+            let
+                parameters =
+                    bn.parameters
+            in
+            BlockNodeWrapper { bn | parameters = { parameters | marks = toggleMark ToggleAction.Remove selectionMark parameters.marks } }
+
+        InlineLeafWrapper il ->
+            InlineLeafWrapper <|
+                case il of
+                    TextLeaf leaf ->
+                        TextLeaf { leaf | marks = toggleMark ToggleAction.Remove selectionMark leaf.marks }
+
+                    InlineLeaf leaf ->
+                        InlineLeaf { leaf | marks = toggleMark ToggleAction.Remove selectionMark leaf.marks }
 
 
 getMarksFromNode : EditorNode -> List Mark

@@ -1,4 +1,4 @@
-module Rte.NodePath exposing (decrementNodePath, domToEditor, editorToDom, incrementNodePath, parentPath, toString)
+module Rte.NodePath exposing (decrementNodePath, domToEditor, editorToDom, incrementNodePath, parent, toString)
 
 {-|
 
@@ -300,6 +300,6 @@ toString nodePath =
     String.join ":" <| List.map String.fromInt nodePath
 
 
-parentPath : NodePath -> NodePath
-parentPath path =
+parent : NodePath -> NodePath
+parent path =
     List.take (List.length path - 1) path

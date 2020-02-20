@@ -20,4 +20,9 @@ applyCommand command editor =
             Err s
 
         Ok v ->
-            Ok { editor | editorState = reduceEditorState v }
+            Ok <| forceReselection { editor | editorState = reduceEditorState v }
+
+
+forceReselection : Editor msg -> Editor msg
+forceReselection editor =
+    { editor | selectionCount = editor.selectionCount + 1 }

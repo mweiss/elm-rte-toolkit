@@ -1,5 +1,7 @@
 
 
+const zeroWidthSpace = "\u200B"
+
 const getSelectionPath = (node, editor, offset) => {
     let originalNode = node;
     if (!node) {
@@ -72,7 +74,7 @@ const findNodeFromPath = (path, editor) => {
 
 
 let adjustOffsetReverse = (node, offset) => {
-    if (node.nodeType === Node.TEXT_NODE && node.nodeValue === "\u200B") {
+    if (node.nodeType === Node.TEXT_NODE && node.nodeValue === zeroWidthSpace) {
         return 1;
     }
     if (node.nodeType === Node.TEXT_NODE && offset > node.nodeValue.length) {
@@ -82,7 +84,7 @@ let adjustOffsetReverse = (node, offset) => {
 };
 
 let adjustOffset = (node, offset) => {
-    if ((node.nodeType === Node.TEXT_NODE && node.nodeValue === "\u200B")) {
+    if ((node.nodeType === Node.TEXT_NODE && node.nodeValue === zeroWidthSpace)) {
         return 0;
     }
 

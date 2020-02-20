@@ -6,7 +6,7 @@ import BasicSpecs exposing (simpleSpec)
 import Browser
 import Html exposing (Html, div)
 import Html.Attributes
-import Rte.Commands exposing (toggleMarkOnInlineNodes)
+import Rte.Commands exposing (toggleBlock, toggleMarkOnInlineNodes)
 import Rte.Decorations exposing (addElementDecoration, emptyDecorations, selectableDecoration)
 import Rte.Editor exposing (internalUpdate)
 import Rte.EditorUtils exposing (applyCommand)
@@ -62,7 +62,7 @@ doubleInitNode =
 initialEditorNode : EditorBlockNode
 initialEditorNode =
     { parameters =
-        { name = "crazy_block"
+        { name = "p"
         , attributes = []
         , marks = []
         }
@@ -199,8 +199,8 @@ handleToggleStyle style model =
     in
     { model
         | editor =
-            Result.withDefault model.editor <|
-                applyCommand (toggleMarkOnInlineNodes (Mark markName [])) model.editor
+            Result.withDefault model.editor
+                (applyCommand (toggleMarkOnInlineNodes (Mark markName [])) model.editor)
     }
 
 
@@ -276,7 +276,22 @@ handleWrapInList listType model =
 
 handleToggleBlock : String -> Model -> Model
 handleToggleBlock block model =
-    model
+    let
+        blockName =
+            String.toLower block
+
+        tagName =
+            if blockName == "code block" then
+                "code_block"
+
+            else
+                blockName
+    in
+    { model
+        | editor =
+            Result.withDefault model.editor
+                (applyCommand (toggleBlock (headerElements ++ [ "code_block", "p" ]) tagName "p") model.editor)
+    }
 
 
 handleWrapBlockNode : Model -> Model
