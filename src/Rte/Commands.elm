@@ -1,13 +1,14 @@
 module Rte.Commands exposing (..)
 
 import Array
+import Array.Extra
 import Dict exposing (Dict)
 import List.Extra
 import Rte.Marks as ToggleAction exposing (ToggleAction, findMarksFromInlineLeaf, hasMarkWithName, toggleMark)
 import Rte.Model exposing (ChildNodes(..), CommandBinding(..), CommandFunc, CommandMap, Editor, EditorBlockNode, EditorInlineLeaf(..), EditorState, ElementParameters, Mark, NodePath, Selection)
-import Rte.Node exposing (EditorFragment(..), EditorNode(..), allRange, findAncestor, findBackwardFromExclusive, findForwardFrom, findForwardFromExclusive, findTextBlockNodeAncestor, indexedMap, isSelectable, map, next, nodeAt, previous, removeInRange, removeNodeAndEmptyParents, replace, replaceWithFragment, splitBlockAtPathAndOffset, splitTextLeaf)
-import Rte.NodePath as NodePath exposing (decrementNodePath, incrementNodePath, parent, toString)
-import Rte.Selection exposing (caretSelection, isCollapsed, normalizeSelection, rangeSelection, singleNodeRangeSelection)
+import Rte.Node exposing (EditorFragment(..), EditorNode(..), allRange, findBackwardFromExclusive, findForwardFrom, findForwardFromExclusive, findTextBlockNodeAncestor, indexedMap, isSelectable, map, next, nodeAt, previous, removeInRange, removeNodeAndEmptyParents, replace, replaceWithFragment, splitBlockAtPathAndOffset, splitTextLeaf)
+import Rte.NodePath as NodePath exposing (commonAncestor, decrement, increment, parent, toString)
+import Rte.Selection exposing (caretSelection, clearSelectionMarks, isCollapsed, markSelection, normalizeSelection, rangeSelection, selectionFromMarks, singleNodeRangeSelection)
 
 
 altKey : String
@@ -388,8 +389,8 @@ removeRangeSelection editorState =
                                     let
                                         removedNodes =
                                             removeInRange
-                                                (incrementNodePath normalizedSelection.anchorNode)
-                                                (decrementNodePath normalizedSelection.focusNode)
+                                                (increment normalizedSelection.anchorNode)
+                                                (decrement normalizedSelection.focusNode)
                                                 removedStart
 
                                         newSelection =
@@ -518,7 +519,7 @@ splitBlock editorState =
                                     Ok newRoot ->
                                         let
                                             newSelectionPath =
-                                                incrementNodePath textBlockPath ++ [ 0 ]
+                                                increment textBlockPath ++ [ 0 ]
 
                                             newSelection =
                                                 caretSelection newSelectionPath 0
@@ -779,7 +780,7 @@ toggleMarkSingleInlineNode mark action editorState =
                                                 normalizedSelection.anchorNode
 
                                             else
-                                                incrementNodePath normalizedSelection.anchorNode
+                                                increment normalizedSelection.anchorNode
 
                                         newSelection =
                                             singleNodeRangeSelection
@@ -912,14 +913,14 @@ toggleMarkOnInlineNodes mark editorState =
                     newSelection =
                         rangeSelection
                             (if incrementAnchorOffset then
-                                incrementNodePath normalizedSelection.anchorNode
+                                increment normalizedSelection.anchorNode
 
                              else
                                 normalizedSelection.anchorNode
                             )
                             0
                             (if incrementAnchorOffset && anchorAndFocusHaveSameParent then
-                                incrementNodePath normalizedSelection.focusNode
+                                increment normalizedSelection.focusNode
 
                              else
                                 normalizedSelection.focusNode
@@ -937,10 +938,10 @@ findClosestBlockPath path node =
 
         Just n ->
             case n of
-                BlockNodeWrapper bn ->
+                BlockNodeWrapper _ ->
                     path
 
-                InlineLeafWrapper il ->
+                InlineLeafWrapper _ ->
                     parent path
 
 
@@ -1018,7 +1019,122 @@ toggleBlock allowedBlocks onTag offTag editorState =
 
 wrapIn : ElementParameters -> CommandFunc
 wrapIn elementParameters editorState =
-    Err "Not implemented"
+    case editorState.selection of
+        Nothing ->
+            Err "Nothing is selected"
+
+        Just selection ->
+            let
+                normalizedSelection =
+                    normalizeSelection selection
+
+                markedRoot =
+                    markSelection normalizedSelection editorState.root
+
+                anchorBlock =
+                    findClosestBlockPath normalizedSelection.anchorNode markedRoot
+
+                focusBlock =
+                    findClosestBlockPath normalizedSelection.focusNode markedRoot
+
+                ancestor =
+                    commonAncestor anchorBlock focusBlock
+            in
+            if ancestor == anchorBlock || ancestor == focusBlock then
+                case nodeAt ancestor markedRoot of
+                    Nothing ->
+                        Err "I cannot find a node at selection"
+
+                    Just node ->
+                        let
+                            newChildren =
+                                case node of
+                                    BlockNodeWrapper bn ->
+                                        BlockArray (Array.fromList [ bn ])
+
+                                    InlineLeafWrapper il ->
+                                        InlineLeafArray (Array.fromList [ il ])
+
+                            newNode =
+                                { parameters = elementParameters, childNodes = newChildren }
+                        in
+                        case replace ancestor (BlockNodeWrapper newNode) markedRoot of
+                            Err err ->
+                                Err err
+
+                            Ok newRoot ->
+                                Ok
+                                    { editorState
+                                        | root = clearSelectionMarks newRoot
+                                        , selection =
+                                            selectionFromMarks
+                                                newRoot
+                                                selection.anchorOffset
+                                                selection.focusOffset
+                                    }
+
+            else
+                case List.Extra.getAt (List.length ancestor) normalizedSelection.anchorNode of
+                    Nothing ->
+                        Err "Invalid ancestor path at anchor node"
+
+                    Just childAnchorIndex ->
+                        case List.Extra.getAt (List.length ancestor) normalizedSelection.focusNode of
+                            Nothing ->
+                                Err "Invalid ancestor path at focus node"
+
+                            Just childFocusIndex ->
+                                case nodeAt ancestor markedRoot of
+                                    Nothing ->
+                                        Err "Invalid common ancestor path"
+
+                                    Just node ->
+                                        case node of
+                                            BlockNodeWrapper bn ->
+                                                case bn.childNodes of
+                                                    BlockArray a ->
+                                                        let
+                                                            newChildNode =
+                                                                { parameters = elementParameters
+                                                                , childNodes = BlockArray (Array.slice childAnchorIndex (childFocusIndex + 1) a)
+                                                                }
+
+                                                            newBlockArray =
+                                                                BlockArray
+                                                                    (Array.append
+                                                                        (Array.append
+                                                                            (Array.Extra.sliceUntil childAnchorIndex a)
+                                                                            (Array.fromList [ newChildNode ])
+                                                                        )
+                                                                        (Array.Extra.sliceFrom (childFocusIndex + 1) a)
+                                                                    )
+
+                                                            newNode =
+                                                                { bn | childNodes = newBlockArray }
+                                                        in
+                                                        case replace ancestor (BlockNodeWrapper newNode) markedRoot of
+                                                            Err s ->
+                                                                Err s
+
+                                                            Ok newRoot ->
+                                                                Ok
+                                                                    { editorState
+                                                                        | root = clearSelectionMarks newRoot
+                                                                        , selection =
+                                                                            selectionFromMarks
+                                                                                newRoot
+                                                                                selection.anchorOffset
+                                                                                selection.focusOffset
+                                                                    }
+
+                                                    InlineLeafArray _ ->
+                                                        Err "Cannot wrap inline elements"
+
+                                                    Leaf ->
+                                                        Err "Cannot wrap leaf elements"
+
+                                            InlineLeafWrapper il ->
+                                                Err "Invalid ancestor path... somehow we have an inline leaf"
 
 
 selectAll : CommandFunc

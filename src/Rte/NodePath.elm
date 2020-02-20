@@ -1,4 +1,4 @@
-module Rte.NodePath exposing (decrementNodePath, domToEditor, editorToDom, incrementNodePath, parent, toString)
+module Rte.NodePath exposing (commonAncestor, decrement, domToEditor, editorToDom, increment, parent, toString)
 
 {-|
 
@@ -150,8 +150,8 @@ editorToDom spec node path =
                             Nothing
 
 
-incrementNodePath : NodePath -> NodePath
-incrementNodePath np =
+increment : NodePath -> NodePath
+increment np =
     case List.Extra.last np of
         Nothing ->
             []
@@ -160,8 +160,8 @@ incrementNodePath np =
             List.take (List.length np - 1) np ++ [ i + 1 ]
 
 
-decrementNodePath : NodePath -> NodePath
-decrementNodePath np =
+decrement : NodePath -> NodePath
+decrement np =
     case List.Extra.last np of
         Nothing ->
             []
@@ -303,3 +303,22 @@ toString nodePath =
 parent : NodePath -> NodePath
 parent path =
     List.take (List.length path - 1) path
+
+
+commonAncestor : NodePath -> NodePath -> NodePath
+commonAncestor xPath yPath =
+    case xPath of
+        [] ->
+            []
+
+        x :: xs ->
+            case yPath of
+                [] ->
+                    []
+
+                y :: ys ->
+                    if x == y then
+                        x :: commonAncestor xs ys
+
+                    else
+                        []

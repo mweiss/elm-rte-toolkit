@@ -9,33 +9,32 @@ import Rte.Selection exposing (clearSelectionMarks, markSelection, rangeSelectio
 
 removeExtraEmptyTextLeaves : List EditorInlineLeaf -> List EditorInlineLeaf
 removeExtraEmptyTextLeaves inlineLeaves =
-    Debug.log "removeExtraEmptyTextLeaves" <|
-        case inlineLeaves of
-            [] ->
-                inlineLeaves
+    case inlineLeaves of
+        [] ->
+            inlineLeaves
 
-            [ _ ] ->
-                inlineLeaves
+        [ _ ] ->
+            inlineLeaves
 
-            x :: y :: xs ->
-                case x of
-                    TextLeaf xL ->
-                        case y of
-                            TextLeaf yL ->
-                                if String.isEmpty xL.text && (not <| List.member selectionMark xL.marks) then
-                                    removeExtraEmptyTextLeaves (y :: xs)
+        x :: y :: xs ->
+            case x of
+                TextLeaf xL ->
+                    case y of
+                        TextLeaf yL ->
+                            if String.isEmpty xL.text && (not <| List.member selectionMark xL.marks) then
+                                removeExtraEmptyTextLeaves (y :: xs)
 
-                                else if String.isEmpty yL.text && (not <| List.member selectionMark yL.marks) then
-                                    removeExtraEmptyTextLeaves (x :: xs)
+                            else if String.isEmpty yL.text && (not <| List.member selectionMark yL.marks) then
+                                removeExtraEmptyTextLeaves (x :: xs)
 
-                                else
-                                    x :: removeExtraEmptyTextLeaves (y :: xs)
-
-                            InlineLeaf _ ->
+                            else
                                 x :: removeExtraEmptyTextLeaves (y :: xs)
 
-                    InlineLeaf _ ->
-                        x :: removeExtraEmptyTextLeaves (y :: xs)
+                        InlineLeaf _ ->
+                            x :: removeExtraEmptyTextLeaves (y :: xs)
+
+                InlineLeaf _ ->
+                    x :: removeExtraEmptyTextLeaves (y :: xs)
 
 
 filterSelectionMark : List Mark -> List Mark
