@@ -6,7 +6,7 @@ import Dict exposing (Dict)
 import List.Extra
 import Rte.Marks as ToggleAction exposing (ToggleAction, findMarksFromInlineLeaf, hasMarkWithName, toggleMark)
 import Rte.Model exposing (ChildNodes(..), CommandBinding(..), CommandFunc, CommandMap, Editor, EditorBlockNode, EditorInlineLeaf(..), EditorState, ElementParameters, Mark, NodePath, Selection)
-import Rte.Node exposing (EditorFragment(..), EditorNode(..), allRange, findBackwardFromExclusive, findForwardFrom, findForwardFromExclusive, findTextBlockNodeAncestor, indexedMap, isSelectable, map, next, nodeAt, previous, removeInRange, removeNodeAndEmptyParents, replace, replaceWithFragment, splitBlockAtPathAndOffset, splitTextLeaf)
+import Rte.Node exposing (EditorFragment(..), EditorNode(..), allRange, findBackwardFromExclusive, findForwardFrom, findForwardFromExclusive, findTextBlockNodeAncestor, indexedFoldl, indexedMap, isSelectable, map, next, nodeAt, previous, removeInRange, removeNodeAndEmptyParents, replace, replaceWithFragment, splitBlockAtPathAndOffset, splitTextLeaf)
 import Rte.NodePath as NodePath exposing (commonAncestor, decrement, increment, parent, toString)
 import Rte.Selection exposing (caretSelection, clearSelectionMarks, isCollapsed, markSelection, normalizeSelection, rangeSelection, selectionFromMarks, singleNodeRangeSelection)
 
@@ -114,6 +114,7 @@ defaultCommandBindings =
         |> set [ inputEvent "insertLineBreak", key [ shiftKey, enterKey ], key [ shiftKey, enterKey ] ] insertLineBreak
         |> set [ inputEvent "insertParagraph", key [ enterKey ], key [ returnKey ] ] splitBlock
         |> set [ inputEvent "deleteContentBackward", key [ backspaceKey ] ] (removeRangeSelection |> otherwiseDo removeSelectedLeafElementCommand |> otherwiseDo backspaceInlineElement |> otherwiseDo joinBackward |> otherwiseDo backspaceText)
+        |> set [ key [ metaKey, "a" ] ] selectAll
 
 
 joinBackward : CommandFunc
@@ -1139,7 +1140,44 @@ wrapIn elementParameters editorState =
 
 selectAll : CommandFunc
 selectAll editorState =
-    Err "Not implemented"
+    let
+        ( fl, lastOffset ) =
+            indexedFoldl
+                (\path node ( firstAndLast, offset ) ->
+                    if isSelectable node then
+                        let
+                            newOffset =
+                                case node of
+                                    InlineLeafWrapper il ->
+                                        case il of
+                                            TextLeaf tl ->
+                                                String.length tl.text
+
+                                            InlineLeaf _ ->
+                                                0
+
+                                    BlockNodeWrapper _ ->
+                                        0
+                        in
+                        case firstAndLast of
+                            Nothing ->
+                                ( Just ( path, path ), newOffset )
+
+                            Just ( first, _ ) ->
+                                ( Just ( first, path ), newOffset )
+
+                    else
+                        ( firstAndLast, offset )
+                )
+                ( Nothing, 0 )
+                (BlockNodeWrapper editorState.root)
+    in
+    case fl of
+        Nothing ->
+            Err "Nothing is selectable"
+
+        Just ( first, last ) ->
+            Ok { editorState | selection = Just <| rangeSelection first 0 last lastOffset }
 
 
 lift : CommandFunc
