@@ -1,6 +1,6 @@
 module Rte.Selection exposing (caretSelection, clearSelectionMarks, domToEditor, editorToDom, isCollapsed, markSelection, normalizeSelection, rangeSelection, selectionFromMarks, singleNodeRangeSelection)
 
-import Rte.Marks as ToggleAction exposing (ToggleAction(..), toggleMark, toggleMarkAtPath)
+import Rte.Marks as ToggleAction exposing (ToggleAction(..), clearMarks, toggleMark, toggleMarkAtPath)
 import Rte.Model exposing (ChildNodes(..), EditorBlockNode, EditorInlineLeaf(..), ElementParameters, HtmlNode(..), Mark, NodePath, Selection, Spec, selectionMark)
 import Rte.Node exposing (EditorNode(..), indexedFoldl, map)
 import Rte.NodePath as Path
@@ -91,33 +91,8 @@ addSelectionMarkAtPath nodePath node =
 
 
 clearSelectionMarks : EditorBlockNode -> EditorBlockNode
-clearSelectionMarks root =
-    case map removeSelectionMark (BlockNodeWrapper root) of
-        BlockNodeWrapper bn ->
-            bn
-
-        _ ->
-            root
-
-
-removeSelectionMark : EditorNode -> EditorNode
-removeSelectionMark node =
-    case node of
-        BlockNodeWrapper bn ->
-            let
-                parameters =
-                    bn.parameters
-            in
-            BlockNodeWrapper { bn | parameters = { parameters | marks = toggleMark ToggleAction.Remove selectionMark parameters.marks } }
-
-        InlineLeafWrapper il ->
-            InlineLeafWrapper <|
-                case il of
-                    TextLeaf leaf ->
-                        TextLeaf { leaf | marks = toggleMark ToggleAction.Remove selectionMark leaf.marks }
-
-                    InlineLeaf leaf ->
-                        InlineLeaf { leaf | marks = toggleMark ToggleAction.Remove selectionMark leaf.marks }
+clearSelectionMarks =
+    clearMarks selectionMark
 
 
 getMarksFromNode : EditorNode -> List Mark

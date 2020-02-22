@@ -1,7 +1,7 @@
 module Rte.Marks exposing (..)
 
 import Rte.Model exposing (EditorBlockNode, EditorInlineLeaf(..), Mark, NodePath)
-import Rte.Node exposing (EditorNode(..), nodeAt, replace)
+import Rte.Node exposing (EditorNode(..), map, nodeAt, replace)
 
 
 findMarksFromInlineLeaf : EditorInlineLeaf -> List Mark
@@ -74,3 +74,33 @@ toggleMark toggleAction mark marks =
 
     else
         marks
+
+
+clearMarks : Mark -> EditorBlockNode -> EditorBlockNode
+clearMarks mark root =
+    case map (removeMark mark) (BlockNodeWrapper root) of
+        BlockNodeWrapper bn ->
+            bn
+
+        _ ->
+            root
+
+
+removeMark : Mark -> EditorNode -> EditorNode
+removeMark mark node =
+    case node of
+        BlockNodeWrapper bn ->
+            let
+                parameters =
+                    bn.parameters
+            in
+            BlockNodeWrapper { bn | parameters = { parameters | marks = toggleMark Remove mark parameters.marks } }
+
+        InlineLeafWrapper il ->
+            InlineLeafWrapper <|
+                case il of
+                    TextLeaf leaf ->
+                        TextLeaf { leaf | marks = toggleMark Remove mark leaf.marks }
+
+                    InlineLeaf leaf ->
+                        InlineLeaf { leaf | marks = toggleMark Remove mark leaf.marks }

@@ -6,7 +6,7 @@ import BasicSpecs exposing (simpleSpec)
 import Browser
 import Html exposing (Html, div)
 import Html.Attributes
-import Rte.Commands exposing (toggleBlock, toggleMarkOnInlineNodes, wrapIn)
+import Rte.Commands exposing (lift, toggleBlock, toggleMarkOnInlineNodes, wrapIn)
 import Rte.Decorations exposing (addElementDecoration, emptyDecorations, selectableDecoration)
 import Rte.Editor exposing (internalUpdate)
 import Rte.EditorUtils exposing (applyCommand)
@@ -266,7 +266,11 @@ update msg model =
 
 handleLiftBlock : Model -> Model
 handleLiftBlock model =
-    model
+    { model
+        | editor =
+            Result.withDefault model.editor
+                (applyCommand lift model.editor)
+    }
 
 
 handleWrapInList : ListType -> Model -> Model

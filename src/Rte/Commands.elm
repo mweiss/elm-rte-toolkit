@@ -4,9 +4,9 @@ import Array
 import Array.Extra
 import Dict exposing (Dict)
 import List.Extra
-import Rte.Marks as ToggleAction exposing (ToggleAction, findMarksFromInlineLeaf, hasMarkWithName, toggleMark)
+import Rte.Marks as ToggleAction exposing (ToggleAction, clearMarks, findMarksFromInlineLeaf, hasMarkWithName, toggleMark)
 import Rte.Model exposing (ChildNodes(..), CommandBinding(..), CommandFunc, CommandMap, Editor, EditorBlockNode, EditorInlineLeaf(..), EditorState, ElementParameters, Mark, NodePath, Selection)
-import Rte.Node exposing (EditorFragment(..), EditorNode(..), allRange, findBackwardFromExclusive, findForwardFrom, findForwardFromExclusive, findTextBlockNodeAncestor, indexedFoldl, indexedMap, isSelectable, map, next, nodeAt, previous, removeInRange, removeNodeAndEmptyParents, replace, replaceWithFragment, splitBlockAtPathAndOffset, splitTextLeaf)
+import Rte.Node exposing (EditorFragment(..), EditorNode(..), allRange, concatMap, findBackwardFromExclusive, findForwardFrom, findForwardFromExclusive, findTextBlockNodeAncestor, indexedFoldl, indexedMap, isSelectable, map, next, nodeAt, previous, removeInRange, removeNodeAndEmptyParents, replace, replaceWithFragment, splitBlockAtPathAndOffset, splitTextLeaf)
 import Rte.NodePath as NodePath exposing (commonAncestor, decrement, increment, parent, toString)
 import Rte.Selection exposing (caretSelection, clearSelectionMarks, isCollapsed, markSelection, normalizeSelection, rangeSelection, selectionFromMarks, singleNodeRangeSelection)
 
@@ -711,95 +711,94 @@ isBlockOrInlineNodeWithMark markName node =
 
 toggleMarkSingleInlineNode : Mark -> ToggleAction -> EditorState -> Result String EditorState
 toggleMarkSingleInlineNode mark action editorState =
-    Debug.log "toggleMarkSingleInlineNode" <|
-        case editorState.selection of
-            Nothing ->
-                Err "Nothing is selected"
+    case editorState.selection of
+        Nothing ->
+            Err "Nothing is selected"
 
-            Just selection ->
-                if selection.anchorNode /= selection.focusNode then
-                    Err "I can only toggle a single inline node"
+        Just selection ->
+            if selection.anchorNode /= selection.focusNode then
+                Err "I can only toggle a single inline node"
 
-                else
-                    let
-                        normalizedSelection =
-                            normalizeSelection selection
-                    in
-                    case nodeAt normalizedSelection.anchorNode editorState.root of
-                        Nothing ->
-                            Err "No node at selection"
+            else
+                let
+                    normalizedSelection =
+                        normalizeSelection selection
+                in
+                case nodeAt normalizedSelection.anchorNode editorState.root of
+                    Nothing ->
+                        Err "No node at selection"
 
-                        Just node ->
-                            case node of
-                                BlockNodeWrapper _ ->
-                                    Err "Cannot toggle a block node"
+                    Just node ->
+                        case node of
+                            BlockNodeWrapper _ ->
+                                Err "Cannot toggle a block node"
 
-                                InlineLeafWrapper il ->
-                                    let
-                                        newMarks =
-                                            toggleMark action mark (findMarksFromInlineLeaf il)
+                            InlineLeafWrapper il ->
+                                let
+                                    newMarks =
+                                        toggleMark action mark (findMarksFromInlineLeaf il)
 
-                                        leaves =
-                                            case il of
-                                                InlineLeaf leaf ->
-                                                    [ InlineLeaf { leaf | marks = newMarks } ]
+                                    leaves =
+                                        case il of
+                                            InlineLeaf leaf ->
+                                                [ InlineLeaf { leaf | marks = newMarks } ]
 
-                                                TextLeaf leaf ->
-                                                    if String.length leaf.text == normalizedSelection.focusOffset && normalizedSelection.anchorOffset == 0 then
-                                                        [ TextLeaf { leaf | marks = newMarks } ]
+                                            TextLeaf leaf ->
+                                                if String.length leaf.text == normalizedSelection.focusOffset && normalizedSelection.anchorOffset == 0 then
+                                                    [ TextLeaf { leaf | marks = newMarks } ]
+
+                                                else
+                                                    let
+                                                        newNode =
+                                                            TextLeaf
+                                                                { leaf
+                                                                    | marks = newMarks
+                                                                    , text =
+                                                                        String.slice
+                                                                            normalizedSelection.anchorOffset
+                                                                            normalizedSelection.focusOffset
+                                                                            leaf.text
+                                                                }
+
+                                                        left =
+                                                            TextLeaf { leaf | text = String.left normalizedSelection.anchorOffset leaf.text }
+
+                                                        right =
+                                                            TextLeaf { leaf | text = String.dropLeft normalizedSelection.focusOffset leaf.text }
+                                                    in
+                                                    if normalizedSelection.anchorOffset == 0 then
+                                                        [ newNode, right ]
+
+                                                    else if String.length leaf.text == normalizedSelection.focusOffset then
+                                                        [ left, newNode ]
 
                                                     else
-                                                        let
-                                                            newNode =
-                                                                TextLeaf
-                                                                    { leaf
-                                                                        | marks = newMarks
-                                                                        , text =
-                                                                            String.slice
-                                                                                normalizedSelection.anchorOffset
-                                                                                normalizedSelection.focusOffset
-                                                                                leaf.text
-                                                                    }
+                                                        [ left, newNode, right ]
 
-                                                            left =
-                                                                TextLeaf { leaf | text = String.left normalizedSelection.anchorOffset leaf.text }
-
-                                                            right =
-                                                                TextLeaf { leaf | text = String.dropLeft normalizedSelection.focusOffset leaf.text }
-                                                        in
-                                                        if normalizedSelection.anchorOffset == 0 then
-                                                            [ newNode, right ]
-
-                                                        else if String.length leaf.text == normalizedSelection.focusOffset then
-                                                            [ left, newNode ]
-
-                                                        else
-                                                            [ left, newNode, right ]
-
-                                        path =
-                                            if normalizedSelection.anchorOffset == 0 then
-                                                normalizedSelection.anchorNode
-
-                                            else
-                                                increment normalizedSelection.anchorNode
-
-                                        newSelection =
-                                            singleNodeRangeSelection
-                                                path
-                                                0
-                                                (normalizedSelection.focusOffset - normalizedSelection.anchorOffset)
-                                    in
-                                    case
-                                        replaceWithFragment
+                                    path =
+                                        if normalizedSelection.anchorOffset == 0 then
                                             normalizedSelection.anchorNode
-                                            (InlineLeafFragment <| Array.fromList leaves)
-                                            editorState.root
-                                    of
-                                        Err s ->
-                                            Err s
 
-                                        Ok newRoot ->
-                                            Ok { editorState | selection = Just newSelection, root = newRoot }
+                                        else
+                                            increment normalizedSelection.anchorNode
+
+                                    newSelection =
+                                        singleNodeRangeSelection
+                                            path
+                                            0
+                                            (normalizedSelection.focusOffset - normalizedSelection.anchorOffset)
+                                in
+                                case
+                                    replaceWithFragment
+                                        normalizedSelection.anchorNode
+                                        (InlineLeafFragment <| Array.fromList leaves)
+                                        editorState.root
+                                of
+                                    Err s ->
+                                        Err s
+
+                                    Ok newRoot ->
+                                        Ok { editorState | selection = Just newSelection, root = newRoot }
 
 
 toggleMarkOnInlineNodes : Mark -> CommandFunc
@@ -1134,7 +1133,7 @@ wrapIn elementParameters editorState =
                                                     Leaf ->
                                                         Err "Cannot wrap leaf elements"
 
-                                            InlineLeafWrapper il ->
+                                            InlineLeafWrapper _ ->
                                                 Err "Invalid ancestor path... somehow we have an inline leaf"
 
 
@@ -1180,8 +1179,137 @@ selectAll editorState =
             Ok { editorState | selection = Just <| rangeSelection first 0 last lastOffset }
 
 
+
+-- mark each text block to lift
+-- for each block, lift it out of its container if possible
+
+
+liftMark =
+    { name = "__lift__", attributes = [] }
+
+
+addLiftMarkToBlocksInSelection : Selection -> EditorBlockNode -> EditorBlockNode
+addLiftMarkToBlocksInSelection selection root =
+    let
+        start =
+            findClosestBlockPath selection.anchorNode root
+
+        end =
+            findClosestBlockPath selection.focusNode root
+    in
+    case
+        indexedMap
+            (\path node ->
+                if path < start || path > end then
+                    node
+
+                else
+                    case node of
+                        BlockNodeWrapper bn ->
+                            let
+                                parameters =
+                                    bn.parameters
+
+                                addMarker =
+                                    case bn.childNodes of
+                                        Leaf ->
+                                            True
+
+                                        InlineLeafArray _ ->
+                                            True
+
+                                        _ ->
+                                            False
+                            in
+                            if addMarker then
+                                BlockNodeWrapper
+                                    { bn
+                                        | parameters =
+                                            { parameters
+                                                | marks =
+                                                    toggleMark ToggleAction.Add liftMark bn.parameters.marks
+                                            }
+                                    }
+
+                            else
+                                node
+
+                        _ ->
+                            node
+            )
+            (BlockNodeWrapper root)
+    of
+        BlockNodeWrapper bn ->
+            bn
+
+        _ ->
+            root
+
+
+liftConcatMapFunc : EditorNode -> List EditorNode
+liftConcatMapFunc node =
+    case node of
+        BlockNodeWrapper bn ->
+            case bn.childNodes of
+                Leaf ->
+                    [ node ]
+
+                InlineLeafArray _ ->
+                    [ node ]
+
+                BlockArray a ->
+                    let
+                        groupedBlockNodes =
+                            List.Extra.groupWhile
+                                (\n1 n2 ->
+                                    hasMarkWithName liftMark.name n1.parameters.marks == hasMarkWithName liftMark.name n2.parameters.marks
+                                )
+                                (Array.toList a)
+                    in
+                    List.map BlockNodeWrapper <|
+                        List.concatMap
+                            (\( n, l ) ->
+                                if hasMarkWithName liftMark.name n.parameters.marks then
+                                    n :: l
+
+                                else
+                                    [ { bn | childNodes = BlockArray (Array.fromList <| n :: l) } ]
+                            )
+                            groupedBlockNodes
+
+        InlineLeafWrapper _ ->
+            [ node ]
+
+
 lift : CommandFunc
 lift editorState =
+    case editorState.selection of
+        Nothing ->
+            Err "Nothing is selected"
+
+        Just selection ->
+            let
+                normalizedSelection =
+                    normalizeSelection selection
+
+                markedRoot =
+                    addLiftMarkToBlocksInSelection normalizedSelection <| markSelection normalizedSelection editorState.root
+
+                liftedRoot =
+                    concatMap liftConcatMapFunc markedRoot
+
+                newSelection =
+                    selectionFromMarks liftedRoot normalizedSelection.anchorOffset normalizedSelection.focusOffset
+            in
+            Ok
+                { editorState
+                    | selection = newSelection
+                    , root = clearMarks liftMark <| clearSelectionMarks liftedRoot
+                }
+
+
+liftEmpty : CommandFunc
+liftEmpty editorState =
     Err "Not implemented"
 
 

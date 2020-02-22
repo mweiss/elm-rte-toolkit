@@ -4,6 +4,7 @@ module Rte.Node exposing
     , Iterator
     , allRange
     , anyRange
+    , concatMap
     , findAncestor
     , findBackwardFrom
     , findBackwardFromExclusive
@@ -257,6 +258,50 @@ findNodeFrom iterator pred path node =
 
         Nothing ->
             Nothing
+
+
+concatMap : (EditorNode -> List EditorNode) -> EditorBlockNode -> EditorBlockNode
+concatMap func node =
+    let
+        newChildren =
+            case node.childNodes of
+                Leaf ->
+                    Leaf
+
+                BlockArray a ->
+                    let
+                        c =
+                            List.concatMap
+                                (\x ->
+                                    case x of
+                                        BlockNodeWrapper v ->
+                                            [ v ]
+
+                                        InlineLeafWrapper _ ->
+                                            []
+                                )
+                            <|
+                                List.concatMap func (List.map BlockNodeWrapper (Array.toList a))
+                    in
+                    BlockArray <| Array.fromList (List.map (concatMap func) c)
+
+                InlineLeafArray a ->
+                    InlineLeafArray <|
+                        Array.fromList
+                            (List.concatMap
+                                (\x ->
+                                    case x of
+                                        BlockNodeWrapper _ ->
+                                            []
+
+                                        InlineLeafWrapper v ->
+                                            [ v ]
+                                )
+                             <|
+                                List.concatMap func (List.map InlineLeafWrapper (Array.toList a))
+                            )
+    in
+    { node | childNodes = newChildren }
 
 
 map : (EditorNode -> EditorNode) -> EditorNode -> EditorNode
