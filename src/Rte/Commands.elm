@@ -1366,9 +1366,58 @@ isEmptyTextBlock node =
             False
 
 
-headerToNewParagraph : List String -> String -> CommandFunc
-headerToNewParagraph headerElements paragraphElement editorState =
-    Err "Not implemented"
+splitBlockHeaderToNewParagraph : List String -> String -> CommandFunc
+splitBlockHeaderToNewParagraph headerElements paragraphElement editorState =
+    case splitBlock editorState of
+        Err s ->
+            Err s
+
+        Ok splitEditorState ->
+            case splitEditorState.selection of
+                Nothing ->
+                    Ok splitEditorState
+
+                Just selection ->
+                    if (not <| isCollapsed selection) || selection.anchorOffset /= 0 then
+                        Ok splitEditorState
+
+                    else
+                        let
+                            p =
+                                findClosestBlockPath selection.anchorNode splitEditorState.root
+                        in
+                        case nodeAt p splitEditorState.root of
+                            Nothing ->
+                                Ok splitEditorState
+
+                            Just node ->
+                                case node of
+                                    BlockNodeWrapper bn ->
+                                        let
+                                            parameters =
+                                                bn.parameters
+                                        in
+                                        if List.member parameters.name headerElements && isEmptyTextBlock node then
+                                            case
+                                                replace p
+                                                    (BlockNodeWrapper
+                                                        { bn
+                                                            | parameters = { parameters | name = paragraphElement }
+                                                        }
+                                                    )
+                                                    splitEditorState.root
+                                            of
+                                                Err _ ->
+                                                    Ok splitEditorState
+
+                                                Ok newRoot ->
+                                                    Ok { splitEditorState | root = newRoot }
+
+                                        else
+                                            Ok splitEditorState
+
+                                    _ ->
+                                        Ok splitEditorState
 
 
 backspaceInlineElement : CommandFunc

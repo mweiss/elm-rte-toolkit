@@ -6,7 +6,7 @@ import BasicSpecs exposing (simpleSpec)
 import Browser
 import Html exposing (Html, div)
 import Html.Attributes
-import Rte.Commands exposing (lift, toggleBlock, toggleMarkOnInlineNodes, wrapIn)
+import Rte.Commands exposing (enterKey, inputEvent, key, lift, liftEmpty, otherwiseDo, returnKey, set, splitBlockHeaderToNewParagraph, toggleBlock, toggleMarkOnInlineNodes, wrapIn)
 import Rte.Decorations exposing (addElementDecoration, emptyDecorations, selectableDecoration)
 import Rte.Editor exposing (internalUpdate)
 import Rte.EditorUtils exposing (applyCommand)
@@ -72,6 +72,7 @@ initialEditorNode =
 
 commandBindings =
     Rte.Commands.defaultCommandBindings
+        |> set [ inputEvent "insertParagraph", key [ enterKey ], key [ returnKey ] ] (liftEmpty |> otherwiseDo (splitBlockHeaderToNewParagraph headerElements "p"))
 
 
 decorations =
