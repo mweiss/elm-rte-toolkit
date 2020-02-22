@@ -87,7 +87,7 @@ stack bindings func map =
 
 
 otherwiseDo : CommandFunc -> CommandFunc -> CommandFunc
-otherwiseDo a b =
+otherwiseDo b a =
     \s ->
         case a s of
             Err _ ->
@@ -112,7 +112,7 @@ key keys =
 defaultCommandBindings =
     emptyCommandBinding
         |> set [ inputEvent "insertLineBreak", key [ shiftKey, enterKey ], key [ shiftKey, enterKey ] ] insertLineBreak
-        |> set [ inputEvent "insertParagraph", key [ enterKey ], key [ returnKey ] ] splitBlock
+        |> set [ inputEvent "insertParagraph", key [ enterKey ], key [ returnKey ] ] (liftEmpty |> otherwiseDo splitBlock)
         |> set [ inputEvent "deleteContentBackward", key [ backspaceKey ] ] (removeRangeSelection |> otherwiseDo removeSelectedLeafElementCommand |> otherwiseDo backspaceInlineElement |> otherwiseDo joinBackward |> otherwiseDo backspaceText)
         |> set [ key [ metaKey, "a" ] ] selectAll
 
@@ -1310,7 +1310,60 @@ lift editorState =
 
 liftEmpty : CommandFunc
 liftEmpty editorState =
-    Err "Not implemented"
+    case editorState.selection of
+        Nothing ->
+            Err "Nothing is selected"
+
+        Just selection ->
+            if (not <| isCollapsed selection) || selection.anchorOffset /= 0 then
+                Err "Can only lift empty text blocks"
+
+            else
+                let
+                    p =
+                        findClosestBlockPath selection.anchorNode editorState.root
+                in
+                case nodeAt p editorState.root of
+                    Nothing ->
+                        Err "Invalid root path"
+
+                    Just node ->
+                        if not <| isEmptyTextBlock node then
+                            Err "I cannot lift a node that is not an empty text block"
+
+                        else if List.length p < 2 then
+                            Err "I cannot lift a node that's root or an immediate child of root"
+
+                        else
+                            lift editorState
+
+
+isEmptyTextBlock : EditorNode -> Bool
+isEmptyTextBlock node =
+    case node of
+        BlockNodeWrapper bn ->
+            case bn.childNodes of
+                InlineLeafArray a ->
+                    case Array.get 0 a of
+                        Nothing ->
+                            Array.isEmpty a
+
+                        Just n ->
+                            Array.length a
+                                == 1
+                                && (case n of
+                                        TextLeaf t ->
+                                            String.isEmpty t.text
+
+                                        _ ->
+                                            False
+                                   )
+
+                _ ->
+                    False
+
+        InlineLeafWrapper il ->
+            False
 
 
 headerToNewParagraph : List String -> String -> CommandFunc
