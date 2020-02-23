@@ -6,7 +6,7 @@ import BasicSpecs exposing (simpleSpec)
 import Browser
 import Html exposing (Html, div)
 import Html.Attributes
-import Rte.Commands exposing (enterKey, inputEvent, key, lift, liftEmpty, otherwiseDo, returnKey, set, splitBlockHeaderToNewParagraph, toggleBlock, toggleMarkOnInlineNodes, wrapIn)
+import Rte.Commands exposing (enterKey, inputEvent, insertBlockNode, key, lift, liftEmpty, otherwiseDo, returnKey, set, splitBlockHeaderToNewParagraph, toggleBlock, toggleMarkOnInlineNodes, wrapIn)
 import Rte.Decorations exposing (addElementDecoration, emptyDecorations, selectableDecoration)
 import Rte.Editor exposing (internalUpdate)
 import Rte.EditorUtils exposing (applyCommand)
@@ -75,8 +75,14 @@ commandBindings =
         |> set [ inputEvent "insertParagraph", key [ enterKey ], key [ returnKey ] ] (liftEmpty |> otherwiseDo (splitBlockHeaderToNewParagraph headerElements "p"))
 
 
+
+-- TODO: fix this!! add real mark decorations
+
+
 decorations =
-    addElementDecoration "img" selectableDecoration emptyDecorations
+    addElementDecoration "img" selectableDecoration <|
+        addElementDecoration "hr" selectableDecoration <|
+            emptyDecorations
 
 
 initEditor : Editor EditorMsg
@@ -310,7 +316,18 @@ handleWrapBlockNode model =
 
 handleInsertHorizontalRule : Model -> Model
 handleInsertHorizontalRule model =
-    model
+    { model
+        | editor =
+            Result.withDefault model.editor
+                (applyCommand
+                    (insertBlockNode
+                        { parameters = { name = "hr", marks = [ selectableMark ], attributes = [] }
+                        , childNodes = Leaf
+                        }
+                    )
+                    model.editor
+                )
+    }
 
 
 handleShowInsertImageModal : Model -> Model

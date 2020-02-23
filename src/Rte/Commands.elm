@@ -4,8 +4,8 @@ import Array
 import Array.Extra
 import Dict exposing (Dict)
 import List.Extra
-import Rte.Marks as ToggleAction exposing (ToggleAction, clearMarks, findMarksFromInlineLeaf, hasMarkWithName, toggleMark)
-import Rte.Model exposing (ChildNodes(..), CommandBinding(..), CommandFunc, CommandMap, Editor, EditorBlockNode, EditorInlineLeaf(..), EditorState, ElementParameters, Mark, NodePath, Selection)
+import Rte.Marks exposing (ToggleAction(..), clearMarks, findMarksFromInlineLeaf, hasMarkWithName, toggleMark)
+import Rte.Model exposing (ChildNodes(..), Command, CommandBinding(..), CommandMap, Editor, EditorBlockNode, EditorInlineLeaf(..), EditorState, ElementParameters, Mark, NodePath, Selection)
 import Rte.Node exposing (EditorFragment(..), EditorNode(..), allRange, concatMap, findBackwardFromExclusive, findForwardFrom, findForwardFromExclusive, findTextBlockNodeAncestor, indexedFoldl, indexedMap, isSelectable, map, next, nodeAt, previous, removeInRange, removeNodeAndEmptyParents, replace, replaceWithFragment, splitBlockAtPathAndOffset, splitTextLeaf)
 import Rte.NodePath as NodePath exposing (commonAncestor, decrement, increment, parent, toString)
 import Rte.Selection exposing (caretSelection, clearSelectionMarks, isCollapsed, markSelection, normalizeSelection, rangeSelection, selectionFromMarks, singleNodeRangeSelection)
@@ -46,7 +46,7 @@ backspaceKey =
     "Backspace"
 
 
-set : List CommandBinding -> CommandFunc -> CommandMap -> CommandMap
+set : List CommandBinding -> Command -> CommandMap -> CommandMap
 set bindings func map =
     List.foldl
         (\binding accMap ->
@@ -61,7 +61,7 @@ set bindings func map =
         bindings
 
 
-stack : List CommandBinding -> CommandFunc -> CommandMap -> CommandMap
+stack : List CommandBinding -> Command -> CommandMap -> CommandMap
 stack bindings func map =
     List.foldl
         (\binding accMap ->
@@ -86,7 +86,7 @@ stack bindings func map =
         bindings
 
 
-otherwiseDo : CommandFunc -> CommandFunc -> CommandFunc
+otherwiseDo : Command -> Command -> Command
 otherwiseDo b a =
     \s ->
         case a s of
@@ -117,7 +117,7 @@ defaultCommandBindings =
         |> set [ key [ metaKey, "a" ] ] selectAll
 
 
-joinBackward : CommandFunc
+joinBackward : Command
 joinBackward editorState =
     case editorState.selection of
         Nothing ->
@@ -228,7 +228,7 @@ selectionIsEndOfTextBlock selection root =
                         False
 
 
-joinForward : CommandFunc
+joinForward : Command
 joinForward editorState =
     case editorState.selection of
         Nothing ->
@@ -342,7 +342,7 @@ findPreviousTextBlock =
     findTextBlock findBackwardFromExclusive
 
 
-removeRangeSelection : CommandFunc
+removeRangeSelection : Command
 removeRangeSelection editorState =
     case editorState.selection of
         Nothing ->
@@ -407,12 +407,12 @@ removeRangeSelection editorState =
                                         Ok <| Result.withDefault newEditorState (joinForward newEditorState)
 
 
-insertLineBreak : CommandFunc
+insertLineBreak : Command
 insertLineBreak =
     insertInlineElement (InlineLeaf { name = "br", attributes = [], marks = [] })
 
 
-insertInlineElement : EditorInlineLeaf -> CommandFunc
+insertInlineElement : EditorInlineLeaf -> Command
 insertInlineElement leaf editorState =
     case editorState.selection of
         Nothing ->
@@ -420,7 +420,7 @@ insertInlineElement leaf editorState =
 
         Just selection ->
             if not <| isCollapsed selection then
-                removeRangeSelection editorState |> Result.andThen splitBlock
+                removeRangeSelection editorState |> Result.andThen (insertInlineElement leaf)
 
             else
                 case nodeAt selection.anchorNode editorState.root of
@@ -488,7 +488,7 @@ insertInlineElement leaf editorState =
                                 Err "I can not insert an inline element in a block node"
 
 
-splitBlock : CommandFunc
+splitBlock : Command
 splitBlock editorState =
     case editorState.selection of
         Nothing ->
@@ -581,7 +581,7 @@ removeTextAtRange nodePath start maybeEnd root =
             Err <| "There is no node at node path " ++ toString nodePath
 
 
-removeSelectedLeafElementCommand : CommandFunc
+removeSelectedLeafElementCommand : Command
 removeSelectedLeafElementCommand editorState =
     case editorState.selection of
         Nothing ->
@@ -632,7 +632,7 @@ removeSelectedLeafElementCommand editorState =
 -- other offset, allow browser to do the default behavior
 
 
-backspaceText : CommandFunc
+backspaceText : Command
 backspaceText editorState =
     case editorState.selection of
         Nothing ->
@@ -801,7 +801,7 @@ toggleMarkSingleInlineNode mark action editorState =
                                         Ok { editorState | selection = Just newSelection, root = newRoot }
 
 
-toggleMarkOnInlineNodes : Mark -> CommandFunc
+toggleMarkOnInlineNodes : Mark -> Command
 toggleMarkOnInlineNodes mark editorState =
     case editorState.selection of
         Nothing ->
@@ -809,7 +809,7 @@ toggleMarkOnInlineNodes mark editorState =
 
         Just selection ->
             if selection.focusNode == selection.anchorNode then
-                toggleMarkSingleInlineNode mark ToggleAction.Flip editorState
+                toggleMarkSingleInlineNode mark Flip editorState
 
             else
                 let
@@ -824,10 +824,10 @@ toggleMarkOnInlineNodes mark editorState =
                                 normalizedSelection.focusNode
                                 editorState.root
                         then
-                            ToggleAction.Remove
+                            Remove
 
                         else
-                            ToggleAction.Add
+                            Add
 
                     betweenRoot =
                         case next normalizedSelection.anchorNode editorState.root of
@@ -945,7 +945,7 @@ findClosestBlockPath path node =
                     parent path
 
 
-toggleBlock : List String -> String -> String -> CommandFunc
+toggleBlock : List String -> String -> String -> Command
 toggleBlock allowedBlocks onTag offTag editorState =
     case editorState.selection of
         Nothing ->
@@ -1017,7 +1017,7 @@ toggleBlock allowedBlocks onTag offTag editorState =
             Ok { editorState | root = newRoot }
 
 
-wrapIn : ElementParameters -> CommandFunc
+wrapIn : ElementParameters -> Command
 wrapIn elementParameters editorState =
     case editorState.selection of
         Nothing ->
@@ -1137,7 +1137,7 @@ wrapIn elementParameters editorState =
                                                 Err "Invalid ancestor path... somehow we have an inline leaf"
 
 
-selectAll : CommandFunc
+selectAll : Command
 selectAll editorState =
     let
         ( fl, lastOffset ) =
@@ -1227,7 +1227,7 @@ addLiftMarkToBlocksInSelection selection root =
                                         | parameters =
                                             { parameters
                                                 | marks =
-                                                    toggleMark ToggleAction.Add liftMark bn.parameters.marks
+                                                    toggleMark Add liftMark bn.parameters.marks
                                             }
                                     }
 
@@ -1281,7 +1281,7 @@ liftConcatMapFunc node =
             [ node ]
 
 
-lift : CommandFunc
+lift : Command
 lift editorState =
     case editorState.selection of
         Nothing ->
@@ -1308,7 +1308,7 @@ lift editorState =
                 }
 
 
-liftEmpty : CommandFunc
+liftEmpty : Command
 liftEmpty editorState =
     case editorState.selection of
         Nothing ->
@@ -1362,11 +1362,11 @@ isEmptyTextBlock node =
                 _ ->
                     False
 
-        InlineLeafWrapper il ->
+        InlineLeafWrapper _ ->
             False
 
 
-splitBlockHeaderToNewParagraph : List String -> String -> CommandFunc
+splitBlockHeaderToNewParagraph : List String -> String -> Command
 splitBlockHeaderToNewParagraph headerElements paragraphElement editorState =
     case splitBlock editorState of
         Err s ->
@@ -1420,26 +1420,115 @@ splitBlockHeaderToNewParagraph headerElements paragraphElement editorState =
                                         Ok splitEditorState
 
 
-backspaceInlineElement : CommandFunc
+insertBlockNode : EditorBlockNode -> Command
+insertBlockNode node editorState =
+    case editorState.selection of
+        Nothing ->
+            Err "Nothing is selected"
+
+        Just selection ->
+            if not <| isCollapsed selection then
+                removeRangeSelection editorState |> Result.andThen (insertBlockNode node)
+
+            else
+                case nodeAt selection.anchorNode editorState.root of
+                    Nothing ->
+                        Err "Invalid selection"
+
+                    Just anchorNode ->
+                        case anchorNode of
+                            -- if a block node is selected, then insert after the selected block
+                            BlockNodeWrapper bn ->
+                                case replaceWithFragment selection.anchorNode (BlockNodeFragment (Array.fromList [ bn, node ])) editorState.root of
+                                    Err s ->
+                                        Err s
+
+                                    Ok newRoot ->
+                                        let
+                                            newSelection =
+                                                if isSelectable (BlockNodeWrapper node) then
+                                                    caretSelection (increment selection.anchorNode) 0
+
+                                                else
+                                                    selection
+                                        in
+                                        Ok { editorState | selection = Just newSelection, root = newRoot }
+
+                            -- if an inline node is selected, then split the block and insert before
+                            InlineLeafWrapper il ->
+                                case splitBlock editorState of
+                                    Err s ->
+                                        Err s
+
+                                    Ok splitEditorState ->
+                                        insertBlockNodeBeforeSelection node splitEditorState
+
+
+insertBlockNodeBeforeSelection : EditorBlockNode -> Command
+insertBlockNodeBeforeSelection node editorState =
+    case editorState.selection of
+        Nothing ->
+            Err "Nothing is selected"
+
+        Just selection ->
+            if not <| isCollapsed selection then
+                Err "I can only insert a block element before a collapsed selection"
+
+            else
+                let
+                    markedRoot =
+                        markSelection selection editorState.root
+
+                    closestBlockPath =
+                        findClosestBlockPath selection.anchorNode markedRoot
+                in
+                case nodeAt closestBlockPath markedRoot of
+                    Nothing ->
+                        Err "Invalid selection"
+
+                    Just anchorNode ->
+                        case anchorNode of
+                            BlockNodeWrapper bn ->
+                                case replaceWithFragment closestBlockPath (BlockNodeFragment (Array.fromList [ node, bn ])) markedRoot of
+                                    Err s ->
+                                        Err s
+
+                                    Ok newRoot ->
+                                        let
+                                            newSelection =
+                                                if isSelectable (BlockNodeWrapper node) then
+                                                    Just <| caretSelection closestBlockPath 0
+
+                                                else
+                                                    selectionFromMarks newRoot selection.anchorOffset selection.focusOffset
+                                        in
+                                        Ok { editorState | selection = newSelection, root = clearSelectionMarks newRoot }
+
+                            -- if an inline node is selected, then split the block and insert before
+                            InlineLeafWrapper il ->
+                                Err "Invalid state! I was expecting a block node."
+
+
+backspaceInlineElement : Command
 backspaceInlineElement editorState =
     Err "Not implemented"
 
 
-backspaceBlockElement : CommandFunc
+backspaceBlockElement : Command
 backspaceBlockElement editorState =
     Err "Not implemented"
 
 
-backspaceWord : CommandFunc
+backspaceWord : Command
 backspaceWord editorState =
     Err "Not implemented"
 
 
-delete : CommandFunc
+delete : Command
 delete editorState =
     Err "Not implemented"
 
 
-deleteWord : CommandFunc
+deleteWord : Command
 deleteWord editorState =
     Err "Not implemented"

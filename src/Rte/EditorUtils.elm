@@ -1,7 +1,7 @@
 module Rte.EditorUtils exposing (..)
 
 import Rte.EditorState exposing (reduceEditorState)
-import Rte.Model exposing (CommandFunc, Editor)
+import Rte.Model exposing (Command, Editor)
 
 
 zeroWidthSpace =
@@ -13,7 +13,7 @@ forceRerender editor =
     { editor | renderCount = editor.renderCount + 1 }
 
 
-applyCommand : CommandFunc -> Editor msg -> Result String (Editor msg)
+applyCommand : Command -> Editor msg -> Result String (Editor msg)
 applyCommand command editor =
     case command editor.editorState of
         Err s ->

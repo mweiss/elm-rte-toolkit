@@ -180,7 +180,7 @@ emptyCommandBinding
 (Command.compose liftSelectedListItemCommand handleInsertParagraph)
 
 -}
-type alias CommandFunc =
+type alias Command =
     EditorState -> Result String EditorState
 
 
@@ -189,14 +189,14 @@ Command.key function to ensure the list is sorted in the correct order. This is 
 what command to execute on the editor's keydown event.
 -}
 type alias KeyMap =
-    Dict (List String) CommandFunc
+    Dict (List String) Command
 
 
 {-| A dictionary of input type event type to command function. This is used to determine what command
 to execute on the editor's beforeinput events.
 -}
 type alias InputEventTypeMap =
-    Dict String CommandFunc
+    Dict String Command
 
 
 {-| A selection represents the information received and translated from the selection API. Note that
