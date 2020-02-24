@@ -183,7 +183,6 @@ class SelectionState extends HTMLElement {
         if (!selection.selectionExists) {
             return;
         }
-        console.log(selection);
         let event = new CustomEvent("editorselectionchange", { detail: selection });
         this.parentNode.dispatchEvent(event);
     };

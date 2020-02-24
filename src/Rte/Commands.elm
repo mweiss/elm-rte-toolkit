@@ -675,7 +675,21 @@ backspaceText editorState =
                 Err "I can only backspace a collapsed selection"
 
             else if selection.anchorOffset > 1 then
-                removeRangeSelection { editorState | selection = Just <| singleNodeRangeSelection selection.anchorNode (selection.anchorOffset - 1) selection.anchorOffset }
+                {-
+                   -- This would be the logic if we didn't revert to using the native behavior.
+                   removeRangeSelection
+                       { editorState
+                           | selection =
+                               Just <|
+                                   singleNodeRangeSelection
+                                       selection.anchorNode
+                                       (selection.anchorOffset - 1)
+                                       selection.anchorOffset
+                       }
+                -}
+                Err <|
+                    "I use native behavior when doing backspace when the "
+                        ++ "anchor offset could not result in a node change"
 
             else
                 case nodeAt selection.anchorNode editorState.root of
@@ -1487,7 +1501,7 @@ insertBlockNode node editorState =
                                         Ok { editorState | selection = Just newSelection, root = newRoot }
 
                             -- if an inline node is selected, then split the block and insert before
-                            InlineLeafWrapper il ->
+                            InlineLeafWrapper _ ->
                                 case splitBlock editorState of
                                     Err s ->
                                         Err s
@@ -1704,12 +1718,12 @@ backspaceWord editorState =
 
         Just selection ->
             if not <| isCollapsed selection then
-                Err "I cannot backspace a word of a range selection"
+                Err "I cannot remove a word of a range selection"
 
             else
                 case findTextBlockNodeAncestor selection.anchorNode editorState.root of
                     Nothing ->
-                        Err "I can only backspace word on a text leaf"
+                        Err "I can only remove a word on a text leaf"
 
                     Just ( p, n ) ->
                         case n.childNodes of
@@ -1759,7 +1773,7 @@ backspaceWord editorState =
                                                 String.left offset groupText
                                         in
                                         if String.isEmpty stringFrom then
-                                            Err "Cannot backspace word at the beginning of a string or inline element"
+                                            Err "Cannot remove word a word if the text fragment is empty"
 
                                         else
                                             let
@@ -1807,19 +1821,270 @@ backspaceWord editorState =
 
 deleteText : Command
 deleteText editorState =
-    Err "Not implemented"
+    case editorState.selection of
+        Nothing ->
+            Err "Nothing is selected"
+
+        Just selection ->
+            if not <| isCollapsed selection then
+                Err "I can only backspace a collapsed selection"
+
+            else
+                case nodeAt selection.anchorNode editorState.root of
+                    Nothing ->
+                        Err "I was given an invalid path to delete text"
+
+                    Just node ->
+                        case node of
+                            BlockNodeWrapper _ ->
+                                Err "I cannot delete text if the selection a block node"
+
+                            InlineLeafWrapper il ->
+                                case il of
+                                    InlineLeaf _ ->
+                                        Err "I cannot delete text if the selection an inline leaf"
+
+                                    TextLeaf tl ->
+                                        let
+                                            textLength =
+                                                String.length tl.text
+                                        in
+                                        if selection.anchorOffset < (textLength - 1) then
+                                            Err "I use the default behavior when deleting text when the anchor offset is not at the end of a text node"
+
+                                        else if selection.anchorOffset == (textLength - 1) then
+                                            case replace selection.anchorNode (InlineLeafWrapper (TextLeaf { tl | text = String.dropRight 1 tl.text })) editorState.root of
+                                                Err s ->
+                                                    Err s
+
+                                                Ok newRoot ->
+                                                    let
+                                                        newSelection =
+                                                            caretSelection selection.anchorNode (textLength - 1)
+                                                    in
+                                                    Ok { editorState | root = newRoot, selection = Just newSelection }
+
+                                        else
+                                            case next selection.anchorNode editorState.root of
+                                                Nothing ->
+                                                    Err "I cannot do delete because there is no neighboring text node"
+
+                                                Just ( nextPath, nextNode ) ->
+                                                    case nextNode of
+                                                        BlockNodeWrapper _ ->
+                                                            Err "Cannot delete the text of a block node"
+
+                                                        InlineLeafWrapper nextInlineLeafWrapper ->
+                                                            case nextInlineLeafWrapper of
+                                                                TextLeaf _ ->
+                                                                    let
+                                                                        newSelection =
+                                                                            singleNodeRangeSelection nextPath 0 1
+                                                                    in
+                                                                    removeRangeSelection { editorState | selection = Just newSelection }
+
+                                                                InlineLeaf _ ->
+                                                                    Err "Cannot backspace the text of an inline leaf"
 
 
 deleteInlineElement : Command
 deleteInlineElement editorState =
-    Err "Not implemented"
+    case editorState.selection of
+        Nothing ->
+            Err "Nothing is selected"
+
+        Just selection ->
+            if not <| isCollapsed selection then
+                Err "I can only delete an inline element if the selection is collapsed"
+
+            else
+                case nodeAt selection.anchorNode editorState.root of
+                    Nothing ->
+                        Err "I was given an invalid path to delete text"
+
+                    Just node ->
+                        case node of
+                            BlockNodeWrapper _ ->
+                                Err "I cannot delete text if the selection a block node"
+
+                            InlineLeafWrapper il ->
+                                let
+                                    length =
+                                        case il of
+                                            TextLeaf t ->
+                                                String.length t.text
+
+                                            InlineLeaf _ ->
+                                                0
+                                in
+                                if length < selection.anchorOffset then
+                                    Err "I cannot delete an inline element if the cursor is not at the end of an inline node"
+
+                                else
+                                    let
+                                        incrementedPath =
+                                            increment selection.anchorNode
+                                    in
+                                    case nodeAt incrementedPath editorState.root of
+                                        Nothing ->
+                                            Err "There is no next inline leaf to delete"
+
+                                        Just incrementedNode ->
+                                            case incrementedNode of
+                                                InlineLeafWrapper nil ->
+                                                    case nil of
+                                                        InlineLeaf _ ->
+                                                            case replaceWithFragment incrementedPath (InlineLeafFragment Array.empty) editorState.root of
+                                                                Err s ->
+                                                                    Err s
+
+                                                                Ok newRoot ->
+                                                                    Ok { editorState | root = newRoot }
+
+                                                        TextLeaf _ ->
+                                                            Err "There is no next inline leaf element, found a text leaf"
+
+                                                BlockNodeWrapper _ ->
+                                                    Err "There is no next inline leaf, found a block node"
 
 
 deleteBlockNode : Command
 deleteBlockNode editorState =
-    Err "Not implemented"
+    case editorState.selection of
+        Nothing ->
+            Err "Nothing is selected"
+
+        Just selection ->
+            if not <| selectionIsEndOfTextBlock selection editorState.root then
+                Err "Cannot delete a block element if we're not at the end of a text block"
+
+            else
+                case next selection.anchorNode editorState.root of
+                    Nothing ->
+                        Err "There is no next node to delete"
+
+                    Just ( path, node ) ->
+                        case node of
+                            BlockNodeWrapper bn ->
+                                case bn.childNodes of
+                                    Leaf ->
+                                        case replaceWithFragment path (BlockNodeFragment Array.empty) editorState.root of
+                                            Err s ->
+                                                Err s
+
+                                            Ok newRoot ->
+                                                Ok { editorState | root = clearSelectionMarks newRoot }
+
+                                    _ ->
+                                        Err "The next node is not a block leaf"
+
+                            InlineLeafWrapper _ ->
+                                Err "The next node is not a block leaf, it's an inline leaf"
 
 
 deleteWord : Command
 deleteWord editorState =
-    Err "Not implemented"
+    case editorState.selection of
+        Nothing ->
+            Err "Nothing is selected"
+
+        Just selection ->
+            if not <| isCollapsed selection then
+                Err "I cannot remove a word of a range selection"
+
+            else
+                case findTextBlockNodeAncestor selection.anchorNode editorState.root of
+                    Nothing ->
+                        Err "I can only remove a word on a text leaf"
+
+                    Just ( p, n ) ->
+                        case n.childNodes of
+                            InlineLeafArray arr ->
+                                let
+                                    groupedLeaves =
+                                        List.Extra.groupWhile
+                                            groupSameTypeInlineLeaf
+                                            (Array.toList arr)
+                                in
+                                case List.Extra.last selection.anchorNode of
+                                    Nothing ->
+                                        Err "Somehow the anchor node is the root node"
+
+                                    Just lastIndex ->
+                                        let
+                                            ( relativeLastIndex, group ) =
+                                                List.foldl
+                                                    (\( first, rest ) ( i, g ) ->
+                                                        if not <| List.isEmpty g then
+                                                            ( i, g )
+
+                                                        else if List.length rest + 1 > i then
+                                                            ( i, first :: rest )
+
+                                                        else
+                                                            ( i - (List.length rest + 1), g )
+                                                    )
+                                                    ( lastIndex, [] )
+                                                    groupedLeaves
+
+                                            groupText =
+                                                textFromGroup group
+
+                                            offsetUpToNewIndex =
+                                                List.sum <|
+                                                    List.take
+                                                        relativeLastIndex
+                                                    <|
+                                                        lengthsFromGroup group
+
+                                            offset =
+                                                offsetUpToNewIndex + selection.anchorOffset
+
+                                            stringTo =
+                                                String.dropLeft offset groupText
+                                        in
+                                        if String.isEmpty stringTo then
+                                            Err "Cannot remove word a word if the text fragment is empty"
+
+                                        else
+                                            let
+                                                matches =
+                                                    Regex.findAtMost 1 DeleteWord.deleteWordRegex stringTo
+
+                                                matchOffset =
+                                                    case List.head matches of
+                                                        Nothing ->
+                                                            0
+
+                                                        Just match ->
+                                                            match.index + String.length match.match
+
+                                                ( newGroupIndex, newOffset, _ ) =
+                                                    List.foldl
+                                                        (\l ( i, o, done ) ->
+                                                            if done then
+                                                                ( i, o, done )
+
+                                                            else if l < o then
+                                                                ( i + 1, o - l, False )
+
+                                                            else
+                                                                ( i, o, True )
+                                                        )
+                                                        ( 0, offset + matchOffset, False )
+                                                    <|
+                                                        lengthsFromGroup group
+
+                                                newIndex =
+                                                    lastIndex - (relativeLastIndex - newGroupIndex)
+
+                                                newSelection =
+                                                    rangeSelection (p ++ [ newIndex ]) newOffset selection.anchorNode selection.anchorOffset
+
+                                                newState =
+                                                    { editorState | selection = Just newSelection }
+                                            in
+                                            removeRangeSelection newState
+
+                            _ ->
+                                Err "I expected an inline leaf array"
