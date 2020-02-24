@@ -4,6 +4,8 @@ import Array
 import Array.Extra
 import Dict exposing (Dict)
 import List.Extra
+import Regex
+import Rte.DeleteWord as DeleteWord
 import Rte.Marks exposing (ToggleAction(..), clearMarks, findMarksFromInlineLeaf, hasMarkWithName, toggleMark)
 import Rte.Model exposing (ChildNodes(..), Command, CommandBinding(..), CommandMap, Editor, EditorBlockNode, EditorInlineLeaf(..), EditorState, ElementParameters, Mark, NodePath, Selection)
 import Rte.Node exposing (EditorFragment(..), EditorNode(..), allRange, concatMap, findBackwardFromExclusive, findForwardFrom, findForwardFromExclusive, findTextBlockNodeAncestor, indexedFoldl, indexedMap, isSelectable, map, next, nodeAt, previous, removeInRange, removeNodeAndEmptyParents, replace, replaceWithFragment, splitBlockAtPathAndOffset, splitTextLeaf)
@@ -44,6 +46,11 @@ enterKey =
 backspaceKey : String
 backspaceKey =
     "Backspace"
+
+
+deleteKey : String
+deleteKey =
+    "Delete"
 
 
 set : List CommandBinding -> Command -> CommandMap -> CommandMap
@@ -109,11 +116,36 @@ key keys =
     Key <| List.sort keys
 
 
+backspaceCommands =
+    removeRangeSelection
+        |> otherwiseDo removeSelectedLeafElementCommand
+        |> otherwiseDo backspaceInlineElement
+        |> otherwiseDo backspaceBlockNode
+        |> otherwiseDo joinBackward
+
+
+deleteCommands =
+    removeRangeSelection
+        |> otherwiseDo removeSelectedLeafElementCommand
+        |> otherwiseDo deleteInlineElement
+        |> otherwiseDo deleteBlockNode
+        |> otherwiseDo joinForward
+
+
 defaultCommandBindings =
     emptyCommandBinding
         |> set [ inputEvent "insertLineBreak", key [ shiftKey, enterKey ], key [ shiftKey, enterKey ] ] insertLineBreak
         |> set [ inputEvent "insertParagraph", key [ enterKey ], key [ returnKey ] ] (liftEmpty |> otherwiseDo splitBlock)
-        |> set [ inputEvent "deleteContentBackward", key [ backspaceKey ] ] (removeRangeSelection |> otherwiseDo removeSelectedLeafElementCommand |> otherwiseDo backspaceInlineElement |> otherwiseDo joinBackward |> otherwiseDo backspaceText)
+        |> set [ inputEvent "deleteContentBackward", key [ backspaceKey ] ]
+            (backspaceCommands
+                |> otherwiseDo backspaceText
+            )
+        |> set [ inputEvent "deleteWordBackward", key [ altKey, backspaceKey ] ] (backspaceCommands |> otherwiseDo backspaceWord)
+        |> set [ inputEvent "deleteContentForward", key [ deleteKey ] ]
+            (deleteCommands
+                |> otherwiseDo deleteText
+            )
+        |> set [ inputEvent "deleteWordForward", key [ altKey, deleteKey ] ] (deleteCommands |> otherwiseDo deleteWord)
         |> set [ key [ metaKey, "a" ] ] selectAll
 
 
@@ -125,7 +157,7 @@ joinBackward editorState =
 
         Just selection ->
             if not <| selectionIsBeginningOfTextBlock selection editorState.root then
-                Err "I cannot join a range selection"
+                Err "I cannot join a selection that is not the beginning of a text block"
 
             else
                 case findTextBlockNodeAncestor selection.anchorNode editorState.root of
@@ -1489,7 +1521,15 @@ insertBlockNodeBeforeSelection node editorState =
                     Just anchorNode ->
                         case anchorNode of
                             BlockNodeWrapper bn ->
-                                case replaceWithFragment closestBlockPath (BlockNodeFragment (Array.fromList [ node, bn ])) markedRoot of
+                                let
+                                    newFragment =
+                                        if isEmptyTextBlock <| BlockNodeWrapper bn then
+                                            [ node ]
+
+                                        else
+                                            [ node, bn ]
+                                in
+                                case replaceWithFragment closestBlockPath (BlockNodeFragment (Array.fromList newFragment)) markedRoot of
                                     Err s ->
                                         Err s
 
@@ -1505,27 +1545,278 @@ insertBlockNodeBeforeSelection node editorState =
                                         Ok { editorState | selection = newSelection, root = clearSelectionMarks newRoot }
 
                             -- if an inline node is selected, then split the block and insert before
-                            InlineLeafWrapper il ->
+                            InlineLeafWrapper _ ->
                                 Err "Invalid state! I was expecting a block node."
 
 
 backspaceInlineElement : Command
 backspaceInlineElement editorState =
-    Err "Not implemented"
+    case editorState.selection of
+        Nothing ->
+            Err "Nothing is selected"
+
+        Just selection ->
+            if not <| isCollapsed selection then
+                Err "I can only backspace an inline element if the selection is collapsed"
+
+            else if selection.anchorOffset /= 0 then
+                Err "I can only backspace an inline element if the offset is 0"
+
+            else
+                let
+                    decrementedPath =
+                        decrement selection.anchorNode
+                in
+                case nodeAt decrementedPath editorState.root of
+                    Nothing ->
+                        Err "There is no previous inline element"
+
+                    Just node ->
+                        case node of
+                            InlineLeafWrapper il ->
+                                case il of
+                                    InlineLeaf _ ->
+                                        case replaceWithFragment decrementedPath (InlineLeafFragment Array.empty) editorState.root of
+                                            Err s ->
+                                                Err s
+
+                                            Ok newRoot ->
+                                                Ok
+                                                    { editorState
+                                                        | selection =
+                                                            Just <| caretSelection decrementedPath 0
+                                                        , root = newRoot
+                                                    }
+
+                                    TextLeaf _ ->
+                                        Err "There is no previous inline leaf element, found a text leaf"
+
+                            BlockNodeWrapper _ ->
+                                Err "There is no previous inline leaf element, found a block node"
 
 
-backspaceBlockElement : Command
-backspaceBlockElement editorState =
-    Err "Not implemented"
+backspaceBlockNode : Command
+backspaceBlockNode editorState =
+    case editorState.selection of
+        Nothing ->
+            Err "Nothing is selected"
+
+        Just selection ->
+            if not <| selectionIsBeginningOfTextBlock selection editorState.root then
+                Err "Cannot backspace a block element if we're not at the beginning of a text block"
+
+            else
+                let
+                    blockPath =
+                        findClosestBlockPath selection.anchorNode editorState.root
+
+                    markedRoot =
+                        markSelection selection editorState.root
+                in
+                case previous blockPath editorState.root of
+                    Nothing ->
+                        Err "There is no previous element to backspace"
+
+                    Just ( path, node ) ->
+                        case node of
+                            BlockNodeWrapper bn ->
+                                case bn.childNodes of
+                                    Leaf ->
+                                        case replaceWithFragment path (BlockNodeFragment Array.empty) markedRoot of
+                                            Err s ->
+                                                Err s
+
+                                            Ok newRoot ->
+                                                Ok
+                                                    { editorState
+                                                        | root = clearSelectionMarks newRoot
+                                                        , selection = selectionFromMarks newRoot selection.anchorOffset selection.focusOffset
+                                                    }
+
+                                    _ ->
+                                        Err "The previous element is not a block leaf"
+
+                            InlineLeafWrapper _ ->
+                                Err "The previous element is not a block node"
+
+
+groupSameTypeInlineLeaf : EditorInlineLeaf -> EditorInlineLeaf -> Bool
+groupSameTypeInlineLeaf a b =
+    case a of
+        InlineLeaf _ ->
+            case b of
+                InlineLeaf _ ->
+                    True
+
+                TextLeaf _ ->
+                    False
+
+        TextLeaf _ ->
+            case b of
+                TextLeaf _ ->
+                    True
+
+                InlineLeaf _ ->
+                    False
+
+
+textFromGroup : List EditorInlineLeaf -> String
+textFromGroup leaves =
+    String.join "" <|
+        List.map
+            (\leaf ->
+                case leaf of
+                    TextLeaf t ->
+                        t.text
+
+                    _ ->
+                        ""
+            )
+            leaves
+
+
+lengthsFromGroup : List EditorInlineLeaf -> List Int
+lengthsFromGroup leaves =
+    List.map
+        (\il ->
+            case il of
+                TextLeaf tl ->
+                    String.length tl.text
+
+                InlineLeaf _ ->
+                    0
+        )
+        leaves
+
+
+
+-- Find the inline fragment that represents connected text nodes
+-- get the text in that fragment
+-- translate the offset for that text
+-- find where to backspace
 
 
 backspaceWord : Command
 backspaceWord editorState =
+    case editorState.selection of
+        Nothing ->
+            Err "Nothing is selected"
+
+        Just selection ->
+            if not <| isCollapsed selection then
+                Err "I cannot backspace a word of a range selection"
+
+            else
+                case findTextBlockNodeAncestor selection.anchorNode editorState.root of
+                    Nothing ->
+                        Err "I can only backspace word on a text leaf"
+
+                    Just ( p, n ) ->
+                        case n.childNodes of
+                            InlineLeafArray arr ->
+                                let
+                                    groupedLeaves =
+                                        -- group text nodes together
+                                        List.Extra.groupWhile
+                                            groupSameTypeInlineLeaf
+                                            (Array.toList arr)
+                                in
+                                case List.Extra.last selection.anchorNode of
+                                    Nothing ->
+                                        Err "Somehow the anchor node is the root node"
+
+                                    Just lastIndex ->
+                                        let
+                                            ( relativeLastIndex, group ) =
+                                                List.foldl
+                                                    (\( first, rest ) ( i, g ) ->
+                                                        if not <| List.isEmpty g then
+                                                            ( i, g )
+
+                                                        else if List.length rest + 1 > i then
+                                                            ( i, first :: rest )
+
+                                                        else
+                                                            ( i - (List.length rest + 1), g )
+                                                    )
+                                                    ( lastIndex, [] )
+                                                    groupedLeaves
+
+                                            groupText =
+                                                textFromGroup group
+
+                                            offsetUpToNewIndex =
+                                                List.sum <|
+                                                    List.take
+                                                        relativeLastIndex
+                                                    <|
+                                                        lengthsFromGroup group
+
+                                            offset =
+                                                offsetUpToNewIndex + selection.anchorOffset
+
+                                            stringFrom =
+                                                String.left offset groupText
+                                        in
+                                        if String.isEmpty stringFrom then
+                                            Err "Cannot backspace word at the beginning of a string or inline element"
+
+                                        else
+                                            let
+                                                matches =
+                                                    Regex.findAtMost 1 DeleteWord.backspaceWordRegex stringFrom
+
+                                                matchOffset =
+                                                    case List.head matches of
+                                                        Nothing ->
+                                                            0
+
+                                                        Just match ->
+                                                            match.index
+
+                                                ( newGroupIndex, newOffset, _ ) =
+                                                    List.foldl
+                                                        (\l ( i, o, done ) ->
+                                                            if done then
+                                                                ( i, o, done )
+
+                                                            else if l < o then
+                                                                ( i + 1, o - l, False )
+
+                                                            else
+                                                                ( i, o, True )
+                                                        )
+                                                        ( 0, matchOffset, False )
+                                                    <|
+                                                        lengthsFromGroup group
+
+                                                newIndex =
+                                                    lastIndex - (relativeLastIndex - newGroupIndex)
+
+                                                newSelection =
+                                                    rangeSelection (p ++ [ newIndex ]) newOffset selection.anchorNode selection.anchorOffset
+
+                                                newState =
+                                                    { editorState | selection = Just newSelection }
+                                            in
+                                            removeRangeSelection newState
+
+                            _ ->
+                                Err "I expected an inline leaf array"
+
+
+deleteText : Command
+deleteText editorState =
     Err "Not implemented"
 
 
-delete : Command
-delete editorState =
+deleteInlineElement : Command
+deleteInlineElement editorState =
+    Err "Not implemented"
+
+
+deleteBlockNode : Command
+deleteBlockNode editorState =
     Err "Not implemented"
 
 
