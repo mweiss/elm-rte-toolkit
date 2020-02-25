@@ -1,4 +1,12 @@
-module Rte.NodePath exposing (commonAncestor, decrement, domToEditor, editorToDom, increment, parent, toString)
+module Rte.NodePath exposing
+    ( commonAncestor
+    , decrement
+    , domToEditor
+    , editorToDom
+    , increment
+    , parent
+    , toString
+    )
 
 {-|
 
