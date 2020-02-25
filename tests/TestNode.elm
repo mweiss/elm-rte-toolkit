@@ -2,8 +2,45 @@ module TestNode exposing (..)
 
 import Array
 import Expect
-import Rte.Model exposing (ChildNodes(..), EditorAttribute(..), EditorInlineLeaf(..), Mark, NodePath, selectableMark)
-import Rte.Node exposing (EditorFragment(..), EditorNode(..), findAncestor, findBackwardFrom, findBackwardFromExclusive, findForwardFrom, findForwardFromExclusive, findTextBlockNodeAncestor, indexedFoldl, indexedFoldr, indexedMap, isSelectable, map, next, nodeAt, previous, removeInRange, removeNodeAndEmptyParents, replace, replaceWithFragment)
+import Rte.Model
+    exposing
+        ( ChildNodes(..)
+        , EditorAttribute(..)
+        , EditorInlineLeaf(..)
+        , Mark
+        , NodePath
+        , selectableMark
+        )
+import Rte.Node
+    exposing
+        ( EditorFragment(..)
+        , EditorNode(..)
+        , allRange
+        , anyRange
+        , concatMap
+        , findAncestor
+        , findBackwardFrom
+        , findBackwardFromExclusive
+        , findForwardFrom
+        , findForwardFromExclusive
+        , findTextBlockNodeAncestor
+        , foldl
+        , foldr
+        , indexedFoldl
+        , indexedFoldr
+        , indexedMap
+        , isSelectable
+        , map
+        , next
+        , nodeAt
+        , previous
+        , removeInRange
+        , removeNodeAndEmptyParents
+        , replace
+        , replaceWithFragment
+        , splitBlockAtPathAndOffset
+        , splitTextLeaf
+        )
 import Rte.NodePath exposing (toString)
 import Test exposing (Test, describe, test)
 
@@ -12,11 +49,11 @@ rootNode =
     { parameters = { name = "div", attributes = [], marks = [] }
     , childNodes =
         BlockArray <|
-            Array.fromList [ pHtmlNode ]
+            Array.fromList [ pNode ]
     }
 
 
-pHtmlNode =
+pNode =
     { parameters = { name = "p", attributes = [], marks = [] }
     , childNodes =
         InlineLeafArray <|
@@ -24,12 +61,20 @@ pHtmlNode =
     }
 
 
+textNode1Contents =
+    { marks = [], text = "sample1" }
+
+
 textNode1 =
-    TextLeaf { marks = [], text = "sample1" }
+    TextLeaf textNode1Contents
+
+
+textNode2Contents =
+    { marks = [], text = "sample2" }
 
 
 textNode2 =
-    TextLeaf { marks = [], text = "sample2" }
+    TextLeaf textNode2Contents
 
 
 testNodeAt : Test
@@ -40,7 +85,7 @@ testNodeAt =
                 Expect.equal (Just (BlockNodeWrapper rootNode)) (nodeAt [] rootNode)
         , test "Test that we can find the p node" <|
             \_ ->
-                Expect.equal (Just (BlockNodeWrapper pHtmlNode)) (nodeAt [ 0 ] rootNode)
+                Expect.equal (Just (BlockNodeWrapper pNode)) (nodeAt [ 0 ] rootNode)
         , test "Test that we can find the first text node" <|
             \_ ->
                 Expect.equal (Just (InlineLeafWrapper textNode1)) (nodeAt [ 0, 0 ] rootNode)
@@ -92,7 +137,7 @@ testFoldr : Test
 testFoldr =
     describe "Tests that foldr works as expected"
         [ test "Test that the nodes are passed in as expected" <|
-            \_ -> Expect.equal [ "div", "p", "sample1", "sample2" ] (indexedFoldr nodeNameOrTextValue [] (BlockNodeWrapper rootNode))
+            \_ -> Expect.equal [ "div", "p", "sample1", "sample2" ] (foldr (\x -> nodeNameOrTextValue [] x) [] (BlockNodeWrapper rootNode))
         ]
 
 
@@ -110,7 +155,7 @@ testFoldl : Test
 testFoldl =
     describe "Tests that foldl works as expected"
         [ test "Test that the nodes are passed in as expected" <|
-            \_ -> Expect.equal [ "sample2", "sample1", "p", "div" ] (indexedFoldl nodeNameOrTextValue [] (BlockNodeWrapper rootNode))
+            \_ -> Expect.equal [ "sample2", "sample1", "p", "div" ] (foldl (\x -> nodeNameOrTextValue [] x) [] (BlockNodeWrapper rootNode))
         ]
 
 
@@ -240,7 +285,7 @@ testFindTextBlockNodeAncestor =
     describe "Tests that findTextBlockNodeAncestor works as expected"
         [ test "Tests that we can correct find a text block node ancestor" <|
             \_ ->
-                Expect.equal (Just ( [ 0 ], pHtmlNode )) (findTextBlockNodeAncestor [ 0, 0 ] rootNode)
+                Expect.equal (Just ( [ 0 ], pNode )) (findTextBlockNodeAncestor [ 0, 0 ] rootNode)
         , test "Tests that we return nothing if no text block can be found" <|
             \_ ->
                 Expect.equal Nothing (findTextBlockNodeAncestor [ 0 ] rootNode)
@@ -361,7 +406,7 @@ testFindForwardFromExclusive =
                     (findForwardFromExclusive (findNodeAtPath [ 1, 0 ]) [ 0, 1 ] rootNode)
         , test "Tests that the function passes in the node parameter correctly" <|
             \_ ->
-                Expect.equal (Just ( [ 0 ], BlockNodeWrapper pHtmlNode ))
+                Expect.equal (Just ( [ 0 ], BlockNodeWrapper pNode ))
                     (findForwardFromExclusive (findNodeWithName "p") [] rootNode)
         ]
 
@@ -371,7 +416,7 @@ testNext =
     describe "Tests that next works as expected"
         [ test "Tests that we receive the next element from root" <|
             \_ ->
-                Expect.equal (Just ( [ 0 ], BlockNodeWrapper pHtmlNode ))
+                Expect.equal (Just ( [ 0 ], BlockNodeWrapper pNode ))
                     (next [] rootNode)
         , test "Tests that we receive nothing after the last node" <|
             \_ ->
@@ -495,4 +540,141 @@ testReplaceWithFragment =
             \_ ->
                 Expect.equal (Ok replaceRootPNode)
                     (replaceWithFragment [ 0, 0 ] (InlineLeafFragment <| Array.fromList [ textNode2 ]) rootNode)
+        ]
+
+
+testAllRange : Test
+testAllRange =
+    describe "Tests that allRange works as expected"
+        [ test "Tests that an empty range returns true" <|
+            \_ -> Expect.equal True <| allRange (\_ -> False) [ 0, 1 ] [ 0, 0 ] rootNode
+        , test "Tests that a single node range works as expected" <|
+            \_ -> Expect.equal True <| allRange (\node -> node == BlockNodeWrapper pNode) [ 0 ] [ 0 ] rootNode
+        , test "Tests that a node range with one false returns False" <|
+            \_ -> Expect.equal False <| allRange (\node -> node == BlockNodeWrapper pNode) [ 0 ] [ 0, 0 ] rootNode
+        ]
+
+
+testAnyRange : Test
+testAnyRange =
+    describe "Tests that anyRange works as expected"
+        [ test "Tests that an empty range returns false" <|
+            \_ -> Expect.equal False <| anyRange (\_ -> False) [ 0, 1 ] [ 0, 0 ] rootNode
+        , test "Tests that a single node range works as expected" <|
+            \_ -> Expect.equal True <| anyRange (\node -> node == BlockNodeWrapper pNode) [ 0 ] [ 0 ] rootNode
+        , test "Tests that a node range with one true value returns True" <|
+            \_ -> Expect.equal True <| anyRange (\node -> node == BlockNodeWrapper pNode) [ 0 ] [ 0, 0 ] rootNode
+        , test "Tests that a node range with no true values returns False" <|
+            \_ -> Expect.equal False <| anyRange (\_ -> False) [ 0 ] [ 0, 1 ] rootNode
+        ]
+
+
+doubleRoot =
+    { parameters = { name = "div", attributes = [], marks = [] }
+    , childNodes =
+        BlockArray <|
+            Array.fromList [ doublePNode, doublePNode ]
+    }
+
+
+doublePNode =
+    { parameters = { name = "p", attributes = [], marks = [] }
+    , childNodes =
+        InlineLeafArray <|
+            Array.fromList [ textNode1, textNode1, textNode2, textNode2 ]
+    }
+
+
+testConcatMap : Test
+testConcatMap =
+    describe "Tests that concatMap works as expected"
+        [ test "Tests that the identity function returns the same node" <|
+            \_ ->
+                Expect.equal rootNode <| concatMap (\node -> [ node ]) rootNode
+        , test "Tests that the double function returns the expected tree" <|
+            \_ -> Expect.equal doubleRoot <| concatMap (\node -> [ node, node ]) rootNode
+        ]
+
+
+textLeafBeforeSplitContents =
+    { marks = [], text = "sam" }
+
+
+textLeafAfterSplitContents =
+    { marks = [], text = "ple1" }
+
+
+nodeBeforeTextLeafSplit =
+    { parameters = { name = "div", attributes = [], marks = [] }
+    , childNodes =
+        InlineLeafArray <|
+            Array.fromList [ TextLeaf textLeafBeforeSplitContents ]
+    }
+
+
+nodeAfterTextLeafSplit =
+    { parameters = { name = "div", attributes = [], marks = [] }
+    , childNodes =
+        InlineLeafArray <|
+            Array.fromList [ TextLeaf textLeafAfterSplitContents ]
+    }
+
+
+nodeWithTextLeafToSplit =
+    { parameters = { name = "div", attributes = [], marks = [] }
+    , childNodes =
+        InlineLeafArray <|
+            Array.fromList [ textNode1 ]
+    }
+
+
+inlineImg =
+    InlineLeaf { attributes = [], marks = [], name = "img" }
+
+
+nodeAfterInlineLeafSplit =
+    { parameters = { name = "div", attributes = [], marks = [] }
+    , childNodes =
+        InlineLeafArray <|
+            Array.fromList [ inlineImg ]
+    }
+
+
+nodeBeforeInlineLeafSplit =
+    { parameters = { name = "div", attributes = [], marks = [] }
+    , childNodes = InlineLeafArray <| Array.empty
+    }
+
+
+nodeWithInlineLeafToSplit =
+    { parameters = { name = "div", attributes = [], marks = [] }
+    , childNodes =
+        InlineLeafArray <|
+            Array.fromList [ inlineImg ]
+    }
+
+
+testSplitBlockAtPathAndOffset : Test
+testSplitBlockAtPathAndOffset =
+    describe "Tests that testSplitBlockAtPathAndOffset works as expected"
+        [ test "Tests that you cannot split a block at an invalid path" <|
+            \_ -> Expect.equal Nothing <| splitBlockAtPathAndOffset [ 1 ] 0 rootNode
+        , test "Tests that splitting a block node uses the offset to split before" <|
+            \_ -> Expect.equal (Just ( removedRootAll, rootNode )) <| splitBlockAtPathAndOffset [] 0 rootNode
+        , test "Tests that splitting a block node uses the offset to split after" <|
+            \_ -> Expect.equal (Just ( rootNode, removedRootAll )) <| splitBlockAtPathAndOffset [] 1 rootNode
+        , test "Tests that splitting a text leaf works correctly" <|
+            \_ -> Expect.equal (Just ( nodeBeforeTextLeafSplit, nodeAfterTextLeafSplit )) <| splitBlockAtPathAndOffset [ 0 ] 3 nodeWithTextLeafToSplit
+        , test "Tests that splitting an inline leaf works correctly" <|
+            \_ -> Expect.equal (Just ( nodeBeforeInlineLeafSplit, nodeAfterInlineLeafSplit )) <| splitBlockAtPathAndOffset [ 0 ] 0 nodeWithInlineLeafToSplit
+        ]
+
+
+testSplitTextLeaf : Test
+testSplitTextLeaf =
+    describe "Tests that splitTextLeaf works as expected"
+        [ test "Tests that splitting a text leaf works as expected" <|
+            \_ ->
+                Expect.equal ( textLeafBeforeSplitContents, textLeafAfterSplitContents ) <|
+                    splitTextLeaf 3 textNode1Contents
         ]

@@ -6,7 +6,7 @@ import BasicSpecs exposing (simpleSpec)
 import Browser
 import Html exposing (Html, div)
 import Html.Attributes
-import Rte.Commands exposing (enterKey, inputEvent, insertBlockNode, key, lift, liftEmpty, otherwiseDo, returnKey, set, splitBlockHeaderToNewParagraph, toggleBlock, toggleMarkOnInlineNodes, wrapIn)
+import Rte.Commands exposing (enterKey, inputEvent, insertBlockNode, key, lift, liftEmpty, otherwiseDo, returnKey, set, splitBlockHeaderToNewParagraph, toggleBlock, toggleMarkOnInlineNodes, wrap)
 import Rte.Decorations exposing (addElementDecoration, emptyDecorations, selectableDecoration)
 import Rte.Editor exposing (internalUpdate)
 import Rte.EditorUtils exposing (applyCommand)
@@ -310,7 +310,7 @@ handleWrapBlockNode model =
     { model
         | editor =
             Result.withDefault model.editor
-                (applyCommand (wrapIn { name = "blockquote", marks = [], attributes = [] }) model.editor)
+                (applyCommand (wrap { name = "blockquote", marks = [], attributes = [] }) model.editor)
     }
 
 

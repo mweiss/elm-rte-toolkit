@@ -1063,8 +1063,8 @@ toggleBlock allowedBlocks onTag offTag editorState =
             Ok { editorState | root = newRoot }
 
 
-wrapIn : ElementParameters -> Command
-wrapIn elementParameters editorState =
+wrap : ElementParameters -> Command
+wrap elementParameters editorState =
     case editorState.selection of
         Nothing ->
             Err "Nothing is selected"
@@ -1858,11 +1858,7 @@ deleteText editorState =
                                                     Err s
 
                                                 Ok newRoot ->
-                                                    let
-                                                        newSelection =
-                                                            caretSelection selection.anchorNode (textLength - 1)
-                                                    in
-                                                    Ok { editorState | root = newRoot, selection = Just newSelection }
+                                                    Ok { editorState | root = newRoot }
 
                                         else
                                             case next selection.anchorNode editorState.root of

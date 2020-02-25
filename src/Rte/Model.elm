@@ -87,6 +87,11 @@ type alias ElementParameters =
     }
 
 
+elementParameters : String -> List EditorAttribute -> List Mark -> ElementParameters
+elementParameters name attributes marks =
+    { name = name, attributes = attributes, marks = marks }
+
+
 {-| An editor block node represents a block element in your document. An editor block node can either
 have other block nodes as children, have all inline leaf nodes as children, or be a leaf node.
 -}
