@@ -1,4 +1,10 @@
-module Rte.DomNode exposing (..)
+module Rte.DomNode exposing
+    ( decodeDomNode
+    , domElementNodeType
+    , domTextNodeType
+    , extractRootEditorBlockNode
+    , findTextChanges
+    )
 
 import Array
 import Array.Extra

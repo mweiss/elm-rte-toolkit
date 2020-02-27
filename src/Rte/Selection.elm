@@ -1,6 +1,6 @@
 module Rte.Selection exposing (caretSelection, clearSelectionMarks, domToEditor, editorToDom, isCollapsed, markSelection, normalizeSelection, rangeSelection, selectionFromMarks, singleNodeRangeSelection)
 
-import Rte.Marks as ToggleAction exposing (ToggleAction(..), clearMarks, toggleMark, toggleMarkAtPath)
+import Rte.Marks as ToggleAction exposing (ToggleAction(..), clearMarks, toggle, toggleMarkAtPath)
 import Rte.Model exposing (ChildNodes(..), EditorBlockNode, EditorInlineLeaf(..), ElementParameters, HtmlNode(..), Mark, NodePath, Selection, Spec, selectionMark)
 import Rte.Node exposing (EditorNode(..), indexedFoldl, map)
 import Rte.NodePath as Path

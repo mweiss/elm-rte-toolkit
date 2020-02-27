@@ -26,32 +26,7 @@ toggleMarkAtPath action mark path node =
             Err "No block found at path"
 
         Just n ->
-            case n of
-                BlockNodeWrapper blockNode ->
-                    let
-                        parameters =
-                            blockNode.parameters
-
-                        newBlock =
-                            { blockNode | parameters = { parameters | marks = toggleMark action mark parameters.marks } }
-                    in
-                    replace path (BlockNodeWrapper newBlock) node
-
-                InlineLeafWrapper inlineLeaf ->
-                    case inlineLeaf of
-                        TextLeaf l ->
-                            let
-                                newLeaf =
-                                    { l | marks = toggleMark action mark l.marks }
-                            in
-                            replace path (InlineLeafWrapper (TextLeaf newLeaf)) node
-
-                        InlineLeaf l ->
-                            let
-                                newLeaf =
-                                    { l | marks = toggleMark action mark l.marks }
-                            in
-                            replace path (InlineLeafWrapper (InlineLeaf newLeaf)) node
+            replace path (toggleMark action mark n) node
 
 
 type ToggleAction
@@ -60,8 +35,8 @@ type ToggleAction
     | Flip
 
 
-toggleMark : ToggleAction -> Mark -> List Mark -> List Mark
-toggleMark toggleAction mark marks =
+toggle : ToggleAction -> Mark -> List Mark -> List Mark
+toggle toggleAction mark marks =
     let
         isMember =
             List.any (\m -> m.name == mark.name) marks
@@ -87,20 +62,30 @@ clearMarks mark root =
 
 
 removeMark : Mark -> EditorNode -> EditorNode
-removeMark mark node =
+removeMark =
+    toggleMark Remove
+
+
+addMark : Mark -> EditorNode -> EditorNode
+addMark =
+    toggleMark Add
+
+
+toggleMark : ToggleAction -> Mark -> EditorNode -> EditorNode
+toggleMark action mark node =
     case node of
         BlockNodeWrapper bn ->
             let
                 parameters =
                     bn.parameters
             in
-            BlockNodeWrapper { bn | parameters = { parameters | marks = toggleMark Remove mark parameters.marks } }
+            BlockNodeWrapper { bn | parameters = { parameters | marks = toggle action mark parameters.marks } }
 
         InlineLeafWrapper il ->
             InlineLeafWrapper <|
                 case il of
                     TextLeaf leaf ->
-                        TextLeaf { leaf | marks = toggleMark Remove mark leaf.marks }
+                        TextLeaf { leaf | marks = toggle action mark leaf.marks }
 
                     InlineLeaf leaf ->
-                        InlineLeaf { leaf | marks = toggleMark Remove mark leaf.marks }
+                        InlineLeaf { leaf | marks = toggle action mark leaf.marks }

@@ -8,6 +8,7 @@ module Rte.Node exposing
     , findAncestor
     , findBackwardFrom
     , findBackwardFromExclusive
+    , findClosestBlockPath
     , findForwardFrom
     , findForwardFromExclusive
     , findTextBlockNodeAncestor
@@ -17,6 +18,7 @@ module Rte.Node exposing
     , indexedFoldr
     , indexedMap
     , isSelectable
+    , joinBlocks
     , map
     , next
     , nodeAt
@@ -32,6 +34,7 @@ module Rte.Node exposing
 import Array exposing (Array)
 import Array.Extra
 import Rte.Model exposing (ChildNodes(..), EditorBlockNode, EditorInlineLeaf(..), HtmlNode(..), NodePath, TextLeafContents, selectableMark)
+import Rte.NodePath exposing (parent)
 
 
 type EditorNode
@@ -932,8 +935,8 @@ splitBlockAtPathAndOffset path offset node =
 
                                 Just ( before, after ) ->
                                     Just
-                                        ( { node | childNodes = BlockArray (Array.set x before a) }
-                                        , { node | childNodes = BlockArray (Array.set x after a) }
+                                        ( { node | childNodes = BlockArray (Array.append (Array.Extra.sliceUntil x a) (Array.fromList [ before ])) }
+                                        , { node | childNodes = BlockArray (Array.append (Array.fromList [ after ]) (Array.Extra.sliceFrom (x + 1) a)) }
                                         )
 
                 InlineLeafArray a ->
@@ -990,3 +993,41 @@ allRange pred start end root =
 anyRange : (EditorNode -> Bool) -> NodePath -> NodePath -> EditorBlockNode -> Bool
 anyRange pred start end root =
     not <| allRange (\x -> not <| pred x) start end root
+
+
+findClosestBlockPath : NodePath -> EditorBlockNode -> NodePath
+findClosestBlockPath path node =
+    case nodeAt path node of
+        Nothing ->
+            []
+
+        Just n ->
+            case n of
+                BlockNodeWrapper _ ->
+                    path
+
+                InlineLeafWrapper _ ->
+                    parent path
+
+
+joinBlocks : EditorBlockNode -> EditorBlockNode -> Maybe EditorBlockNode
+joinBlocks b1 b2 =
+    case b1.childNodes of
+        BlockArray a1 ->
+            case b2.childNodes of
+                BlockArray a2 ->
+                    Just { b1 | childNodes = BlockArray (Array.append a1 a2) }
+
+                _ ->
+                    Nothing
+
+        InlineLeafArray a1 ->
+            case b2.childNodes of
+                InlineLeafArray a2 ->
+                    Just { b1 | childNodes = InlineLeafArray (Array.append a1 a2) }
+
+                _ ->
+                    Nothing
+
+        Leaf ->
+            Nothing

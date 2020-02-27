@@ -10,7 +10,7 @@ import Rte.Commands exposing (enterKey, inputEvent, insertBlockNode, key, lift, 
 import Rte.Decorations exposing (addElementDecoration, emptyDecorations, selectableDecoration)
 import Rte.Editor exposing (internalUpdate)
 import Rte.EditorUtils exposing (applyCommand)
-import Rte.List exposing (ListType)
+import Rte.List exposing (ListType, defaultListDefinition)
 import Rte.Model exposing (ChildNodes(..), Editor, EditorAttribute(..), EditorBlockNode, EditorInlineLeaf(..), InternalEditorMsg(..), Mark, selectableMark)
 
 
@@ -70,9 +70,16 @@ initialEditorNode =
     }
 
 
+listCommandBindings =
+    Rte.List.commandBindings Rte.List.defaultListDefinition
+
+
 commandBindings =
-    Rte.Commands.defaultCommandBindings
-        |> set [ inputEvent "insertParagraph", key [ enterKey ], key [ returnKey ] ] (liftEmpty |> otherwiseDo (splitBlockHeaderToNewParagraph headerElements "p"))
+    Rte.Commands.combine
+        listCommandBindings
+        (Rte.Commands.defaultCommandBindings
+            |> set [ inputEvent "insertParagraph", key [ enterKey ], key [ returnKey ] ] (liftEmpty |> otherwiseDo (splitBlockHeaderToNewParagraph headerElements "p"))
+        )
 
 
 
@@ -282,7 +289,11 @@ handleLiftBlock model =
 
 handleWrapInList : ListType -> Model -> Model
 handleWrapInList listType model =
-    model
+    { model
+        | editor =
+            Result.withDefault model.editor
+                (applyCommand (Rte.List.wrap defaultListDefinition listType) model.editor)
+    }
 
 
 handleToggleBlock : String -> Model -> Model
@@ -310,7 +321,7 @@ handleWrapBlockNode model =
     { model
         | editor =
             Result.withDefault model.editor
-                (applyCommand (wrap { name = "blockquote", marks = [], attributes = [] }) model.editor)
+                (applyCommand (wrap (\n -> n) { name = "blockquote", marks = [], attributes = [] }) model.editor)
     }
 
 

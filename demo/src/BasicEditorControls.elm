@@ -124,8 +124,8 @@ inlineElementButtons =
 
 blockElements : List (Html EditorMsg)
 blockElements =
-    [ createButton False (onButtonPressToggleList OL) "OL"
-    , createButton False (onButtonPressToggleList UL) "UL"
+    [ createButton False (onButtonPressToggleList Ordered) "OL"
+    , createButton False (onButtonPressToggleList Unordered) "UL"
     , createButton False onButtonPressInsertHR "HR"
     , createButton False onButtonPressWrapBlockquote "Blockquote"
     , createButton False onButtonPressLiftOutOfBlock "Lift"

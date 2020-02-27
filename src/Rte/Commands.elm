@@ -1,14 +1,14 @@
 module Rte.Commands exposing (..)
 
-import Array
+import Array exposing (Array)
 import Array.Extra
 import Dict exposing (Dict)
 import List.Extra
 import Regex
 import Rte.DeleteWord as DeleteWord
-import Rte.Marks exposing (ToggleAction(..), clearMarks, findMarksFromInlineLeaf, hasMarkWithName, toggleMark)
+import Rte.Marks exposing (ToggleAction(..), addMark, clearMarks, findMarksFromInlineLeaf, hasMarkWithName, toggle, toggleMark)
 import Rte.Model exposing (ChildNodes(..), Command, CommandBinding(..), CommandMap, Editor, EditorBlockNode, EditorInlineLeaf(..), EditorState, ElementParameters, Mark, NodePath, Selection)
-import Rte.Node exposing (EditorFragment(..), EditorNode(..), allRange, concatMap, findBackwardFromExclusive, findForwardFrom, findForwardFromExclusive, findTextBlockNodeAncestor, indexedFoldl, indexedMap, isSelectable, map, next, nodeAt, previous, removeInRange, removeNodeAndEmptyParents, replace, replaceWithFragment, splitBlockAtPathAndOffset, splitTextLeaf)
+import Rte.Node exposing (EditorFragment(..), EditorNode(..), allRange, concatMap, findBackwardFromExclusive, findClosestBlockPath, findForwardFrom, findForwardFromExclusive, findTextBlockNodeAncestor, indexedFoldl, indexedMap, isSelectable, joinBlocks, map, next, nodeAt, previous, removeInRange, removeNodeAndEmptyParents, replace, replaceWithFragment, splitBlockAtPathAndOffset, splitTextLeaf)
 import Rte.NodePath as NodePath exposing (commonAncestor, decrement, increment, parent, toString)
 import Rte.Selection exposing (caretSelection, clearSelectionMarks, isCollapsed, markSelection, normalizeSelection, rangeSelection, selectionFromMarks, singleNodeRangeSelection)
 
@@ -68,6 +68,27 @@ set bindings func map =
         bindings
 
 
+compose : comparable -> Command -> Dict comparable Command -> Dict comparable Command
+compose k command d =
+    case Dict.get k d of
+        Nothing ->
+            Dict.insert k command d
+
+        Just v ->
+            Dict.insert k (command |> otherwiseDo v) d
+
+
+combine : CommandMap -> CommandMap -> CommandMap
+combine map1 map2 =
+    { inputEventTypeMap =
+        Dict.foldl
+            compose
+            map2.inputEventTypeMap
+            map1.inputEventTypeMap
+    , keyMap = Dict.foldl compose map2.keyMap map1.keyMap
+    }
+
+
 stack : List CommandBinding -> Command -> CommandMap -> CommandMap
 stack bindings func map =
     List.foldl
@@ -94,11 +115,11 @@ stack bindings func map =
 
 
 otherwiseDo : Command -> Command -> Command
-otherwiseDo b a =
+otherwiseDo a b =
     \s ->
-        case a s of
+        case b s of
             Err _ ->
-                b s
+                a s
 
             Ok v ->
                 Ok v
@@ -135,7 +156,7 @@ deleteCommands =
 defaultCommandBindings =
     emptyCommandBinding
         |> set [ inputEvent "insertLineBreak", key [ shiftKey, enterKey ], key [ shiftKey, enterKey ] ] insertLineBreak
-        |> set [ inputEvent "insertParagraph", key [ enterKey ], key [ returnKey ] ] (liftEmpty |> otherwiseDo splitBlock)
+        |> set [ inputEvent "insertParagraph", key [ enterKey ], key [ returnKey ] ] (liftEmpty |> otherwiseDo splitTextBlock)
         |> set [ inputEvent "deleteContentBackward", key [ backspaceKey ] ]
             (backspaceCommands
                 |> otherwiseDo backspaceText
@@ -300,29 +321,6 @@ joinForward editorState =
 
                                             Ok b ->
                                                 Ok { editorState | root = b }
-
-
-joinBlocks : EditorBlockNode -> EditorBlockNode -> Maybe EditorBlockNode
-joinBlocks b1 b2 =
-    case b1.childNodes of
-        BlockArray a1 ->
-            case b2.childNodes of
-                BlockArray a2 ->
-                    Just { b1 | childNodes = BlockArray (Array.append a1 a2) }
-
-                _ ->
-                    Nothing
-
-        InlineLeafArray a1 ->
-            case b2.childNodes of
-                InlineLeafArray a2 ->
-                    Just { b1 | childNodes = InlineLeafArray (Array.append a1 a2) }
-
-                _ ->
-                    Nothing
-
-        Leaf ->
-            Nothing
 
 
 isTextBlock : NodePath -> EditorNode -> Bool
@@ -520,20 +518,25 @@ insertInlineElement leaf editorState =
                                 Err "I can not insert an inline element in a block node"
 
 
-splitBlock : Command
-splitBlock editorState =
+splitTextBlock : Command
+splitTextBlock =
+    splitBlock findTextBlockNodeAncestor
+
+
+splitBlock : (NodePath -> EditorBlockNode -> Maybe ( NodePath, EditorBlockNode )) -> Command
+splitBlock ancestorFunc editorState =
     case editorState.selection of
         Nothing ->
             Err "Nothing is selected"
 
         Just selection ->
             if not <| isCollapsed selection then
-                removeRangeSelection editorState |> Result.andThen splitBlock
+                removeRangeSelection editorState |> Result.andThen (splitBlock ancestorFunc)
 
             else
-                case findTextBlockNodeAncestor selection.anchorNode editorState.root of
+                case ancestorFunc selection.anchorNode editorState.root of
                     Nothing ->
-                        Err "I can only split nodes that have a text block ancestor"
+                        Err "I cannot find a proper ancestor to split"
 
                     Just ( textBlockPath, textBlockNode ) ->
                         let
@@ -782,7 +785,7 @@ toggleMarkSingleInlineNode mark action editorState =
                             InlineLeafWrapper il ->
                                 let
                                     newMarks =
-                                        toggleMark action mark (findMarksFromInlineLeaf il)
+                                        toggle action mark (findMarksFromInlineLeaf il)
 
                                     leaves =
                                         case il of
@@ -897,13 +900,8 @@ toggleMarkOnInlineNodes mark editorState =
                                                             BlockNodeWrapper _ ->
                                                                 node
 
-                                                            InlineLeafWrapper il ->
-                                                                case il of
-                                                                    InlineLeaf leaf ->
-                                                                        InlineLeafWrapper <| InlineLeaf { leaf | marks = toggleMark toggleAction mark leaf.marks }
-
-                                                                    TextLeaf leaf ->
-                                                                        InlineLeafWrapper <| TextLeaf { leaf | marks = toggleMark toggleAction mark leaf.marks }
+                                                            InlineLeafWrapper _ ->
+                                                                toggleMark toggleAction mark node
                                                 )
                                                 (BlockNodeWrapper editorState.root)
                                         of
@@ -974,21 +972,6 @@ toggleMarkOnInlineNodes mark editorState =
                             normalizedSelection.focusOffset
                 in
                 Ok { modifiedStartNodeEditorState | selection = Just newSelection }
-
-
-findClosestBlockPath : NodePath -> EditorBlockNode -> NodePath
-findClosestBlockPath path node =
-    case nodeAt path node of
-        Nothing ->
-            []
-
-        Just n ->
-            case n of
-                BlockNodeWrapper _ ->
-                    path
-
-                InlineLeafWrapper _ ->
-                    parent path
 
 
 toggleBlock : List String -> String -> String -> Command
@@ -1063,8 +1046,8 @@ toggleBlock allowedBlocks onTag offTag editorState =
             Ok { editorState | root = newRoot }
 
 
-wrap : ElementParameters -> Command
-wrap elementParameters editorState =
+wrap : (EditorBlockNode -> EditorBlockNode) -> ElementParameters -> Command
+wrap contentsMapFunc elementParameters editorState =
     case editorState.selection of
         Nothing ->
             Err "Nothing is selected"
@@ -1096,7 +1079,7 @@ wrap elementParameters editorState =
                             newChildren =
                                 case node of
                                     BlockNodeWrapper bn ->
-                                        BlockArray (Array.fromList [ bn ])
+                                        BlockArray (Array.map contentsMapFunc (Array.fromList [ bn ]))
 
                                     InlineLeafWrapper il ->
                                         InlineLeafArray (Array.fromList [ il ])
@@ -1142,7 +1125,11 @@ wrap elementParameters editorState =
                                                         let
                                                             newChildNode =
                                                                 { parameters = elementParameters
-                                                                , childNodes = BlockArray (Array.slice childAnchorIndex (childFocusIndex + 1) a)
+                                                                , childNodes =
+                                                                    BlockArray <|
+                                                                        Array.map
+                                                                            contentsMapFunc
+                                                                            (Array.slice childAnchorIndex (childFocusIndex + 1) a)
                                                                 }
 
                                                             newBlockArray =
@@ -1268,14 +1255,7 @@ addLiftMarkToBlocksInSelection selection root =
                                             False
                             in
                             if addMarker then
-                                BlockNodeWrapper
-                                    { bn
-                                        | parameters =
-                                            { parameters
-                                                | marks =
-                                                    toggleMark Add liftMark bn.parameters.marks
-                                            }
-                                    }
+                                addMark liftMark <| BlockNodeWrapper bn
 
                             else
                                 node
@@ -1414,7 +1394,7 @@ isEmptyTextBlock node =
 
 splitBlockHeaderToNewParagraph : List String -> String -> Command
 splitBlockHeaderToNewParagraph headerElements paragraphElement editorState =
-    case splitBlock editorState of
+    case splitTextBlock editorState of
         Err s ->
             Err s
 
@@ -1502,7 +1482,7 @@ insertBlockNode node editorState =
 
                             -- if an inline node is selected, then split the block and insert before
                             InlineLeafWrapper _ ->
-                                case splitBlock editorState of
+                                case splitTextBlock editorState of
                                     Err s ->
                                         Err s
 
