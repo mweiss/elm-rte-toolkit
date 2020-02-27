@@ -11,6 +11,7 @@ module Rte.Node exposing
     , findClosestBlockPath
     , findForwardFrom
     , findForwardFromExclusive
+    , findLastPath
     , findTextBlockNodeAncestor
     , foldl
     , foldr

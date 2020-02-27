@@ -2,11 +2,11 @@ module Rte.List exposing (..)
 
 import Array exposing (Array)
 import List.Extra
-import Rte.Commands exposing (backspaceKey, emptyCommandBinding, enterKey, inputEvent, isEmptyTextBlock, key, liftConcatMapFunc, liftMark, otherwiseDo, returnKey, set)
+import Rte.Commands exposing (altKey, backspaceKey, deleteKey, emptyCommandBinding, enterKey, inputEvent, isEmptyTextBlock, key, liftConcatMapFunc, liftMark, otherwiseDo, returnKey, set)
 import Rte.Marks exposing (ToggleAction(..), clearMarks, toggleMarkAtPath)
-import Rte.Model exposing (ChildNodes(..), Command, CommandMap, EditorBlockNode, ElementParameters, NodePath, Selection, elementParameters)
-import Rte.Node exposing (EditorFragment(..), EditorNode(..), concatMap, findAncestor, findClosestBlockPath, joinBlocks, nodeAt, replace, replaceWithFragment)
-import Rte.NodePath exposing (commonAncestor, decrement)
+import Rte.Model exposing (ChildNodes(..), Command, CommandMap, EditorBlockNode, EditorInlineLeaf(..), ElementParameters, NodePath, Selection, elementParameters)
+import Rte.Node exposing (EditorFragment(..), EditorNode(..), concatMap, findAncestor, findLastPath, joinBlocks, nodeAt, replace, replaceWithFragment)
+import Rte.NodePath exposing (commonAncestor, decrement, increment)
 import Rte.Selection exposing (clearSelectionMarks, isCollapsed, markSelection, normalizeSelection, selectionFromMarks)
 
 
@@ -21,10 +21,19 @@ type alias ListDefinition =
 
 commandBindings : ListDefinition -> CommandMap
 commandBindings definition =
+    let
+        backspaceCommand =
+            joinBackward definition
+
+        deleteCommand =
+            joinForward definition
+    in
     emptyCommandBinding
         |> set [ inputEvent "insertParagraph", key [ enterKey ], key [ returnKey ] ] (liftEmpty definition |> otherwiseDo (split definition))
-        |> set [ inputEvent "deleteContentBackward", key [ backspaceKey ] ]
-            (joinBackward definition)
+        |> set [ inputEvent "deleteContentBackward", key [ backspaceKey ] ] backspaceCommand
+        |> set [ inputEvent "deleteContentForward", key [ deleteKey ] ] deleteCommand
+        |> set [ inputEvent "deleteWordBackward", key [ altKey, backspaceKey ] ] backspaceCommand
+        |> set [ inputEvent "deleteWordForward", key [ altKey, deleteKey ] ] deleteCommand
 
 
 defaultListDefinition : ListDefinition
@@ -228,10 +237,6 @@ liftEmpty definition editorState =
                                 Err "I was expecting a list item to have block child nodes"
 
 
-
--- TODO: implement me!
-
-
 isBeginningOfListItem : ListDefinition -> Selection -> EditorBlockNode -> Bool
 isBeginningOfListItem definition selection root =
     if not <| isCollapsed selection then
@@ -306,7 +311,7 @@ joinBackward definition editorState =
                                                                 |> Result.andThen
                                                                     (replaceWithFragment liPath (BlockNodeFragment Array.empty))
                                                     in
-                                                    case Debug.log "joinedNodes" joinedNodes of
+                                                    case joinedNodes of
                                                         Err s ->
                                                             Err s
 
@@ -318,6 +323,93 @@ joinBackward definition editorState =
                                                                 }
 
 
-joinForward : Command
-joinForward editorState =
-    Err "Not implemented"
+isEndOfListItem : ListDefinition -> Selection -> EditorBlockNode -> Bool
+isEndOfListItem definition selection root =
+    if not <| isCollapsed selection then
+        False
+
+    else
+        case findListItemAncestor definition.item selection.anchorNode root of
+            Nothing ->
+                False
+
+            Just ( path, node ) ->
+                let
+                    ( lastPath, lastNode ) =
+                        findLastPath node
+                in
+                if selection.anchorNode /= path ++ lastPath then
+                    False
+
+                else
+                    case lastNode of
+                        InlineLeafWrapper il ->
+                            case il of
+                                TextLeaf tl ->
+                                    String.length tl.text == selection.anchorOffset
+
+                                _ ->
+                                    True
+
+                        _ ->
+                            True
+
+
+joinForward : ListDefinition -> Command
+joinForward definition editorState =
+    case editorState.selection of
+        Nothing ->
+            Err "Nothing is selected"
+
+        Just selection ->
+            if not <| isEndOfListItem definition selection editorState.root then
+                Err "I can only join a list item forward if the selection is at the end of a list item"
+
+            else
+                let
+                    normalizedSelection =
+                        normalizeSelection selection
+
+                    markedRoot =
+                        markSelection normalizedSelection editorState.root
+                in
+                case findListItemAncestor definition.item selection.anchorNode markedRoot of
+                    Nothing ->
+                        Err "There is no list item selected"
+
+                    Just ( liPath, liNode ) ->
+                        let
+                            nextLiPath =
+                                increment liPath
+                        in
+                        case nodeAt nextLiPath markedRoot of
+                            Nothing ->
+                                Err "I cannot join forward a list item if there is no subsequent list item"
+
+                            Just nextLi ->
+                                case nextLi of
+                                    InlineLeafWrapper _ ->
+                                        Err "There is no list item at path"
+
+                                    BlockNodeWrapper nextBn ->
+                                        case joinBlocks liNode nextBn of
+                                            Nothing ->
+                                                Err "I could not join these list items"
+
+                                            Just joinedLi ->
+                                                let
+                                                    joinedNodes =
+                                                        replace liPath (BlockNodeWrapper joinedLi) markedRoot
+                                                            |> Result.andThen
+                                                                (replaceWithFragment nextLiPath (BlockNodeFragment Array.empty))
+                                                in
+                                                case joinedNodes of
+                                                    Err s ->
+                                                        Err s
+
+                                                    Ok newRoot ->
+                                                        Ok
+                                                            { editorState
+                                                                | selection = selectionFromMarks newRoot selection.anchorOffset selection.focusOffset
+                                                                , root = clearSelectionMarks newRoot
+                                                            }
