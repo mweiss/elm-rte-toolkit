@@ -32,7 +32,7 @@ removeAnnotationToSet =
 
 addAnnotationToSet : Annotation -> Set Annotation -> Set Annotation
 addAnnotationToSet =
-    Set.remove
+    Set.insert
 
 
 remove : Annotation -> EditorNode -> EditorNode

@@ -23,19 +23,20 @@ import Rte.NodePath
         , toString
         )
 import Rte.Spec exposing (emptySpec)
+import Set
 import Test exposing (..)
 
 
 paragraphParams =
-    { name = "p", attributes = [], marks = [] }
+    { name = "p", attributes = [], annotations = Set.empty }
 
 
 codeBlockParams =
-    { name = "code_block", attributes = [], marks = [] }
+    { name = "code_block", attributes = [], annotations = Set.empty }
 
 
 crazyBlockParams =
-    { name = "crazy_block", attributes = [], marks = [] }
+    { name = "crazy_block", attributes = [], annotations = Set.empty }
 
 
 boldMark =
@@ -44,7 +45,7 @@ boldMark =
 
 paragraphNode =
     { parameters = paragraphParams
-    , childNodes = InlineLeafArray <| Array.fromList [ TextLeaf { text = "sample", marks = [] } ]
+    , childNodes = InlineLeafArray <| Array.fromList [ TextLeaf { text = "sample", marks = [], annotations = Set.empty } ]
     }
 
 
@@ -57,6 +58,7 @@ boldParagraphNode =
                     { text = "sample"
                     , marks =
                         [ boldMark ]
+                    , annotations = Set.empty
                     }
                 ]
     }
@@ -70,6 +72,7 @@ crazyBlockNode =
                 [ TextLeaf
                     { text = "sample"
                     , marks = []
+                    , annotations = Set.empty
                     }
                 ]
     }
@@ -77,12 +80,12 @@ crazyBlockNode =
 
 codeBlockNode =
     { parameters = codeBlockParams
-    , childNodes = InlineLeafArray <| Array.fromList [ TextLeaf { text = "sample", marks = [] } ]
+    , childNodes = InlineLeafArray <| Array.fromList [ TextLeaf { text = "sample", marks = [], annotations = Set.empty } ]
     }
 
 
 codeBlockToHtmlNode : ElementParameters -> Array HtmlNode -> HtmlNode
-codeBlockToHtmlNode parameters children =
+codeBlockToHtmlNode _ children =
     ElementNode "pre"
         []
     <|
@@ -92,7 +95,7 @@ codeBlockToHtmlNode parameters children =
 
 
 crazyBlockToHtmlNode : ElementParameters -> Array HtmlNode -> HtmlNode
-crazyBlockToHtmlNode parameters children =
+crazyBlockToHtmlNode _ children =
     ElementNode "div"
         []
     <|
@@ -104,7 +107,7 @@ crazyBlockToHtmlNode parameters children =
 
 
 boldToHtmlNode : Mark -> Array HtmlNode -> HtmlNode
-boldToHtmlNode mark children =
+boldToHtmlNode _ children =
     ElementNode "b" [] children
 
 

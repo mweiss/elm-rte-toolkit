@@ -2,15 +2,7 @@ module TestNode exposing (..)
 
 import Array
 import Expect
-import Rte.Model
-    exposing
-        ( ChildNodes(..)
-        , EditorAttribute(..)
-        , EditorInlineLeaf(..)
-        , Mark
-        , NodePath
-        , selectableMark
-        )
+import Rte.Model exposing (Annotation, ChildNodes(..), EditorAttribute(..), EditorInlineLeaf(..), Mark, NodePath, selectableAnnotation)
 import Rte.Node
     exposing
         ( EditorFragment(..)
@@ -42,11 +34,12 @@ import Rte.Node
         , splitTextLeaf
         )
 import Rte.NodePath exposing (toString)
+import Set
 import Test exposing (Test, describe, test)
 
 
 rootNode =
-    { parameters = { name = "div", attributes = [], marks = [] }
+    { parameters = { name = "div", attributes = [], annotations = Set.empty }
     , childNodes =
         BlockArray <|
             Array.fromList [ pNode ]
@@ -54,7 +47,7 @@ rootNode =
 
 
 pNode =
-    { parameters = { name = "p", attributes = [], marks = [] }
+    { parameters = { name = "p", attributes = [], annotations = Set.empty }
     , childNodes =
         InlineLeafArray <|
             Array.fromList [ textNode1, textNode2 ]
@@ -62,7 +55,7 @@ pNode =
 
 
 textNode1Contents =
-    { marks = [], text = "sample1" }
+    { marks = [], text = "sample1", annotations = Set.empty }
 
 
 textNode1 =
@@ -70,7 +63,7 @@ textNode1 =
 
 
 textNode2Contents =
-    { marks = [], text = "sample2" }
+    { marks = [], text = "sample2", annotations = Set.empty }
 
 
 textNode2 =
@@ -118,7 +111,7 @@ nodeNameOrTextValue _ node list =
                     tl.text
 
                 InlineLeaf p ->
-                    p.name
+                    p.parameters.name
     )
         :: list
 
@@ -163,19 +156,19 @@ testIsSelectable : Test
 testIsSelectable =
     describe "Tests that a node is selectable"
         [ test "Test that a text node is selectable" <|
-            \_ -> Expect.equal True <| isSelectable (InlineLeafWrapper (TextLeaf { text = "", marks = [] }))
+            \_ -> Expect.equal True <| isSelectable (InlineLeafWrapper (TextLeaf { text = "", marks = [], annotations = Set.empty }))
         , test "Test that a element node with a selectable mark is selectable" <|
-            \_ -> Expect.equal True <| isSelectable (BlockNodeWrapper { parameters = { name = "div", attributes = [], marks = [ selectableMark ] }, childNodes = Leaf })
+            \_ -> Expect.equal True <| isSelectable (BlockNodeWrapper { parameters = { name = "div", attributes = [], annotations = Set.fromList [ selectableAnnotation ] }, childNodes = Leaf })
         , test "Test that a element node without a selectable mark is not selectable" <|
-            \_ -> Expect.equal False <| isSelectable (BlockNodeWrapper { parameters = { name = "div", attributes = [], marks = [] }, childNodes = Leaf })
+            \_ -> Expect.equal False <| isSelectable (BlockNodeWrapper { parameters = { name = "div", attributes = [], annotations = Set.empty }, childNodes = Leaf })
         ]
 
 
-setMarks : Mark -> EditorNode -> EditorNode
-setMarks mark node =
+setAnnotations : Annotation -> EditorNode -> EditorNode
+setAnnotations mark node =
     let
-        pathMarks =
-            [ mark ]
+        annotations =
+            Set.fromList [ mark ]
     in
     case node of
         BlockNodeWrapper bn ->
@@ -183,57 +176,61 @@ setMarks mark node =
                 params =
                     bn.parameters
             in
-            BlockNodeWrapper { bn | parameters = { params | marks = pathMarks } }
+            BlockNodeWrapper { bn | parameters = { params | annotations = annotations } }
 
         InlineLeafWrapper il ->
             case il of
                 TextLeaf tl ->
-                    InlineLeafWrapper (TextLeaf { tl | marks = pathMarks })
+                    InlineLeafWrapper (TextLeaf { tl | annotations = annotations })
 
                 InlineLeaf l ->
-                    InlineLeafWrapper (InlineLeaf { l | marks = pathMarks })
+                    let
+                        params =
+                            l.parameters
+                    in
+                    InlineLeafWrapper (InlineLeaf { l | parameters = { params | annotations = annotations } })
 
 
-dummyMark =
-    Mark "dummy" []
+dummyAnnotation =
+    "__dummy__"
 
 
-addDummyMark : EditorNode -> EditorNode
-addDummyMark node =
-    setMarks dummyMark node
+addDummyAnnotation : EditorNode -> EditorNode
+addDummyAnnotation node =
+    setAnnotations dummyAnnotation node
 
 
-addPathMark : NodePath -> EditorNode -> EditorNode
-addPathMark path node =
+addPathAnnotation : NodePath -> EditorNode -> EditorNode
+addPathAnnotation path node =
     let
-        pathMark =
-            Mark "path" [ StringAttribute "value" <| toString path ]
+        pathAnnotation =
+            toString path
     in
-    setMarks pathMark node
+    setAnnotations pathAnnotation node
 
 
-rootNodeWithPathMarks =
-    { parameters = { name = "div", attributes = [], marks = [ Mark "path" [ StringAttribute "value" "" ] ] }
+rootNodeWithPathAnnotation =
+    { parameters = { name = "div", attributes = [], annotations = Set.fromList [ "" ] }
     , childNodes =
         BlockArray <|
-            Array.fromList [ pHtmlNodeWithPathMarks ]
+            Array.fromList [ pHtmlNodeWithPathAnnotation ]
     }
 
 
-pHtmlNodeWithPathMarks =
-    { parameters = { name = "p", attributes = [], marks = [ Mark "path" [ StringAttribute "value" "0" ] ] }
+pHtmlNodeWithPathAnnotation =
+    { parameters = { name = "p", attributes = [], annotations = Set.fromList [ "0" ] }
     , childNodes =
         InlineLeafArray <|
-            Array.fromList [ textNode1WithPathMarks, textNode2WithPathMarks ]
+            Array.fromList [ textNode1WithPathAnnotation, textNode2WithPathAnnotation ]
     }
 
 
-textNode1WithPathMarks =
-    TextLeaf { marks = [ Mark "path" [ StringAttribute "value" "0:0" ] ], text = "sample1" }
+textNode1WithPathAnnotation =
+    TextLeaf { marks = [], annotations = Set.fromList [ "0:0" ], text = "sample1" }
 
 
-textNode2WithPathMarks =
-    TextLeaf { marks = [ Mark "path" [ StringAttribute "value" "0:1" ] ], text = "sample2" }
+textNode2WithPathAnnotation =
+    TextLeaf { marks = [], annotations = Set.fromList [ "0:1" ], text = "sample2" }
 
 
 testIndexedMap : Test
@@ -241,33 +238,33 @@ testIndexedMap =
     describe "Tests that indexedMap works as expected"
         [ test "Test that node paths are passed in correctly" <|
             \_ ->
-                Expect.equal (BlockNodeWrapper rootNodeWithPathMarks)
-                    (indexedMap addPathMark (BlockNodeWrapper rootNode))
+                Expect.equal (BlockNodeWrapper rootNodeWithPathAnnotation)
+                    (indexedMap addPathAnnotation (BlockNodeWrapper rootNode))
         ]
 
 
-rootNodeWithSameMark =
-    { parameters = { name = "div", attributes = [], marks = [ dummyMark ] }
+rootNodeWithSameAnnotation =
+    { parameters = { name = "div", attributes = [], annotations = Set.fromList [ dummyAnnotation ] }
     , childNodes =
         BlockArray <|
-            Array.fromList [ pHtmlNodeWithSameMark ]
+            Array.fromList [ pHtmlNodeWithSameAnnotation ]
     }
 
 
-pHtmlNodeWithSameMark =
-    { parameters = { name = "p", attributes = [], marks = [ dummyMark ] }
+pHtmlNodeWithSameAnnotation =
+    { parameters = { name = "p", attributes = [], annotations = Set.fromList [ dummyAnnotation ] }
     , childNodes =
         InlineLeafArray <|
-            Array.fromList [ textNode1WithSameMark, textNode2WithSameMark ]
+            Array.fromList [ textNode1WithSameAnnotation, textNode2WithSameAnnotation ]
     }
 
 
-textNode1WithSameMark =
-    TextLeaf { marks = [ dummyMark ], text = "sample1" }
+textNode1WithSameAnnotation =
+    TextLeaf { marks = [], annotations = Set.fromList [ dummyAnnotation ], text = "sample1" }
 
 
-textNode2WithSameMark =
-    TextLeaf { marks = [ dummyMark ], text = "sample2" }
+textNode2WithSameAnnotation =
+    TextLeaf { marks = [], annotations = Set.fromList [ dummyAnnotation ], text = "sample2" }
 
 
 testMap : Test
@@ -275,8 +272,8 @@ testMap =
     describe "Tests that map works as expected"
         [ test "Test that nodes are correctly modified" <|
             \_ ->
-                Expect.equal (BlockNodeWrapper rootNodeWithSameMark)
-                    (map addDummyMark (BlockNodeWrapper rootNode))
+                Expect.equal (BlockNodeWrapper rootNodeWithSameAnnotation)
+                    (map addDummyAnnotation (BlockNodeWrapper rootNode))
         ]
 
 
@@ -317,7 +314,7 @@ findNodeWithName name _ node =
         InlineLeafWrapper il ->
             case il of
                 InlineLeaf l ->
-                    l.name == name
+                    l.parameters.name == name
 
                 _ ->
                     False
@@ -440,7 +437,7 @@ testPrevious =
 
 
 removedRootNode =
-    { parameters = { name = "div", attributes = [], marks = [] }
+    { parameters = { name = "div", attributes = [], annotations = Set.empty }
     , childNodes =
         BlockArray <|
             Array.fromList [ removedPHtmlNode ]
@@ -448,7 +445,7 @@ removedRootNode =
 
 
 removedPHtmlNode =
-    { parameters = { name = "p", attributes = [], marks = [] }
+    { parameters = { name = "p", attributes = [], annotations = Set.empty }
     , childNodes =
         InlineLeafArray <|
             Array.fromList [ textNode2 ]
@@ -456,7 +453,7 @@ removedPHtmlNode =
 
 
 removedRootAll =
-    { parameters = { name = "div", attributes = [], marks = [] }
+    { parameters = { name = "div", attributes = [], annotations = Set.empty }
     , childNodes =
         BlockArray <|
             Array.empty
@@ -464,7 +461,7 @@ removedRootAll =
 
 
 removedPHtmlNodeAll =
-    { parameters = { name = "p", attributes = [], marks = [] }
+    { parameters = { name = "p", attributes = [], annotations = Set.empty }
     , childNodes =
         InlineLeafArray <|
             Array.empty
@@ -472,7 +469,7 @@ removedPHtmlNodeAll =
 
 
 removedRootNodeRemovedPNodeAll =
-    { parameters = { name = "div", attributes = [], marks = [] }
+    { parameters = { name = "div", attributes = [], annotations = Set.empty }
     , childNodes =
         BlockArray <|
             Array.fromList [ removedPHtmlNodeAll ]
@@ -508,7 +505,7 @@ testRemoveInRange =
 
 
 replaceRootPNode =
-    { parameters = { name = "div", attributes = [], marks = [] }
+    { parameters = { name = "div", attributes = [], annotations = Set.empty }
     , childNodes =
         BlockArray <|
             Array.fromList [ replacePNode ]
@@ -516,7 +513,7 @@ replaceRootPNode =
 
 
 replacePNode =
-    { parameters = { name = "p", attributes = [], marks = [] }
+    { parameters = { name = "p", attributes = [], annotations = Set.empty }
     , childNodes =
         InlineLeafArray <|
             Array.fromList [ textNode2, textNode2 ]
@@ -570,7 +567,7 @@ testAnyRange =
 
 
 doubleRoot =
-    { parameters = { name = "div", attributes = [], marks = [] }
+    { parameters = { name = "div", attributes = [], annotations = Set.empty }
     , childNodes =
         BlockArray <|
             Array.fromList [ doublePNode, doublePNode ]
@@ -578,7 +575,7 @@ doubleRoot =
 
 
 doublePNode =
-    { parameters = { name = "p", attributes = [], marks = [] }
+    { parameters = { name = "p", attributes = [], annotations = Set.empty }
     , childNodes =
         InlineLeafArray <|
             Array.fromList [ textNode1, textNode1, textNode2, textNode2 ]
@@ -597,15 +594,15 @@ testConcatMap =
 
 
 textLeafBeforeSplitContents =
-    { marks = [], text = "sam" }
+    { marks = [], text = "sam", annotations = Set.empty }
 
 
 textLeafAfterSplitContents =
-    { marks = [], text = "ple1" }
+    { marks = [], text = "ple1", annotations = Set.empty }
 
 
 nodeBeforeTextLeafSplit =
-    { parameters = { name = "div", attributes = [], marks = [] }
+    { parameters = { name = "div", attributes = [], annotations = Set.empty }
     , childNodes =
         InlineLeafArray <|
             Array.fromList [ TextLeaf textLeafBeforeSplitContents ]
@@ -613,7 +610,7 @@ nodeBeforeTextLeafSplit =
 
 
 nodeAfterTextLeafSplit =
-    { parameters = { name = "div", attributes = [], marks = [] }
+    { parameters = { name = "div", attributes = [], annotations = Set.empty }
     , childNodes =
         InlineLeafArray <|
             Array.fromList [ TextLeaf textLeafAfterSplitContents ]
@@ -621,7 +618,7 @@ nodeAfterTextLeafSplit =
 
 
 nodeWithTextLeafToSplit =
-    { parameters = { name = "div", attributes = [], marks = [] }
+    { parameters = { name = "div", attributes = [], annotations = Set.empty }
     , childNodes =
         InlineLeafArray <|
             Array.fromList [ textNode1 ]
@@ -629,11 +626,11 @@ nodeWithTextLeafToSplit =
 
 
 inlineImg =
-    InlineLeaf { attributes = [], marks = [], name = "img" }
+    InlineLeaf { marks = [], parameters = { attributes = [], annotations = Set.empty, name = "img" } }
 
 
 nodeAfterInlineLeafSplit =
-    { parameters = { name = "div", attributes = [], marks = [] }
+    { parameters = { name = "div", attributes = [], annotations = Set.empty }
     , childNodes =
         InlineLeafArray <|
             Array.fromList [ inlineImg ]
@@ -641,13 +638,13 @@ nodeAfterInlineLeafSplit =
 
 
 nodeBeforeInlineLeafSplit =
-    { parameters = { name = "div", attributes = [], marks = [] }
+    { parameters = { name = "div", attributes = [], annotations = Set.empty }
     , childNodes = InlineLeafArray <| Array.empty
     }
 
 
 nodeWithInlineLeafToSplit =
-    { parameters = { name = "div", attributes = [], marks = [] }
+    { parameters = { name = "div", attributes = [], annotations = Set.empty }
     , childNodes =
         InlineLeafArray <|
             Array.fromList [ inlineImg ]
