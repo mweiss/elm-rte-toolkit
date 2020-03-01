@@ -36,70 +36,45 @@ domToEditor spec node path =
             nodeDefinition =
                 findNodeDefinitionFromSpec node.parameters.name spec
 
-            markDefinitions =
-                findMarkDefinitionsFromSpec node.parameters.marks spec
-
             structure =
                 nodeDefinition.toHtmlNode node.parameters childNodesPlaceholder
-
-            maybePathWithMarksRemoved =
-                List.foldl
-                    (\( mark, markDefinition ) maybePath ->
-                        case maybePath of
-                            Nothing ->
-                                Nothing
-
-                            Just pathSoFar ->
-                                let
-                                    markStructure =
-                                        markDefinition.toHtmlNode mark childNodesPlaceholder
-                                in
-                                removePathUpToChildContents markStructure pathSoFar
-                    )
-                    (Just path)
-                    markDefinitions
         in
-        case maybePathWithMarksRemoved of
+        case removePathUpToChildContents structure path of
             Nothing ->
                 Nothing
 
-            Just pathWithMarksRemoved ->
-                case removePathUpToChildContents structure pathWithMarksRemoved of
+            Just rest ->
+                case List.head rest of
                     Nothing ->
-                        Nothing
+                        Just []
 
-                    Just rest ->
-                        case List.head rest of
-                            Nothing ->
-                                Just []
-
-                            Just i ->
-                                case node.childNodes of
-                                    BlockArray l ->
-                                        case Array.get i l of
-                                            Nothing ->
-                                                Nothing
-
-                                            Just childNode ->
-                                                case domToEditor spec childNode (List.drop 1 rest) of
-                                                    Nothing ->
-                                                        Nothing
-
-                                                    Just p ->
-                                                        Just (i :: p)
-
-                                    InlineLeafArray l ->
-                                        case Array.get i l of
-                                            Nothing ->
-                                                Nothing
-
-                                            Just _ ->
-                                                --  TODO:  we assume the content of the leaf node is valid, but maybe we should validate its content?
-                                                Just [ i ]
-
-                                    Leaf ->
-                                        -- If we still have path left, it means the path is invalid, so we return Nothing
+                    Just i ->
+                        case node.childNodes of
+                            BlockArray l ->
+                                case Array.get i l of
+                                    Nothing ->
                                         Nothing
+
+                                    Just childNode ->
+                                        case domToEditor spec childNode (List.drop 1 rest) of
+                                            Nothing ->
+                                                Nothing
+
+                                            Just p ->
+                                                Just (i :: p)
+
+                            InlineLeafArray l ->
+                                case Array.get i l of
+                                    Nothing ->
+                                        Nothing
+
+                                    Just _ ->
+                                        --  TODO:  we assume the content of the leaf node is valid, but maybe we should validate its content?
+                                        Just [ i ]
+
+                            Leaf ->
+                                -- If we still have path left, it means the path is invalid, so we return Nothing
+                                Nothing
 
 
 {-| Translates an editor node path to a DOM node path. Returns Nothing if the
@@ -112,7 +87,7 @@ editorToDom spec node path =
             Just []
 
         x :: xs ->
-            case pathToChildContentsFromElementParameters spec node.parameters of
+            case pathToChildContentsFromElementParameters spec [] node.parameters of
                 Nothing ->
                     Nothing
 
@@ -147,7 +122,7 @@ editorToDom spec node path =
                                                     Just (childPath ++ (x :: childMarkPath))
 
                                         InlineLeaf contents ->
-                                            case pathToChildContentsFromElementParameters spec contents of
+                                            case pathToChildContentsFromElementParameters spec contents.marks contents.parameters of
                                                 Nothing ->
                                                     Nothing
 
@@ -278,8 +253,8 @@ pathToChildContentsFromMarks spec marks =
 {- Helper method to determine the path to the child contents from an element editor node -}
 
 
-pathToChildContentsFromElementParameters : Spec -> ElementParameters -> Maybe NodePath
-pathToChildContentsFromElementParameters spec parameters =
+pathToChildContentsFromElementParameters : Spec -> List Mark -> ElementParameters -> Maybe NodePath
+pathToChildContentsFromElementParameters spec marks parameters =
     let
         nodeDefinition =
             findNodeDefinitionFromSpec parameters.name spec
@@ -288,7 +263,7 @@ pathToChildContentsFromElementParameters spec parameters =
             nodeDefinition.toHtmlNode parameters childNodesPlaceholder
 
         maybePathToChildContents =
-            pathToChildContentsFromMarks spec parameters.marks
+            pathToChildContentsFromMarks spec marks
     in
     case maybePathToChildContents of
         Nothing ->

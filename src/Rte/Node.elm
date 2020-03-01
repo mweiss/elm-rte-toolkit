@@ -34,8 +34,9 @@ module Rte.Node exposing
 
 import Array exposing (Array)
 import Array.Extra
-import Rte.Model exposing (ChildNodes(..), EditorBlockNode, EditorInlineLeaf(..), HtmlNode(..), NodePath, TextLeafContents, selectableMark)
+import Rte.Model exposing (Annotation, ChildNodes(..), EditorBlockNode, EditorInlineLeaf(..), HtmlNode(..), NodePath, TextLeafContents, selectableAnnotation)
 import Rte.NodePath exposing (parent)
+import Set
 
 
 type EditorNode
@@ -229,15 +230,15 @@ isSelectable : EditorNode -> Bool
 isSelectable node =
     case node of
         BlockNodeWrapper bn ->
-            List.member selectableMark bn.parameters.marks
+            Set.member selectableAnnotation bn.parameters.annotations
 
         InlineLeafWrapper ln ->
             case ln of
                 TextLeaf _ ->
                     True
 
-                InlineLeaf p ->
-                    List.member selectableMark p.marks
+                InlineLeaf l ->
+                    Set.member selectableAnnotation l.parameters.annotations
 
 
 findNodeFromExclusive : Iterator -> (NodePath -> EditorNode -> Bool) -> NodePath -> EditorBlockNode -> Maybe ( NodePath, EditorNode )

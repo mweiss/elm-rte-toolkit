@@ -2,12 +2,14 @@ module Rte.List exposing (..)
 
 import Array exposing (Array)
 import List.Extra
-import Rte.Commands exposing (altKey, backspaceKey, deleteKey, emptyCommandBinding, enterKey, inputEvent, isEmptyTextBlock, key, liftConcatMapFunc, liftMark, otherwiseDo, returnKey, set)
+import Rte.Annotation exposing (clearAnnotations)
+import Rte.Commands exposing (altKey, backspaceKey, deleteKey, emptyCommandBinding, enterKey, inputEvent, isEmptyTextBlock, key, liftAnnotation, liftConcatMapFunc, otherwiseDo, returnKey, set)
 import Rte.Marks exposing (ToggleAction(..), clearMarks, toggleMarkAtPath)
 import Rte.Model exposing (ChildNodes(..), Command, CommandMap, EditorBlockNode, EditorInlineLeaf(..), ElementParameters, NodePath, Selection, elementParameters)
 import Rte.Node exposing (EditorFragment(..), EditorNode(..), concatMap, findAncestor, findLastPath, joinBlocks, nodeAt, replace, replaceWithFragment)
 import Rte.NodePath exposing (commonAncestor, decrement, increment)
-import Rte.Selection exposing (clearSelectionMarks, isCollapsed, markSelection, normalizeSelection, selectionFromMarks)
+import Rte.Selection exposing (clearSelectionAnnotations, isCollapsed, markSelection, normalizeSelection, selectionFromMarks)
+import Set
 
 
 type ListType
@@ -38,9 +40,9 @@ commandBindings definition =
 
 defaultListDefinition : ListDefinition
 defaultListDefinition =
-    { ordered = elementParameters "ol" [] []
-    , unordered = elementParameters "ul" [] []
-    , item = elementParameters "li" [] []
+    { ordered = elementParameters "ol" [] Set.empty
+    , unordered = elementParameters "ul" [] Set.empty
+    , item = elementParameters "li" [] Set.empty
     }
 
 
@@ -86,9 +88,9 @@ isListNode definition node =
                 == definition.unordered.name
 
 
-addLiftMarkAtPathAndChildren : NodePath -> EditorBlockNode -> Result String EditorBlockNode
-addLiftMarkAtPathAndChildren path root =
-    case toggleMarkAtPath Add liftMark path root of
+addLiftAnnotationAtPathAndChildren : NodePath -> EditorBlockNode -> Result String EditorBlockNode
+addLiftAnnotationAtPathAndChildren path root =
+    case Rte.Annotation.addAnnotationAtPath liftAnnotation path root of
         Err s ->
             Err s
 
@@ -109,7 +111,7 @@ addLiftMarkAtPathAndChildren path root =
                                                     result
 
                                                 Ok n ->
-                                                    toggleMarkAtPath Add liftMark (path ++ [ i ]) n
+                                                    Rte.Annotation.addAnnotationAtPath liftAnnotation (path ++ [ i ]) n
                                         )
                                         (Ok newRoot)
                                         (List.range 0 (Array.length ba - 1))
@@ -134,7 +136,7 @@ addLiftMarkToListItems definition selection root =
 
                 Just ( end, _ ) ->
                     if start == end then
-                        addLiftMarkAtPathAndChildren start root
+                        addLiftAnnotationAtPathAndChildren start root
 
                     else
                         let
@@ -167,7 +169,7 @@ addLiftMarkToListItems definition selection root =
                                                                     result
 
                                                                 Ok node ->
-                                                                    addLiftMarkAtPathAndChildren (ancestor ++ [ i ]) node
+                                                                    addLiftAnnotationAtPathAndChildren (ancestor ++ [ i ]) node
                                                         )
                                                         (Ok root)
                                                         (List.range startIndex endIndex)
@@ -200,7 +202,7 @@ lift definition editorState =
                     Ok
                         { editorState
                             | selection = newSelection
-                            , root = clearMarks Rte.Commands.liftMark <| clearSelectionMarks liftedRoot
+                            , root = clearAnnotations liftAnnotation <| clearSelectionAnnotations liftedRoot
                         }
 
 
@@ -319,7 +321,7 @@ joinBackward definition editorState =
                                                             Ok
                                                                 { editorState
                                                                     | selection = selectionFromMarks newRoot selection.anchorOffset selection.focusOffset
-                                                                    , root = clearSelectionMarks newRoot
+                                                                    , root = clearSelectionAnnotations newRoot
                                                                 }
 
 
@@ -411,5 +413,5 @@ joinForward definition editorState =
                                                         Ok
                                                             { editorState
                                                                 | selection = selectionFromMarks newRoot selection.anchorOffset selection.focusOffset
-                                                                , root = clearSelectionMarks newRoot
+                                                                , root = clearSelectionAnnotations newRoot
                                                             }

@@ -2,9 +2,10 @@ module Rte.EditorState exposing (..)
 
 import Array exposing (Array)
 import List.Extra
-import Rte.Model exposing (ChildNodes(..), EditorBlockNode, EditorInlineLeaf(..), EditorState, Mark, NodePath, selectionMark)
+import Rte.Model exposing (ChildNodes(..), EditorBlockNode, EditorInlineLeaf(..), EditorState, Mark, NodePath, selectionAnnotation)
 import Rte.Node exposing (EditorNode(..), findTextBlockNodeAncestor, map)
-import Rte.Selection exposing (clearSelectionMarks, markSelection, rangeSelection)
+import Rte.Selection exposing (clearSelectionAnnotations, markSelection, rangeSelection)
+import Set
 
 
 removeExtraEmptyTextLeaves : List EditorInlineLeaf -> List EditorInlineLeaf
@@ -21,10 +22,10 @@ removeExtraEmptyTextLeaves inlineLeaves =
                 TextLeaf xL ->
                     case y of
                         TextLeaf yL ->
-                            if String.isEmpty xL.text && (not <| List.member selectionMark xL.marks) then
+                            if String.isEmpty xL.text && (not <| Set.member selectionAnnotation xL.annotations) then
                                 removeExtraEmptyTextLeaves (y :: xs)
 
-                            else if String.isEmpty yL.text && (not <| List.member selectionMark yL.marks) then
+                            else if String.isEmpty yL.text && (not <| Set.member selectionAnnotation yL.annotations) then
                                 removeExtraEmptyTextLeaves (x :: xs)
 
                             else
@@ -35,11 +36,6 @@ removeExtraEmptyTextLeaves inlineLeaves =
 
                 InlineLeaf _ ->
                     x :: removeExtraEmptyTextLeaves (y :: xs)
-
-
-filterSelectionMark : List Mark -> List Mark
-filterSelectionMark marks =
-    List.filter (\m -> m /= selectionMark) marks
 
 
 mergeSimilarInlineLeaves : List EditorInlineLeaf -> List EditorInlineLeaf
@@ -56,7 +52,7 @@ mergeSimilarInlineLeaves inlineLeaves =
                 TextLeaf xL ->
                     case y of
                         TextLeaf yL ->
-                            if filterSelectionMark xL.marks == filterSelectionMark yL.marks then
+                            if xL.marks == yL.marks then
                                 mergeSimilarInlineLeaves (TextLeaf { xL | text = xL.text ++ yL.text } :: xs)
 
                             else
@@ -113,7 +109,7 @@ reduceEditorState editorState =
                     markSelection selection editorState.root
 
         reducedRoot =
-            clearSelectionMarks <| reduceNode markedRoot
+            clearSelectionAnnotations <| reduceNode markedRoot
     in
     case editorState.selection of
         Nothing ->

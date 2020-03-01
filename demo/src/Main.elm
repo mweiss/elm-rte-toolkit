@@ -11,7 +11,8 @@ import Rte.Decorations exposing (addElementDecoration, emptyDecorations, selecta
 import Rte.Editor exposing (internalUpdate)
 import Rte.EditorUtils exposing (applyCommand)
 import Rte.List exposing (ListType, defaultListDefinition)
-import Rte.Model exposing (ChildNodes(..), Editor, EditorAttribute(..), EditorBlockNode, EditorInlineLeaf(..), InternalEditorMsg(..), Mark, selectableMark)
+import Rte.Model exposing (ChildNodes(..), Editor, EditorAttribute(..), EditorBlockNode, EditorInlineLeaf(..), InternalEditorMsg(..), Mark, selectableAnnotation)
+import Set
 
 
 headerElements =
@@ -32,9 +33,12 @@ type alias Model =
 inlineImageNode : EditorInlineLeaf
 inlineImageNode =
     InlineLeaf
-        { name = "img"
-        , attributes = [ StringAttribute "src" "logo.svg" ]
-        , marks = [ selectableMark ]
+        { marks = []
+        , parameters =
+            { name = "img"
+            , attributes = [ StringAttribute "src" "logo.svg" ]
+            , annotations = Set.fromList [ selectableAnnotation ]
+            }
         }
 
 
@@ -42,9 +46,9 @@ paragraphWithImage =
     { parameters =
         { name = "p"
         , attributes = []
-        , marks = []
+        , annotations = Set.empty
         }
-    , childNodes = InlineLeafArray (Array.fromList [ TextLeaf { text = "", marks = [] }, inlineImageNode, TextLeaf { text = "", marks = [] } ])
+    , childNodes = InlineLeafArray (Array.fromList [ TextLeaf { text = "", marks = [], annotations = Set.empty }, inlineImageNode, TextLeaf { text = "", marks = [], annotations = Set.empty } ])
     }
 
 
@@ -53,7 +57,7 @@ doubleInitNode =
     { parameters =
         { name = "div"
         , attributes = []
-        , marks = []
+        , annotations = Set.empty
         }
     , childNodes = BlockArray (Array.fromList [ initialEditorNode, paragraphWithImage, initialEditorNode ])
     }
@@ -64,9 +68,9 @@ initialEditorNode =
     { parameters =
         { name = "p"
         , attributes = []
-        , marks = []
+        , annotations = Set.empty
         }
-    , childNodes = InlineLeafArray (Array.fromList [ TextLeaf { text = "This is some sample text", marks = [] } ])
+    , childNodes = InlineLeafArray (Array.fromList [ TextLeaf { text = "This is some sample text", marks = [], annotations = Set.empty } ])
     }
 
 
@@ -321,7 +325,7 @@ handleWrapBlockNode model =
     { model
         | editor =
             Result.withDefault model.editor
-                (applyCommand (wrap (\n -> n) { name = "blockquote", marks = [], attributes = [] }) model.editor)
+                (applyCommand (wrap (\n -> n) { name = "blockquote", annotations = Set.empty, attributes = [] }) model.editor)
     }
 
 
@@ -332,7 +336,7 @@ handleInsertHorizontalRule model =
             Result.withDefault model.editor
                 (applyCommand
                     (insertBlockNode
-                        { parameters = { name = "hr", marks = [ selectableMark ], attributes = [] }
+                        { parameters = { name = "hr", annotations = Set.fromList [ selectableAnnotation ], attributes = [] }
                         , childNodes = Leaf
                         }
                     )

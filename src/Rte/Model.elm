@@ -31,6 +31,7 @@ import Array exposing (Array)
 import Dict exposing (Dict)
 import Html
 import Json.Encode as E
+import Set exposing (Set)
 
 
 type alias Decorations msg =
@@ -80,16 +81,20 @@ type alias Mark =
     { name : String, attributes : List EditorAttribute }
 
 
+type alias Annotation =
+    String
+
+
 type alias ElementParameters =
     { name : String
     , attributes : List EditorAttribute
-    , marks : List Mark
+    , annotations : Set Annotation
     }
 
 
-elementParameters : String -> List EditorAttribute -> List Mark -> ElementParameters
-elementParameters name attributes marks =
-    { name = name, attributes = attributes, marks = marks }
+elementParameters : String -> List EditorAttribute -> Set Annotation -> ElementParameters
+elementParameters name attributes annotations =
+    { name = name, attributes = attributes, annotations = annotations }
 
 
 {-| An editor block node represents a block element in your document. An editor block node can either
@@ -110,27 +115,26 @@ type ChildNodes
     | Leaf
 
 
+type alias InlineLeafContents =
+    { marks : List Mark
+    , parameters : ElementParameters
+    }
+
+
 {-| An inline leaf node represents an inline element in your document. It can either be an inline leaf node,
 like an image or line break, or a text node.
 -}
 type EditorInlineLeaf
-    = InlineLeaf ElementParameters
-    | TextLeaf TextNodeContents
-
-
-{-| Text nodes may have the text they represent, as well as a list of marks.
--}
-type alias TextLeafContents =
-    { text : String, marks : List Mark }
+    = InlineLeaf InlineLeafContents
+    | TextLeaf TextLeafContents
 
 
 {-| TextNodeContents represents the attributes that can be in a text node. The core attributes
-are marks and text. For now, there is also the `wrapperTagName` attribute because for now to make
-selection state easier to deal with, editor nodes map 1-1 with the DOM element nodes.
+are marks and text.
 -}
-type alias TextNodeContents =
-    { -- This is a bit of a hack because marks currently can only add attributes
-      marks : List Mark
+type alias TextLeafContents =
+    { marks : List Mark
+    , annotations : Set Annotation
     , text : String
     }
 
@@ -342,11 +346,11 @@ type alias TextChange =
     ( NodePath, String )
 
 
-selectionMark : Mark
-selectionMark =
-    { name = "selection", attributes = [] }
+selectionAnnotation : Annotation
+selectionAnnotation =
+    "__selection__"
 
 
-selectableMark : Mark
-selectableMark =
-    { name = "selectable", attributes = [] }
+selectableAnnotation : Annotation
+selectableAnnotation =
+    "__selectable__"

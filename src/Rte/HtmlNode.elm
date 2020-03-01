@@ -1,7 +1,7 @@
 module Rte.HtmlNode exposing (..)
 
 import Array exposing (Array)
-import Rte.Model exposing (ChildNodes(..), EditorBlockNode, EditorInlineLeaf(..), ElementParameters, HtmlNode(..), Mark, Spec, TextNodeContents)
+import Rte.Model exposing (ChildNodes(..), EditorBlockNode, EditorInlineLeaf(..), ElementParameters, HtmlNode(..), Mark, Spec, TextLeafContents)
 import Rte.Spec exposing (findMarkDefinitionsFromSpec, findNodeDefinitionFromSpec)
 
 
@@ -21,8 +21,8 @@ marksToHtmlNode spec marks node =
 
 {-| Renders element parameters to their HtmlNode representation.
 -}
-elementToHtmlNode : Spec -> ElementParameters -> Array HtmlNode -> HtmlNode
-elementToHtmlNode spec parameters children =
+elementToHtmlNode : Spec -> ElementParameters -> List Mark -> Array HtmlNode -> HtmlNode
+elementToHtmlNode spec parameters marks children =
     let
         nodeDefinition =
             findNodeDefinitionFromSpec parameters.name spec
@@ -30,14 +30,14 @@ elementToHtmlNode spec parameters children =
         renderedNode =
             nodeDefinition.toHtmlNode parameters children
     in
-    marksToHtmlNode spec parameters.marks renderedNode
+    marksToHtmlNode spec marks renderedNode
 
 
 {-| Renders element block nodes to their HtmlNode representation.
 -}
 editorBlockNodeToHtmlNode : Spec -> EditorBlockNode -> HtmlNode
 editorBlockNodeToHtmlNode spec node =
-    elementToHtmlNode spec node.parameters (childNodesToHtmlNode spec node.childNodes)
+    elementToHtmlNode spec node.parameters [] (childNodesToHtmlNode spec node.childNodes)
 
 
 {-| Renders child nodes to their HtmlNode representation.
@@ -57,7 +57,7 @@ childNodesToHtmlNode spec childNodes =
 
 {-| Renders text nodes to their HtmlNode representation.
 -}
-textToHtmlNode : Spec -> TextNodeContents -> HtmlNode
+textToHtmlNode : Spec -> TextLeafContents -> HtmlNode
 textToHtmlNode spec contents =
     marksToHtmlNode spec contents.marks (TextNode contents.text)
 
@@ -70,5 +70,5 @@ editorInlineLeafToHtmlNode spec node =
         TextLeaf contents ->
             textToHtmlNode spec contents
 
-        InlineLeaf parameters ->
-            elementToHtmlNode spec parameters Array.empty
+        InlineLeaf l ->
+            elementToHtmlNode spec l.parameters l.marks Array.empty

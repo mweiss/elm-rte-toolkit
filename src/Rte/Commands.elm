@@ -5,12 +5,14 @@ import Array.Extra
 import Dict exposing (Dict)
 import List.Extra
 import Regex
+import Rte.Annotation exposing (clearAnnotations)
 import Rte.DeleteWord as DeleteWord
-import Rte.Marks exposing (ToggleAction(..), addMark, clearMarks, findMarksFromInlineLeaf, hasMarkWithName, toggle, toggleMark)
+import Rte.Marks exposing (ToggleAction(..), findMarksFromInlineLeaf, hasMarkWithName, toggle, toggleMark)
 import Rte.Model exposing (ChildNodes(..), Command, CommandBinding(..), CommandMap, Editor, EditorBlockNode, EditorInlineLeaf(..), EditorState, ElementParameters, Mark, NodePath, Selection)
 import Rte.Node exposing (EditorFragment(..), EditorNode(..), allRange, concatMap, findBackwardFromExclusive, findClosestBlockPath, findForwardFrom, findForwardFromExclusive, findTextBlockNodeAncestor, indexedFoldl, indexedMap, isSelectable, joinBlocks, map, next, nodeAt, previous, removeInRange, removeNodeAndEmptyParents, replace, replaceWithFragment, splitBlockAtPathAndOffset, splitTextLeaf)
 import Rte.NodePath as NodePath exposing (commonAncestor, decrement, increment, parent, toString)
-import Rte.Selection exposing (caretSelection, clearSelectionMarks, isCollapsed, markSelection, normalizeSelection, rangeSelection, selectionFromMarks, singleNodeRangeSelection)
+import Rte.Selection exposing (caretSelection, clearSelectionAnnotations, isCollapsed, markSelection, normalizeSelection, rangeSelection, selectionFromMarks, singleNodeRangeSelection)
+import Set
 
 
 altKey : String
@@ -439,7 +441,12 @@ removeRangeSelection editorState =
 
 insertLineBreak : Command
 insertLineBreak =
-    insertInlineElement (InlineLeaf { name = "br", attributes = [], marks = [] })
+    insertInlineElement
+        (InlineLeaf
+            { marks = []
+            , parameters = { name = "br", attributes = [], annotations = Set.empty }
+            }
+        )
 
 
 insertInlineElement : EditorInlineLeaf -> Command
@@ -1094,7 +1101,7 @@ wrap contentsMapFunc elementParameters editorState =
                             Ok newRoot ->
                                 Ok
                                     { editorState
-                                        | root = clearSelectionMarks newRoot
+                                        | root = clearSelectionAnnotations newRoot
                                         , selection =
                                             selectionFromMarks
                                                 newRoot
@@ -1152,7 +1159,7 @@ wrap contentsMapFunc elementParameters editorState =
                                                             Ok newRoot ->
                                                                 Ok
                                                                     { editorState
-                                                                        | root = clearSelectionMarks newRoot
+                                                                        | root = clearSelectionAnnotations newRoot
                                                                         , selection =
                                                                             selectionFromMarks
                                                                                 newRoot
@@ -1217,8 +1224,8 @@ selectAll editorState =
 -- for each block, lift it out of its container if possible
 
 
-liftMark =
-    { name = "__lift__", attributes = [] }
+liftAnnotation =
+    "__lift__"
 
 
 addLiftMarkToBlocksInSelection : Selection -> EditorBlockNode -> EditorBlockNode
@@ -1255,7 +1262,7 @@ addLiftMarkToBlocksInSelection selection root =
                                             False
                             in
                             if addMarker then
-                                addMark liftMark <| BlockNodeWrapper bn
+                                Rte.Annotation.add liftAnnotation <| BlockNodeWrapper bn
 
                             else
                                 node
@@ -1288,14 +1295,14 @@ liftConcatMapFunc node =
                         groupedBlockNodes =
                             List.Extra.groupWhile
                                 (\n1 n2 ->
-                                    hasMarkWithName liftMark.name n1.parameters.marks == hasMarkWithName liftMark.name n2.parameters.marks
+                                    Set.member liftAnnotation n1.parameters.annotations == Set.member liftAnnotation n2.parameters.annotations
                                 )
                                 (Array.toList a)
                     in
                     List.map BlockNodeWrapper <|
                         List.concatMap
                             (\( n, l ) ->
-                                if hasMarkWithName liftMark.name n.parameters.marks then
+                                if Set.member liftAnnotation n.parameters.annotations then
                                     n :: l
 
                                 else
@@ -1330,7 +1337,7 @@ lift editorState =
             Ok
                 { editorState
                     | selection = newSelection
-                    , root = clearMarks liftMark <| clearSelectionMarks liftedRoot
+                    , root = clearAnnotations liftAnnotation <| clearSelectionAnnotations liftedRoot
                 }
 
 
@@ -1536,7 +1543,7 @@ insertBlockNodeBeforeSelection node editorState =
                                                 else
                                                     selectionFromMarks newRoot selection.anchorOffset selection.focusOffset
                                         in
-                                        Ok { editorState | selection = newSelection, root = clearSelectionMarks newRoot }
+                                        Ok { editorState | selection = newSelection, root = clearSelectionAnnotations newRoot }
 
                             -- if an inline node is selected, then split the block and insert before
                             InlineLeafWrapper _ ->
@@ -1623,7 +1630,7 @@ backspaceBlockNode editorState =
                                             Ok newRoot ->
                                                 Ok
                                                     { editorState
-                                                        | root = clearSelectionMarks newRoot
+                                                        | root = clearSelectionAnnotations newRoot
                                                         , selection = selectionFromMarks newRoot selection.anchorOffset selection.focusOffset
                                                     }
 
@@ -1949,7 +1956,7 @@ deleteBlockNode editorState =
                                                 Err s
 
                                             Ok newRoot ->
-                                                Ok { editorState | root = clearSelectionMarks newRoot }
+                                                Ok { editorState | root = clearSelectionAnnotations newRoot }
 
                                     _ ->
                                         Err "The next node is not a block leaf"

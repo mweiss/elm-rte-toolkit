@@ -6,6 +6,7 @@ import Html.Attributes
 import Html.Events
 import Rte.Model exposing (..)
 import Rte.Selection exposing (caretSelection)
+import Set
 
 
 emptyDecorations : Decorations msg
@@ -15,7 +16,7 @@ emptyDecorations =
 
 selectableDecoration : DecoderFunc msg -> NodePath -> ElementParameters -> NodePath -> List (Html.Attribute msg)
 selectableDecoration decoder editorNodePath elementParameters relativeHtmlNodePath =
-    (if List.member selectionMark elementParameters.marks then
+    (if Set.member selectionAnnotation elementParameters.annotations then
         [ Html.Attributes.class "rte-selected" ]
 
      else

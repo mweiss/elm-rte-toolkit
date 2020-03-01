@@ -1,9 +1,10 @@
-module Rte.Selection exposing (caretSelection, clearSelectionMarks, domToEditor, editorToDom, isCollapsed, markSelection, normalizeSelection, rangeSelection, selectionFromMarks, singleNodeRangeSelection)
+module Rte.Selection exposing (caretSelection, clearSelectionAnnotations, domToEditor, editorToDom, isCollapsed, markSelection, normalizeSelection, rangeSelection, selectionFromMarks, singleNodeRangeSelection)
 
-import Rte.Marks as ToggleAction exposing (ToggleAction(..), clearMarks, toggle, toggleMarkAtPath)
-import Rte.Model exposing (ChildNodes(..), EditorBlockNode, EditorInlineLeaf(..), ElementParameters, HtmlNode(..), Mark, NodePath, Selection, Spec, selectionMark)
+import Rte.Annotation exposing (addAnnotationAtPath, clearAnnotations)
+import Rte.Model exposing (Annotation, ChildNodes(..), EditorBlockNode, EditorInlineLeaf(..), ElementParameters, HtmlNode(..), Mark, NodePath, Selection, Spec, selectionAnnotation)
 import Rte.Node exposing (EditorNode(..), indexedFoldl, map)
 import Rte.NodePath as Path
+import Set exposing (Set)
 
 
 domToEditor : Spec -> EditorBlockNode -> Selection -> Maybe Selection
@@ -82,32 +83,32 @@ normalizeSelection selection =
 
 markSelection : Selection -> EditorBlockNode -> EditorBlockNode
 markSelection selection node =
-    addSelectionMarkAtPath selection.focusNode <| addSelectionMarkAtPath selection.anchorNode node
+    addSelectionAnnotationAtPath selection.focusNode <| addSelectionAnnotationAtPath selection.anchorNode node
 
 
-addSelectionMarkAtPath : NodePath -> EditorBlockNode -> EditorBlockNode
-addSelectionMarkAtPath nodePath node =
-    Result.withDefault node (toggleMarkAtPath Add selectionMark nodePath node)
+addSelectionAnnotationAtPath : NodePath -> EditorBlockNode -> EditorBlockNode
+addSelectionAnnotationAtPath nodePath node =
+    Result.withDefault node (addAnnotationAtPath selectionAnnotation nodePath node)
 
 
-clearSelectionMarks : EditorBlockNode -> EditorBlockNode
-clearSelectionMarks =
-    clearMarks selectionMark
+clearSelectionAnnotations : EditorBlockNode -> EditorBlockNode
+clearSelectionAnnotations =
+    clearAnnotations selectionAnnotation
 
 
-getMarksFromNode : EditorNode -> List Mark
-getMarksFromNode node =
+getAnnotationsFromNode : EditorNode -> Set Annotation
+getAnnotationsFromNode node =
     case node of
         BlockNodeWrapper blockNode ->
-            blockNode.parameters.marks
+            blockNode.parameters.annotations
 
         InlineLeafWrapper inlineLeaf ->
             case inlineLeaf of
                 InlineLeaf p ->
-                    p.marks
+                    p.parameters.annotations
 
                 TextLeaf p ->
-                    p.marks
+                    p.annotations
 
 
 selectionFromMarks : EditorBlockNode -> Int -> Int -> Maybe Selection
@@ -126,7 +127,7 @@ findNodeRangeFromSelectionMarks node =
         marks =
             indexedFoldl
                 (\path n agg ->
-                    if List.member selectionMark <| getMarksFromNode n then
+                    if Set.member selectionAnnotation <| getAnnotationsFromNode n then
                         path :: agg
 
                     else

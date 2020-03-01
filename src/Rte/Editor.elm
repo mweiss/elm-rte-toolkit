@@ -482,8 +482,8 @@ renderMarkFromSpec editor backwardsNodePath mark child =
             renderHtmlNode node decorators (Array.fromList [ child ]) []
 
 
-renderElementFromSpec : Editor msg -> ElementParameters -> NodePath -> Array (Html msg) -> Html msg
-renderElementFromSpec editor elementParameters backwardsNodePath children =
+renderElementFromSpec : Editor msg -> ElementParameters -> List Mark -> NodePath -> Array (Html msg) -> Html msg
+renderElementFromSpec editor elementParameters marks backwardsNodePath children =
     let
         definition =
             findNodeDefinitionFromSpec elementParameters.name editor.spec
@@ -501,7 +501,7 @@ renderElementFromSpec editor elementParameters backwardsNodePath children =
             renderHtmlNode node decorators children []
 
         nodeHtmlWithMarks =
-            List.foldl (renderMarkFromSpec editor backwardsNodePath) nodeHtml elementParameters.marks
+            List.foldl (renderMarkFromSpec editor backwardsNodePath) nodeHtml marks
     in
     nodeHtmlWithMarks
 
@@ -510,6 +510,7 @@ renderEditorBlockNode : Editor msg -> NodePath -> EditorBlockNode -> Html msg
 renderEditorBlockNode editor backwardsPath node =
     renderElementFromSpec editor
         node.parameters
+        []
         backwardsPath
         (case node.childNodes of
             BlockArray l ->
@@ -541,8 +542,8 @@ renderText editor textLeafContents backwardsPath =
 renderInlineLeaf : Editor msg -> NodePath -> EditorInlineLeaf -> Html msg
 renderInlineLeaf editor backwardsPath leaf =
     case leaf of
-        InlineLeaf elementParameters ->
-            renderElementFromSpec editor elementParameters backwardsPath Array.empty
+        InlineLeaf l ->
+            renderElementFromSpec editor l.parameters l.marks backwardsPath Array.empty
 
         TextLeaf v ->
             renderText editor v backwardsPath
