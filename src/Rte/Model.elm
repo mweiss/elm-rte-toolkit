@@ -120,6 +120,15 @@ type alias InlineLeafArrayContents =
     { array : Array EditorInlineLeaf, tree : Array InlineLeafTree }
 
 
+type alias MarkNodeContents =
+    { mark : Mark, children : Array InlineLeafTree }
+
+
+type InlineLeafTree
+    = MarkNode MarkNodeContents
+    | LeafNode Int
+
+
 findMarksFromInlineLeaf : EditorInlineLeaf -> List Mark
 findMarksFromInlineLeaf leaf =
     case leaf of
@@ -139,23 +148,23 @@ inlineLeafArray arr =
 
 
 marksToMarkNodeList : List (List Mark) -> Array InlineLeafTree
-marksToMarkNodeList =
-    marksToMarkNodeListRec 0
+marksToMarkNodeList markLists =
+    marksToMarkNodeListRec (List.indexedMap Tuple.pair markLists)
 
 
-marksToMarkNodeListRec : Int -> List (List Mark) -> Array InlineLeafTree
-marksToMarkNodeListRec offset markLists =
+marksToMarkNodeListRec : List ( Int, List Mark ) -> Array InlineLeafTree
+marksToMarkNodeListRec indexedMarkLists =
     Array.fromList <|
         List.concatMap
             (\( ( i, ( m, rest ) ), groupRest ) ->
                 case m of
                     Nothing ->
-                        LeafNode (i + offset) :: List.map (\( j, _ ) -> LeafNode <| j + offset) groupRest
+                        LeafNode i :: List.map (\( j, _ ) -> LeafNode <| j) groupRest
 
                     Just mark ->
                         [ MarkNode
                             { mark = mark
-                            , children = marksToMarkNodeListRec i (rest :: List.map (\( _, ( _, r ) ) -> r) groupRest)
+                            , children = marksToMarkNodeListRec (( i, rest ) :: List.map (\( j, ( _, r ) ) -> ( j, r )) groupRest)
                             }
                         ]
             )
@@ -163,8 +172,7 @@ marksToMarkNodeListRec offset markLists =
             List.Extra.groupWhile
                 (\( _, ( m1, _ ) ) ( _, ( m2, _ ) ) -> m1 == m2)
             <|
-                List.indexedMap Tuple.pair <|
-                    List.map (\a -> ( List.head a, List.drop 1 a )) markLists
+                List.map (\( i, a ) -> ( i, ( List.head a, List.drop 1 a ) )) indexedMarkLists
 
 
 type alias InlineLeafContents =
@@ -406,12 +414,3 @@ selectionAnnotation =
 selectableAnnotation : Annotation
 selectableAnnotation =
     "__selectable__"
-
-
-type alias MarkNodeContents =
-    { mark : Mark, children : Array InlineLeafTree }
-
-
-type InlineLeafTree
-    = MarkNode MarkNodeContents
-    | LeafNode Int
