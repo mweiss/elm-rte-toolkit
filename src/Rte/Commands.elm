@@ -7,11 +7,52 @@ import List.Extra
 import Regex
 import Rte.Annotation exposing (clearAnnotations)
 import Rte.DeleteWord as DeleteWord
-import Rte.Marks exposing (ToggleAction(..), findMarksFromInlineLeaf, hasMarkWithName, toggle, toggleMark)
-import Rte.Model exposing (ChildNodes(..), Command, CommandBinding(..), CommandMap, Editor, EditorBlockNode, EditorInlineLeaf(..), EditorState, ElementParameters, Mark, NodePath, Selection)
-import Rte.Node exposing (EditorFragment(..), EditorNode(..), allRange, concatMap, findBackwardFromExclusive, findClosestBlockPath, findForwardFrom, findForwardFromExclusive, findTextBlockNodeAncestor, indexedFoldl, indexedMap, isSelectable, joinBlocks, map, next, nodeAt, previous, removeInRange, removeNodeAndEmptyParents, replace, replaceWithFragment, splitBlockAtPathAndOffset, splitTextLeaf)
+import Rte.Marks
+    exposing
+        ( ToggleAction(..)
+        , hasMarkWithName
+        , toggle
+        , toggleMark
+        )
+import Rte.Model exposing (ChildNodes(..), Command, CommandBinding(..), CommandMap, Editor, EditorBlockNode, EditorInlineLeaf(..), EditorState, ElementParameters, Mark, NodePath, Selection, findMarksFromInlineLeaf, inlineLeafArray)
+import Rte.Node
+    exposing
+        ( EditorFragment(..)
+        , EditorNode(..)
+        , allRange
+        , concatMap
+        , findBackwardFromExclusive
+        , findClosestBlockPath
+        , findForwardFrom
+        , findForwardFromExclusive
+        , findTextBlockNodeAncestor
+        , indexedFoldl
+        , indexedMap
+        , isSelectable
+        , joinBlocks
+        , map
+        , next
+        , nodeAt
+        , previous
+        , removeInRange
+        , removeNodeAndEmptyParents
+        , replace
+        , replaceWithFragment
+        , splitBlockAtPathAndOffset
+        , splitTextLeaf
+        )
 import Rte.NodePath as NodePath exposing (commonAncestor, decrement, increment, parent, toString)
-import Rte.Selection exposing (caretSelection, clearSelectionAnnotations, isCollapsed, markSelection, normalizeSelection, rangeSelection, selectionFromMarks, singleNodeRangeSelection)
+import Rte.Selection
+    exposing
+        ( caretSelection
+        , clearSelectionAnnotations
+        , isCollapsed
+        , markSelection
+        , normalizeSelection
+        , rangeSelection
+        , selectionFromMarks
+        , singleNodeRangeSelection
+        )
 import Set
 
 
@@ -197,7 +238,7 @@ joinBackward editorState =
                                 -- given text block
                                 case n.childNodes of
                                     InlineLeafArray a ->
-                                        case Array.get (Array.length a - 1) a of
+                                        case Array.get (Array.length a.array - 1) a.array of
                                             Nothing ->
                                                 Err "There must be at least one element in the inline node to join with"
 
@@ -206,10 +247,10 @@ joinBackward editorState =
                                                     newSelection =
                                                         case leaf of
                                                             TextLeaf tl ->
-                                                                caretSelection (p ++ [ Array.length a - 1 ]) (String.length tl.text)
+                                                                caretSelection (p ++ [ Array.length a.array - 1 ]) (String.length tl.text)
 
                                                             InlineLeaf _ ->
-                                                                caretSelection (p ++ [ Array.length a - 1 ]) 0
+                                                                caretSelection (p ++ [ Array.length a.array - 1 ]) 0
                                                 in
                                                 joinForward { editorState | selection = Just newSelection }
 
@@ -235,7 +276,7 @@ selectionIsBeginningOfTextBlock selection root =
                                 False
 
                             Just i ->
-                                if i /= 0 || Array.isEmpty a then
+                                if i /= 0 || Array.isEmpty a.array then
                                     False
 
                                 else
@@ -263,11 +304,11 @@ selectionIsEndOfTextBlock selection root =
                                 False
 
                             Just i ->
-                                if i /= Array.length a - 1 then
+                                if i /= Array.length a.array - 1 then
                                     False
 
                                 else
-                                    case Array.get i a of
+                                    case Array.get i a.array of
                                         Nothing ->
                                             False
 
@@ -1089,7 +1130,7 @@ wrap contentsMapFunc elementParameters editorState =
                                         BlockArray (Array.map contentsMapFunc (Array.fromList [ bn ]))
 
                                     InlineLeafWrapper il ->
-                                        InlineLeafArray (Array.fromList [ il ])
+                                        inlineLeafArray (Array.fromList [ il ])
 
                             newNode =
                                 { parameters = elementParameters, childNodes = newChildren }
@@ -1377,12 +1418,12 @@ isEmptyTextBlock node =
         BlockNodeWrapper bn ->
             case bn.childNodes of
                 InlineLeafArray a ->
-                    case Array.get 0 a of
+                    case Array.get 0 a.array of
                         Nothing ->
-                            Array.isEmpty a
+                            Array.isEmpty a.array
 
                         Just n ->
-                            Array.length a
+                            Array.length a.array
                                 == 1
                                 && (case n of
                                         TextLeaf t ->
@@ -1720,7 +1761,7 @@ backspaceWord editorState =
                                         -- group text nodes together
                                         List.Extra.groupWhile
                                             groupSameTypeInlineLeaf
-                                            (Array.toList arr)
+                                            (Array.toList arr.array)
                                 in
                                 case List.Extra.last selection.anchorNode of
                                     Nothing ->
@@ -1987,7 +2028,7 @@ deleteWord editorState =
                                     groupedLeaves =
                                         List.Extra.groupWhile
                                             groupSameTypeInlineLeaf
-                                            (Array.toList arr)
+                                            (Array.toList arr.array)
                                 in
                                 case List.Extra.last selection.anchorNode of
                                     Nothing ->

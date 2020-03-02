@@ -64,7 +64,7 @@ domToEditor spec node path =
                                                 Just (i :: p)
 
                             InlineLeafArray l ->
-                                case Array.get i l of
+                                case Array.get i l.array of
                                     Nothing ->
                                         Nothing
 
@@ -107,7 +107,7 @@ editorToDom spec node path =
                                             Just (childPath ++ (x :: p))
 
                         InlineLeafArray l ->
-                            case Array.get x l of
+                            case Array.get x l.array of
                                 Nothing ->
                                     Nothing
 

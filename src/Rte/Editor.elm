@@ -264,8 +264,8 @@ applyTextChange editorNode ( path, text ) =
 
         x :: xs ->
             case editorNode.childNodes of
-                BlockArray list ->
-                    case Array.get x list of
+                BlockArray a ->
+                    case Array.get x a of
                         Nothing ->
                             Nothing
 
@@ -275,21 +275,21 @@ applyTextChange editorNode ( path, text ) =
                                     Nothing
 
                                 Just textChangeNode ->
-                                    Just { editorNode | childNodes = BlockArray <| Array.set x textChangeNode list }
+                                    Just { editorNode | childNodes = BlockArray <| Array.set x textChangeNode a }
 
-                InlineLeafArray list ->
+                InlineLeafArray a ->
                     if not <| List.isEmpty xs then
                         Nothing
 
                     else
-                        case Array.get x list of
+                        case Array.get x a.array of
                             Nothing ->
                                 Nothing
 
                             Just inlineNode ->
                                 case inlineNode of
                                     TextLeaf contents ->
-                                        Just { editorNode | childNodes = InlineLeafArray <| Array.set x (TextLeaf { contents | text = String.replace zeroWidthSpace "" text }) list }
+                                        Just { editorNode | childNodes = inlineLeafArray <| Array.set x (TextLeaf { contents | text = String.replace zeroWidthSpace "" text }) a.array }
 
                                     _ ->
                                         Nothing
@@ -517,7 +517,7 @@ renderEditorBlockNode editor backwardsPath node =
                 Array.indexedMap (\i n -> renderEditorBlockNode editor (i :: backwardsPath) n) l
 
             InlineLeafArray l ->
-                Array.indexedMap (\i n -> renderInlineLeaf editor (i :: backwardsPath) n) l
+                Array.indexedMap (\i n -> renderInlineLeaf editor (i :: backwardsPath) n) l.array
 
             Leaf ->
                 Array.empty

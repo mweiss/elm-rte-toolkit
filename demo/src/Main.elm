@@ -11,7 +11,7 @@ import Rte.Decorations exposing (addElementDecoration, emptyDecorations, selecta
 import Rte.Editor exposing (internalUpdate)
 import Rte.EditorUtils exposing (applyCommand)
 import Rte.List exposing (ListType, defaultListDefinition)
-import Rte.Model exposing (ChildNodes(..), Editor, EditorAttribute(..), EditorBlockNode, EditorInlineLeaf(..), InternalEditorMsg(..), Mark, selectableAnnotation)
+import Rte.Model exposing (ChildNodes(..), Editor, EditorAttribute(..), EditorBlockNode, EditorInlineLeaf(..), InternalEditorMsg(..), Mark, inlineLeafArray, selectableAnnotation)
 import Set
 
 
@@ -48,7 +48,7 @@ paragraphWithImage =
         , attributes = []
         , annotations = Set.empty
         }
-    , childNodes = InlineLeafArray (Array.fromList [ TextLeaf { text = "", marks = [], annotations = Set.empty }, inlineImageNode, TextLeaf { text = "", marks = [], annotations = Set.empty } ])
+    , childNodes = inlineLeafArray (Array.fromList [ TextLeaf { text = "", marks = [], annotations = Set.empty }, inlineImageNode, TextLeaf { text = "", marks = [], annotations = Set.empty } ])
     }
 
 
@@ -70,7 +70,7 @@ initialEditorNode =
         , attributes = []
         , annotations = Set.empty
         }
-    , childNodes = InlineLeafArray (Array.fromList [ TextLeaf { text = "This is some sample text", marks = [], annotations = Set.empty } ])
+    , childNodes = inlineLeafArray (Array.fromList [ TextLeaf { text = "This is some sample text", marks = [], annotations = Set.empty } ])
     }
 
 

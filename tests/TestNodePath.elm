@@ -2,16 +2,7 @@ module TestNodePath exposing (..)
 
 import Array exposing (Array)
 import Expect
-import Rte.Model
-    exposing
-        ( ChildNodes(..)
-        , EditorBlockNode
-        , EditorInlineLeaf(..)
-        , ElementParameters
-        , HtmlNode(..)
-        , Mark
-        , Spec
-        )
+import Rte.Model exposing (ChildNodes(..), EditorBlockNode, EditorInlineLeaf(..), ElementParameters, HtmlNode(..), Mark, Spec, inlineLeafArray)
 import Rte.NodePath
     exposing
         ( commonAncestor
@@ -45,14 +36,14 @@ boldMark =
 
 paragraphNode =
     { parameters = paragraphParams
-    , childNodes = InlineLeafArray <| Array.fromList [ TextLeaf { text = "sample", marks = [], annotations = Set.empty } ]
+    , childNodes = inlineLeafArray <| Array.fromList [ TextLeaf { text = "sample", marks = [], annotations = Set.empty } ]
     }
 
 
 boldParagraphNode =
     { parameters = paragraphParams
     , childNodes =
-        InlineLeafArray <|
+        inlineLeafArray <|
             Array.fromList
                 [ TextLeaf
                     { text = "sample"
@@ -67,7 +58,7 @@ boldParagraphNode =
 crazyBlockNode =
     { parameters = crazyBlockParams
     , childNodes =
-        InlineLeafArray <|
+        inlineLeafArray <|
             Array.fromList
                 [ TextLeaf
                     { text = "sample"
@@ -80,7 +71,7 @@ crazyBlockNode =
 
 codeBlockNode =
     { parameters = codeBlockParams
-    , childNodes = InlineLeafArray <| Array.fromList [ TextLeaf { text = "sample", marks = [], annotations = Set.empty } ]
+    , childNodes = inlineLeafArray <| Array.fromList [ TextLeaf { text = "sample", marks = [], annotations = Set.empty } ]
     }
 
 

@@ -31,6 +31,7 @@ import Array exposing (Array)
 import Dict exposing (Dict)
 import Html
 import Json.Encode as E
+import List.Extra
 import Set exposing (Set)
 
 
@@ -111,8 +112,59 @@ other block nodes as children, inline leaf nodes as children, or it may be a lea
 -}
 type ChildNodes
     = BlockArray (Array EditorBlockNode)
-    | InlineLeafArray (Array EditorInlineLeaf)
+    | InlineLeafArray InlineLeafArrayContents
     | Leaf
+
+
+type alias InlineLeafArrayContents =
+    { array : Array EditorInlineLeaf, tree : Array InlineLeafTree }
+
+
+findMarksFromInlineLeaf : EditorInlineLeaf -> List Mark
+findMarksFromInlineLeaf leaf =
+    case leaf of
+        TextLeaf l ->
+            l.marks
+
+        InlineLeaf l ->
+            l.marks
+
+
+inlineLeafArray : Array EditorInlineLeaf -> ChildNodes
+inlineLeafArray arr =
+    InlineLeafArray
+        { array = arr
+        , tree = marksToMarkNodeList (List.map findMarksFromInlineLeaf (Array.toList arr))
+        }
+
+
+marksToMarkNodeList : List (List Mark) -> Array InlineLeafTree
+marksToMarkNodeList =
+    marksToMarkNodeListRec 0
+
+
+marksToMarkNodeListRec : Int -> List (List Mark) -> Array InlineLeafTree
+marksToMarkNodeListRec offset markLists =
+    Array.fromList <|
+        List.concatMap
+            (\( ( i, ( m, rest ) ), groupRest ) ->
+                case m of
+                    Nothing ->
+                        LeafNode (i + offset) :: List.map (\( j, _ ) -> LeafNode <| j + offset) groupRest
+
+                    Just mark ->
+                        [ MarkNode
+                            { mark = mark
+                            , children = marksToMarkNodeListRec i (rest :: List.map (\( _, ( _, r ) ) -> r) groupRest)
+                            }
+                        ]
+            )
+        <|
+            List.Extra.groupWhile
+                (\( _, ( m1, _ ) ) ( _, ( m2, _ ) ) -> m1 == m2)
+            <|
+                List.indexedMap Tuple.pair <|
+                    List.map (\a -> ( List.head a, List.drop 1 a )) markLists
 
 
 type alias InlineLeafContents =
@@ -354,3 +406,12 @@ selectionAnnotation =
 selectableAnnotation : Annotation
 selectableAnnotation =
     "__selectable__"
+
+
+type alias MarkNodeContents =
+    { mark : Mark, children : Array InlineLeafTree }
+
+
+type InlineLeafTree
+    = MarkNode MarkNodeContents
+    | LeafNode Int

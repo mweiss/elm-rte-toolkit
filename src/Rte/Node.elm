@@ -34,7 +34,7 @@ module Rte.Node exposing
 
 import Array exposing (Array)
 import Array.Extra
-import Rte.Model exposing (Annotation, ChildNodes(..), EditorBlockNode, EditorInlineLeaf(..), HtmlNode(..), NodePath, TextLeafContents, selectableAnnotation)
+import Rte.Model exposing (Annotation, ChildNodes(..), EditorBlockNode, EditorInlineLeaf(..), HtmlNode(..), NodePath, TextLeafContents, inlineLeafArray, selectableAnnotation)
 import Rte.NodePath exposing (parent)
 import Set
 
@@ -71,9 +71,9 @@ findLastPath node =
         InlineLeafArray a ->
             let
                 lastIndex =
-                    Array.length a - 1
+                    Array.length a.array - 1
             in
-            case Array.get lastIndex a of
+            case Array.get lastIndex a.array of
                 Nothing ->
                     ( [], BlockNodeWrapper node )
 
@@ -113,7 +113,7 @@ previous path node =
                             Just ( prevIndex :: p, n )
 
                 InlineLeafArray a ->
-                    case Array.get prevIndex a of
+                    case Array.get prevIndex a.array of
                         Nothing ->
                             Just ( [], BlockNodeWrapper node )
 
@@ -139,7 +139,7 @@ previous path node =
                                     Just ( x :: p, n )
 
                 InlineLeafArray a ->
-                    case Array.get (x - 1) a of
+                    case Array.get (x - 1) a.array of
                         Nothing ->
                             Just ( [], BlockNodeWrapper node )
 
@@ -164,7 +164,7 @@ next path node =
                             Just ( [ 0 ], BlockNodeWrapper b )
 
                 InlineLeafArray a ->
-                    case Array.get 0 a of
+                    case Array.get 0 a.array of
                         Nothing ->
                             Nothing
 
@@ -195,7 +195,7 @@ next path node =
                                     Just ( x :: p, n )
 
                 InlineLeafArray a ->
-                    case Array.get (x + 1) a of
+                    case Array.get (x + 1) a.array of
                         Nothing ->
                             Nothing
 
@@ -291,7 +291,7 @@ concatMap func node =
                     BlockArray <| Array.fromList (List.map (concatMap func) c)
 
                 InlineLeafArray a ->
-                    InlineLeafArray <|
+                    inlineLeafArray <|
                         Array.fromList
                             (List.concatMap
                                 (\x ->
@@ -303,7 +303,7 @@ concatMap func node =
                                             [ v ]
                                 )
                              <|
-                                List.concatMap func (List.map InlineLeafWrapper (Array.toList a))
+                                List.concatMap func (List.map InlineLeafWrapper (Array.toList a.array))
                             )
     in
     { node | childNodes = newChildren }
@@ -335,7 +335,7 @@ map func node =
                                         a
 
                             InlineLeafArray a ->
-                                InlineLeafArray <|
+                                inlineLeafArray <|
                                     Array.map
                                         (\v ->
                                             case map func (InlineLeafWrapper v) of
@@ -345,7 +345,7 @@ map func node =
                                                 _ ->
                                                     v
                                         )
-                                        a
+                                        a.array
 
                             Leaf ->
                                 Leaf
@@ -386,7 +386,7 @@ indexedMapRec path func node =
                                         a
 
                             InlineLeafArray a ->
-                                InlineLeafArray <|
+                                inlineLeafArray <|
                                     Array.indexedMap
                                         (\i v ->
                                             case indexedMapRec (path ++ [ i ]) func (InlineLeafWrapper v) of
@@ -396,7 +396,7 @@ indexedMapRec path func node =
                                                 _ ->
                                                     v
                                         )
-                                        a
+                                        a.array
 
                             Leaf ->
                                 Leaf
@@ -419,7 +419,7 @@ foldr func acc node =
                                 Array.empty
 
                             InlineLeafArray a ->
-                                Array.map InlineLeafWrapper a
+                                Array.map InlineLeafWrapper a.array
 
                             BlockArray a ->
                                 Array.map BlockNodeWrapper a
@@ -447,7 +447,7 @@ foldl func acc node =
                             Array.empty
 
                         InlineLeafArray a ->
-                            Array.map InlineLeafWrapper a
+                            Array.map InlineLeafWrapper a.array
 
                         BlockArray a ->
                             Array.map BlockNodeWrapper a
@@ -483,7 +483,7 @@ indexedFoldrRec path func acc node =
                                     Array.empty
 
                                 InlineLeafArray a ->
-                                    Array.map InlineLeafWrapper a
+                                    Array.map InlineLeafWrapper a.array
 
                                 BlockArray a ->
                                     Array.map BlockNodeWrapper a
@@ -517,7 +517,7 @@ indexedFoldlRec path func acc node =
                                 Array.empty
 
                             InlineLeafArray a ->
-                                Array.map InlineLeafWrapper a
+                                Array.map InlineLeafWrapper a.array
 
                             BlockArray a ->
                                 Array.map BlockNodeWrapper a
@@ -570,13 +570,13 @@ replaceWithFragment path fragment root =
                             Ok
                                 { root
                                     | childNodes =
-                                        InlineLeafArray
+                                        inlineLeafArray
                                             (Array.append
                                                 (Array.append
-                                                    (Array.Extra.sliceUntil x a)
+                                                    (Array.Extra.sliceUntil x a.array)
                                                     leaves
                                                 )
-                                                (Array.Extra.sliceFrom (x + 1) a)
+                                                (Array.Extra.sliceFrom (x + 1) a.array)
                                             )
                                 }
 
@@ -697,16 +697,16 @@ nodeAt path node =
 
         x :: xs ->
             case node.childNodes of
-                BlockArray list ->
-                    case Array.get x list of
+                BlockArray arr ->
+                    case Array.get x arr of
                         Nothing ->
                             Nothing
 
                         Just childNode ->
                             nodeAt xs childNode
 
-                InlineLeafArray list ->
-                    case Array.get x list of
+                InlineLeafArray a ->
+                    case Array.get x a.array of
                         Nothing ->
                             Nothing
 
@@ -743,7 +743,7 @@ removeInRange start end node =
                         Array.length a
 
                     InlineLeafArray a ->
-                        Array.length a
+                        Array.length a.array
 
                     Leaf ->
                         0
@@ -772,7 +772,7 @@ removeInRange start end node =
 
             InlineLeafArray a ->
                 if List.isEmpty startRest && List.isEmpty endRest then
-                    { node | childNodes = InlineLeafArray <| Array.Extra.removeAt startIndex a }
+                    { node | childNodes = inlineLeafArray <| Array.Extra.removeAt startIndex a.array }
 
                 else
                     node
@@ -826,7 +826,7 @@ removeInRange start end node =
                              else
                                 startIndex + 1
                             )
-                            a
+                            a.array
 
                     right =
                         Array.Extra.sliceFrom
@@ -836,9 +836,9 @@ removeInRange start end node =
                              else
                                 endIndex
                             )
-                            a
+                            a.array
                 in
-                { node | childNodes = InlineLeafArray <| Array.append left right }
+                { node | childNodes = inlineLeafArray <| Array.append left right }
 
             Leaf ->
                 node
@@ -856,7 +856,7 @@ removeNodeAndEmptyParents path node =
                     { node | childNodes = BlockArray <| Array.Extra.removeAt x a }
 
                 InlineLeafArray a ->
-                    { node | childNodes = InlineLeafArray <| Array.Extra.removeAt x a }
+                    { node | childNodes = inlineLeafArray <| Array.Extra.removeAt x a.array }
 
                 Leaf ->
                     node
@@ -882,7 +882,7 @@ removeNodeAndEmptyParents path node =
                                         { node | childNodes = BlockArray <| Array.set x newNode a }
 
                                 InlineLeafArray newNodeChildren ->
-                                    if Array.isEmpty newNodeChildren then
+                                    if Array.isEmpty newNodeChildren.array then
                                         { node | childNodes = BlockArray <| Array.Extra.removeAt x a }
 
                                     else
@@ -916,8 +916,8 @@ splitBlockAtPathAndOffset path offset node =
 
                 InlineLeafArray a ->
                     Just
-                        ( { node | childNodes = InlineLeafArray (Array.Extra.sliceUntil offset a) }
-                        , { node | childNodes = InlineLeafArray (Array.Extra.sliceFrom offset a) }
+                        ( { node | childNodes = inlineLeafArray (Array.Extra.sliceUntil offset a.array) }
+                        , { node | childNodes = inlineLeafArray (Array.Extra.sliceFrom offset a.array) }
                         )
 
                 Leaf ->
@@ -942,7 +942,7 @@ splitBlockAtPathAndOffset path offset node =
                                         )
 
                 InlineLeafArray a ->
-                    case Array.get x a of
+                    case Array.get x a.array of
                         Nothing ->
                             Nothing
 
@@ -954,14 +954,14 @@ splitBlockAtPathAndOffset path offset node =
                                             splitTextLeaf offset tl
                                     in
                                     Just
-                                        ( { node | childNodes = InlineLeafArray (Array.set x (TextLeaf before) (Array.Extra.sliceUntil (x + 1) a)) }
-                                        , { node | childNodes = InlineLeafArray (Array.set 0 (TextLeaf after) (Array.Extra.sliceFrom x a)) }
+                                        ( { node | childNodes = inlineLeafArray (Array.set x (TextLeaf before) (Array.Extra.sliceUntil (x + 1) a.array)) }
+                                        , { node | childNodes = inlineLeafArray (Array.set 0 (TextLeaf after) (Array.Extra.sliceFrom x a.array)) }
                                         )
 
                                 InlineLeaf _ ->
                                     Just
-                                        ( { node | childNodes = InlineLeafArray (Array.Extra.sliceUntil x a) }
-                                        , { node | childNodes = InlineLeafArray (Array.Extra.sliceFrom x a) }
+                                        ( { node | childNodes = inlineLeafArray (Array.Extra.sliceUntil x a.array) }
+                                        , { node | childNodes = inlineLeafArray (Array.Extra.sliceFrom x a.array) }
                                         )
 
                 Leaf ->
@@ -1026,7 +1026,7 @@ joinBlocks b1 b2 =
         InlineLeafArray a1 ->
             case b2.childNodes of
                 InlineLeafArray a2 ->
-                    Just { b1 | childNodes = InlineLeafArray (Array.append a1 a2) }
+                    Just { b1 | childNodes = inlineLeafArray (Array.append a1.array a2.array) }
 
                 _ ->
                     Nothing

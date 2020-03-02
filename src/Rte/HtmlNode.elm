@@ -49,7 +49,7 @@ childNodesToHtmlNode spec childNodes =
             Array.map (editorBlockNodeToHtmlNode spec) blockArray
 
         InlineLeafArray inlineLeafArray ->
-            Array.map (editorInlineLeafToHtmlNode spec) inlineLeafArray
+            Array.map (editorInlineLeafToHtmlNode spec) inlineLeafArray.array
 
         Leaf ->
             Array.empty

@@ -2,7 +2,7 @@ module Rte.EditorState exposing (..)
 
 import Array exposing (Array)
 import List.Extra
-import Rte.Model exposing (ChildNodes(..), EditorBlockNode, EditorInlineLeaf(..), EditorState, Mark, NodePath, selectionAnnotation)
+import Rte.Model exposing (ChildNodes(..), EditorBlockNode, EditorInlineLeaf(..), EditorState, Mark, NodePath, inlineLeafArray, selectionAnnotation)
 import Rte.Node exposing (EditorNode(..), findTextBlockNodeAncestor, map)
 import Rte.Selection exposing (clearSelectionAnnotations, markSelection, rangeSelection)
 import Set
@@ -77,9 +77,9 @@ reduceNode node =
                                 BlockNodeWrapper
                                     { bn
                                         | childNodes =
-                                            InlineLeafArray <|
+                                            inlineLeafArray <|
                                                 Array.fromList
-                                                    (mergeSimilarInlineLeaves (removeExtraEmptyTextLeaves (Array.toList a)))
+                                                    (mergeSimilarInlineLeaves (removeExtraEmptyTextLeaves (Array.toList a.array)))
                                     }
 
                             _ ->
@@ -153,10 +153,10 @@ translatePath old new path offset =
                                             InlineLeafArray newA ->
                                                 let
                                                     pOff =
-                                                        parentOffset oldA lastIndex offset
+                                                        parentOffset oldA.array lastIndex offset
 
                                                     ( cI, cO ) =
-                                                        childOffset newA pOff
+                                                        childOffset newA.array pOff
 
                                                     newPath =
                                                         List.take (List.length path - 1) path ++ [ cI ]

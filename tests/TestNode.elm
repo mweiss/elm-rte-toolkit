@@ -2,7 +2,7 @@ module TestNode exposing (..)
 
 import Array
 import Expect
-import Rte.Model exposing (Annotation, ChildNodes(..), EditorAttribute(..), EditorInlineLeaf(..), Mark, NodePath, selectableAnnotation)
+import Rte.Model exposing (Annotation, ChildNodes(..), EditorAttribute(..), EditorInlineLeaf(..), Mark, NodePath, inlineLeafArray, selectableAnnotation)
 import Rte.Node
     exposing
         ( EditorFragment(..)
@@ -49,7 +49,7 @@ rootNode =
 pNode =
     { parameters = { name = "p", attributes = [], annotations = Set.empty }
     , childNodes =
-        InlineLeafArray <|
+        inlineLeafArray <|
             Array.fromList [ textNode1, textNode2 ]
     }
 
@@ -220,7 +220,7 @@ rootNodeWithPathAnnotation =
 pHtmlNodeWithPathAnnotation =
     { parameters = { name = "p", attributes = [], annotations = Set.fromList [ "0" ] }
     , childNodes =
-        InlineLeafArray <|
+        inlineLeafArray <|
             Array.fromList [ textNode1WithPathAnnotation, textNode2WithPathAnnotation ]
     }
 
@@ -254,7 +254,7 @@ rootNodeWithSameAnnotation =
 pHtmlNodeWithSameAnnotation =
     { parameters = { name = "p", attributes = [], annotations = Set.fromList [ dummyAnnotation ] }
     , childNodes =
-        InlineLeafArray <|
+        inlineLeafArray <|
             Array.fromList [ textNode1WithSameAnnotation, textNode2WithSameAnnotation ]
     }
 
@@ -447,7 +447,7 @@ removedRootNode =
 removedPHtmlNode =
     { parameters = { name = "p", attributes = [], annotations = Set.empty }
     , childNodes =
-        InlineLeafArray <|
+        inlineLeafArray <|
             Array.fromList [ textNode2 ]
     }
 
@@ -463,7 +463,7 @@ removedRootAll =
 removedPHtmlNodeAll =
     { parameters = { name = "p", attributes = [], annotations = Set.empty }
     , childNodes =
-        InlineLeafArray <|
+        inlineLeafArray <|
             Array.empty
     }
 
@@ -515,7 +515,7 @@ replaceRootPNode =
 replacePNode =
     { parameters = { name = "p", attributes = [], annotations = Set.empty }
     , childNodes =
-        InlineLeafArray <|
+        inlineLeafArray <|
             Array.fromList [ textNode2, textNode2 ]
     }
 
@@ -577,7 +577,7 @@ doubleRoot =
 doublePNode =
     { parameters = { name = "p", attributes = [], annotations = Set.empty }
     , childNodes =
-        InlineLeafArray <|
+        inlineLeafArray <|
             Array.fromList [ textNode1, textNode1, textNode2, textNode2 ]
     }
 
@@ -604,7 +604,7 @@ textLeafAfterSplitContents =
 nodeBeforeTextLeafSplit =
     { parameters = { name = "div", attributes = [], annotations = Set.empty }
     , childNodes =
-        InlineLeafArray <|
+        inlineLeafArray <|
             Array.fromList [ TextLeaf textLeafBeforeSplitContents ]
     }
 
@@ -612,7 +612,7 @@ nodeBeforeTextLeafSplit =
 nodeAfterTextLeafSplit =
     { parameters = { name = "div", attributes = [], annotations = Set.empty }
     , childNodes =
-        InlineLeafArray <|
+        inlineLeafArray <|
             Array.fromList [ TextLeaf textLeafAfterSplitContents ]
     }
 
@@ -620,7 +620,7 @@ nodeAfterTextLeafSplit =
 nodeWithTextLeafToSplit =
     { parameters = { name = "div", attributes = [], annotations = Set.empty }
     , childNodes =
-        InlineLeafArray <|
+        inlineLeafArray <|
             Array.fromList [ textNode1 ]
     }
 
@@ -632,21 +632,21 @@ inlineImg =
 nodeAfterInlineLeafSplit =
     { parameters = { name = "div", attributes = [], annotations = Set.empty }
     , childNodes =
-        InlineLeafArray <|
+        inlineLeafArray <|
             Array.fromList [ inlineImg ]
     }
 
 
 nodeBeforeInlineLeafSplit =
     { parameters = { name = "div", attributes = [], annotations = Set.empty }
-    , childNodes = InlineLeafArray <| Array.empty
+    , childNodes = inlineLeafArray <| Array.empty
     }
 
 
 nodeWithInlineLeafToSplit =
     { parameters = { name = "div", attributes = [], annotations = Set.empty }
     , childNodes =
-        InlineLeafArray <|
+        inlineLeafArray <|
             Array.fromList [ inlineImg ]
     }
 
