@@ -17,10 +17,42 @@ module Rte.NodePath exposing
 
 -}
 
-import Array
+import Array exposing (Array)
 import List.Extra
-import Rte.Model exposing (ChildNodes(..), EditorBlockNode, EditorInlineLeaf(..), ElementParameters, HtmlNode(..), Mark, NodePath, Selection, Spec)
-import Rte.Spec exposing (childNodesPlaceholder, findMarkDefinitionsFromSpec, findNodeDefinitionFromSpec)
+import Rte.Model exposing (ChildNodes(..), EditorBlockNode, EditorInlineLeaf(..), ElementParameters, HtmlNode(..), InlineLeafTree(..), Mark, NodePath, Selection, Spec)
+import Rte.Spec exposing (childNodesPlaceholder, findMarkDefinitionFromSpec, findMarkDefinitionsFromSpec, findNodeDefinitionFromSpec)
+
+
+domToEditorInlineLeafTree : Spec -> InlineLeafTree -> NodePath -> Maybe NodePath
+domToEditorInlineLeafTree spec tree path =
+    case tree of
+        LeafNode i ->
+            Just [ i ]
+
+        MarkNode n ->
+            let
+                markDefinition =
+                    findMarkDefinitionFromSpec n.mark.name spec
+
+                structure =
+                    markDefinition.toHtmlNode n.mark childNodesPlaceholder
+            in
+            case removePathUpToChildContents structure path of
+                Nothing ->
+                    Nothing
+
+                Just rest ->
+                    case List.head rest of
+                        Nothing ->
+                            Just []
+
+                        Just i ->
+                            case Array.get i n.children of
+                                Nothing ->
+                                    Nothing
+
+                                Just l ->
+                                    domToEditorInlineLeafTree spec l (List.drop 1 rest)
 
 
 {-| Translates a DOM node path to an editor node path. Returns Nothing if the
@@ -64,13 +96,13 @@ domToEditor spec node path =
                                                 Just (i :: p)
 
                             InlineLeafArray l ->
-                                case Array.get i l.array of
+                                case Array.get i l.tree of
                                     Nothing ->
                                         Nothing
 
-                                    Just _ ->
+                                    Just tree ->
                                         --  TODO:  we assume the content of the leaf node is valid, but maybe we should validate its content?
-                                        Just [ i ]
+                                        domToEditorInlineLeafTree spec tree (List.drop 1 rest)
 
                             Leaf ->
                                 -- If we still have path left, it means the path is invalid, so we return Nothing
@@ -87,7 +119,7 @@ editorToDom spec node path =
             Just []
 
         x :: xs ->
-            case pathToChildContentsFromElementParameters spec [] node.parameters of
+            case pathToChildContentsFromElementParameters spec node.parameters of
                 Nothing ->
                     Nothing
 
@@ -107,27 +139,17 @@ editorToDom spec node path =
                                             Just (childPath ++ (x :: p))
 
                         InlineLeafArray l ->
-                            case Array.get x l.array of
+                            case Array.get x l.reverseLookup of
                                 Nothing ->
                                     Nothing
 
-                                Just childNode ->
-                                    case childNode of
-                                        TextLeaf contents ->
-                                            case pathToChildContentsFromMarks spec contents.marks of
-                                                Nothing ->
-                                                    Nothing
+                                Just inlineTreePath ->
+                                    case pathToChildContentsFromInlineTreePath spec l.array l.tree inlineTreePath of
+                                        Nothing ->
+                                            Nothing
 
-                                                Just childMarkPath ->
-                                                    Just (childPath ++ (x :: childMarkPath))
-
-                                        InlineLeaf contents ->
-                                            case pathToChildContentsFromElementParameters spec contents.marks contents.parameters of
-                                                Nothing ->
-                                                    Nothing
-
-                                                Just childNodePath ->
-                                                    Just (childPath ++ (x :: childNodePath))
+                                        Just childInlineTreePath ->
+                                            Just (childPath ++ childInlineTreePath)
 
                         Leaf ->
                             Nothing
@@ -221,61 +243,68 @@ pathToChildContents node =
 {- Helper method that returns the path to the child contents from a list of marks -}
 
 
-pathToChildContentsFromMarks : Spec -> List Mark -> Maybe NodePath
-pathToChildContentsFromMarks spec marks =
+pathToChildContentsFromMark : Spec -> Mark -> Maybe NodePath
+pathToChildContentsFromMark spec mark =
     let
-        markDefinitions =
-            findMarkDefinitionsFromSpec marks spec
+        markDefinition =
+            findMarkDefinitionFromSpec mark.name spec
     in
-    List.foldl
-        (\( mark, markDefinition ) maybePath ->
-            case maybePath of
-                Nothing ->
-                    Nothing
-
-                Just pathSoFar ->
-                    let
-                        markStructure =
-                            markDefinition.toHtmlNode mark childNodesPlaceholder
-                    in
-                    case pathToChildContents markStructure of
-                        Nothing ->
-                            Nothing
-
-                        Just p ->
-                            Just (pathSoFar ++ 0 :: p)
-        )
-        (Just [])
-        markDefinitions
+    let
+        markStructure =
+            markDefinition.toHtmlNode mark childNodesPlaceholder
+    in
+    pathToChildContents markStructure
 
 
 
 {- Helper method to determine the path to the child contents from an element editor node -}
 
 
-pathToChildContentsFromElementParameters : Spec -> List Mark -> ElementParameters -> Maybe NodePath
-pathToChildContentsFromElementParameters spec marks parameters =
+pathToChildContentsFromElementParameters : Spec -> ElementParameters -> Maybe NodePath
+pathToChildContentsFromElementParameters spec parameters =
     let
         nodeDefinition =
             findNodeDefinitionFromSpec parameters.name spec
 
         nodeStructure =
             nodeDefinition.toHtmlNode parameters childNodesPlaceholder
-
-        maybePathToChildContents =
-            pathToChildContentsFromMarks spec marks
     in
-    case maybePathToChildContents of
-        Nothing ->
+    pathToChildContents nodeStructure
+
+
+pathToChildContentsFromInlineTreePath : Spec -> Array EditorInlineLeaf -> Array InlineLeafTree -> NodePath -> Maybe NodePath
+pathToChildContentsFromInlineTreePath spec array treeArray path =
+    case path of
+        [] ->
             Nothing
 
-        Just markPath ->
-            case pathToChildContents nodeStructure of
+        x :: xs ->
+            case Array.get x treeArray of
                 Nothing ->
                     Nothing
 
-                Just nodePath ->
-                    Just <| markPath ++ nodePath
+                Just tree ->
+                    case tree of
+                        LeafNode i ->
+                            case Array.get i array of
+                                Nothing ->
+                                    Nothing
+
+                                Just _ ->
+                                    Just [ x ]
+
+                        MarkNode n ->
+                            case pathToChildContentsFromMark spec n.mark of
+                                Nothing ->
+                                    Nothing
+
+                                Just p ->
+                                    case pathToChildContentsFromInlineTreePath spec array n.children xs of
+                                        Nothing ->
+                                            Nothing
+
+                                        Just rest ->
+                                            Just <| x :: p ++ rest
 
 
 toString : NodePath -> String

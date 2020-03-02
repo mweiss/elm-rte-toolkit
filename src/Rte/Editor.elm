@@ -461,8 +461,8 @@ renderHtmlNode node decorators vdomChildren backwardsRelativePath =
             Html.text v
 
 
-renderMarkFromSpec : Editor msg -> NodePath -> Mark -> Html msg -> Html msg
-renderMarkFromSpec editor backwardsNodePath mark child =
+renderMarkFromSpec : Editor msg -> NodePath -> Mark -> Array (Html msg) -> Html msg
+renderMarkFromSpec editor backwardsNodePath mark children =
     let
         markDecorators =
             getMarkDecorators mark.name editor.decorations
@@ -472,18 +472,18 @@ renderMarkFromSpec editor backwardsNodePath mark child =
     in
     case List.Extra.find (\m -> m.name == mark.name) editor.spec.marks of
         Nothing ->
-            child
+            Html.span [ Html.Attributes.class "rte-error" ] <| Array.toList children
 
         Just definition ->
             let
                 node =
                     definition.toHtmlNode mark childNodesPlaceholder
             in
-            renderHtmlNode node decorators (Array.fromList [ child ]) []
+            renderHtmlNode node decorators children []
 
 
-renderElementFromSpec : Editor msg -> ElementParameters -> List Mark -> NodePath -> Array (Html msg) -> Html msg
-renderElementFromSpec editor elementParameters marks backwardsNodePath children =
+renderElementFromSpec : Editor msg -> ElementParameters -> NodePath -> Array (Html msg) -> Html msg
+renderElementFromSpec editor elementParameters backwardsNodePath children =
     let
         definition =
             findNodeDefinitionFromSpec elementParameters.name editor.spec
@@ -499,54 +499,63 @@ renderElementFromSpec editor elementParameters marks backwardsNodePath children 
 
         nodeHtml =
             renderHtmlNode node decorators children []
-
-        nodeHtmlWithMarks =
-            List.foldl (renderMarkFromSpec editor backwardsNodePath) nodeHtml marks
     in
-    nodeHtmlWithMarks
+    nodeHtml
+
+
+renderInlineLeafTree : Editor msg -> NodePath -> Array EditorInlineLeaf -> InlineLeafTree -> Html msg
+renderInlineLeafTree editor backwardsPath inlineLeafArray inlineLeafTree =
+    case inlineLeafTree of
+        LeafNode i ->
+            case Array.get i inlineLeafArray of
+                Just l ->
+                    renderInlineLeaf editor (i :: backwardsPath) l
+
+                Nothing ->
+                    -- TODO: Probably not the best thing, but what else can we do if we have an invalid tree?
+                    Html.div [ Html.Attributes.class "rte-error" ] [ Html.text "Invalid leaf tree." ]
+
+        MarkNode n ->
+            renderMarkFromSpec editor backwardsPath n.mark <|
+                Array.map (renderInlineLeafTree editor backwardsPath inlineLeafArray) n.children
 
 
 renderEditorBlockNode : Editor msg -> NodePath -> EditorBlockNode -> Html msg
 renderEditorBlockNode editor backwardsPath node =
     renderElementFromSpec editor
         node.parameters
-        []
         backwardsPath
         (case node.childNodes of
             BlockArray l ->
                 Array.indexedMap (\i n -> renderEditorBlockNode editor (i :: backwardsPath) n) l
 
             InlineLeafArray l ->
-                Array.indexedMap (\i n -> renderInlineLeaf editor (i :: backwardsPath) n) l.array
+                Array.map (\n -> renderInlineLeafTree editor backwardsPath l.array n) l.tree
 
             Leaf ->
                 Array.empty
         )
 
 
-renderText : Editor msg -> TextLeafContents -> NodePath -> Html msg
-renderText editor textLeafContents backwardsPath =
-    let
-        textHtml =
-            Html.text
-                (if String.isEmpty textLeafContents.text then
-                    zeroWidthSpace
+renderText : String -> Html msg
+renderText text =
+    Html.text
+        (if String.isEmpty text then
+            zeroWidthSpace
 
-                 else
-                    textLeafContents.text
-                )
-    in
-    List.foldl (renderMarkFromSpec editor backwardsPath) textHtml textLeafContents.marks
+         else
+            text
+        )
 
 
 renderInlineLeaf : Editor msg -> NodePath -> EditorInlineLeaf -> Html msg
 renderInlineLeaf editor backwardsPath leaf =
     case leaf of
         InlineLeaf l ->
-            renderElementFromSpec editor l.parameters l.marks backwardsPath Array.empty
+            renderElementFromSpec editor l.parameters backwardsPath Array.empty
 
         TextLeaf v ->
-            renderText editor v backwardsPath
+            renderText v.text
 
 
 forceCompleteRerender : Editor msg -> Editor msg

@@ -15,8 +15,8 @@ childNodesPlaceholder =
         [ ElementNode "__child_node_marker__" [] Array.empty ]
 
 
-defaultToHtml : ElementParameters -> Array HtmlNode -> HtmlNode
-defaultToHtml elementParameters children =
+defaultElementToHtml : ElementParameters -> Array HtmlNode -> HtmlNode
+defaultElementToHtml elementParameters children =
     ElementNode elementParameters.name
         (List.map
             (\attr ->
@@ -29,25 +29,34 @@ defaultToHtml elementParameters children =
         children
 
 
+defaultMarkToHtml : Mark -> Array HtmlNode -> HtmlNode
+defaultMarkToHtml mark children =
+    ElementNode "span"
+        (List.map
+            (\attr ->
+                case attr of
+                    StringAttribute k v ->
+                        ( k, v )
+            )
+            mark.attributes
+        )
+        children
+
+
 findNodeDefinitionFromSpec : String -> Spec -> NodeDefinition
 findNodeDefinitionFromSpec name spec =
-    Maybe.withDefault { name = name, toHtmlNode = defaultToHtml } (List.Extra.find (\n -> n.name == name) spec.nodes)
+    Maybe.withDefault { name = name, toHtmlNode = defaultElementToHtml } (List.Extra.find (\n -> n.name == name) spec.nodes)
 
 
-findMarkDefinitionFromSpec : String -> Spec -> Maybe MarkDefinition
+findMarkDefinitionFromSpec : String -> Spec -> MarkDefinition
 findMarkDefinitionFromSpec name spec =
-    List.Extra.find (\n -> n.name == name) spec.marks
+    Maybe.withDefault { name = name, toHtmlNode = defaultMarkToHtml } (List.Extra.find (\n -> n.name == name) spec.marks)
 
 
 findMarkDefinitionsFromSpec : List Mark -> Spec -> List ( Mark, MarkDefinition )
 findMarkDefinitionsFromSpec marks spec =
-    List.concatMap
+    List.map
         (\m ->
-            case findMarkDefinitionFromSpec m.name spec of
-                Nothing ->
-                    []
-
-                Just d ->
-                    [ ( m, d ) ]
+            ( m, findMarkDefinitionFromSpec m.name spec )
         )
         marks

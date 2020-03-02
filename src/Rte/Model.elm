@@ -117,7 +117,7 @@ type ChildNodes
 
 
 type alias InlineLeafArrayContents =
-    { array : Array EditorInlineLeaf, tree : Array InlineLeafTree }
+    { array : Array EditorInlineLeaf, tree : Array InlineLeafTree, reverseLookup : Array NodePath }
 
 
 type alias MarkNodeContents =
@@ -141,10 +141,29 @@ findMarksFromInlineLeaf leaf =
 
 inlineLeafArray : Array EditorInlineLeaf -> ChildNodes
 inlineLeafArray arr =
+    let
+        tree =
+            marksToMarkNodeList (List.map findMarksFromInlineLeaf (Array.toList arr))
+    in
     InlineLeafArray
         { array = arr
-        , tree = marksToMarkNodeList (List.map findMarksFromInlineLeaf (Array.toList arr))
+        , tree = tree
+        , reverseLookup = Array.fromList <| inlineLeafTreeToPaths [] tree
         }
+
+
+inlineLeafTreeToPaths : NodePath -> Array InlineLeafTree -> List NodePath
+inlineLeafTreeToPaths backwardsPath tree =
+    List.concatMap
+        (\( i, n ) ->
+            case n of
+                LeafNode _ ->
+                    [ List.reverse (i :: backwardsPath) ]
+
+                MarkNode mn ->
+                    inlineLeafTreeToPaths (i :: backwardsPath) mn.children
+        )
+        (List.indexedMap Tuple.pair (Array.toList tree))
 
 
 marksToMarkNodeList : List (List Mark) -> Array InlineLeafTree

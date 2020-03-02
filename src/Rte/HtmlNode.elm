@@ -1,22 +1,19 @@
 module Rte.HtmlNode exposing (..)
 
 import Array exposing (Array)
-import Rte.Model exposing (ChildNodes(..), EditorBlockNode, EditorInlineLeaf(..), ElementParameters, HtmlNode(..), Mark, Spec, TextLeafContents)
-import Rte.Spec exposing (findMarkDefinitionsFromSpec, findNodeDefinitionFromSpec)
+import Rte.Model exposing (ChildNodes(..), EditorBlockNode, EditorInlineLeaf(..), ElementParameters, HtmlNode(..), InlineLeafTree(..), Mark, Spec, TextLeafContents)
+import Rte.Spec exposing (findMarkDefinitionFromSpec, findNodeDefinitionFromSpec)
 
 
 {-| Renders marks to their HtmlNode representation.
 -}
-marksToHtmlNode : Spec -> List Mark -> HtmlNode -> HtmlNode
-marksToHtmlNode spec marks node =
+markToHtmlNode : Spec -> Mark -> Array HtmlNode -> HtmlNode
+markToHtmlNode spec mark children =
     let
-        marksAndDefinitions =
-            findMarkDefinitionsFromSpec marks spec
+        markDefinition =
+            findMarkDefinitionFromSpec mark.name spec
     in
-    List.foldl
-        (\( mark, markDefinition ) htmlNode -> markDefinition.toHtmlNode mark (Array.fromList [ htmlNode ]))
-        node
-        marksAndDefinitions
+    markDefinition.toHtmlNode mark children
 
 
 {-| Renders element parameters to their HtmlNode representation.
@@ -26,11 +23,8 @@ elementToHtmlNode spec parameters marks children =
     let
         nodeDefinition =
             findNodeDefinitionFromSpec parameters.name spec
-
-        renderedNode =
-            nodeDefinition.toHtmlNode parameters children
     in
-    marksToHtmlNode spec marks renderedNode
+    nodeDefinition.toHtmlNode parameters children
 
 
 {-| Renders element block nodes to their HtmlNode representation.
@@ -49,7 +43,7 @@ childNodesToHtmlNode spec childNodes =
             Array.map (editorBlockNodeToHtmlNode spec) blockArray
 
         InlineLeafArray inlineLeafArray ->
-            Array.map (editorInlineLeafToHtmlNode spec) inlineLeafArray.array
+            Array.map (editorInlineLeafTreeToHtmlNode spec inlineLeafArray.array) inlineLeafArray.tree
 
         Leaf ->
             Array.empty
@@ -59,7 +53,27 @@ childNodesToHtmlNode spec childNodes =
 -}
 textToHtmlNode : Spec -> TextLeafContents -> HtmlNode
 textToHtmlNode spec contents =
-    marksToHtmlNode spec contents.marks (TextNode contents.text)
+    TextNode contents.text
+
+
+errorNode : HtmlNode
+errorNode =
+    ElementNode "div" [ ( "class", "rte-error" ) ] Array.empty
+
+
+editorInlineLeafTreeToHtmlNode : Spec -> Array EditorInlineLeaf -> InlineLeafTree -> HtmlNode
+editorInlineLeafTreeToHtmlNode spec array tree =
+    case tree of
+        LeafNode i ->
+            case Array.get i array of
+                Nothing ->
+                    errorNode
+
+                Just l ->
+                    editorInlineLeafToHtmlNode spec l
+
+        MarkNode n ->
+            markToHtmlNode spec n.mark (Array.map (editorInlineLeafTreeToHtmlNode spec array) n.children)
 
 
 {-| Renders inline leaf nodes to their HtmlNode representation.
