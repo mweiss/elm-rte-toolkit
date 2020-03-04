@@ -41,6 +41,16 @@ type alias Decorations msg =
     }
 
 
+type EditorNode
+    = BlockNodeWrapper EditorBlockNode
+    | InlineLeafWrapper EditorInlineLeaf
+
+
+type EditorFragment
+    = BlockNodeFragment (Array EditorBlockNode)
+    | InlineLeafFragment (Array EditorInlineLeaf)
+
+
 type alias ElementDecoratorFunction msg =
     DecoderFunc msg -> NodePath -> ElementParameters -> NodePath -> List (Html.Attribute msg)
 
@@ -63,6 +73,7 @@ type alias Editor msg =
     , decorations : Decorations msg
     , commandMap : CommandMap
     , spec : Spec
+    , history : History
     }
 
 
@@ -114,6 +125,11 @@ type ChildNodes
     = BlockArray (Array EditorBlockNode)
     | InlineLeafArray InlineLeafArrayContents
     | Leaf
+
+
+type alias History =
+    { history : List ( String, EditorState )
+    }
 
 
 type alias InlineLeafArrayContents =
@@ -272,19 +288,27 @@ type alias Command =
     EditorState -> Result String EditorState
 
 
+type alias NamedCommand =
+    ( String, Command )
+
+
+type alias NamedCommandList =
+    List NamedCommand
+
+
 {-| A key map is a dictionary of sorted keys to a command function. Keys should be created with the
 Command.key function to ensure the list is sorted in the correct order. This is used to determine
 what command to execute on the editor's keydown event.
 -}
 type alias KeyMap =
-    Dict (List String) Command
+    Dict (List String) NamedCommandList
 
 
 {-| A dictionary of input type event type to command function. This is used to determine what command
 to execute on the editor's beforeinput events.
 -}
 type alias InputEventTypeMap =
-    Dict String Command
+    Dict String NamedCommandList
 
 
 {-| A selection represents the information received and translated from the selection API. Note that
@@ -382,13 +406,23 @@ type alias HtmlAttribute =
 type alias MarkDefinition =
     { name : String
     , toHtmlNode : Mark -> Array HtmlNode -> HtmlNode
+    , fromHtmlNode : HtmlNode -> Maybe ( Mark, Array HtmlNode )
     }
 
 
 type alias NodeDefinition =
     { name : String
     , toHtmlNode : ElementParameters -> Array HtmlNode -> HtmlNode
+    , contentType : ContentType
+    , fromHtmlNode : HtmlNode -> Maybe ( ElementParameters, Array HtmlNode )
     }
+
+
+type ContentType
+    = BlockNodeType (Maybe (Set String))
+    | TextBlockNodeType (Maybe (Set String))
+    | BlockLeafNodeType
+    | InlineLeafNodeType
 
 
 type alias Spec =

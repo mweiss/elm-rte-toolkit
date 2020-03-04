@@ -2,8 +2,8 @@ module Rte.EditorState exposing (..)
 
 import Array exposing (Array)
 import List.Extra
-import Rte.Model exposing (ChildNodes(..), EditorBlockNode, EditorInlineLeaf(..), EditorState, Mark, NodePath, inlineLeafArray, selectionAnnotation)
-import Rte.Node exposing (EditorNode(..), findTextBlockNodeAncestor, map)
+import Rte.Model exposing (ChildNodes(..), EditorBlockNode, EditorInlineLeaf(..), EditorNode(..), EditorState, Mark, NodePath, inlineLeafArray, selectionAnnotation)
+import Rte.Node exposing (findTextBlockNodeAncestor, map)
 import Rte.Selection exposing (clearSelectionAnnotations, markSelection, rangeSelection)
 import Set
 

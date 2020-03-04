@@ -2,8 +2,8 @@ module Rte.Marks exposing (..)
 
 import Array exposing (Array)
 import List.Extra
-import Rte.Model exposing (EditorBlockNode, EditorInlineLeaf(..), InlineLeafTree(..), Mark, NodePath)
-import Rte.Node exposing (EditorNode(..), map, nodeAt, replace)
+import Rte.Model exposing (EditorBlockNode, EditorInlineLeaf(..), EditorNode(..), InlineLeafTree(..), Mark, NodePath)
+import Rte.Node exposing (map, nodeAt, replace)
 
 
 hasMarkWithName : String -> List Mark -> Bool

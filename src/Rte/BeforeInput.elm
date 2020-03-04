@@ -2,7 +2,7 @@ module Rte.BeforeInput exposing (..)
 
 import Dict
 import Json.Decode as D
-import Rte.EditorUtils exposing (applyCommand, forceRerender)
+import Rte.EditorUtils exposing (applyNamedCommandList, forceRerender)
 import Rte.Model exposing (Editor, EditorState, InputEvent, InputEventTypeMap, InternalEditorMsg(..))
 
 
@@ -48,7 +48,7 @@ handleInputEvent editor inputType =
             Err "No input event found."
 
         Just command ->
-            applyCommand command editor
+            applyNamedCommandList command editor
 
 
 handleBeforeInput : InputEvent -> Editor msg -> Editor msg

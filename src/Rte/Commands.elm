@@ -14,12 +14,29 @@ import Rte.Marks
         , toggle
         , toggleMark
         )
-import Rte.Model exposing (ChildNodes(..), Command, CommandBinding(..), CommandMap, Editor, EditorBlockNode, EditorInlineLeaf(..), EditorState, ElementParameters, Mark, NodePath, Selection, findMarksFromInlineLeaf, inlineLeafArray)
+import Rte.Model
+    exposing
+        ( ChildNodes(..)
+        , Command
+        , CommandBinding(..)
+        , CommandMap
+        , Editor
+        , EditorBlockNode
+        , EditorFragment(..)
+        , EditorInlineLeaf(..)
+        , EditorNode(..)
+        , EditorState
+        , ElementParameters
+        , Mark
+        , NamedCommandList
+        , NodePath
+        , Selection
+        , findMarksFromInlineLeaf
+        , inlineLeafArray
+        )
 import Rte.Node
     exposing
-        ( EditorFragment(..)
-        , EditorNode(..)
-        , allRange
+        ( allRange
         , concatMap
         , findBackwardFromExclusive
         , findClosestBlockPath
@@ -41,7 +58,14 @@ import Rte.Node
         , splitBlockAtPathAndOffset
         , splitTextLeaf
         )
-import Rte.NodePath as NodePath exposing (commonAncestor, decrement, increment, parent, toString)
+import Rte.NodePath as NodePath
+    exposing
+        ( commonAncestor
+        , decrement
+        , increment
+        , parent
+        , toString
+        )
 import Rte.Selection
     exposing
         ( caretSelection
@@ -96,7 +120,7 @@ deleteKey =
     "Delete"
 
 
-set : List CommandBinding -> Command -> CommandMap -> CommandMap
+set : List CommandBinding -> NamedCommandList -> CommandMap -> CommandMap
 set bindings func map =
     List.foldl
         (\binding accMap ->
@@ -111,14 +135,14 @@ set bindings func map =
         bindings
 
 
-compose : comparable -> Command -> Dict comparable Command -> Dict comparable Command
-compose k command d =
+compose : comparable -> NamedCommandList -> Dict comparable NamedCommandList -> Dict comparable NamedCommandList
+compose k commandList d =
     case Dict.get k d of
         Nothing ->
-            Dict.insert k command d
+            Dict.insert k commandList d
 
         Just v ->
-            Dict.insert k (command |> otherwiseDo v) d
+            Dict.insert k (commandList ++ v) d
 
 
 combine : CommandMap -> CommandMap -> CommandMap
@@ -132,26 +156,26 @@ combine map1 map2 =
     }
 
 
-stack : List CommandBinding -> Command -> CommandMap -> CommandMap
-stack bindings func map =
+stack : List CommandBinding -> NamedCommandList -> CommandMap -> CommandMap
+stack bindings list map =
     List.foldl
         (\binding accMap ->
             case binding of
                 Key keys ->
                     case Dict.get keys accMap.keyMap of
                         Nothing ->
-                            { accMap | keyMap = Dict.insert keys func accMap.keyMap }
+                            { accMap | keyMap = Dict.insert keys list accMap.keyMap }
 
                         Just f ->
-                            { accMap | keyMap = Dict.insert keys (otherwiseDo func f) accMap.keyMap }
+                            { accMap | keyMap = Dict.insert keys (list ++ f) accMap.keyMap }
 
                 InputEventType type_ ->
                     case Dict.get type_ accMap.inputEventTypeMap of
                         Nothing ->
-                            { accMap | inputEventTypeMap = Dict.insert type_ func accMap.inputEventTypeMap }
+                            { accMap | inputEventTypeMap = Dict.insert type_ list accMap.inputEventTypeMap }
 
                         Just f ->
-                            { accMap | inputEventTypeMap = Dict.insert type_ (otherwiseDo func f) accMap.inputEventTypeMap }
+                            { accMap | inputEventTypeMap = Dict.insert type_ (list ++ f) accMap.inputEventTypeMap }
         )
         map
         bindings
@@ -181,36 +205,40 @@ key keys =
 
 
 backspaceCommands =
-    removeRangeSelection
-        |> otherwiseDo removeSelectedLeafElementCommand
-        |> otherwiseDo backspaceInlineElement
-        |> otherwiseDo backspaceBlockNode
-        |> otherwiseDo joinBackward
+    [ ( "removeRangeSelection", removeRangeSelection )
+    , ( "removeSelectedLeafElementCommand", removeSelectedLeafElementCommand )
+    , ( "backspaceInlineElement", backspaceInlineElement )
+    , ( "backspaceBlockNode", backspaceBlockNode )
+    , ( "joinBackward", joinBackward )
+    ]
 
 
 deleteCommands =
-    removeRangeSelection
-        |> otherwiseDo removeSelectedLeafElementCommand
-        |> otherwiseDo deleteInlineElement
-        |> otherwiseDo deleteBlockNode
-        |> otherwiseDo joinForward
+    [ ( "removeRangeSelection", removeRangeSelection )
+    , ( "removeSelectedLeafElementCommand", removeSelectedLeafElementCommand )
+    , ( "deleteInlineElement", deleteInlineElement )
+    , ( "deleteBlockNode", deleteBlockNode )
+    , ( "joinForward", joinForward )
+    ]
 
 
 defaultCommandBindings =
     emptyCommandBinding
-        |> set [ inputEvent "insertLineBreak", key [ shiftKey, enterKey ], key [ shiftKey, enterKey ] ] insertLineBreak
-        |> set [ inputEvent "insertParagraph", key [ enterKey ], key [ returnKey ] ] (liftEmpty |> otherwiseDo splitTextBlock)
+        |> set
+            [ inputEvent "insertLineBreak", key [ shiftKey, enterKey ], key [ shiftKey, enterKey ] ]
+            [ ( "insertLineBreak", insertLineBreak ) ]
+        |> set [ inputEvent "insertParagraph", key [ enterKey ], key [ returnKey ] ]
+            [ ( "liftEmpty", liftEmpty ), ( "splitTextBlock", splitTextBlock ) ]
         |> set [ inputEvent "deleteContentBackward", key [ backspaceKey ] ]
-            (backspaceCommands
-                |> otherwiseDo backspaceText
-            )
-        |> set [ inputEvent "deleteWordBackward", key [ altKey, backspaceKey ] ] (backspaceCommands |> otherwiseDo backspaceWord)
+            (backspaceCommands ++ [ ( "backspaceText", backspaceText ) ])
+        |> set [ inputEvent "deleteWordBackward", key [ altKey, backspaceKey ] ]
+            (backspaceCommands ++ [ ( "backspaceWord", backspaceWord ) ])
         |> set [ inputEvent "deleteContentForward", key [ deleteKey ] ]
-            (deleteCommands
-                |> otherwiseDo deleteText
-            )
-        |> set [ inputEvent "deleteWordForward", key [ altKey, deleteKey ] ] (deleteCommands |> otherwiseDo deleteWord)
-        |> set [ key [ metaKey, "a" ] ] selectAll
+            (deleteCommands ++ [ ( "deleteText", deleteText ) ])
+        |> set [ inputEvent "deleteWordForward", key [ altKey, deleteKey ] ]
+            (deleteCommands ++ [ ( "deleteWord", deleteWord ) ])
+        |> set [ key [ metaKey, "a" ] ]
+            [ ( "selectAll", selectAll ) ]
 
 
 joinBackward : Command

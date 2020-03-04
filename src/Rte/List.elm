@@ -4,9 +4,8 @@ import Array exposing (Array)
 import List.Extra
 import Rte.Annotation exposing (clearAnnotations)
 import Rte.Commands exposing (altKey, backspaceKey, deleteKey, emptyCommandBinding, enterKey, inputEvent, isEmptyTextBlock, key, liftAnnotation, liftConcatMapFunc, otherwiseDo, returnKey, set)
-import Rte.Marks exposing (ToggleAction(..), clearMarks, toggleMarkAtPath)
-import Rte.Model exposing (ChildNodes(..), Command, CommandMap, EditorBlockNode, EditorInlineLeaf(..), ElementParameters, NodePath, Selection, elementParameters)
-import Rte.Node exposing (EditorFragment(..), EditorNode(..), concatMap, findAncestor, findLastPath, joinBlocks, nodeAt, replace, replaceWithFragment)
+import Rte.Model exposing (ChildNodes(..), Command, CommandMap, EditorBlockNode, EditorFragment(..), EditorInlineLeaf(..), EditorNode(..), ElementParameters, NodePath, Selection, elementParameters)
+import Rte.Node exposing (concatMap, findAncestor, findLastPath, joinBlocks, nodeAt, replace, replaceWithFragment)
 import Rte.NodePath exposing (commonAncestor, decrement, increment)
 import Rte.Selection exposing (clearSelectionAnnotations, isCollapsed, markSelection, normalizeSelection, selectionFromMarks)
 import Set
@@ -31,11 +30,18 @@ commandBindings definition =
             joinForward definition
     in
     emptyCommandBinding
-        |> set [ inputEvent "insertParagraph", key [ enterKey ], key [ returnKey ] ] (liftEmpty definition |> otherwiseDo (split definition))
-        |> set [ inputEvent "deleteContentBackward", key [ backspaceKey ] ] backspaceCommand
-        |> set [ inputEvent "deleteContentForward", key [ deleteKey ] ] deleteCommand
-        |> set [ inputEvent "deleteWordBackward", key [ altKey, backspaceKey ] ] backspaceCommand
-        |> set [ inputEvent "deleteWordForward", key [ altKey, deleteKey ] ] deleteCommand
+        |> set [ inputEvent "insertParagraph", key [ enterKey ], key [ returnKey ] ]
+            [ ( "liftEmptyListItem", liftEmpty definition )
+            , ( "splitListItem", split definition )
+            ]
+        |> set [ inputEvent "deleteContentBackward", key [ backspaceKey ] ]
+            [ ( "joinListBackward", backspaceCommand ) ]
+        |> set [ inputEvent "deleteContentForward", key [ deleteKey ] ]
+            [ ( "joinListForward", deleteCommand ) ]
+        |> set [ inputEvent "deleteWordBackward", key [ altKey, backspaceKey ] ]
+            [ ( "joinListBackward", backspaceCommand ) ]
+        |> set [ inputEvent "deleteWordForward", key [ altKey, deleteKey ] ]
+            [ ( "joinListForward", deleteCommand ) ]
 
 
 defaultListDefinition : ListDefinition

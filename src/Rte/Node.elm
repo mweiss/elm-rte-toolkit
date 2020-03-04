@@ -1,7 +1,5 @@
 module Rte.Node exposing
-    ( EditorFragment(..)
-    , EditorNode(..)
-    , Iterator
+    ( Iterator
     , allRange
     , anyRange
     , concatMap
@@ -34,19 +32,9 @@ module Rte.Node exposing
 
 import Array exposing (Array)
 import Array.Extra
-import Rte.Model exposing (Annotation, ChildNodes(..), EditorBlockNode, EditorInlineLeaf(..), HtmlNode(..), NodePath, TextLeafContents, inlineLeafArray, selectableAnnotation)
+import Rte.Model exposing (Annotation, ChildNodes(..), EditorBlockNode, EditorFragment(..), EditorInlineLeaf(..), EditorNode(..), HtmlNode(..), NodePath, TextLeafContents, inlineLeafArray, selectableAnnotation)
 import Rte.NodePath exposing (parent)
 import Set
-
-
-type EditorNode
-    = BlockNodeWrapper EditorBlockNode
-    | InlineLeafWrapper EditorInlineLeaf
-
-
-type EditorFragment
-    = BlockNodeFragment (Array EditorBlockNode)
-    | InlineLeafFragment (Array EditorInlineLeaf)
 
 
 findLastPath : EditorBlockNode -> ( NodePath, EditorNode )

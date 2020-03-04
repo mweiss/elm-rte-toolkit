@@ -1,8 +1,8 @@
 module Rte.Selection exposing (caretSelection, clearSelectionAnnotations, domToEditor, editorToDom, isCollapsed, markSelection, normalizeSelection, rangeSelection, selectionFromMarks, singleNodeRangeSelection)
 
 import Rte.Annotation exposing (addAnnotationAtPath, clearAnnotations)
-import Rte.Model exposing (Annotation, ChildNodes(..), EditorBlockNode, EditorInlineLeaf(..), ElementParameters, HtmlNode(..), Mark, NodePath, Selection, Spec, selectionAnnotation)
-import Rte.Node exposing (EditorNode(..), indexedFoldl, map)
+import Rte.Model exposing (Annotation, ChildNodes(..), EditorBlockNode, EditorInlineLeaf(..), EditorNode(..), ElementParameters, HtmlNode(..), Mark, NodePath, Selection, Spec, selectionAnnotation)
+import Rte.Node exposing (indexedFoldl)
 import Rte.NodePath as Path
 import Set exposing (Set)
 

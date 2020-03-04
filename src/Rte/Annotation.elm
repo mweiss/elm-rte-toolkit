@@ -1,7 +1,7 @@
 module Rte.Annotation exposing (..)
 
-import Rte.Model exposing (Annotation, EditorBlockNode, EditorInlineLeaf(..), NodePath)
-import Rte.Node exposing (EditorNode(..), map, nodeAt, replace)
+import Rte.Model exposing (Annotation, EditorBlockNode, EditorInlineLeaf(..), EditorNode(..), NodePath)
+import Rte.Node exposing (map, nodeAt, replace)
 import Set exposing (Set)
 
 

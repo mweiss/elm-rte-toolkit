@@ -15,6 +15,7 @@ import Rte.NodePath
         )
 import Rte.Spec exposing (emptySpec)
 import Set
+import SimpleSpec exposing (simpleSpec)
 import Test exposing (..)
 
 
@@ -72,43 +73,6 @@ crazyBlockNode =
 codeBlockNode =
     { parameters = codeBlockParams
     , childNodes = inlineLeafArray <| Array.fromList [ TextLeaf { text = "sample", marks = [], annotations = Set.empty } ]
-    }
-
-
-codeBlockToHtmlNode : ElementParameters -> Array HtmlNode -> HtmlNode
-codeBlockToHtmlNode _ children =
-    ElementNode "pre"
-        []
-    <|
-        Array.fromList
-            [ ElementNode "code" [] children
-            ]
-
-
-crazyBlockToHtmlNode : ElementParameters -> Array HtmlNode -> HtmlNode
-crazyBlockToHtmlNode _ children =
-    ElementNode "div"
-        []
-    <|
-        Array.fromList
-            [ ElementNode "img" [] Array.empty
-            , ElementNode "div" [] <| Array.fromList [ ElementNode "hr" [] Array.empty ]
-            , ElementNode "div" [] children
-            ]
-
-
-boldToHtmlNode : Mark -> Array HtmlNode -> HtmlNode
-boldToHtmlNode _ children =
-    ElementNode "b" [] children
-
-
-simpleSpec : Spec
-simpleSpec =
-    { nodes =
-        [ { name = "code_block", toHtmlNode = codeBlockToHtmlNode }
-        , { name = "crazy_block", toHtmlNode = crazyBlockToHtmlNode }
-        ]
-    , marks = [ { name = "bold", toHtmlNode = boldToHtmlNode } ]
     }
 
 

@@ -2,12 +2,22 @@ module TestNode exposing (..)
 
 import Array
 import Expect
-import Rte.Model exposing (Annotation, ChildNodes(..), EditorAttribute(..), EditorInlineLeaf(..), Mark, NodePath, inlineLeafArray, selectableAnnotation)
+import Rte.Model
+    exposing
+        ( Annotation
+        , ChildNodes(..)
+        , EditorAttribute(..)
+        , EditorFragment(..)
+        , EditorInlineLeaf(..)
+        , EditorNode(..)
+        , Mark
+        , NodePath
+        , inlineLeafArray
+        , selectableAnnotation
+        )
 import Rte.Node
     exposing
-        ( EditorFragment(..)
-        , EditorNode(..)
-        , allRange
+        ( allRange
         , anyRange
         , concatMap
         , findAncestor

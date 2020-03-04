@@ -3,7 +3,7 @@ module Rte.KeyDown exposing (..)
 import Dict
 import Json.Decode as D
 import Rte.Commands exposing (altKey, ctrlKey, metaKey, shiftKey)
-import Rte.EditorUtils exposing (applyCommand)
+import Rte.EditorUtils exposing (applyNamedCommandList)
 import Rte.Model exposing (Editor, EditorState, InputEvent, InternalEditorMsg(..), KeyMap, KeyboardEvent)
 
 
@@ -99,7 +99,7 @@ handleKeyDownEvent editor keyboardEvent =
             Err <| "No keydown event"
 
         Just command ->
-            applyCommand command editor
+            applyNamedCommandList command editor
 
 
 handleKeyDown : KeyboardEvent -> Editor msg -> Editor msg

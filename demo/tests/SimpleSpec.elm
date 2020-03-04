@@ -1,8 +1,8 @@
-module BasicSpecs exposing (..)
+module SimpleSpec exposing (..)
 
 import Array exposing (Array)
-import Rte.Model exposing (ContentType(..), ElementParameters, HtmlNode(..), Mark, Spec)
-import Rte.Spec exposing (defaultHtmlToMark)
+import Rte.Model exposing (ContentType(..), EditorFragment(..), EditorInlineLeaf(..), ElementParameters, HtmlNode(..), Mark, Spec, inlineLeafArray)
+import Rte.Spec exposing (defaultElementToHtml, defaultHtmlToElement, defaultHtmlToMark, htmlToElementArray)
 import Set
 
 
@@ -86,11 +86,35 @@ italicToHtmlNode mark children =
 simpleSpec : Spec
 simpleSpec =
     { nodes =
-        [ { name = "code_block", toHtmlNode = codeBlockToHtmlNode, fromHtmlNode = htmlNodeToCodeBlock, contentType = BlockNodeType Nothing }
-        , { name = "crazy_block", toHtmlNode = crazyBlockToHtmlNode, fromHtmlNode = htmlNodeToCrazyBlock, contentType = BlockNodeType Nothing }
+        [ { name = "code_block"
+          , toHtmlNode = codeBlockToHtmlNode
+          , fromHtmlNode = htmlNodeToCodeBlock
+          , contentType = BlockNodeType Nothing
+          }
+        , { name = "crazy_block"
+          , toHtmlNode = crazyBlockToHtmlNode
+          , fromHtmlNode = htmlNodeToCrazyBlock
+          , contentType = BlockNodeType Nothing
+          }
+        , { name = "paragraph"
+          , toHtmlNode = defaultElementToHtml "p"
+          , fromHtmlNode = defaultHtmlToElement "p" "paragraph"
+          , contentType = TextBlockNodeType Nothing
+          }
+        , { name = "image"
+          , toHtmlNode = defaultElementToHtml "img"
+          , fromHtmlNode = defaultHtmlToElement "img" "image"
+          , contentType = InlineLeafNodeType
+          }
         ]
     , marks =
-        [ { name = "bold", toHtmlNode = boldToHtmlNode, fromHtmlNode = defaultHtmlToMark "b" "bold" }
-        , { name = "italic", toHtmlNode = italicToHtmlNode, fromHtmlNode = defaultHtmlToMark "i" "italic" }
+        [ { name = "bold"
+          , toHtmlNode = boldToHtmlNode
+          , fromHtmlNode = defaultHtmlToMark "b" "bold"
+          }
+        , { name = "italic"
+          , toHtmlNode = italicToHtmlNode
+          , fromHtmlNode = defaultHtmlToMark "i" "italic"
+          }
         ]
     }

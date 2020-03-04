@@ -82,7 +82,10 @@ commandBindings =
     Rte.Commands.combine
         listCommandBindings
         (Rte.Commands.defaultCommandBindings
-            |> set [ inputEvent "insertParagraph", key [ enterKey ], key [ returnKey ] ] (liftEmpty |> otherwiseDo (splitBlockHeaderToNewParagraph headerElements "p"))
+            |> set [ inputEvent "insertParagraph", key [ enterKey ], key [ returnKey ] ]
+                [ ( "liftEmpty", liftEmpty )
+                , ( "splitBlockHeaderToNewParagraph", splitBlockHeaderToNewParagraph headerElements "p" )
+                ]
         )
 
 
@@ -111,6 +114,7 @@ initEditor =
         { root = doubleInitNode
         , selection = Nothing
         }
+    , history = { history = [] }
     }
 
 
@@ -218,7 +222,7 @@ handleToggleStyle style model =
     { model
         | editor =
             Result.withDefault model.editor
-                (applyCommand (toggleMarkOnInlineNodes (Mark markName [])) model.editor)
+                (applyCommand ( "toggleStyle", toggleMarkOnInlineNodes (Mark markName []) ) model.editor)
     }
 
 
@@ -287,7 +291,7 @@ handleLiftBlock model =
     { model
         | editor =
             Result.withDefault model.editor
-                (applyCommand lift model.editor)
+                (applyCommand ( "lift", lift ) model.editor)
     }
 
 
@@ -296,7 +300,7 @@ handleWrapInList listType model =
     { model
         | editor =
             Result.withDefault model.editor
-                (applyCommand (Rte.List.wrap defaultListDefinition listType) model.editor)
+                (applyCommand ( "wrapList", Rte.List.wrap defaultListDefinition listType ) model.editor)
     }
 
 
@@ -316,7 +320,7 @@ handleToggleBlock block model =
     { model
         | editor =
             Result.withDefault model.editor
-                (applyCommand (toggleBlock (headerElements ++ [ "code_block", "p" ]) tagName "p") model.editor)
+                (applyCommand ( "toggleBlock", toggleBlock (headerElements ++ [ "code_block", "p" ]) tagName "p" ) model.editor)
     }
 
 
@@ -325,7 +329,10 @@ handleWrapBlockNode model =
     { model
         | editor =
             Result.withDefault model.editor
-                (applyCommand (wrap (\n -> n) { name = "blockquote", annotations = Set.empty, attributes = [] }) model.editor)
+                (applyCommand
+                    ( "wrapBlockquote", wrap (\n -> n) { name = "blockquote", annotations = Set.empty, attributes = [] } )
+                    model.editor
+                )
     }
 
 
@@ -335,7 +342,8 @@ handleInsertHorizontalRule model =
         | editor =
             Result.withDefault model.editor
                 (applyCommand
-                    (insertBlockNode
+                    ( "insertHR"
+                    , insertBlockNode
                         { parameters = { name = "hr", annotations = Set.fromList [ selectableAnnotation ], attributes = [] }
                         , childNodes = Leaf
                         }
