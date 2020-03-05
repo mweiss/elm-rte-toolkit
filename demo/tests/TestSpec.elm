@@ -106,6 +106,64 @@ expectedCodeWithParagraphs =
         ]
 
 
+oneParagraphWithBold =
+    "<p><b>test</b></p>"
+
+
+boldMark =
+    Mark "bold" []
+
+
+italicMark =
+    Mark "italic" []
+
+
+expectedOneParagraphWithBold =
+    Array.fromList <|
+        [ BlockNodeFragment <|
+            Array.fromList
+                [ { parameters =
+                        { name = "paragraph"
+                        , attributes = []
+                        , annotations = Set.empty
+                        }
+                  , childNodes =
+                        inlineLeafArray
+                            (Array.fromList
+                                [ TextLeaf { text = "test", marks = [ boldMark ], annotations = Set.empty }
+                                ]
+                            )
+                  }
+                ]
+        ]
+
+
+oneParagraphWithBoldAndItalic =
+    "<p><b>tes<i>t</i></b><i>1</i></p>"
+
+
+expectedOneParagraphWithBoldAndItalic =
+    Array.fromList <|
+        [ BlockNodeFragment <|
+            Array.fromList
+                [ { parameters =
+                        { name = "paragraph"
+                        , attributes = []
+                        , annotations = Set.empty
+                        }
+                  , childNodes =
+                        inlineLeafArray
+                            (Array.fromList
+                                [ TextLeaf { text = "tes", marks = [ boldMark ], annotations = Set.empty }
+                                , TextLeaf { text = "t", marks = [ boldMark, italicMark ], annotations = Set.empty }
+                                , TextLeaf { text = "1", marks = [ italicMark ], annotations = Set.empty }
+                                ]
+                            )
+                  }
+                ]
+        ]
+
+
 testHtmlToElementArray : Test
 testHtmlToElementArray =
     describe "Tests that htmlToElementArray works as expected"
@@ -117,4 +175,8 @@ testHtmlToElementArray =
             \_ -> Expect.equal (Ok expectedJustText) (htmlToElementArray simpleSpec justText)
         , test "Tests that paragraphs wrapped in a code block can be parsed" <|
             \_ -> Expect.equal (Ok expectedCodeWithParagraphs) (htmlToElementArray simpleSpec codeAndParagraphs)
+        , test "Tests that a paragraph with bold text works as expected" <|
+            \_ -> Expect.equal (Ok expectedOneParagraphWithBold) (htmlToElementArray simpleSpec oneParagraphWithBold)
+        , test "Tests that a paragraph with bold and italic text works as expected" <|
+            \_ -> Expect.equal (Ok expectedOneParagraphWithBoldAndItalic) (htmlToElementArray simpleSpec oneParagraphWithBoldAndItalic)
         ]

@@ -239,6 +239,85 @@ like color, font type, or image or link locations.
 -}
 type EditorAttribute
     = StringAttribute String String
+    | IntegerAttribute String Int
+    | BoolAttribute String Bool
+    | FloatAttribute String Float
+
+
+findFloatAttribute : String -> List EditorAttribute -> Maybe Float
+findFloatAttribute name attributes =
+    case attributes of
+        [] ->
+            Nothing
+
+        x :: xs ->
+            case x of
+                FloatAttribute k v ->
+                    if k == name then
+                        Just v
+
+                    else
+                        findFloatAttribute name xs
+
+                _ ->
+                    findFloatAttribute name xs
+
+
+findBoolAttribute : String -> List EditorAttribute -> Maybe Bool
+findBoolAttribute name attributes =
+    case attributes of
+        [] ->
+            Nothing
+
+        x :: xs ->
+            case x of
+                BoolAttribute k v ->
+                    if k == name then
+                        Just v
+
+                    else
+                        findBoolAttribute name xs
+
+                _ ->
+                    findBoolAttribute name xs
+
+
+findStringAttribute : String -> List EditorAttribute -> Maybe String
+findStringAttribute name attributes =
+    case attributes of
+        [] ->
+            Nothing
+
+        x :: xs ->
+            case x of
+                StringAttribute k v ->
+                    if k == name then
+                        Just v
+
+                    else
+                        findStringAttribute name xs
+
+                _ ->
+                    findStringAttribute name xs
+
+
+findIntegerAttribute : String -> List EditorAttribute -> Maybe Int
+findIntegerAttribute name attributes =
+    case attributes of
+        [] ->
+            Nothing
+
+        x :: xs ->
+            case x of
+                IntegerAttribute k v ->
+                    if k == name then
+                        Just v
+
+                    else
+                        findIntegerAttribute name xs
+
+                _ ->
+                    findIntegerAttribute name xs
 
 
 {-| A node path is a list of indexes that represent the path from an editor fragment to a node. It's
@@ -410,11 +489,30 @@ type alias MarkDefinition =
     }
 
 
+type alias ElementToHtml =
+    ElementParameters -> Array HtmlNode -> HtmlNode
+
+
+type alias HtmlToElement =
+    HtmlNode -> Maybe ( ElementParameters, Array HtmlNode )
+
+
 type alias NodeDefinition =
     { name : String
-    , toHtmlNode : ElementParameters -> Array HtmlNode -> HtmlNode
+    , toHtmlNode : ElementToHtml
+    , group : String
     , contentType : ContentType
-    , fromHtmlNode : HtmlNode -> Maybe ( ElementParameters, Array HtmlNode )
+    , fromHtmlNode : HtmlToElement
+    }
+
+
+nodeDefinition : String -> String -> ContentType -> (ElementParameters -> Array HtmlNode -> HtmlNode) -> (HtmlNode -> Maybe ( ElementParameters, Array HtmlNode )) -> NodeDefinition
+nodeDefinition name group contentType toHtml fromHtml =
+    { name = name
+    , group = group
+    , toHtmlNode = toHtml
+    , contentType = contentType
+    , fromHtmlNode = fromHtml
     }
 
 
@@ -423,6 +521,36 @@ type ContentType
     | TextBlockNodeType (Maybe (Set String))
     | BlockLeafNodeType
     | InlineLeafNodeType
+
+
+inlineLeafNodeType : ContentType
+inlineLeafNodeType =
+    InlineLeafNodeType
+
+
+blockLeafContentType : ContentType
+blockLeafContentType =
+    BlockLeafNodeType
+
+
+blockNodeContentType : List String -> ContentType
+blockNodeContentType allowedGroups =
+    BlockNodeType <|
+        if List.isEmpty allowedGroups then
+            Nothing
+
+        else
+            Just <| Set.fromList allowedGroups
+
+
+textBlockContentType : List String -> ContentType
+textBlockContentType allowedGroups =
+    TextBlockNodeType <|
+        if List.isEmpty allowedGroups then
+            Nothing
+
+        else
+            Just <| Set.fromList allowedGroups
 
 
 type alias Spec =

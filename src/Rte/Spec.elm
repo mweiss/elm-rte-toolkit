@@ -1,10 +1,11 @@
 module Rte.Spec exposing (..)
 
 import Array exposing (Array)
+import Dict exposing (Dict)
 import Html.Parser exposing (Node(..))
 import List.Extra
 import Result exposing (Result)
-import Rte.Model exposing (ChildNodes(..), ContentType(..), EditorAttribute(..), EditorFragment(..), EditorInlineLeaf(..), EditorNode(..), EditorState, ElementParameters, HtmlNode(..), Mark, MarkDefinition, NodeDefinition, Spec, inlineLeafArray)
+import Rte.Model exposing (ChildNodes(..), ContentType(..), EditorAttribute(..), EditorBlockNode, EditorFragment(..), EditorInlineLeaf(..), EditorNode(..), EditorState, ElementParameters, HtmlNode(..), Mark, MarkDefinition, NodeDefinition, Spec, inlineLeafArray)
 import Set
 
 
@@ -21,11 +22,14 @@ childNodesPlaceholder =
 defaultElementToHtml : String -> ElementParameters -> Array HtmlNode -> HtmlNode
 defaultElementToHtml tagName elementParameters children =
     ElementNode tagName
-        (List.map
+        (List.filterMap
             (\attr ->
                 case attr of
                     StringAttribute k v ->
-                        ( k, v )
+                        Just ( k, v )
+
+                    _ ->
+                        Nothing
             )
             elementParameters.attributes
         )
@@ -65,11 +69,14 @@ defaultHtmlToMark htmlTag markName node =
 defaultMarkToHtml : Mark -> Array HtmlNode -> HtmlNode
 defaultMarkToHtml mark children =
     ElementNode "span"
-        (List.map
+        (List.filterMap
             (\attr ->
                 case attr of
                     StringAttribute k v ->
-                        ( k, v )
+                        Just ( k, v )
+
+                    _ ->
+                        Nothing
             )
             mark.attributes
         )
@@ -112,7 +119,25 @@ findMarkDefinitionsFromSpec marks spec =
 
 validate : Spec -> EditorState -> Result String EditorState
 validate spec editorState =
-    Ok editorState
+    let
+        root =
+            editorState.root
+    in
+    case validateEditorBlockNode spec root of
+        [] ->
+            Ok editorState
+
+        result ->
+            Err <| String.join ", " result
+
+
+validateEditorBlockNode : Spec -> EditorBlockNode -> List String
+validateEditorBlockNode spec node =
+    let
+        definition =
+            findNodeDefinitionFromSpec node.parameters.name spec
+    in
+    []
 
 
 resultFilterMap : (a -> Result c b) -> Array a -> Array b
