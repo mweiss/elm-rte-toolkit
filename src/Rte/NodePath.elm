@@ -20,7 +20,12 @@ module Rte.NodePath exposing
 import Array exposing (Array)
 import List.Extra
 import Rte.Model exposing (ChildNodes(..), EditorBlockNode, EditorInlineLeaf(..), ElementParameters, HtmlNode(..), InlineLeafTree(..), Mark, NodePath, Selection, Spec)
-import Rte.Spec exposing (childNodesPlaceholder, findMarkDefinitionFromSpec, findMarkDefinitionsFromSpec, findNodeDefinitionFromSpec)
+import Rte.Spec
+    exposing
+        ( childNodesPlaceholder
+        , findMarkDefinitionFromSpecWithDefault
+        , findNodeDefinitionFromSpecWithDefault
+        )
 
 
 domToEditorInlineLeafTree : Spec -> InlineLeafTree -> NodePath -> Maybe NodePath
@@ -32,7 +37,7 @@ domToEditorInlineLeafTree spec tree path =
         MarkNode n ->
             let
                 markDefinition =
-                    findMarkDefinitionFromSpec n.mark.name spec
+                    findMarkDefinitionFromSpecWithDefault n.mark.name spec
 
                 structure =
                     markDefinition.toHtmlNode n.mark childNodesPlaceholder
@@ -66,7 +71,7 @@ domToEditor spec node path =
     else
         let
             nodeDefinition =
-                findNodeDefinitionFromSpec node.parameters.name spec
+                findNodeDefinitionFromSpecWithDefault node.parameters.name spec
 
             structure =
                 nodeDefinition.toHtmlNode node.parameters childNodesPlaceholder
@@ -247,7 +252,7 @@ pathToChildContentsFromMark : Spec -> Mark -> Maybe NodePath
 pathToChildContentsFromMark spec mark =
     let
         markDefinition =
-            findMarkDefinitionFromSpec mark.name spec
+            findMarkDefinitionFromSpecWithDefault mark.name spec
     in
     let
         markStructure =
@@ -264,7 +269,7 @@ pathToChildContentsFromElementParameters : Spec -> ElementParameters -> Maybe No
 pathToChildContentsFromElementParameters spec parameters =
     let
         nodeDefinition =
-            findNodeDefinitionFromSpec parameters.name spec
+            findNodeDefinitionFromSpecWithDefault parameters.name spec
 
         nodeStructure =
             nodeDefinition.toHtmlNode parameters childNodesPlaceholder

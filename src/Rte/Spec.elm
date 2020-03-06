@@ -1,12 +1,32 @@
 module Rte.Spec exposing (..)
 
 import Array exposing (Array)
-import Dict exposing (Dict)
 import Html.Parser exposing (Node(..))
 import List.Extra
 import Result exposing (Result)
-import Rte.Model exposing (ChildNodes(..), ContentType(..), EditorAttribute(..), EditorBlockNode, EditorFragment(..), EditorInlineLeaf(..), EditorNode(..), EditorState, ElementParameters, HtmlNode(..), Mark, MarkDefinition, NodeDefinition, Spec, inlineLeafArray)
-import Set
+import Rte.Model
+    exposing
+        ( ChildNodes(..)
+        , ContentType(..)
+        , EditorAttribute(..)
+        , EditorBlockNode
+        , EditorFragment(..)
+        , EditorInlineLeaf(..)
+        , EditorNode(..)
+        , EditorState
+        , ElementParameters
+        , HtmlNode(..)
+        , Mark
+        , MarkDefinition
+        , NodeDefinition
+        , Spec
+        , blockLeafContentType
+        , blockNodeContentType
+        , inlineLeafArray
+        , markDefinition
+        , nodeDefinition
+        )
+import Set exposing (Set)
 
 
 emptySpec : Spec
@@ -39,9 +59,8 @@ defaultElementToHtml tagName elementParameters children =
 defaultHtmlToElement : String -> String -> HtmlNode -> Maybe ( ElementParameters, Array HtmlNode )
 defaultHtmlToElement htmlTag elementName node =
     case node of
-        ElementNode name attrs children ->
+        ElementNode name _ children ->
             if name == htmlTag then
-                -- TODO: parse attributes
                 Just ( { name = elementName, attributes = [], annotations = Set.empty }, children )
 
             else
@@ -54,9 +73,8 @@ defaultHtmlToElement htmlTag elementName node =
 defaultHtmlToMark : String -> String -> HtmlNode -> Maybe ( Mark, Array HtmlNode )
 defaultHtmlToMark htmlTag markName node =
     case node of
-        ElementNode name attrs children ->
+        ElementNode name _ children ->
             if name == htmlTag then
-                -- TODO: parse attributes
                 Just ( { name = markName, attributes = [] }, children )
 
             else
@@ -68,7 +86,7 @@ defaultHtmlToMark htmlTag markName node =
 
 defaultMarkToHtml : Mark -> Array HtmlNode -> HtmlNode
 defaultMarkToHtml mark children =
-    ElementNode "span"
+    ElementNode mark.name
         (List.filterMap
             (\attr ->
                 case attr of
@@ -83,38 +101,38 @@ defaultMarkToHtml mark children =
         children
 
 
-findNodeDefinitionFromSpec : String -> Spec -> NodeDefinition
+findNodeDefinitionFromSpec : String -> Spec -> Maybe NodeDefinition
 findNodeDefinitionFromSpec name spec =
+    List.Extra.find (\n -> n.name == name) spec.nodes
+
+
+findNodeDefinitionFromSpecWithDefault : String -> Spec -> NodeDefinition
+findNodeDefinitionFromSpecWithDefault name spec =
     Maybe.withDefault
-        { name = name
-        , toHtmlNode = defaultElementToHtml name
-        , fromHtmlNode = defaultHtmlToElement name name
-        , contentType = BlockNodeType Nothing
-        }
-        (List.Extra.find (\n -> n.name == name) spec.nodes)
-
-
-findMarkDefinitionFromSpec : String -> Spec -> MarkDefinition
-findMarkDefinitionFromSpec name spec =
-    Maybe.withDefault
-        { name = name
-        , toHtmlNode = defaultMarkToHtml
-        , fromHtmlNode = defaultHtmlToMark name name
-        }
-        (List.Extra.find (\n -> n.name == name) spec.marks)
-
-
-findMarkDefinitionsFromSpec : List Mark -> Spec -> List ( Mark, MarkDefinition )
-findMarkDefinitionsFromSpec marks spec =
-    List.map
-        (\m ->
-            ( m, findMarkDefinitionFromSpec m.name spec )
+        (nodeDefinition
+            name
+            "block"
+            (blockNodeContentType [])
+            (defaultElementToHtml name)
+            (defaultHtmlToElement name name)
         )
-        marks
+        (findNodeDefinitionFromSpec name spec)
 
 
+findMarkDefinitionFromSpec : String -> Spec -> Maybe MarkDefinition
+findMarkDefinitionFromSpec name spec =
+    List.Extra.find (\n -> n.name == name) spec.marks
 
--- TODO: implement
+
+findMarkDefinitionFromSpecWithDefault : String -> Spec -> MarkDefinition
+findMarkDefinitionFromSpecWithDefault name spec =
+    Maybe.withDefault
+        (markDefinition
+            name
+            defaultMarkToHtml
+            (defaultHtmlToMark name name)
+        )
+        (findMarkDefinitionFromSpec name spec)
 
 
 validate : Spec -> EditorState -> Result String EditorState
@@ -123,7 +141,7 @@ validate spec editorState =
         root =
             editorState.root
     in
-    case validateEditorBlockNode spec root of
+    case validateEditorBlockNode spec Nothing root of
         [] ->
             Ok editorState
 
@@ -131,13 +149,100 @@ validate spec editorState =
             Err <| String.join ", " result
 
 
-validateEditorBlockNode : Spec -> EditorBlockNode -> List String
-validateEditorBlockNode spec node =
-    let
-        definition =
-            findNodeDefinitionFromSpec node.parameters.name spec
-    in
-    []
+toStringContentType : ContentType -> String
+toStringContentType contentType =
+    case contentType of
+        TextBlockNodeType _ ->
+            "TextBlockNodeType"
+
+        InlineLeafNodeType ->
+            "InlineLeafNodeType"
+
+        BlockNodeType _ ->
+            "BlockNodeType"
+
+        BlockLeafNodeType ->
+            "BlockLeafNodeType"
+
+
+validateInlineLeaf : Spec -> Maybe (Set String) -> EditorInlineLeaf -> List String
+validateInlineLeaf spec allowedGroups leaf =
+    case leaf of
+        TextLeaf _ ->
+            []
+
+        InlineLeaf il ->
+            case findNodeDefinitionFromSpec il.parameters.name spec of
+                Nothing ->
+                    [ "Cannot find node with definition '" ++ il.parameters.name ++ "'" ]
+
+                Just definition ->
+                    validateAllowedGroups allowedGroups definition.group
+
+
+validateAllowedGroups : Maybe (Set String) -> String -> List String
+validateAllowedGroups allowedGroups group =
+    case allowedGroups of
+        Nothing ->
+            []
+
+        Just groups ->
+            if Set.member group groups then
+                []
+
+            else
+                [ "Group "
+                    ++ group
+                    ++ " is not in allowed groups {"
+                    ++ String.join ", " (Set.toList groups)
+                    ++ "}"
+                ]
+
+
+validateEditorBlockNode : Spec -> Maybe (Set String) -> EditorBlockNode -> List String
+validateEditorBlockNode spec allowedGroups node =
+    case findNodeDefinitionFromSpec node.parameters.name spec of
+        Nothing ->
+            [ "Cannot find node with definition '" ++ node.parameters.name ++ "'" ]
+
+        Just definition ->
+            let
+                allowedGroupsErrors =
+                    validateAllowedGroups allowedGroups definition.group
+            in
+            if not <| List.isEmpty allowedGroupsErrors then
+                allowedGroupsErrors
+
+            else
+                case node.childNodes of
+                    BlockArray ba ->
+                        case definition.contentType of
+                            BlockNodeType groups ->
+                                List.concatMap
+                                    (validateEditorBlockNode spec groups)
+                                    (Array.toList ba)
+
+                            _ ->
+                                [ "I was expecting textblock content type, but instead I got "
+                                    ++ toStringContentType definition.contentType
+                                ]
+
+                    InlineLeafArray la ->
+                        case definition.contentType of
+                            TextBlockNodeType groups ->
+                                List.concatMap (validateInlineLeaf spec groups) (Array.toList la.array)
+
+                            _ ->
+                                [ "I was expecting textblock content type, but instead I got " ++ toStringContentType definition.contentType ]
+
+                    Leaf ->
+                        if definition.contentType == blockLeafContentType then
+                            []
+
+                        else
+                            [ "I was expecting leaf blockleaf content type, but instead I got "
+                                ++ toStringContentType definition.contentType
+                            ]
 
 
 resultFilterMap : (a -> Result c b) -> Array a -> Array b
@@ -167,15 +272,10 @@ htmlToElementArray spec html =
                     resultFilterMap (htmlNodeToEditorFragment spec []) htmlNodeArray
             in
             if Array.length newArray /= Array.length htmlNodeArray then
-                -- TODO: Come up with more fine grained error message
                 Err "Could not create a valid editor node array from html node array"
 
             else
                 Ok <| reduceEditorFragmentArray newArray
-
-
-
--- TODO: implement me!
 
 
 htmlNodeToEditorFragment : Spec -> List Mark -> HtmlNode -> Result String EditorFragment

@@ -93,6 +93,11 @@ type alias Mark =
     { name : String, attributes : List EditorAttribute }
 
 
+mark : String -> List EditorAttribute -> Mark
+mark name attributes =
+    { name = name, attributes = attributes }
+
+
 type alias Annotation =
     String
 
@@ -196,9 +201,9 @@ marksToMarkNodeListRec indexedMarkLists =
                     Nothing ->
                         LeafNode i :: List.map (\( j, _ ) -> LeafNode <| j) groupRest
 
-                    Just mark ->
+                    Just mk ->
                         [ MarkNode
-                            { mark = mark
+                            { mark = mk
                             , children = marksToMarkNodeListRec (( i, rest ) :: List.map (\( j, ( _, r ) ) -> ( j, r )) groupRest)
                             }
                         ]
@@ -484,9 +489,17 @@ type alias HtmlAttribute =
 
 type alias MarkDefinition =
     { name : String
-    , toHtmlNode : Mark -> Array HtmlNode -> HtmlNode
-    , fromHtmlNode : HtmlNode -> Maybe ( Mark, Array HtmlNode )
+    , toHtmlNode : MarkToHtml
+    , fromHtmlNode : HtmlToMark
     }
+
+
+type alias MarkToHtml =
+    Mark -> Array HtmlNode -> HtmlNode
+
+
+type alias HtmlToMark =
+    HtmlNode -> Maybe ( Mark, Array HtmlNode )
 
 
 type alias ElementToHtml =
@@ -506,12 +519,20 @@ type alias NodeDefinition =
     }
 
 
-nodeDefinition : String -> String -> ContentType -> (ElementParameters -> Array HtmlNode -> HtmlNode) -> (HtmlNode -> Maybe ( ElementParameters, Array HtmlNode )) -> NodeDefinition
+nodeDefinition : String -> String -> ContentType -> ElementToHtml -> HtmlToElement -> NodeDefinition
 nodeDefinition name group contentType toHtml fromHtml =
     { name = name
     , group = group
     , toHtmlNode = toHtml
     , contentType = contentType
+    , fromHtmlNode = fromHtml
+    }
+
+
+markDefinition : String -> MarkToHtml -> HtmlToMark -> MarkDefinition
+markDefinition name toHtml fromHtml =
+    { name = name
+    , toHtmlNode = toHtml
     , fromHtmlNode = fromHtml
     }
 

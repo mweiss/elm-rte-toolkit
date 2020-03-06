@@ -17,7 +17,7 @@ import Rte.Model exposing (..)
 import Rte.Node exposing (nodeAt)
 import Rte.NodePath as NodePath exposing (toString)
 import Rte.Selection exposing (domToEditor, editorToDom, isCollapsed, markSelection)
-import Rte.Spec exposing (childNodesPlaceholder, findNodeDefinitionFromSpec)
+import Rte.Spec exposing (childNodesPlaceholder, findNodeDefinitionFromSpec, findNodeDefinitionFromSpecWithDefault)
 
 
 updateSelection : Maybe Selection -> Bool -> Editor msg -> Editor msg
@@ -486,7 +486,7 @@ renderElementFromSpec : Editor msg -> ElementParameters -> NodePath -> Array (Ht
 renderElementFromSpec editor elementParameters backwardsNodePath children =
     let
         definition =
-            findNodeDefinitionFromSpec elementParameters.name editor.spec
+            findNodeDefinitionFromSpecWithDefault elementParameters.name editor.spec
 
         node =
             definition.toHtmlNode elementParameters childNodesPlaceholder

@@ -2,7 +2,7 @@ module Rte.HtmlNode exposing (..)
 
 import Array exposing (Array)
 import Rte.Model exposing (ChildNodes(..), EditorBlockNode, EditorInlineLeaf(..), ElementParameters, HtmlNode(..), InlineLeafTree(..), Mark, Spec, TextLeafContents)
-import Rte.Spec exposing (findMarkDefinitionFromSpec, findNodeDefinitionFromSpec)
+import Rte.Spec exposing (findMarkDefinitionFromSpecWithDefault, findNodeDefinitionFromSpecWithDefault)
 
 
 {-| Renders marks to their HtmlNode representation.
@@ -11,18 +11,18 @@ markToHtmlNode : Spec -> Mark -> Array HtmlNode -> HtmlNode
 markToHtmlNode spec mark children =
     let
         markDefinition =
-            findMarkDefinitionFromSpec mark.name spec
+            findMarkDefinitionFromSpecWithDefault mark.name spec
     in
     markDefinition.toHtmlNode mark children
 
 
 {-| Renders element parameters to their HtmlNode representation.
 -}
-elementToHtmlNode : Spec -> ElementParameters -> List Mark -> Array HtmlNode -> HtmlNode
-elementToHtmlNode spec parameters marks children =
+elementToHtmlNode : Spec -> ElementParameters -> Array HtmlNode -> HtmlNode
+elementToHtmlNode spec parameters children =
     let
         nodeDefinition =
-            findNodeDefinitionFromSpec parameters.name spec
+            findNodeDefinitionFromSpecWithDefault parameters.name spec
     in
     nodeDefinition.toHtmlNode parameters children
 
@@ -31,7 +31,7 @@ elementToHtmlNode spec parameters marks children =
 -}
 editorBlockNodeToHtmlNode : Spec -> EditorBlockNode -> HtmlNode
 editorBlockNodeToHtmlNode spec node =
-    elementToHtmlNode spec node.parameters [] (childNodesToHtmlNode spec node.childNodes)
+    elementToHtmlNode spec node.parameters (childNodesToHtmlNode spec node.childNodes)
 
 
 {-| Renders child nodes to their HtmlNode representation.
@@ -51,8 +51,8 @@ childNodesToHtmlNode spec childNodes =
 
 {-| Renders text nodes to their HtmlNode representation.
 -}
-textToHtmlNode : Spec -> TextLeafContents -> HtmlNode
-textToHtmlNode spec contents =
+textToHtmlNode : TextLeafContents -> HtmlNode
+textToHtmlNode contents =
     TextNode contents.text
 
 
@@ -82,7 +82,7 @@ editorInlineLeafToHtmlNode : Spec -> EditorInlineLeaf -> HtmlNode
 editorInlineLeafToHtmlNode spec node =
     case node of
         TextLeaf contents ->
-            textToHtmlNode spec contents
+            textToHtmlNode contents
 
         InlineLeaf l ->
-            elementToHtmlNode spec l.parameters l.marks Array.empty
+            elementToHtmlNode spec l.parameters Array.empty

@@ -6,17 +6,13 @@ import BasicSpecs exposing (simpleSpec)
 import Browser
 import Html exposing (Html, div)
 import Html.Attributes
-import Rte.Commands exposing (enterKey, inputEvent, insertBlockNode, key, lift, liftEmpty, otherwiseDo, returnKey, set, splitBlockHeaderToNewParagraph, toggleBlock, toggleMarkOnInlineNodes, wrap)
+import Rte.Commands exposing (enterKey, inputEvent, insertBlockNode, key, lift, liftEmpty, returnKey, set, splitBlockHeaderToNewParagraph, toggleBlock, toggleMarkOnInlineNodes, wrap)
 import Rte.Decorations exposing (addElementDecoration, emptyDecorations, selectableDecoration)
 import Rte.Editor exposing (internalUpdate)
 import Rte.EditorUtils exposing (applyCommand)
 import Rte.List exposing (ListType, defaultListDefinition)
-import Rte.Model exposing (ChildNodes(..), Editor, EditorAttribute(..), EditorBlockNode, EditorInlineLeaf(..), InternalEditorMsg(..), Mark, inlineLeafArray, selectableAnnotation)
+import Rte.Model exposing (ChildNodes(..), Editor, EditorAttribute(..), EditorBlockNode, EditorInlineLeaf(..), InternalEditorMsg(..), Mark, elementParameters, inlineLeafArray, selectableAnnotation)
 import Set
-
-
-headerElements =
-    [ "h1", "h2", "h3", "h4", "h5", "h6" ]
 
 
 
@@ -35,41 +31,34 @@ inlineImageNode =
     InlineLeaf
         { marks = []
         , parameters =
-            { name = "img"
-            , attributes = [ StringAttribute "src" "logo.svg" ]
-            , annotations = Set.fromList [ selectableAnnotation ]
-            }
+            elementParameters "image" [ StringAttribute "src" "logo.svg" ] <|
+                Set.fromList [ selectableAnnotation ]
         }
 
 
 paragraphWithImage =
-    { parameters =
-        { name = "p"
-        , attributes = []
-        , annotations = Set.empty
-        }
-    , childNodes = inlineLeafArray (Array.fromList [ TextLeaf { text = "", marks = [], annotations = Set.empty }, inlineImageNode, TextLeaf { text = "", marks = [], annotations = Set.empty } ])
+    { parameters = elementParameters "paragraph" [] Set.empty
+    , childNodes =
+        inlineLeafArray
+            (Array.fromList
+                [ TextLeaf { text = "", marks = [], annotations = Set.empty }
+                , inlineImageNode
+                , TextLeaf { text = "", marks = [], annotations = Set.empty }
+                ]
+            )
     }
 
 
 doubleInitNode : EditorBlockNode
 doubleInitNode =
-    { parameters =
-        { name = "div"
-        , attributes = []
-        , annotations = Set.empty
-        }
+    { parameters = elementParameters "doc" [] Set.empty
     , childNodes = BlockArray (Array.fromList [ initialEditorNode, paragraphWithImage, initialEditorNode ])
     }
 
 
 initialEditorNode : EditorBlockNode
 initialEditorNode =
-    { parameters =
-        { name = "p"
-        , attributes = []
-        , annotations = Set.empty
-        }
+    { parameters = elementParameters "paragraph" [] Set.empty
     , childNodes = inlineLeafArray (Array.fromList [ TextLeaf { text = "This is some sample text", marks = [], annotations = Set.empty } ])
     }
 
@@ -84,7 +73,7 @@ commandBindings =
         (Rte.Commands.defaultCommandBindings
             |> set [ inputEvent "insertParagraph", key [ enterKey ], key [ returnKey ] ]
                 [ ( "liftEmpty", liftEmpty )
-                , ( "splitBlockHeaderToNewParagraph", splitBlockHeaderToNewParagraph headerElements "p" )
+                , ( "splitBlockHeaderToNewParagraph", splitBlockHeaderToNewParagraph [ "header" ] "p" )
                 ]
         )
 
@@ -94,8 +83,8 @@ commandBindings =
 
 
 decorations =
-    addElementDecoration "img" selectableDecoration <|
-        addElementDecoration "hr" selectableDecoration <|
+    addElementDecoration "image" selectableDecoration <|
+        addElementDecoration "horizontal_rule" selectableDecoration <|
             emptyDecorations
 
 
@@ -320,7 +309,12 @@ handleToggleBlock block model =
     { model
         | editor =
             Result.withDefault model.editor
-                (applyCommand ( "toggleBlock", toggleBlock (headerElements ++ [ "code_block", "p" ]) tagName "p" ) model.editor)
+                (applyCommand
+                    ( "toggleBlock"
+                    , toggleBlock [ "header", "code_block", "paragraph" ] tagName "p"
+                    )
+                    model.editor
+                )
     }
 
 
@@ -330,7 +324,11 @@ handleWrapBlockNode model =
         | editor =
             Result.withDefault model.editor
                 (applyCommand
-                    ( "wrapBlockquote", wrap (\n -> n) { name = "blockquote", annotations = Set.empty, attributes = [] } )
+                    ( "wrapBlockquote"
+                    , wrap
+                        (\n -> n)
+                        (elementParameters "blockquote" [] Set.empty)
+                    )
                     model.editor
                 )
     }
@@ -344,7 +342,11 @@ handleInsertHorizontalRule model =
                 (applyCommand
                     ( "insertHR"
                     , insertBlockNode
-                        { parameters = { name = "hr", annotations = Set.fromList [ selectableAnnotation ], attributes = [] }
+                        { parameters =
+                            elementParameters
+                                "horizontal_rule"
+                                []
+                                (Set.fromList [ selectableAnnotation ])
                         , childNodes = Leaf
                         }
                     )

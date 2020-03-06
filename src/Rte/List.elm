@@ -46,9 +46,9 @@ commandBindings definition =
 
 defaultListDefinition : ListDefinition
 defaultListDefinition =
-    { ordered = elementParameters "ol" [] Set.empty
-    , unordered = elementParameters "ul" [] Set.empty
-    , item = elementParameters "li" [] Set.empty
+    { ordered = elementParameters "ordered_list" [] Set.empty
+    , unordered = elementParameters "unordered_list" [] Set.empty
+    , item = elementParameters "list_item" [] Set.empty
     }
 
 

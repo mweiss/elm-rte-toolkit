@@ -513,7 +513,7 @@ insertLineBreak =
     insertInlineElement
         (InlineLeaf
             { marks = []
-            , parameters = { name = "br", attributes = [], annotations = Set.empty }
+            , parameters = { name = "hard_break", attributes = [], annotations = Set.empty }
             }
         )
 

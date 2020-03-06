@@ -1,20 +1,9 @@
 module BasicSpecs exposing (..)
 
 import Array exposing (Array)
-import List.Extra
-import Rte.Model exposing (ContentType(..), EditorAttribute(..), ElementParameters, ElementToHtml, HtmlNode(..), HtmlToElement, Mark, NodeDefinition, Spec, blockLeafContentType, blockNodeContentType, elementParameters, findIntegerAttribute, findStringAttribute, inlineLeafNodeType, nodeDefinition, selectableAnnotation, textBlockContentType)
+import Rte.Model exposing (ContentType(..), EditorAttribute(..), ElementParameters, ElementToHtml, HtmlNode(..), HtmlToElement, HtmlToMark, Mark, MarkDefinition, MarkToHtml, NodeDefinition, Spec, blockLeafContentType, blockNodeContentType, elementParameters, findIntegerAttribute, findStringAttribute, inlineLeafNodeType, mark, markDefinition, nodeDefinition, selectableAnnotation, textBlockContentType)
 import Rte.Spec exposing (defaultElementToHtml, defaultHtmlToElement, defaultHtmlToMark)
 import Set
-
-
-boldToHtmlNode : Mark -> Array HtmlNode -> HtmlNode
-boldToHtmlNode mark children =
-    ElementNode "b" [] children
-
-
-italicToHtmlNode : Mark -> Array HtmlNode -> HtmlNode
-italicToHtmlNode mark children =
-    ElementNode "i" [] children
 
 
 doc : NodeDefinition
@@ -67,6 +56,7 @@ htmlToParagraph node =
             Nothing
 
 
+blockquote : NodeDefinition
 blockquote =
     nodeDefinition "blockquote" "block" (blockNodeContentType [ "block" ]) blockquoteToHtml htmlToBlockquote
 
@@ -81,8 +71,9 @@ htmlToBlockquote =
     defaultHtmlToElement "blockquote" "blockquote"
 
 
+horizontalRule : NodeDefinition
 horizontalRule =
-    nodeDefinition "horizontal_rule" "block" blockLeafContentType blockquoteToHtml htmlToBlockquote
+    nodeDefinition "horizontal_rule" "block" blockLeafContentType horizontalRuleToHtml htmlToHorizontalRule
 
 
 horizontalRuleToHtml : ElementToHtml
@@ -104,6 +95,7 @@ htmlToHorizontalRule node =
             Nothing
 
 
+heading : NodeDefinition
 heading =
     nodeDefinition "heading" "block" (textBlockContentType [ "inline" ]) headingToHtml htmlToHeading
 
@@ -161,6 +153,7 @@ htmlToHeading node =
             Nothing
 
 
+codeBlock : NodeDefinition
 codeBlock =
     nodeDefinition
         "code_block"
@@ -171,7 +164,7 @@ codeBlock =
 
 
 codeBlockToHtmlNode : ElementToHtml
-codeBlockToHtmlNode parameters children =
+codeBlockToHtmlNode _ children =
     ElementNode "pre"
         []
         (Array.fromList [ ElementNode "code" [] children ])
@@ -180,7 +173,7 @@ codeBlockToHtmlNode parameters children =
 htmlNodeToCodeBlock : HtmlToElement
 htmlNodeToCodeBlock node =
     case node of
-        ElementNode name attrs children ->
+        ElementNode name _ children ->
             if name == "pre" && Array.length children == 1 then
                 case Array.get 0 children of
                     Nothing ->
@@ -201,6 +194,7 @@ htmlNodeToCodeBlock node =
             Nothing
 
 
+image : NodeDefinition
 image =
     nodeDefinition "image" "inline" inlineLeafNodeType imageToHtmlNode htmlNodeToImage
 
@@ -209,15 +203,7 @@ imageToHtmlNode : ElementToHtml
 imageToHtmlNode parameters _ =
     let
         attributes =
-            List.filterMap
-                (\( p, v ) ->
-                    case v of
-                        Nothing ->
-                            Nothing
-
-                        Just tv ->
-                            Just ( p, tv )
-                )
+            filterAttributesToHtml
                 [ ( "src", Just <| Maybe.withDefault "" (findStringAttribute "src" parameters.attributes) )
                 , ( "alt", findStringAttribute "alt" parameters.attributes )
                 , ( "title", findStringAttribute "title" parameters.attributes )
@@ -272,6 +258,206 @@ htmlNodeToImage node =
             Nothing
 
 
+hardBreak : NodeDefinition
+hardBreak =
+    nodeDefinition "hard_break" "inline" inlineLeafNodeType hardBreakToHtml htmlToHardBreak
+
+
+hardBreakToHtml : ElementToHtml
+hardBreakToHtml =
+    defaultElementToHtml "br"
+
+
+htmlToHardBreak : HtmlToElement
+htmlToHardBreak =
+    defaultHtmlToElement "br" "hard_break"
+
+
+filterAttributesToHtml : List ( String, Maybe String ) -> List ( String, String )
+filterAttributesToHtml attrs =
+    List.filterMap
+        (\( p, v ) ->
+            case v of
+                Nothing ->
+                    Nothing
+
+                Just tv ->
+                    Just ( p, tv )
+        )
+        attrs
+
+
+
+--- List node definitions
+
+
+orderedList : NodeDefinition
+orderedList =
+    nodeDefinition
+        "ordered_list"
+        "block"
+        (blockNodeContentType [ "list_item" ])
+        orderedListToHtml
+        htmlToOrderedList
+
+
+orderedListToHtml : ElementToHtml
+orderedListToHtml _ children =
+    ElementNode "ol" [] children
+
+
+htmlToOrderedList : HtmlToElement
+htmlToOrderedList =
+    defaultHtmlToElement "ol" "ordered_list"
+
+
+unorderedList : NodeDefinition
+unorderedList =
+    nodeDefinition
+        "unordered_list"
+        "block"
+        (blockNodeContentType [ "list_item" ])
+        unorderedListToHtml
+        htmlToUnorderedList
+
+
+unorderedListToHtml : ElementToHtml
+unorderedListToHtml _ children =
+    ElementNode "ul" [] children
+
+
+htmlToUnorderedList : HtmlToElement
+htmlToUnorderedList =
+    defaultHtmlToElement "ul" "unordered_list"
+
+
+listItem : NodeDefinition
+listItem =
+    nodeDefinition
+        "list_item"
+        "list_item"
+        (blockNodeContentType [ "block" ])
+        listItemToHtml
+        htmlToListItem
+
+
+listItemToHtml : ElementToHtml
+listItemToHtml _ children =
+    ElementNode "li" [] children
+
+
+htmlToListItem : HtmlToElement
+htmlToListItem =
+    defaultHtmlToElement "li" "list_item"
+
+
+
+-- Mark definitions
+
+
+link : MarkDefinition
+link =
+    markDefinition "link" linkToHtmlNode htmlNodeToLink
+
+
+linkToHtmlNode : MarkToHtml
+linkToHtmlNode mark children =
+    let
+        attributes =
+            filterAttributesToHtml
+                [ ( "href", Just <| Maybe.withDefault "" (findStringAttribute "href" mark.attributes) )
+                , ( "title", findStringAttribute "title" mark.attributes )
+                ]
+    in
+    ElementNode "a"
+        attributes
+        children
+
+
+htmlNodeToLink : HtmlToMark
+htmlNodeToLink node =
+    case node of
+        ElementNode name attributes children ->
+            if name == "a" then
+                let
+                    elementNodeAttributes =
+                        List.filterMap
+                            (\( k, v ) ->
+                                case k of
+                                    "href" ->
+                                        Just <| StringAttribute "src" v
+
+                                    "title" ->
+                                        Just <| StringAttribute "title" v
+
+                                    _ ->
+                                        Nothing
+                            )
+                            attributes
+                in
+                if findStringAttribute "href" elementNodeAttributes /= Nothing then
+                    Just
+                        ( mark
+                            "link"
+                            elementNodeAttributes
+                        , children
+                        )
+
+                else
+                    Nothing
+
+            else
+                Nothing
+
+        _ ->
+            Nothing
+
+
+bold : MarkDefinition
+bold =
+    markDefinition "bold" boldToHtmlNode htmlNodeToBold
+
+
+boldToHtmlNode : MarkToHtml
+boldToHtmlNode _ children =
+    ElementNode "b" [] children
+
+
+htmlNodeToBold : HtmlToMark
+htmlNodeToBold =
+    defaultHtmlToMark "b" "bold"
+
+
+italic : MarkDefinition
+italic =
+    markDefinition "italic" italicToHtmlNode htmlNodeToItalic
+
+
+italicToHtmlNode : MarkToHtml
+italicToHtmlNode _ children =
+    ElementNode "i" [] children
+
+
+htmlNodeToItalic : HtmlToMark
+htmlNodeToItalic =
+    defaultHtmlToMark "i" "italic"
+
+
+code : MarkDefinition
+code =
+    markDefinition "code" codeToHtmlNode htmlNodeToCode
+
+
+codeToHtmlNode : MarkToHtml
+codeToHtmlNode _ children =
+    ElementNode "code" [] children
+
+
+htmlNodeToCode : HtmlToMark
+htmlNodeToCode =
+    defaultHtmlToMark "code" "code"
+
+
 simpleSpec : Spec
 simpleSpec =
     { nodes =
@@ -282,9 +468,15 @@ simpleSpec =
         , heading
         , codeBlock
         , image
+        , hardBreak
+        , unorderedList
+        , orderedList
+        , listItem
         ]
     , marks =
-        [ { name = "bold", toHtmlNode = boldToHtmlNode, fromHtmlNode = defaultHtmlToMark "b" "bold" }
-        , { name = "italic", toHtmlNode = italicToHtmlNode, fromHtmlNode = defaultHtmlToMark "i" "italic" }
+        [ link
+        , bold
+        , italic
+        , code
         ]
     }
