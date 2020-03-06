@@ -1,7 +1,7 @@
 module BasicSpecs exposing (..)
 
 import Array exposing (Array)
-import Rte.Model exposing (ContentType(..), EditorAttribute(..), ElementParameters, ElementToHtml, HtmlNode(..), HtmlToElement, HtmlToMark, Mark, MarkDefinition, MarkToHtml, NodeDefinition, Spec, blockLeafContentType, blockNodeContentType, elementParameters, findIntegerAttribute, findStringAttribute, inlineLeafNodeType, mark, markDefinition, nodeDefinition, selectableAnnotation, textBlockContentType)
+import Rte.Model exposing (ContentType(..), EditorAttribute(..), ElementParameters, ElementToHtml, HtmlNode(..), HtmlToElement, HtmlToMark, Mark, MarkDefinition, MarkToHtml, NodeDefinition, Spec, blockLeafContentType, blockNodeContentType, elementParameters, findIntegerAttribute, findStringAttribute, inlineLeafContentType, mark, markDefinition, nodeDefinition, selectableAnnotation, textBlockContentType)
 import Rte.Spec exposing (defaultElementToHtml, defaultHtmlToElement, defaultHtmlToMark)
 import Set
 
@@ -196,7 +196,7 @@ htmlNodeToCodeBlock node =
 
 image : NodeDefinition
 image =
-    nodeDefinition "image" "inline" inlineLeafNodeType imageToHtmlNode htmlNodeToImage
+    nodeDefinition "image" "inline" inlineLeafContentType imageToHtmlNode htmlNodeToImage
 
 
 imageToHtmlNode : ElementToHtml
@@ -260,7 +260,7 @@ htmlNodeToImage node =
 
 hardBreak : NodeDefinition
 hardBreak =
-    nodeDefinition "hard_break" "inline" inlineLeafNodeType hardBreakToHtml htmlToHardBreak
+    nodeDefinition "hard_break" "inline" inlineLeafContentType hardBreakToHtml htmlToHardBreak
 
 
 hardBreakToHtml : ElementToHtml

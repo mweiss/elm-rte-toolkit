@@ -1,20 +1,35 @@
 module SimpleSpec exposing (..)
 
 import Array exposing (Array)
-import Rte.Model exposing (ContentType(..), EditorFragment(..), EditorInlineLeaf(..), ElementParameters, HtmlNode(..), Mark, Spec, inlineLeafArray)
-import Rte.Spec exposing (defaultElementToHtml, defaultHtmlToElement, defaultHtmlToMark, htmlToElementArray)
+import Rte.Model
+    exposing
+        ( ContentType(..)
+        , EditorFragment(..)
+        , EditorInlineLeaf(..)
+        , ElementParameters
+        , HtmlNode(..)
+        , Mark
+        , Spec
+        , blockNodeContentType
+        , elementParameters
+        , inlineLeafContentType
+        , markDefinition
+        , nodeDefinition
+        , textBlockContentType
+        )
+import Rte.Spec exposing (defaultElementToHtml, defaultHtmlToElement, defaultHtmlToMark)
 import Set
 
 
 codeBlockToHtmlNode : ElementParameters -> Array HtmlNode -> HtmlNode
-codeBlockToHtmlNode parameters children =
+codeBlockToHtmlNode _ children =
     ElementNode "pre"
         []
         (Array.fromList [ ElementNode "code" [] children ])
 
 
 crazyBlockToHtmlNode : ElementParameters -> Array HtmlNode -> HtmlNode
-crazyBlockToHtmlNode parameters children =
+crazyBlockToHtmlNode _ children =
     ElementNode "div"
         []
     <|
@@ -28,7 +43,7 @@ crazyBlockToHtmlNode parameters children =
 htmlNodeToCrazyBlock : HtmlNode -> Maybe ( ElementParameters, Array HtmlNode )
 htmlNodeToCrazyBlock node =
     case node of
-        ElementNode name attrs children ->
+        ElementNode name _ children ->
             if name == "div" && Array.length children /= 3 then
                 Nothing
 
@@ -39,8 +54,8 @@ htmlNodeToCrazyBlock node =
 
                     Just n ->
                         case n of
-                            ElementNode _ a c ->
-                                Just ( { name = "crazy_block", attributes = [], annotations = Set.empty }, c )
+                            ElementNode _ _ c ->
+                                Just ( elementParameters "crazy_block" [] Set.empty, c )
 
                             _ ->
                                 Nothing
@@ -52,7 +67,7 @@ htmlNodeToCrazyBlock node =
 htmlNodeToCodeBlock : HtmlNode -> Maybe ( ElementParameters, Array HtmlNode )
 htmlNodeToCodeBlock node =
     case node of
-        ElementNode name attrs children ->
+        ElementNode name _ children ->
             if name == "pre" && Array.length children == 1 then
                 case Array.get 0 children of
                     Nothing ->
@@ -60,8 +75,8 @@ htmlNodeToCodeBlock node =
 
                     Just n ->
                         case n of
-                            ElementNode childName childAttrs childChildren ->
-                                Just ( { name = "code_block", attributes = [], annotations = Set.empty }, childChildren )
+                            ElementNode _ _ childChildren ->
+                                Just ( elementParameters "code_block" [] Set.empty, childChildren )
 
                             _ ->
                                 Nothing
@@ -74,47 +89,45 @@ htmlNodeToCodeBlock node =
 
 
 boldToHtmlNode : Mark -> Array HtmlNode -> HtmlNode
-boldToHtmlNode mark children =
+boldToHtmlNode _ children =
     ElementNode "b" [] children
 
 
 italicToHtmlNode : Mark -> Array HtmlNode -> HtmlNode
-italicToHtmlNode mark children =
+italicToHtmlNode _ children =
     ElementNode "i" [] children
 
 
 simpleSpec : Spec
 simpleSpec =
     { nodes =
-        [ { name = "code_block"
-          , toHtmlNode = codeBlockToHtmlNode
-          , fromHtmlNode = htmlNodeToCodeBlock
-          , contentType = BlockNodeType Nothing
-          }
-        , { name = "crazy_block"
-          , toHtmlNode = crazyBlockToHtmlNode
-          , fromHtmlNode = htmlNodeToCrazyBlock
-          , contentType = BlockNodeType Nothing
-          }
-        , { name = "paragraph"
-          , toHtmlNode = defaultElementToHtml "p"
-          , fromHtmlNode = defaultHtmlToElement "p" "paragraph"
-          , contentType = TextBlockNodeType Nothing
-          }
-        , { name = "image"
-          , toHtmlNode = defaultElementToHtml "img"
-          , fromHtmlNode = defaultHtmlToElement "img" "image"
-          , contentType = InlineLeafNodeType
-          }
+        [ nodeDefinition
+            "code_block"
+            "block"
+            (blockNodeContentType [])
+            codeBlockToHtmlNode
+            htmlNodeToCodeBlock
+        , nodeDefinition
+            "crazy_block"
+            "block"
+            (blockNodeContentType [])
+            crazyBlockToHtmlNode
+            htmlNodeToCrazyBlock
+        , nodeDefinition
+            "paragraph"
+            "block"
+            (textBlockContentType [])
+            (defaultElementToHtml "p")
+            (defaultHtmlToElement "p" "paragraph")
+        , nodeDefinition
+            "image"
+            "inline"
+            inlineLeafContentType
+            (defaultElementToHtml "img")
+            (defaultHtmlToElement "img" "image")
         ]
     , marks =
-        [ { name = "bold"
-          , toHtmlNode = boldToHtmlNode
-          , fromHtmlNode = defaultHtmlToMark "b" "bold"
-          }
-        , { name = "italic"
-          , toHtmlNode = italicToHtmlNode
-          , fromHtmlNode = defaultHtmlToMark "i" "italic"
-          }
+        [ markDefinition "bold" boldToHtmlNode (defaultHtmlToMark "b" "bold")
+        , markDefinition "italic" italicToHtmlNode (defaultHtmlToMark "i" "italic")
         ]
     }

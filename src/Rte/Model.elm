@@ -544,8 +544,8 @@ type ContentType
     | InlineLeafNodeType
 
 
-inlineLeafNodeType : ContentType
-inlineLeafNodeType =
+inlineLeafContentType : ContentType
+inlineLeafContentType =
     InlineLeafNodeType
 
 
