@@ -1,6 +1,6 @@
 module Rte.Selection exposing (caretSelection, clearSelectionAnnotations, domToEditor, editorToDom, isCollapsed, markSelection, normalizeSelection, rangeSelection, selectionFromMarks, singleNodeRangeSelection)
 
-import Rte.Annotation exposing (addAnnotationAtPath, clearAnnotations)
+import Rte.Annotation exposing (addAnnotationAtPath, clearAnnotations, findPathsWithAnnotation, getAnnotationsFromNode)
 import Rte.Model exposing (Annotation, ChildNodes(..), EditorBlockNode, EditorInlineLeaf(..), EditorNode(..), ElementParameters, HtmlNode(..), Mark, NodePath, Selection, Spec, selectionAnnotation)
 import Rte.Node exposing (indexedFoldl)
 import Rte.NodePath as Path
@@ -96,24 +96,9 @@ clearSelectionAnnotations =
     clearAnnotations selectionAnnotation
 
 
-getAnnotationsFromNode : EditorNode -> Set Annotation
-getAnnotationsFromNode node =
-    case node of
-        BlockNodeWrapper blockNode ->
-            blockNode.parameters.annotations
-
-        InlineLeafWrapper inlineLeaf ->
-            case inlineLeaf of
-                InlineLeaf p ->
-                    p.parameters.annotations
-
-                TextLeaf p ->
-                    p.annotations
-
-
 selectionFromMarks : EditorBlockNode -> Int -> Int -> Maybe Selection
 selectionFromMarks node anchorOffset focusOffset =
-    case findNodeRangeFromSelectionMarks node of
+    case findNodeRangeFromSelectionAnnotations node of
         Nothing ->
             Nothing
 
@@ -121,22 +106,13 @@ selectionFromMarks node anchorOffset focusOffset =
             Just (rangeSelection start anchorOffset end focusOffset)
 
 
-findNodeRangeFromSelectionMarks : EditorBlockNode -> Maybe ( NodePath, NodePath )
-findNodeRangeFromSelectionMarks node =
+findNodeRangeFromSelectionAnnotations : EditorBlockNode -> Maybe ( NodePath, NodePath )
+findNodeRangeFromSelectionAnnotations node =
     let
-        marks =
-            indexedFoldl
-                (\path n agg ->
-                    if Set.member selectionAnnotation <| getAnnotationsFromNode n then
-                        path :: agg
-
-                    else
-                        agg
-                )
-                []
-                (BlockNodeWrapper node)
+        paths =
+            findPathsWithAnnotation selectionAnnotation node
     in
-    case marks of
+    case paths of
         [] ->
             Nothing
 

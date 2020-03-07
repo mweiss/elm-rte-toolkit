@@ -1,6 +1,6 @@
 
 
-const zeroWidthSpace = "\u200B"
+const zeroWidthSpace = "\u200B";
 
 const getSelectionPath = (node, editor, offset) => {
     let originalNode = node;
@@ -192,7 +192,9 @@ class ElmEditor extends HTMLElement {
     constructor() {
         super();
         this.mutationObserverCallback = this.mutationObserverCallback.bind(this);
+        this.pasteCallback = this.pasteCallback.bind(this);
         this._observer = new MutationObserver(this.mutationObserverCallback);
+        this.addEventListener("paste", this.pasteCallback)
     }
 
     connectedCallback() {
@@ -201,6 +203,21 @@ class ElmEditor extends HTMLElement {
 
     disconnectedCallback() {
         this._observer.disconnect();
+    }
+
+    pasteCallback(e) {
+        e.preventDefault();
+
+        const clipboardData = e.clipboardData || window.clipboardData;
+        const text = clipboardData.getData('text') || "";
+        const html = clipboardData.getData('text/html') || "";
+        let newEvent = new CustomEvent("pastewithdata", {
+            detail: {
+                text: text,
+                html: html
+            }
+        });
+        this.dispatchEvent(newEvent)
     }
 
     /**

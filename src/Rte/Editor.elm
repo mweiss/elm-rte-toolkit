@@ -16,8 +16,9 @@ import Rte.KeyDown
 import Rte.Model exposing (..)
 import Rte.Node exposing (nodeAt)
 import Rte.NodePath as NodePath exposing (toString)
+import Rte.Paste
 import Rte.Selection exposing (domToEditor, editorToDom, isCollapsed, markSelection)
-import Rte.Spec exposing (childNodesPlaceholder, findNodeDefinitionFromSpec, findNodeDefinitionFromSpecWithDefault)
+import Rte.Spec exposing (childNodesPlaceholder, findNodeDefinitionFromSpecWithDefault)
 
 
 updateSelection : Maybe Selection -> Bool -> Editor msg -> Editor msg
@@ -62,6 +63,9 @@ internalUpdate msg editor =
 
         KeyDownEvent e ->
             Rte.KeyDown.handleKeyDown e editor
+
+        PasteWithDataEvent e ->
+            Rte.Paste.handlePaste e editor
 
 
 textChangesDomToEditor : Spec -> EditorBlockNode -> List TextChange -> Maybe (List TextChange)
@@ -226,6 +230,15 @@ editorSelectionChangeDecoder =
         (D.succeed True)
 
 
+pasteWithDataDecoder : D.Decoder InternalEditorMsg
+pasteWithDataDecoder =
+    D.map PasteWithDataEvent <|
+        D.map2
+            PasteEvent
+            (D.at [ "detail", "text" ] D.string)
+            (D.at [ "detail", "html" ] D.string)
+
+
 onCompositionStart : (InternalEditorMsg -> msg) -> Html.Attribute msg
 onCompositionStart msgFunc =
     Html.Events.on "compositionstart" (D.map msgFunc (D.succeed CompositionStart))
@@ -234,6 +247,11 @@ onCompositionStart msgFunc =
 onCompositionEnd : (InternalEditorMsg -> msg) -> Html.Attribute msg
 onCompositionEnd msgFunc =
     Html.Events.on "compositionend" (D.map msgFunc (D.succeed CompositionEnd))
+
+
+onPasteWithData : (InternalEditorMsg -> msg) -> Html.Attribute msg
+onPasteWithData msgFunc =
+    Html.Events.on "pastewithdata" (D.map msgFunc pasteWithDataDecoder)
 
 
 onEditorSelectionChange : (InternalEditorMsg -> msg) -> Html.Attribute msg
@@ -412,6 +430,7 @@ renderEditor editor =
         , onEditorSelectionChange editor.decoder
         , onCompositionStart editor.decoder
         , onCompositionEnd editor.decoder
+        , onPasteWithData editor.decoder
         ]
         [ ( String.fromInt editor.completeRerenderCount
           , Html.Keyed.node "div"

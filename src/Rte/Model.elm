@@ -463,6 +463,12 @@ type alias KeyboardEvent =
     }
 
 
+type alias PasteEvent =
+    { text : String
+    , html : String
+    }
+
+
 {-| The internal events that an editor has to respond to. These events should be mapped via a DecoderFunc.
 -}
 type InternalEditorMsg
@@ -472,6 +478,7 @@ type InternalEditorMsg
     | KeyDownEvent KeyboardEvent
     | CompositionStart
     | CompositionEnd
+    | PasteWithDataEvent PasteEvent
 
 
 {-| HtmlNode is used to determine how to render the editor. We don't use the regular VirtualDOM library

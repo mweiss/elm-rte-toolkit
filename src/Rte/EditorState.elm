@@ -132,12 +132,12 @@ translatePath old new path offset =
         Nothing ->
             ( path, offset )
 
-        Just ( oldP, oldN ) ->
+        Just ( _, oldN ) ->
             case findTextBlockNodeAncestor path new of
                 Nothing ->
                     ( path, offset )
 
-                Just ( newP, newN ) ->
+                Just ( _, newN ) ->
                     if oldN == newN then
                         ( path, offset )
 

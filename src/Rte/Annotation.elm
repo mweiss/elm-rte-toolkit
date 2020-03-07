@@ -1,7 +1,7 @@
 module Rte.Annotation exposing (..)
 
 import Rte.Model exposing (Annotation, EditorBlockNode, EditorInlineLeaf(..), EditorNode(..), NodePath)
-import Rte.Node exposing (map, nodeAt, replace)
+import Rte.Node exposing (indexedFoldl, map, nodeAt, replace)
 import Set exposing (Set)
 
 
@@ -77,3 +77,32 @@ clearAnnotations annotation root =
 
         _ ->
             root
+
+
+getAnnotationsFromNode : EditorNode -> Set Annotation
+getAnnotationsFromNode node =
+    case node of
+        BlockNodeWrapper blockNode ->
+            blockNode.parameters.annotations
+
+        InlineLeafWrapper inlineLeaf ->
+            case inlineLeaf of
+                InlineLeaf p ->
+                    p.parameters.annotations
+
+                TextLeaf p ->
+                    p.annotations
+
+
+findPathsWithAnnotation : Annotation -> EditorBlockNode -> List NodePath
+findPathsWithAnnotation annotation node =
+    indexedFoldl
+        (\path n agg ->
+            if Set.member annotation <| getAnnotationsFromNode n then
+                path :: agg
+
+            else
+                agg
+        )
+        []
+        (BlockNodeWrapper node)
