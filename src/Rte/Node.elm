@@ -16,6 +16,7 @@ module Rte.Node exposing
     , indexedFoldl
     , indexedFoldr
     , indexedMap
+    , insert
     , isSelectable
     , joinBlocks
     , map
@@ -1021,3 +1022,36 @@ joinBlocks b1 b2 =
 
         Leaf ->
             Nothing
+
+
+insert : NodePath -> EditorFragment -> EditorBlockNode -> Result String EditorBlockNode
+insert path fragment root =
+    case nodeAt path root of
+        Nothing ->
+            Err "There is no node at this path, so I cannot insert after it"
+
+        Just node ->
+            case node of
+                InlineLeafWrapper il ->
+                    case fragment of
+                        InlineLeafFragment a ->
+                            let
+                                newFragment =
+                                    InlineLeafFragment <| Array.fromList (il :: Array.toList a)
+                            in
+                            replaceWithFragment path newFragment root
+
+                        BlockNodeFragment a ->
+                            Err "I cannot insert a block node fragment into an inline leaf fragment"
+
+                BlockNodeWrapper bn ->
+                    case fragment of
+                        BlockNodeFragment a ->
+                            let
+                                newFragment =
+                                    BlockNodeFragment <| Array.fromList (bn :: Array.toList a)
+                            in
+                            replaceWithFragment path newFragment root
+
+                        InlineLeafFragment a ->
+                            Err "I cannot insert an inline leaf fragment fragment into an block node fragment"

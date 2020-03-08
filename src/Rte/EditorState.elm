@@ -4,7 +4,7 @@ import Array exposing (Array)
 import List.Extra
 import Rte.Model exposing (ChildNodes(..), EditorBlockNode, EditorInlineLeaf(..), EditorNode(..), EditorState, Mark, NodePath, inlineLeafArray, selectionAnnotation)
 import Rte.Node exposing (findTextBlockNodeAncestor, map)
-import Rte.Selection exposing (clearSelectionAnnotations, markSelection, rangeSelection)
+import Rte.Selection exposing (annotateSelection, clearSelectionAnnotations, rangeSelection)
 import Set
 
 
@@ -106,7 +106,7 @@ reduceEditorState editorState =
                     editorState.root
 
                 Just selection ->
-                    markSelection selection editorState.root
+                    annotateSelection selection editorState.root
 
         reducedRoot =
             clearSelectionAnnotations <| reduceNode markedRoot

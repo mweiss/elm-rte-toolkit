@@ -7,7 +7,7 @@ import Rte.Commands exposing (altKey, backspaceKey, deleteKey, emptyCommandBindi
 import Rte.Model exposing (ChildNodes(..), Command, CommandMap, EditorBlockNode, EditorFragment(..), EditorInlineLeaf(..), EditorNode(..), ElementParameters, NodePath, Selection, elementParameters)
 import Rte.Node exposing (concatMap, findAncestor, findLastPath, joinBlocks, nodeAt, replace, replaceWithFragment)
 import Rte.NodePath exposing (commonAncestor, decrement, increment)
-import Rte.Selection exposing (clearSelectionAnnotations, isCollapsed, markSelection, normalizeSelection, selectionFromMarks)
+import Rte.Selection exposing (annotateSelection, clearSelectionAnnotations, isCollapsed, normalizeSelection, selectionFromAnnotations)
 import Set
 
 
@@ -192,7 +192,7 @@ lift definition editorState =
                 normalizedSelection =
                     normalizeSelection selection
             in
-            case addLiftMarkToListItems definition normalizedSelection <| markSelection normalizedSelection editorState.root of
+            case addLiftMarkToListItems definition normalizedSelection <| annotateSelection normalizedSelection editorState.root of
                 Err s ->
                     Err s
 
@@ -203,7 +203,7 @@ lift definition editorState =
                             concatMap liftConcatMapFunc <| concatMap liftConcatMapFunc markedRoot
 
                         newSelection =
-                            selectionFromMarks liftedRoot normalizedSelection.anchorOffset normalizedSelection.focusOffset
+                            selectionFromAnnotations liftedRoot normalizedSelection.anchorOffset normalizedSelection.focusOffset
                     in
                     Ok
                         { editorState
@@ -282,7 +282,7 @@ joinBackward definition editorState =
                         normalizeSelection selection
 
                     markedRoot =
-                        markSelection normalizedSelection editorState.root
+                        annotateSelection normalizedSelection editorState.root
                 in
                 case findListItemAncestor definition.item selection.anchorNode markedRoot of
                     Nothing ->
@@ -326,7 +326,7 @@ joinBackward definition editorState =
                                                         Ok newRoot ->
                                                             Ok
                                                                 { editorState
-                                                                    | selection = selectionFromMarks newRoot selection.anchorOffset selection.focusOffset
+                                                                    | selection = selectionFromAnnotations newRoot selection.anchorOffset selection.focusOffset
                                                                     , root = clearSelectionAnnotations newRoot
                                                                 }
 
@@ -379,7 +379,7 @@ joinForward definition editorState =
                         normalizeSelection selection
 
                     markedRoot =
-                        markSelection normalizedSelection editorState.root
+                        annotateSelection normalizedSelection editorState.root
                 in
                 case findListItemAncestor definition.item selection.anchorNode markedRoot of
                     Nothing ->
@@ -418,6 +418,6 @@ joinForward definition editorState =
                                                     Ok newRoot ->
                                                         Ok
                                                             { editorState
-                                                                | selection = selectionFromMarks newRoot selection.anchorOffset selection.focusOffset
+                                                                | selection = selectionFromAnnotations newRoot selection.anchorOffset selection.focusOffset
                                                                 , root = clearSelectionAnnotations newRoot
                                                             }

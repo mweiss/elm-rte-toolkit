@@ -296,22 +296,31 @@ handleWrapInList listType model =
 handleToggleBlock : String -> Model -> Model
 handleToggleBlock block model =
     let
-        blockName =
-            String.toLower block
-
-        tagName =
-            if blockName == "code block" then
-                "code_block"
+        onParams =
+            if block == "Code block" then
+                elementParameters
+                    "code_block"
+                    []
+                    Set.empty
 
             else
-                blockName
+                elementParameters
+                    "heading"
+                    [ IntegerAttribute
+                        "level"
+                        (Maybe.withDefault 1 <| String.toInt (String.right 1 block))
+                    ]
+                    Set.empty
+
+        offParams =
+            elementParameters "paragraph" [] Set.empty
     in
     { model
         | editor =
             Result.withDefault model.editor
                 (applyCommand
                     ( "toggleBlock"
-                    , toggleBlock [ "header", "code_block", "paragraph" ] tagName "p"
+                    , toggleBlock [ "heading", "code_block", "paragraph" ] onParams offParams
                     )
                     model.editor
                 )

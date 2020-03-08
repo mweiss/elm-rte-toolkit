@@ -3,82 +3,97 @@ module Rte.Paste exposing (..)
 import Array exposing (Array)
 import List.Extra
 import Result exposing (Result)
-import Rte.Commands exposing (removeRangeSelection)
+import Rte.Commands exposing (joinBackward, joinForward, removeRangeSelection, splitTextBlock)
+import Rte.EditorUtils exposing (applyNamedCommandList)
 import Rte.Model exposing (ChildNodes(..), Command, Editor, EditorBlockNode, EditorFragment(..), EditorInlineLeaf(..), EditorNode(..), PasteEvent, Spec, inlineLeafArray)
-import Rte.Node exposing (findTextBlockNodeAncestor, nodeAt, replaceWithFragment, splitTextLeaf)
+import Rte.Node exposing (findTextBlockNodeAncestor, insert, nodeAt, replaceWithFragment, splitTextLeaf)
 import Rte.NodePath exposing (parent)
-import Rte.Selection exposing (caretSelection, isCollapsed)
+import Rte.Selection exposing (annotateSelection, caretSelection, clearSelectionAnnotations, isCollapsed, selectionFromAnnotations)
 import Rte.Spec exposing (htmlToElementArray)
 import Set
 
 
 handlePaste : PasteEvent -> Editor msg -> Editor msg
 handlePaste event editor =
-    editor
+    let
+        commandArray =
+            [ ( "pasteHtml", pasteHtml editor.spec event.html )
+            , ( "pasteText", pasteText event.text )
+            ]
+    in
+    Result.withDefault editor (applyNamedCommandList commandArray editor)
 
 
 pasteText : String -> Command
 pasteText text editorState =
-    case editorState.selection of
-        Nothing ->
-            Err "Nothing is selected"
+    if String.isEmpty text then
+        Err "There is no text to paste"
 
-        Just selection ->
-            if not <| isCollapsed selection then
-                removeRangeSelection editorState |> Result.andThen (pasteText text)
+    else
+        case editorState.selection of
+            Nothing ->
+                Err "Nothing is selected"
 
-            else
-                let
-                    lines =
-                        String.split "\n" text
-                in
-                case findTextBlockNodeAncestor selection.anchorNode editorState.root of
-                    Nothing ->
-                        Err "I can only paste test if there is a text block ancestor"
+            Just selection ->
+                if not <| isCollapsed selection then
+                    removeRangeSelection editorState |> Result.andThen (pasteText text)
 
-                    Just ( tbPath, tbNode ) ->
-                        let
-                            newLines =
-                                List.map
-                                    (\line ->
-                                        { parameters = tbNode.parameters
-                                        , childNodes =
-                                            inlineLeafArray <|
-                                                Array.fromList
-                                                    [ TextLeaf
-                                                        { text = line
-                                                        , marks = []
-                                                        , annotations = Set.empty
-                                                        }
-                                                    ]
-                                        }
-                                    )
-                                    lines
+                else
+                    let
+                        lines =
+                            String.split "\n" text
+                    in
+                    case findTextBlockNodeAncestor selection.anchorNode editorState.root of
+                        Nothing ->
+                            Err "I can only paste test if there is a text block ancestor"
 
-                            fragment =
-                                BlockNodeFragment (Array.fromList newLines)
-                        in
-                        pasteFragment fragment editorState
+                        Just ( tbPath, tbNode ) ->
+                            let
+                                newLines =
+                                    List.map
+                                        (\line ->
+                                            { parameters = tbNode.parameters
+                                            , childNodes =
+                                                inlineLeafArray <|
+                                                    Array.fromList
+                                                        [ TextLeaf
+                                                            { text = line
+                                                            , marks = []
+                                                            , annotations = Set.empty
+                                                            }
+                                                        ]
+                                            }
+                                        )
+                                        lines
+
+                                fragment =
+                                    BlockNodeFragment (Array.fromList newLines)
+                            in
+                            pasteFragment fragment editorState
 
 
 pasteHtml : Spec -> String -> Command
 pasteHtml spec html editorState =
-    case htmlToElementArray spec html of
-        Err s ->
-            Err s
+    if String.isEmpty html then
+        Err "There is no html to paste"
 
-        Ok fragmentArray ->
-            Array.foldl
-                (\fragment result ->
-                    case result of
-                        Err _ ->
-                            result
+    else
+        case htmlToElementArray spec html of
+            Err s ->
+                Err s
 
-                        Ok state ->
-                            pasteFragment fragment state
-                )
-                (Ok editorState)
-                fragmentArray
+            Ok fragmentArray ->
+                Array.foldl
+                    (\fragment result ->
+                        case result of
+                            Err _ ->
+                                result
+
+                            Ok state ->
+                                pasteFragment fragment state
+                    )
+                    (Ok editorState)
+                    fragmentArray
 
 
 pasteFragment : EditorFragment -> Command
@@ -211,8 +226,40 @@ pasteBlockArray blockFragment editorState =
                                                         Ok { editorState | root = newRoot, selection = Just newSelection }
 
                                     InlineLeafArray a ->
-                                        -- split
-                                        -- add nodes
-                                        -- select beginning and join backwards
-                                        -- select end and join forward
-                                        Err "Not implemented"
+                                        case splitTextBlock editorState of
+                                            Err s ->
+                                                Err s
+
+                                            Ok splitEditorState ->
+                                                case splitEditorState.selection of
+                                                    Nothing ->
+                                                        Err "Invalid editor state selection after split action."
+
+                                                    Just splitSelection ->
+                                                        let
+                                                            annotatedSelectionRoot =
+                                                                annotateSelection splitSelection splitEditorState.root
+                                                        in
+                                                        case insert parentPath (BlockNodeFragment blockFragment) annotatedSelectionRoot of
+                                                            Err s ->
+                                                                Err s
+
+                                                            Ok addedNodesRoot ->
+                                                                let
+                                                                    addNodesEditorState =
+                                                                        { editorState | root = addedNodesRoot }
+
+                                                                    joinBeginningState =
+                                                                        Result.withDefault
+                                                                            addNodesEditorState
+                                                                            (joinForward { addNodesEditorState | selection = Just <| caretSelection selection.anchorNode selection.anchorOffset })
+
+                                                                    annotatedSelection =
+                                                                        selectionFromAnnotations joinBeginningState.root splitSelection.anchorOffset splitSelection.focusOffset
+
+                                                                    joinEndState =
+                                                                        Result.withDefault
+                                                                            joinBeginningState
+                                                                            (joinBackward { joinBeginningState | selection = annotatedSelection })
+                                                                in
+                                                                Ok { joinEndState | root = clearSelectionAnnotations joinEndState.root }

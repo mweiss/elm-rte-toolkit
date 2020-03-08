@@ -1,4 +1,4 @@
-module Rte.Selection exposing (caretSelection, clearSelectionAnnotations, domToEditor, editorToDom, isCollapsed, markSelection, normalizeSelection, rangeSelection, selectionFromMarks, singleNodeRangeSelection)
+module Rte.Selection exposing (annotateSelection, caretSelection, clearSelectionAnnotations, domToEditor, editorToDom, isCollapsed, normalizeSelection, rangeSelection, selectionFromAnnotations, singleNodeRangeSelection)
 
 import Rte.Annotation exposing (addAnnotationAtPath, clearAnnotations, findPathsWithAnnotation, getAnnotationsFromNode)
 import Rte.Model exposing (Annotation, ChildNodes(..), EditorBlockNode, EditorInlineLeaf(..), EditorNode(..), ElementParameters, HtmlNode(..), Mark, NodePath, Selection, Spec, selectionAnnotation)
@@ -81,8 +81,8 @@ normalizeSelection selection =
             { selection | focusNode = selection.anchorNode, focusOffset = selection.anchorOffset, anchorNode = selection.focusNode, anchorOffset = selection.focusOffset }
 
 
-markSelection : Selection -> EditorBlockNode -> EditorBlockNode
-markSelection selection node =
+annotateSelection : Selection -> EditorBlockNode -> EditorBlockNode
+annotateSelection selection node =
     addSelectionAnnotationAtPath selection.focusNode <| addSelectionAnnotationAtPath selection.anchorNode node
 
 
@@ -96,8 +96,8 @@ clearSelectionAnnotations =
     clearAnnotations selectionAnnotation
 
 
-selectionFromMarks : EditorBlockNode -> Int -> Int -> Maybe Selection
-selectionFromMarks node anchorOffset focusOffset =
+selectionFromAnnotations : EditorBlockNode -> Int -> Int -> Maybe Selection
+selectionFromAnnotations node anchorOffset focusOffset =
     case findNodeRangeFromSelectionAnnotations node of
         Nothing ->
             Nothing

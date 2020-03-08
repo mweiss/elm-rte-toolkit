@@ -68,13 +68,13 @@ import Rte.NodePath as NodePath
         )
 import Rte.Selection
     exposing
-        ( caretSelection
+        ( annotateSelection
+        , caretSelection
         , clearSelectionAnnotations
         , isCollapsed
-        , markSelection
         , normalizeSelection
         , rangeSelection
-        , selectionFromMarks
+        , selectionFromAnnotations
         , singleNodeRangeSelection
         )
 import Set
@@ -1050,8 +1050,8 @@ toggleMarkOnInlineNodes mark editorState =
                 Ok { modifiedStartNodeEditorState | selection = Just newSelection }
 
 
-toggleBlock : List String -> String -> String -> Command
-toggleBlock allowedBlocks onTag offTag editorState =
+toggleBlock : List String -> ElementParameters -> ElementParameters -> Command
+toggleBlock allowedBlocks onParams offParams editorState =
     case editorState.selection of
         Nothing ->
             Err "Nothing is selected."
@@ -1072,7 +1072,7 @@ toggleBlock allowedBlocks onTag offTag editorState =
                         (\node ->
                             case node of
                                 BlockNodeWrapper bn ->
-                                    bn.parameters.name == onTag
+                                    bn.parameters == onParams
 
                                 _ ->
                                     True
@@ -1081,12 +1081,12 @@ toggleBlock allowedBlocks onTag offTag editorState =
                         focusPath
                         editorState.root
 
-                newTag =
+                newParams =
                     if doOffBehavior then
-                        offTag
+                        offParams
 
                     else
-                        onTag
+                        onParams
 
                 newRoot =
                     case
@@ -1103,7 +1103,7 @@ toggleBlock allowedBlocks onTag offTag editorState =
                                                     bn.parameters
                                             in
                                             if List.member p.name allowedBlocks then
-                                                BlockNodeWrapper { bn | parameters = { p | name = newTag } }
+                                                BlockNodeWrapper { bn | parameters = newParams }
 
                                             else
                                                 node
@@ -1134,7 +1134,7 @@ wrap contentsMapFunc elementParameters editorState =
                     normalizeSelection selection
 
                 markedRoot =
-                    markSelection normalizedSelection editorState.root
+                    annotateSelection normalizedSelection editorState.root
 
                 anchorBlock =
                     findClosestBlockPath normalizedSelection.anchorNode markedRoot
@@ -1172,7 +1172,7 @@ wrap contentsMapFunc elementParameters editorState =
                                     { editorState
                                         | root = clearSelectionAnnotations newRoot
                                         , selection =
-                                            selectionFromMarks
+                                            selectionFromAnnotations
                                                 newRoot
                                                 selection.anchorOffset
                                                 selection.focusOffset
@@ -1230,7 +1230,7 @@ wrap contentsMapFunc elementParameters editorState =
                                                                     { editorState
                                                                         | root = clearSelectionAnnotations newRoot
                                                                         , selection =
-                                                                            selectionFromMarks
+                                                                            selectionFromAnnotations
                                                                                 newRoot
                                                                                 selection.anchorOffset
                                                                                 selection.focusOffset
@@ -1395,13 +1395,13 @@ lift editorState =
                     normalizeSelection selection
 
                 markedRoot =
-                    addLiftMarkToBlocksInSelection normalizedSelection <| markSelection normalizedSelection editorState.root
+                    addLiftMarkToBlocksInSelection normalizedSelection <| annotateSelection normalizedSelection editorState.root
 
                 liftedRoot =
                     concatMap liftConcatMapFunc markedRoot
 
                 newSelection =
-                    selectionFromMarks liftedRoot normalizedSelection.anchorOffset normalizedSelection.focusOffset
+                    selectionFromAnnotations liftedRoot normalizedSelection.anchorOffset normalizedSelection.focusOffset
             in
             Ok
                 { editorState
@@ -1579,7 +1579,7 @@ insertBlockNodeBeforeSelection node editorState =
             else
                 let
                     markedRoot =
-                        markSelection selection editorState.root
+                        annotateSelection selection editorState.root
 
                     closestBlockPath =
                         findClosestBlockPath selection.anchorNode markedRoot
@@ -1610,7 +1610,7 @@ insertBlockNodeBeforeSelection node editorState =
                                                     Just <| caretSelection closestBlockPath 0
 
                                                 else
-                                                    selectionFromMarks newRoot selection.anchorOffset selection.focusOffset
+                                                    selectionFromAnnotations newRoot selection.anchorOffset selection.focusOffset
                                         in
                                         Ok { editorState | selection = newSelection, root = clearSelectionAnnotations newRoot }
 
@@ -1681,7 +1681,7 @@ backspaceBlockNode editorState =
                         findClosestBlockPath selection.anchorNode editorState.root
 
                     markedRoot =
-                        markSelection selection editorState.root
+                        annotateSelection selection editorState.root
                 in
                 case previous blockPath editorState.root of
                     Nothing ->
@@ -1700,7 +1700,7 @@ backspaceBlockNode editorState =
                                                 Ok
                                                     { editorState
                                                         | root = clearSelectionAnnotations newRoot
-                                                        , selection = selectionFromMarks newRoot selection.anchorOffset selection.focusOffset
+                                                        , selection = selectionFromAnnotations newRoot selection.anchorOffset selection.focusOffset
                                                     }
 
                                     _ ->

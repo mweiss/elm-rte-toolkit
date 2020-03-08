@@ -17,7 +17,7 @@ import Rte.Model exposing (..)
 import Rte.Node exposing (nodeAt)
 import Rte.NodePath as NodePath exposing (toString)
 import Rte.Paste
-import Rte.Selection exposing (domToEditor, editorToDom, isCollapsed, markSelection)
+import Rte.Selection exposing (annotateSelection, domToEditor, editorToDom, isCollapsed)
 import Rte.Spec exposing (childNodesPlaceholder, findNodeDefinitionFromSpecWithDefault)
 
 
@@ -407,7 +407,7 @@ markCaretSelectionOnEditorNodes editorState =
 
         Just selection ->
             if isCollapsed selection then
-                markSelection selection editorState.root
+                annotateSelection selection editorState.root
 
             else
                 editorState.root

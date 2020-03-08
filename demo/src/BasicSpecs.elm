@@ -47,7 +47,7 @@ htmlToParagraph node =
     case node of
         ElementNode name _ children ->
             if name == "p" then
-                Just <| ( elementParameters "p" [] Set.empty, children )
+                Just <| ( elementParameters "paragraph" [] Set.empty, children )
 
             else
                 Nothing
@@ -241,7 +241,7 @@ htmlNodeToImage node =
                 if findStringAttribute "src" elementNodeAttributes /= Nothing then
                     Just
                         ( elementParameters
-                            "img"
+                            "image"
                             elementNodeAttributes
                           <|
                             Set.fromList [ selectableAnnotation ]

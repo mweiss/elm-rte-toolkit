@@ -211,6 +211,7 @@ class ElmEditor extends HTMLElement {
         const clipboardData = e.clipboardData || window.clipboardData;
         const text = clipboardData.getData('text') || "";
         const html = clipboardData.getData('text/html') || "";
+        // console.log('paste', text, html);
         let newEvent = new CustomEvent("pastewithdata", {
             detail: {
                 text: text,
