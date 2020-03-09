@@ -33,9 +33,26 @@ module Rte.Node exposing
 
 import Array exposing (Array)
 import Array.Extra
-import Rte.Model exposing (Annotation, ChildNodes(..), EditorBlockNode, EditorFragment(..), EditorInlineLeaf(..), EditorNode(..), HtmlNode(..), NodePath, TextLeafContents, inlineLeafArray, selectableAnnotation)
-import Rte.NodePath exposing (parent)
+import Rte.Model
+    exposing
+        ( Annotation
+        , ChildNodes(..)
+        , EditorBlockNode
+        , EditorFragment(..)
+        , EditorInlineLeaf(..)
+        , EditorNode(..)
+        , HtmlNode(..)
+        , NodePath
+        , TextLeafContents
+        , inlineLeafArray
+        , selectableAnnotation
+        )
 import Set
+
+
+parent : NodePath -> NodePath
+parent path =
+    List.take (List.length path - 1) path
 
 
 findLastPath : EditorBlockNode -> ( NodePath, EditorNode )

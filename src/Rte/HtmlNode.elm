@@ -1,8 +1,23 @@
 module Rte.HtmlNode exposing (..)
 
 import Array exposing (Array)
-import Rte.Model exposing (ChildNodes(..), EditorBlockNode, EditorInlineLeaf(..), ElementParameters, HtmlNode(..), InlineLeafTree(..), Mark, Spec, TextLeafContents)
-import Rte.Spec exposing (findMarkDefinitionFromSpecWithDefault, findNodeDefinitionFromSpecWithDefault)
+import Rte.Model
+    exposing
+        ( ChildNodes(..)
+        , EditorBlockNode
+        , EditorInlineLeaf(..)
+        , ElementParameters
+        , HtmlNode(..)
+        , InlineLeafTree(..)
+        , Mark
+        , Spec
+        , TextLeafContents
+        )
+import Rte.Spec
+    exposing
+        ( findMarkDefinitionFromSpecWithDefault
+        , findNodeDefinitionFromSpecWithDefault
+        )
 
 
 {-| Renders marks to their HtmlNode representation.

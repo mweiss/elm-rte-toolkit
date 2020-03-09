@@ -3,7 +3,14 @@ module Rte.BeforeInput exposing (..)
 import Dict
 import Json.Decode as D
 import Rte.EditorUtils exposing (applyNamedCommandList, forceRerender)
-import Rte.Model exposing (Editor, EditorState, InputEvent, InputEventTypeMap, InternalEditorMsg(..))
+import Rte.Model
+    exposing
+        ( Editor
+        , EditorState
+        , InputEvent
+        , InputEventTypeMap
+        , InternalEditorMsg(..)
+        )
 
 
 preventDefaultOn : Editor msg -> InternalEditorMsg -> ( InternalEditorMsg, Bool )

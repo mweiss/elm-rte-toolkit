@@ -13,6 +13,7 @@ import Rte.Editor exposing (internalUpdate)
 import Rte.EditorUtils exposing (applyCommand)
 import Rte.List exposing (ListType, defaultListDefinition)
 import Rte.Model exposing (ChildNodes(..), Editor, EditorAttribute(..), EditorBlockNode, EditorInlineLeaf(..), InternalEditorMsg(..), Mark, elementParameters, inlineLeafArray, selectableAnnotation, transformCommand)
+import Rte.Spec exposing (markOrderFromSpec)
 import Set
 
 
@@ -216,11 +217,20 @@ handleToggleStyle style model =
 
                 _ ->
                     "bold"
+
+        markOrder =
+            markOrderFromSpec model.editor.spec
     in
     { model
         | editor =
             Result.withDefault model.editor
-                (applyCommand ( "toggleStyle", transformCommand <| toggleMarkOnInlineNodes (Mark markName []) ) model.editor)
+                (applyCommand
+                    ( "toggleStyle"
+                    , transformCommand <|
+                        toggleMarkOnInlineNodes markOrder (Mark markName [])
+                    )
+                    model.editor
+                )
     }
 
 

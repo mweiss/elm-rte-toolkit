@@ -20,9 +20,23 @@ import Rte.Model
         , transformCommand
         , zeroWidthSpace
         )
-import Rte.Node exposing (findTextBlockNodeAncestor, insert, nodeAt, replaceWithFragment, splitTextLeaf)
+import Rte.Node
+    exposing
+        ( findTextBlockNodeAncestor
+        , insert
+        , nodeAt
+        , replaceWithFragment
+        , splitTextLeaf
+        )
 import Rte.NodePath exposing (parent)
-import Rte.Selection exposing (annotateSelection, caretSelection, clearSelectionAnnotations, isCollapsed, selectionFromAnnotations)
+import Rte.Selection
+    exposing
+        ( annotateSelection
+        , caretSelection
+        , clearSelectionAnnotations
+        , isCollapsed
+        , selectionFromAnnotations
+        )
 import Rte.Spec exposing (htmlToElementArray)
 import Set
 

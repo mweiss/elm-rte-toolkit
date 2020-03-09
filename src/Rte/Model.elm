@@ -645,6 +645,10 @@ type alias TextChange =
     ( NodePath, String )
 
 
+type alias MarkOrder =
+    Dict String Int
+
+
 selectionAnnotation : Annotation
 selectionAnnotation =
     "__selection__"

@@ -4,7 +4,15 @@ import Dict
 import Json.Decode as D
 import Rte.Commands exposing (altKey, ctrlKey, metaKey, shiftKey)
 import Rte.EditorUtils exposing (applyNamedCommandList)
-import Rte.Model exposing (Editor, EditorState, InputEvent, InternalEditorMsg(..), KeyMap, KeyboardEvent)
+import Rte.Model
+    exposing
+        ( Editor
+        , EditorState
+        , InputEvent
+        , InternalEditorMsg(..)
+        , KeyMap
+        , KeyboardEvent
+        )
 
 
 preventDefaultOn : Editor msg -> InternalEditorMsg -> ( InternalEditorMsg, Bool )

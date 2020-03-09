@@ -1,9 +1,11 @@
 module Rte.Spec exposing (..)
 
 import Array exposing (Array)
+import Dict exposing (Dict)
 import Html.Parser exposing (Node(..))
 import List.Extra
 import Result exposing (Result)
+import Rte.Marks exposing (ToggleAction(..), toggle)
 import Rte.Model
     exposing
         ( ChildNodes(..)
@@ -18,6 +20,7 @@ import Rte.Model
         , HtmlNode(..)
         , Mark
         , MarkDefinition
+        , MarkOrder
         , NodeDefinition
         , Spec
         , blockLeafContentType
@@ -342,7 +345,7 @@ htmlNodeToEditorFragment spec marks node =
                         Just ( mark, children ) ->
                             let
                                 newMarks =
-                                    List.sortBy (\m -> m.name) (mark :: marks)
+                                    toggle Add (markOrderFromSpec spec) mark marks
 
                                 newChildren =
                                     Array.map (htmlNodeToEditorFragment spec newMarks) children
@@ -502,3 +505,8 @@ nodeListToHtmlNodeArray nodeList =
                         []
             )
             nodeList
+
+
+markOrderFromSpec : Spec -> MarkOrder
+markOrderFromSpec spec =
+    Dict.fromList (List.indexedMap (\i m -> ( m.name, i )) spec.marks)

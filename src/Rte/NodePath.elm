@@ -19,7 +19,19 @@ module Rte.NodePath exposing
 
 import Array exposing (Array)
 import List.Extra
-import Rte.Model exposing (ChildNodes(..), EditorBlockNode, EditorInlineLeaf(..), ElementParameters, HtmlNode(..), InlineLeafTree(..), Mark, NodePath, Selection, Spec)
+import Rte.Model
+    exposing
+        ( ChildNodes(..)
+        , EditorBlockNode
+        , EditorInlineLeaf(..)
+        , ElementParameters
+        , HtmlNode(..)
+        , InlineLeafTree(..)
+        , Mark
+        , NodePath
+        , Selection
+        , Spec
+        )
 import Rte.Spec
     exposing
         ( childNodesPlaceholder

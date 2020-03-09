@@ -2,7 +2,16 @@ module Rte.EditorUtils exposing (..)
 
 import BoundedDeque exposing (BoundedDeque)
 import Rte.EditorState exposing (reduceEditorState)
-import Rte.Model exposing (Command(..), Editor, EditorState, InternalAction(..), NamedCommand, NamedCommandList, Transform)
+import Rte.Model
+    exposing
+        ( Command(..)
+        , Editor
+        , EditorState
+        , InternalAction(..)
+        , NamedCommand
+        , NamedCommandList
+        , Transform
+        )
 import Rte.Spec exposing (validate)
 
 

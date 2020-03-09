@@ -14,7 +14,32 @@ import Rte.Marks
         , toggle
         , toggleMark
         )
-import Rte.Model exposing (ChildNodes(..), CommandBinding(..), CommandMap, Editor, EditorBlockNode, EditorFragment(..), EditorInlineLeaf(..), EditorNode(..), EditorState, ElementParameters, InputEvent, InternalAction(..), KeyboardEvent, Mark, NamedCommandList, NodePath, Selection, Transform, findMarksFromInlineLeaf, inlineLeafArray, internalCommand, transformCommand)
+import Rte.Model
+    exposing
+        ( ChildNodes(..)
+        , CommandBinding(..)
+        , CommandMap
+        , Editor
+        , EditorBlockNode
+        , EditorFragment(..)
+        , EditorInlineLeaf(..)
+        , EditorNode(..)
+        , EditorState
+        , ElementParameters
+        , InputEvent
+        , InternalAction(..)
+        , KeyboardEvent
+        , Mark
+        , MarkOrder
+        , NamedCommandList
+        , NodePath
+        , Selection
+        , Transform
+        , findMarksFromInlineLeaf
+        , inlineLeafArray
+        , internalCommand
+        , transformCommand
+        )
 import Rte.Node
     exposing
         ( allRange
@@ -918,8 +943,8 @@ isBlockOrInlineNodeWithMark markName node =
             True
 
 
-toggleMarkSingleInlineNode : Mark -> ToggleAction -> EditorState -> Result String EditorState
-toggleMarkSingleInlineNode mark action editorState =
+toggleMarkSingleInlineNode : MarkOrder -> Mark -> ToggleAction -> EditorState -> Result String EditorState
+toggleMarkSingleInlineNode markOrder mark action editorState =
     case editorState.selection of
         Nothing ->
             Err "Nothing is selected"
@@ -945,7 +970,7 @@ toggleMarkSingleInlineNode mark action editorState =
                             InlineLeafWrapper il ->
                                 let
                                     newMarks =
-                                        toggle action mark (findMarksFromInlineLeaf il)
+                                        toggle action markOrder mark (findMarksFromInlineLeaf il)
 
                                     leaves =
                                         case il of
@@ -1010,15 +1035,15 @@ toggleMarkSingleInlineNode mark action editorState =
                                         Ok { editorState | selection = Just newSelection, root = newRoot }
 
 
-toggleMarkOnInlineNodes : Mark -> Transform
-toggleMarkOnInlineNodes mark editorState =
+toggleMarkOnInlineNodes : MarkOrder -> Mark -> Transform
+toggleMarkOnInlineNodes markOrder mark editorState =
     case editorState.selection of
         Nothing ->
             Err "Nothing is selected"
 
         Just selection ->
             if selection.focusNode == selection.anchorNode then
-                toggleMarkSingleInlineNode mark Flip editorState
+                toggleMarkSingleInlineNode markOrder mark Flip editorState
 
             else
                 let
@@ -1061,7 +1086,7 @@ toggleMarkOnInlineNodes mark editorState =
                                                                 node
 
                                                             InlineLeafWrapper _ ->
-                                                                toggleMark toggleAction mark node
+                                                                toggleMark toggleAction markOrder mark node
                                                 )
                                                 (BlockNodeWrapper editorState.root)
                                         of
@@ -1074,6 +1099,7 @@ toggleMarkOnInlineNodes mark editorState =
                     modifiedEndNodeEditorState =
                         Result.withDefault { editorState | root = betweenRoot } <|
                             toggleMarkSingleInlineNode
+                                markOrder
                                 mark
                                 toggleAction
                                 { root = betweenRoot
@@ -1099,6 +1125,7 @@ toggleMarkOnInlineNodes mark editorState =
                                         in
                                         Result.withDefault modifiedEndNodeEditorState <|
                                             toggleMarkSingleInlineNode
+                                                markOrder
                                                 mark
                                                 toggleAction
                                                 { modifiedEndNodeEditorState

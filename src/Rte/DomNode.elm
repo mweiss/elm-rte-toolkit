@@ -10,7 +10,15 @@ import Array
 import Array.Extra
 import Json.Decode as D
 import Json.Decode.Extra as DE
-import Rte.Model exposing (DomNode(..), DomNodeContents, HtmlNode(..), NodePath, TextChange, zeroWidthSpace)
+import Rte.Model
+    exposing
+        ( DomNode(..)
+        , DomNodeContents
+        , HtmlNode(..)
+        , NodePath
+        , TextChange
+        , zeroWidthSpace
+        )
 
 
 {-| The DOM text node nodeType value as specified by the w3c spec [w3c spec][w3c-custom-types-text-node]

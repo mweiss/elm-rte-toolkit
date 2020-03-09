@@ -3,11 +3,55 @@ module Rte.List exposing (..)
 import Array exposing (Array)
 import List.Extra
 import Rte.Annotation exposing (clearAnnotations)
-import Rte.Commands exposing (altKey, backspaceKey, deleteKey, emptyCommandBinding, enterKey, inputEvent, isEmptyTextBlock, key, liftAnnotation, liftConcatMapFunc, returnKey, set)
-import Rte.Model exposing (ChildNodes(..), CommandMap, EditorBlockNode, EditorFragment(..), EditorInlineLeaf(..), EditorNode(..), ElementParameters, NodePath, Selection, Transform, elementParameters, transformCommand)
-import Rte.Node exposing (concatMap, findAncestor, findLastPath, joinBlocks, nodeAt, replace, replaceWithFragment)
+import Rte.Commands
+    exposing
+        ( altKey
+        , backspaceKey
+        , deleteKey
+        , emptyCommandBinding
+        , enterKey
+        , inputEvent
+        , isEmptyTextBlock
+        , key
+        , liftAnnotation
+        , liftConcatMapFunc
+        , returnKey
+        , set
+        )
+import Rte.Model
+    exposing
+        ( ChildNodes(..)
+        , CommandMap
+        , EditorBlockNode
+        , EditorFragment(..)
+        , EditorInlineLeaf(..)
+        , EditorNode(..)
+        , ElementParameters
+        , NodePath
+        , Selection
+        , Transform
+        , elementParameters
+        , transformCommand
+        )
+import Rte.Node
+    exposing
+        ( concatMap
+        , findAncestor
+        , findLastPath
+        , joinBlocks
+        , nodeAt
+        , replace
+        , replaceWithFragment
+        )
 import Rte.NodePath exposing (commonAncestor, decrement, increment)
-import Rte.Selection exposing (annotateSelection, clearSelectionAnnotations, isCollapsed, normalizeSelection, selectionFromAnnotations)
+import Rte.Selection
+    exposing
+        ( annotateSelection
+        , clearSelectionAnnotations
+        , isCollapsed
+        , normalizeSelection
+        , selectionFromAnnotations
+        )
 import Set
 
 
