@@ -5,7 +5,21 @@ import List.Extra
 import Result exposing (Result)
 import Rte.Commands exposing (joinBackward, joinForward, removeRangeSelection, splitTextBlock)
 import Rte.EditorUtils exposing (applyNamedCommandList)
-import Rte.Model exposing (ChildNodes(..), Command, Editor, EditorBlockNode, EditorFragment(..), EditorInlineLeaf(..), EditorNode(..), PasteEvent, Spec, inlineLeafArray)
+import Rte.Model
+    exposing
+        ( ChildNodes(..)
+        , Editor
+        , EditorBlockNode
+        , EditorFragment(..)
+        , EditorInlineLeaf(..)
+        , EditorNode(..)
+        , PasteEvent
+        , Spec
+        , Transform
+        , inlineLeafArray
+        , transformCommand
+        , zeroWidthSpace
+        )
 import Rte.Node exposing (findTextBlockNodeAncestor, insert, nodeAt, replaceWithFragment, splitTextLeaf)
 import Rte.NodePath exposing (parent)
 import Rte.Selection exposing (annotateSelection, caretSelection, clearSelectionAnnotations, isCollapsed, selectionFromAnnotations)
@@ -17,14 +31,14 @@ handlePaste : PasteEvent -> Editor msg -> Editor msg
 handlePaste event editor =
     let
         commandArray =
-            [ ( "pasteHtml", pasteHtml editor.spec event.html )
-            , ( "pasteText", pasteText event.text )
+            [ ( "pasteHtml", transformCommand <| pasteHtml editor.spec event.html )
+            , ( "pasteText", transformCommand <| pasteText event.text )
             ]
     in
     Result.withDefault editor (applyNamedCommandList commandArray editor)
 
 
-pasteText : String -> Command
+pasteText : String -> Transform
 pasteText text editorState =
     if String.isEmpty text then
         Err "There is no text to paste"
@@ -41,7 +55,7 @@ pasteText text editorState =
                 else
                     let
                         lines =
-                            String.split "\n" text
+                            String.split "\n" (String.replace zeroWidthSpace "" text)
                     in
                     case findTextBlockNodeAncestor selection.anchorNode editorState.root of
                         Nothing ->
@@ -72,7 +86,7 @@ pasteText text editorState =
                             pasteFragment fragment editorState
 
 
-pasteHtml : Spec -> String -> Command
+pasteHtml : Spec -> String -> Transform
 pasteHtml spec html editorState =
     if String.isEmpty html then
         Err "There is no html to paste"
@@ -96,7 +110,7 @@ pasteHtml spec html editorState =
                     fragmentArray
 
 
-pasteFragment : EditorFragment -> Command
+pasteFragment : EditorFragment -> Transform
 pasteFragment fragment editorState =
     case fragment of
         InlineLeafFragment a ->
@@ -106,7 +120,7 @@ pasteFragment fragment editorState =
             pasteBlockArray a editorState
 
 
-pasteInlineArray : Array EditorInlineLeaf -> Command
+pasteInlineArray : Array EditorInlineLeaf -> Transform
 pasteInlineArray inlineFragment editorState =
     case editorState.selection of
         Nothing ->
@@ -178,7 +192,7 @@ pasteInlineArray inlineFragment editorState =
                                                                 Ok { editorState | selection = Just newSelection, root = newRoot }
 
 
-pasteBlockArray : Array EditorBlockNode -> Command
+pasteBlockArray : Array EditorBlockNode -> Transform
 pasteBlockArray blockFragment editorState =
     -- split, add nodes, select beginning, join backwards, select end, join forward
     case editorState.selection of

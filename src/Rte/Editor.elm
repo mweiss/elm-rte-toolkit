@@ -8,9 +8,16 @@ import Html.Keyed
 import Json.Decode as D
 import List.Extra
 import Rte.BeforeInput
+import Rte.Commands exposing (removeRangeSelection)
 import Rte.Decorations exposing (getElementDecorators, getMarkDecorators)
 import Rte.DomNode exposing (decodeDomNode, extractRootEditorBlockNode, findTextChanges)
-import Rte.EditorUtils exposing (forceRerender, forceReselection, zeroWidthSpace)
+import Rte.EditorUtils
+    exposing
+        ( applyNamedCommandList
+        , forceRerender
+        , forceReselection
+        , updateEditorState
+        )
 import Rte.HtmlNode exposing (editorBlockNodeToHtmlNode)
 import Rte.KeyDown
 import Rte.Model exposing (..)
@@ -67,6 +74,19 @@ internalUpdate msg editor =
         PasteWithDataEvent e ->
             Rte.Paste.handlePaste e editor
 
+        CutEvent ->
+            handleCut editor
+
+
+handleCut : Editor msg -> Editor msg
+handleCut editor =
+    case applyNamedCommandList [ ( "removeRangeSelection", transformCommand removeRangeSelection ) ] editor of
+        Err _ ->
+            editor
+
+        Ok e ->
+            forceRerender e
+
 
 textChangesDomToEditor : Spec -> EditorBlockNode -> List TextChange -> Maybe (List TextChange)
 textChangesDomToEditor spec editorNode changes =
@@ -105,7 +125,14 @@ applyForceFunctionOnEditor rerenderFunc editor =
                 editor
 
             Just bufferedEditorState ->
-                { editor | editorState = bufferedEditorState, bufferedEditorState = Nothing, isComposing = False }
+                let
+                    newEditor =
+                        updateEditorState "buffered" bufferedEditorState editor
+                in
+                { newEditor
+                    | bufferedEditorState = Nothing
+                    , isComposing = False
+                }
         )
 
 
@@ -121,7 +148,42 @@ updateChangeEvent change editor =
                     updateChangeEventFullScan root change.selection editor
 
         Just characterDataMutations ->
-            updateChangeEventTextChanges characterDataMutations change.selection editor
+            updateChangeEventTextChanges (sanitizeMutations characterDataMutations) change.selection editor
+
+
+sanitizeMutations : List TextChange -> List TextChange
+sanitizeMutations changes =
+    List.map
+        (\( p, t ) ->
+            if t == zeroWidthSpace then
+                ( p, "" )
+
+            else
+                ( p, t )
+        )
+        changes
+
+
+differentText : EditorBlockNode -> TextChange -> Bool
+differentText root ( path, text ) =
+    case nodeAt path root of
+        Nothing ->
+            True
+
+        -- We'll mark invalid paths as different since it will resolve later when we try to replace the node
+        Just node ->
+            case node of
+                InlineLeafWrapper il ->
+                    case il of
+                        TextLeaf tl ->
+                            tl.text /= text
+
+                        _ ->
+                            True
+
+                -- Again, invalid paths will be resolved later, so just mark it as true
+                _ ->
+                    True
 
 
 updateChangeEventTextChanges : List TextChange -> Maybe Selection -> Editor msg -> Editor msg
@@ -134,12 +196,15 @@ updateChangeEventTextChanges textChanges selection editor =
             let
                 editorState =
                     editor.editorState
+
+                actualChanges =
+                    Debug.log "changes" (List.filter (differentText editorState.root) changes)
             in
-            if List.isEmpty changes then
+            if List.isEmpty actualChanges then
                 editor
 
             else
-                case replaceText editorState.root changes of
+                case replaceText editorState.root actualChanges of
                     Nothing ->
                         applyForceFunctionOnEditor forceRerender editor
 
@@ -157,7 +222,7 @@ updateChangeEventTextChanges textChanges selection editor =
                         else
                             let
                                 newEditor =
-                                    { editor | editorState = newEditorState }
+                                    updateEditorState "textChange" newEditorState editor
                             in
                             applyForceFunctionOnEditor forceReselection newEditor
 
@@ -252,6 +317,11 @@ onCompositionEnd msgFunc =
 onPasteWithData : (InternalEditorMsg -> msg) -> Html.Attribute msg
 onPasteWithData msgFunc =
     Html.Events.on "pastewithdata" (D.map msgFunc pasteWithDataDecoder)
+
+
+onCut : (InternalEditorMsg -> msg) -> Html.Attribute msg
+onCut msgFunc =
+    Html.Events.on "cut" (D.map msgFunc (D.succeed CutEvent))
 
 
 onEditorSelectionChange : (InternalEditorMsg -> msg) -> Html.Attribute msg
@@ -350,24 +420,12 @@ handleCompositionStart editor =
 
 handleCompositionEnd : Editor msg -> Editor msg
 handleCompositionEnd editor =
-    let
-        ( newEditorState, rerender ) =
-            case editor.bufferedEditorState of
-                Nothing ->
-                    ( editor.editorState, False )
+    case editor.bufferedEditorState of
+        Nothing ->
+            { editor | isComposing = False }
 
-                Just editorState ->
-                    ( editorState, True )
-    in
-    if rerender then
-        forceRerender { editor | editorState = newEditorState, isComposing = False, bufferedEditorState = Nothing }
-
-    else
-        { editor | isComposing = False }
-
-
-readOnlyAttribute =
-    StringAttribute "contenteditable" "false"
+        Just _ ->
+            applyForceFunctionOnEditor forceReselection editor
 
 
 shouldHideCaret : EditorState -> Bool
@@ -431,6 +489,7 @@ renderEditor editor =
         , onCompositionStart editor.decoder
         , onCompositionEnd editor.decoder
         , onPasteWithData editor.decoder
+        , onCut editor.decoder
         ]
         [ ( String.fromInt editor.completeRerenderCount
           , Html.Keyed.node "div"

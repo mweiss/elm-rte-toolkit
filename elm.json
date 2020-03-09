@@ -22,6 +22,7 @@
         "elm-community/json-extra": "4.0.0 <= v < 5.0.0",
         "elm-community/list-extra": "8.0.0 <= v < 9.0.0",
         "elm-community/string-extra": "4.0.0 <= v < 5.0.0",
+        "folkertdev/elm-deque": "3.0.1 <= v < 4.0.0",
         "hecrj/html-parser": "2.3.4 <= v < 3.0.0",
         "rtfeldman/elm-hex": "1.0.0 <= v < 2.0.0",
         "rtfeldman/elm-iso8601-date-strings": "1.0.0 <= v < 2.0.0"

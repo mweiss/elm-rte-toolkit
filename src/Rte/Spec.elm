@@ -25,6 +25,7 @@ import Rte.Model
         , inlineLeafArray
         , markDefinition
         , nodeDefinition
+        , zeroWidthSpace
         )
 import Set exposing (Set)
 
@@ -282,7 +283,16 @@ htmlNodeToEditorFragment : Spec -> List Mark -> HtmlNode -> Result String Editor
 htmlNodeToEditorFragment spec marks node =
     case node of
         TextNode s ->
-            Ok <| InlineLeafFragment <| Array.fromList [ TextLeaf { text = s, marks = marks, annotations = Set.empty } ]
+            Ok <|
+                InlineLeafFragment <|
+                    Array.fromList
+                        [ TextLeaf
+                            { text =
+                                String.replace zeroWidthSpace "" s
+                            , marks = marks
+                            , annotations = Set.empty
+                            }
+                        ]
 
         _ ->
             let

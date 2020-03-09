@@ -28,11 +28,17 @@ module Rte.Model exposing (..)
 -}
 
 import Array exposing (Array)
+import BoundedDeque exposing (BoundedDeque)
 import Dict exposing (Dict)
 import Html
 import Json.Encode as E
 import List.Extra
 import Set exposing (Set)
+
+
+zeroWidthSpace : String
+zeroWidthSpace =
+    "\u{200B}"
 
 
 type alias Decorations msg =
@@ -133,7 +139,8 @@ type ChildNodes
 
 
 type alias History =
-    { history : List ( String, EditorState )
+    { undoDeque : BoundedDeque ( String, EditorState )
+    , redoStack : List EditorState
     }
 
 
@@ -338,6 +345,8 @@ You can use this map to create custom commands on key press.
 type alias CommandMap =
     { keyMap : KeyMap
     , inputEventTypeMap : InputEventTypeMap
+    , defaultKeyCommand : KeyboardEvent -> NamedCommandList
+    , defaultInputEventCommand : InputEvent -> NamedCommandList
     }
 
 
@@ -368,8 +377,28 @@ emptyCommandBinding
 (Command.compose liftSelectedListItemCommand handleInsertParagraph)
 
 -}
-type alias Command =
+type alias Transform =
     EditorState -> Result String EditorState
+
+
+type InternalAction
+    = Undo
+    | Redo
+
+
+type Command
+    = TransformCommand Transform
+    | InternalCommand InternalAction
+
+
+transformCommand : Transform -> Command
+transformCommand t =
+    TransformCommand t
+
+
+internalCommand : InternalAction -> Command
+internalCommand i =
+    InternalCommand i
 
 
 type alias NamedCommand =
@@ -479,6 +508,7 @@ type InternalEditorMsg
     | CompositionStart
     | CompositionEnd
     | PasteWithDataEvent PasteEvent
+    | CutEvent
 
 
 {-| HtmlNode is used to determine how to render the editor. We don't use the regular VirtualDOM library

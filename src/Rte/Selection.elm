@@ -1,10 +1,38 @@
-module Rte.Selection exposing (annotateSelection, caretSelection, clearSelectionAnnotations, domToEditor, editorToDom, isCollapsed, normalizeSelection, rangeSelection, selectionFromAnnotations, singleNodeRangeSelection)
+module Rte.Selection exposing
+    ( annotateSelection
+    , caretSelection
+    , clearSelectionAnnotations
+    , domToEditor
+    , editorToDom
+    , isCollapsed
+    , normalizeSelection
+    , rangeSelection
+    , selectionFromAnnotations
+    , singleNodeRangeSelection
+    )
 
-import Rte.Annotation exposing (addAnnotationAtPath, clearAnnotations, findPathsWithAnnotation, getAnnotationsFromNode)
-import Rte.Model exposing (Annotation, ChildNodes(..), EditorBlockNode, EditorInlineLeaf(..), EditorNode(..), ElementParameters, HtmlNode(..), Mark, NodePath, Selection, Spec, selectionAnnotation)
-import Rte.Node exposing (indexedFoldl)
+import Rte.Annotation
+    exposing
+        ( addAnnotationAtPath
+        , clearAnnotations
+        , findPathsWithAnnotation
+        )
+import Rte.Model
+    exposing
+        ( Annotation
+        , ChildNodes(..)
+        , EditorBlockNode
+        , EditorInlineLeaf(..)
+        , EditorNode(..)
+        , ElementParameters
+        , HtmlNode(..)
+        , Mark
+        , NodePath
+        , Selection
+        , Spec
+        , selectionAnnotation
+        )
 import Rte.NodePath as Path
-import Set exposing (Set)
 
 
 domToEditor : Spec -> EditorBlockNode -> Selection -> Maybe Selection

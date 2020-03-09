@@ -3,8 +3,8 @@ module Rte.List exposing (..)
 import Array exposing (Array)
 import List.Extra
 import Rte.Annotation exposing (clearAnnotations)
-import Rte.Commands exposing (altKey, backspaceKey, deleteKey, emptyCommandBinding, enterKey, inputEvent, isEmptyTextBlock, key, liftAnnotation, liftConcatMapFunc, otherwiseDo, returnKey, set)
-import Rte.Model exposing (ChildNodes(..), Command, CommandMap, EditorBlockNode, EditorFragment(..), EditorInlineLeaf(..), EditorNode(..), ElementParameters, NodePath, Selection, elementParameters)
+import Rte.Commands exposing (altKey, backspaceKey, deleteKey, emptyCommandBinding, enterKey, inputEvent, isEmptyTextBlock, key, liftAnnotation, liftConcatMapFunc, returnKey, set)
+import Rte.Model exposing (ChildNodes(..), CommandMap, EditorBlockNode, EditorFragment(..), EditorInlineLeaf(..), EditorNode(..), ElementParameters, NodePath, Selection, Transform, elementParameters, transformCommand)
 import Rte.Node exposing (concatMap, findAncestor, findLastPath, joinBlocks, nodeAt, replace, replaceWithFragment)
 import Rte.NodePath exposing (commonAncestor, decrement, increment)
 import Rte.Selection exposing (annotateSelection, clearSelectionAnnotations, isCollapsed, normalizeSelection, selectionFromAnnotations)
@@ -31,17 +31,17 @@ commandBindings definition =
     in
     emptyCommandBinding
         |> set [ inputEvent "insertParagraph", key [ enterKey ], key [ returnKey ] ]
-            [ ( "liftEmptyListItem", liftEmpty definition )
-            , ( "splitListItem", split definition )
+            [ ( "liftEmptyListItem", transformCommand <| liftEmpty definition )
+            , ( "splitListItem", transformCommand <| split definition )
             ]
         |> set [ inputEvent "deleteContentBackward", key [ backspaceKey ] ]
-            [ ( "joinListBackward", backspaceCommand ) ]
+            [ ( "joinListBackward", transformCommand <| backspaceCommand ) ]
         |> set [ inputEvent "deleteContentForward", key [ deleteKey ] ]
-            [ ( "joinListForward", deleteCommand ) ]
+            [ ( "joinListForward", transformCommand <| deleteCommand ) ]
         |> set [ inputEvent "deleteWordBackward", key [ altKey, backspaceKey ] ]
-            [ ( "joinListBackward", backspaceCommand ) ]
+            [ ( "joinListBackward", transformCommand <| backspaceCommand ) ]
         |> set [ inputEvent "deleteWordForward", key [ altKey, deleteKey ] ]
-            [ ( "joinListForward", deleteCommand ) ]
+            [ ( "joinListForward", transformCommand <| deleteCommand ) ]
 
 
 defaultListDefinition : ListDefinition
@@ -59,7 +59,7 @@ addListItem definition node =
     }
 
 
-wrap : ListDefinition -> ListType -> Command
+wrap : ListDefinition -> ListType -> Transform
 wrap definition type_ editorState =
     Rte.Commands.wrap (addListItem definition)
         (if type_ == Ordered then
@@ -76,7 +76,7 @@ findListItemAncestor parameters =
     findAncestor (\n -> n.parameters.name == parameters.name)
 
 
-split : ListDefinition -> Command
+split : ListDefinition -> Transform
 split definition =
     Rte.Commands.splitBlock (findListItemAncestor definition.item)
 
@@ -181,7 +181,7 @@ addLiftMarkToListItems definition selection root =
                                                         (List.range startIndex endIndex)
 
 
-lift : ListDefinition -> Command
+lift : ListDefinition -> Transform
 lift definition editorState =
     case editorState.selection of
         Nothing ->
@@ -212,7 +212,7 @@ lift definition editorState =
                         }
 
 
-liftEmpty : ListDefinition -> Command
+liftEmpty : ListDefinition -> Transform
 liftEmpty definition editorState =
     case editorState.selection of
         Nothing ->
@@ -266,7 +266,7 @@ isBeginningOfListItem definition selection root =
                 List.all (\i -> i == 0) relativePath
 
 
-joinBackward : ListDefinition -> Command
+joinBackward : ListDefinition -> Transform
 joinBackward definition editorState =
     case editorState.selection of
         Nothing ->
@@ -363,7 +363,7 @@ isEndOfListItem definition selection root =
                             True
 
 
-joinForward : ListDefinition -> Command
+joinForward : ListDefinition -> Transform
 joinForward definition editorState =
     case editorState.selection of
         Nothing ->

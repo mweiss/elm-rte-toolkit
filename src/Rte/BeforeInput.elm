@@ -10,15 +10,15 @@ preventDefaultOn : Editor msg -> InternalEditorMsg -> ( InternalEditorMsg, Bool 
 preventDefaultOn editor msg =
     case msg of
         BeforeInputEvent inputEvent ->
-            ( msg, shouldPreventDefault editor inputEvent.inputType )
+            ( msg, shouldPreventDefault editor inputEvent )
 
         _ ->
             ( msg, False )
 
 
-shouldPreventDefault : Editor msg -> String -> Bool
-shouldPreventDefault editor inputType =
-    case handleInputEvent editor inputType of
+shouldPreventDefault : Editor msg -> InputEvent -> Bool
+shouldPreventDefault editor inputEvent =
+    case handleInputEvent editor inputEvent of
         Err _ ->
             False
 
@@ -41,19 +41,19 @@ beforeInputDecoder =
         )
 
 
-handleInputEvent : Editor msg -> String -> Result String (Editor msg)
-handleInputEvent editor inputType =
-    case Dict.get inputType editor.commandMap.inputEventTypeMap of
-        Nothing ->
-            Err "No input event found."
-
-        Just command ->
-            applyNamedCommandList command editor
+handleInputEvent : Editor msg -> InputEvent -> Result String (Editor msg)
+handleInputEvent editor inputEvent =
+    let
+        namedCommandList =
+            Maybe.withDefault (editor.commandMap.defaultInputEventCommand inputEvent)
+                (Dict.get inputEvent.inputType editor.commandMap.inputEventTypeMap)
+    in
+    applyNamedCommandList namedCommandList editor
 
 
 handleBeforeInput : InputEvent -> Editor msg -> Editor msg
 handleBeforeInput inputEvent editor =
-    case handleInputEvent editor inputEvent.inputType of
+    case handleInputEvent editor inputEvent of
         Err _ ->
             editor
 

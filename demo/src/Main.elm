@@ -3,6 +3,7 @@ module Main exposing (..)
 import Array
 import BasicEditorControls exposing (EditorMsg(..), InsertImageModal, InsertLinkModal)
 import BasicSpecs exposing (simpleSpec)
+import BoundedDeque
 import Browser
 import Html exposing (Html, div)
 import Html.Attributes
@@ -11,7 +12,7 @@ import Rte.Decorations exposing (addElementDecoration, emptyDecorations, selecta
 import Rte.Editor exposing (internalUpdate)
 import Rte.EditorUtils exposing (applyCommand)
 import Rte.List exposing (ListType, defaultListDefinition)
-import Rte.Model exposing (ChildNodes(..), Editor, EditorAttribute(..), EditorBlockNode, EditorInlineLeaf(..), InternalEditorMsg(..), Mark, elementParameters, inlineLeafArray, selectableAnnotation)
+import Rte.Model exposing (ChildNodes(..), Editor, EditorAttribute(..), EditorBlockNode, EditorInlineLeaf(..), InternalEditorMsg(..), Mark, elementParameters, inlineLeafArray, selectableAnnotation, transformCommand)
 import Set
 
 
@@ -72,8 +73,11 @@ commandBindings =
         listCommandBindings
         (Rte.Commands.defaultCommandBindings
             |> set [ inputEvent "insertParagraph", key [ enterKey ], key [ returnKey ] ]
-                [ ( "liftEmpty", liftEmpty )
-                , ( "splitBlockHeaderToNewParagraph", splitBlockHeaderToNewParagraph [ "header" ] "p" )
+                [ ( "liftEmpty", transformCommand <| liftEmpty )
+                , ( "splitBlockHeaderToNewParagraph"
+                  , transformCommand <|
+                        splitBlockHeaderToNewParagraph [ "header" ] "p"
+                  )
                 ]
         )
 
@@ -86,6 +90,11 @@ decorations =
     addElementDecoration "image" selectableDecoration <|
         addElementDecoration "horizontal_rule" selectableDecoration <|
             emptyDecorations
+
+
+dequeSize : Int
+dequeSize =
+    1024
 
 
 initEditor : Editor EditorMsg
@@ -103,7 +112,7 @@ initEditor =
         { root = doubleInitNode
         , selection = Nothing
         }
-    , history = { history = [] }
+    , history = { undoDeque = BoundedDeque.empty dequeSize, redoStack = [] }
     }
 
 
@@ -211,7 +220,7 @@ handleToggleStyle style model =
     { model
         | editor =
             Result.withDefault model.editor
-                (applyCommand ( "toggleStyle", toggleMarkOnInlineNodes (Mark markName []) ) model.editor)
+                (applyCommand ( "toggleStyle", transformCommand <| toggleMarkOnInlineNodes (Mark markName []) ) model.editor)
     }
 
 
@@ -280,7 +289,7 @@ handleLiftBlock model =
     { model
         | editor =
             Result.withDefault model.editor
-                (applyCommand ( "lift", lift ) model.editor)
+                (applyCommand ( "lift", transformCommand <| lift ) model.editor)
     }
 
 
@@ -289,7 +298,7 @@ handleWrapInList listType model =
     { model
         | editor =
             Result.withDefault model.editor
-                (applyCommand ( "wrapList", Rte.List.wrap defaultListDefinition listType ) model.editor)
+                (applyCommand ( "wrapList", transformCommand <| Rte.List.wrap defaultListDefinition listType ) model.editor)
     }
 
 
@@ -320,7 +329,7 @@ handleToggleBlock block model =
             Result.withDefault model.editor
                 (applyCommand
                     ( "toggleBlock"
-                    , toggleBlock [ "heading", "code_block", "paragraph" ] onParams offParams
+                    , transformCommand <| toggleBlock [ "heading", "code_block", "paragraph" ] onParams offParams
                     )
                     model.editor
                 )
@@ -334,9 +343,10 @@ handleWrapBlockNode model =
             Result.withDefault model.editor
                 (applyCommand
                     ( "wrapBlockquote"
-                    , wrap
-                        (\n -> n)
-                        (elementParameters "blockquote" [] Set.empty)
+                    , transformCommand <|
+                        wrap
+                            (\n -> n)
+                            (elementParameters "blockquote" [] Set.empty)
                     )
                     model.editor
                 )
@@ -350,14 +360,15 @@ handleInsertHorizontalRule model =
             Result.withDefault model.editor
                 (applyCommand
                     ( "insertHR"
-                    , insertBlockNode
-                        { parameters =
-                            elementParameters
-                                "horizontal_rule"
-                                []
-                                (Set.fromList [ selectableAnnotation ])
-                        , childNodes = Leaf
-                        }
+                    , transformCommand <|
+                        insertBlockNode
+                            { parameters =
+                                elementParameters
+                                    "horizontal_rule"
+                                    []
+                                    (Set.fromList [ selectableAnnotation ])
+                            , childNodes = Leaf
+                            }
                     )
                     model.editor
                 )

@@ -94,12 +94,12 @@ addAltKey keyboardEvent keys =
 
 handleKeyDownEvent : Editor msg -> KeyboardEvent -> Result String (Editor msg)
 handleKeyDownEvent editor keyboardEvent =
-    case Dict.get (keyboardEventToDictKey keyboardEvent) editor.commandMap.keyMap of
-        Nothing ->
-            Err <| "No keydown event"
-
-        Just command ->
-            applyNamedCommandList command editor
+    let
+        namedCommandList =
+            Maybe.withDefault (editor.commandMap.defaultKeyCommand keyboardEvent)
+                (Dict.get (keyboardEventToDictKey keyboardEvent) editor.commandMap.keyMap)
+    in
+    applyNamedCommandList namedCommandList editor
 
 
 handleKeyDown : KeyboardEvent -> Editor msg -> Editor msg

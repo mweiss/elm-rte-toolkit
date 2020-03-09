@@ -14,26 +14,7 @@ import Rte.Marks
         , toggle
         , toggleMark
         )
-import Rte.Model
-    exposing
-        ( ChildNodes(..)
-        , Command
-        , CommandBinding(..)
-        , CommandMap
-        , Editor
-        , EditorBlockNode
-        , EditorFragment(..)
-        , EditorInlineLeaf(..)
-        , EditorNode(..)
-        , EditorState
-        , ElementParameters
-        , Mark
-        , NamedCommandList
-        , NodePath
-        , Selection
-        , findMarksFromInlineLeaf
-        , inlineLeafArray
-        )
+import Rte.Model exposing (ChildNodes(..), CommandBinding(..), CommandMap, Editor, EditorBlockNode, EditorFragment(..), EditorInlineLeaf(..), EditorNode(..), EditorState, ElementParameters, InputEvent, InternalAction(..), KeyboardEvent, Mark, NamedCommandList, NodePath, Selection, Transform, findMarksFromInlineLeaf, inlineLeafArray, internalCommand, transformCommand)
 import Rte.Node
     exposing
         ( allRange
@@ -78,6 +59,7 @@ import Rte.Selection
         , singleNodeRangeSelection
         )
 import Set
+import String.Extra
 
 
 altKey : String
@@ -135,6 +117,16 @@ set bindings func map =
         bindings
 
 
+setDefaultKeyCommand : (KeyboardEvent -> NamedCommandList) -> CommandMap -> CommandMap
+setDefaultKeyCommand func map =
+    { map | defaultKeyCommand = func }
+
+
+setDefaultInputEventCommand : (InputEvent -> NamedCommandList) -> CommandMap -> CommandMap
+setDefaultInputEventCommand func map =
+    { map | defaultInputEventCommand = func }
+
+
 compose : comparable -> NamedCommandList -> Dict comparable NamedCommandList -> Dict comparable NamedCommandList
 compose k commandList d =
     case Dict.get k d of
@@ -153,6 +145,18 @@ combine map1 map2 =
             map2.inputEventTypeMap
             map1.inputEventTypeMap
     , keyMap = Dict.foldl compose map2.keyMap map1.keyMap
+    , defaultKeyCommand =
+        if map1.defaultKeyCommand == emptyCommandBinding.defaultKeyCommand then
+            map2.defaultKeyCommand
+
+        else
+            map1.defaultKeyCommand
+    , defaultInputEventCommand =
+        if map1.defaultInputEventCommand == emptyCommandBinding.defaultInputEventCommand then
+            map2.defaultInputEventCommand
+
+        else
+            map1.defaultInputEventCommand
     }
 
 
@@ -181,19 +185,12 @@ stack bindings list map =
         bindings
 
 
-otherwiseDo : Command -> Command -> Command
-otherwiseDo a b =
-    \s ->
-        case b s of
-            Err _ ->
-                a s
-
-            Ok v ->
-                Ok v
-
-
 emptyCommandBinding =
-    { keyMap = Dict.empty, inputEventTypeMap = Dict.empty }
+    { keyMap = Dict.empty
+    , inputEventTypeMap = Dict.empty
+    , defaultKeyCommand = \_ -> []
+    , defaultInputEventCommand = \_ -> []
+    }
 
 
 inputEvent type_ =
@@ -205,20 +202,20 @@ key keys =
 
 
 backspaceCommands =
-    [ ( "removeRangeSelection", removeRangeSelection )
-    , ( "removeSelectedLeafElementCommand", removeSelectedLeafElementCommand )
-    , ( "backspaceInlineElement", backspaceInlineElement )
-    , ( "backspaceBlockNode", backspaceBlockNode )
-    , ( "joinBackward", joinBackward )
+    [ ( "removeRangeSelection", transformCommand removeRangeSelection )
+    , ( "removeSelectedLeafElementCommand", transformCommand removeSelectedLeafElement )
+    , ( "backspaceInlineElement", transformCommand backspaceInlineElement )
+    , ( "backspaceBlockNode", transformCommand backspaceBlockNode )
+    , ( "joinBackward", transformCommand joinBackward )
     ]
 
 
 deleteCommands =
-    [ ( "removeRangeSelection", removeRangeSelection )
-    , ( "removeSelectedLeafElementCommand", removeSelectedLeafElementCommand )
-    , ( "deleteInlineElement", deleteInlineElement )
-    , ( "deleteBlockNode", deleteBlockNode )
-    , ( "joinForward", joinForward )
+    [ ( "removeRangeSelection", transformCommand removeRangeSelection )
+    , ( "removeSelectedLeafElementCommand", transformCommand removeSelectedLeafElement )
+    , ( "deleteInlineElement", transformCommand deleteInlineElement )
+    , ( "deleteBlockNode", transformCommand deleteBlockNode )
+    , ( "joinForward", transformCommand joinForward )
     ]
 
 
@@ -226,22 +223,109 @@ defaultCommandBindings =
     emptyCommandBinding
         |> set
             [ inputEvent "insertLineBreak", key [ shiftKey, enterKey ], key [ shiftKey, enterKey ] ]
-            [ ( "insertLineBreak", insertLineBreak ) ]
+            [ ( "insertLineBreak", transformCommand insertLineBreak ) ]
         |> set [ inputEvent "insertParagraph", key [ enterKey ], key [ returnKey ] ]
-            [ ( "liftEmpty", liftEmpty ), ( "splitTextBlock", splitTextBlock ) ]
+            [ ( "liftEmpty", transformCommand liftEmpty ), ( "splitTextBlock", transformCommand splitTextBlock ) ]
         |> set [ inputEvent "deleteContentBackward", key [ backspaceKey ] ]
-            (backspaceCommands ++ [ ( "backspaceText", backspaceText ) ])
+            (backspaceCommands ++ [ ( "backspaceText", transformCommand backspaceText ) ])
         |> set [ inputEvent "deleteWordBackward", key [ altKey, backspaceKey ] ]
-            (backspaceCommands ++ [ ( "backspaceWord", backspaceWord ) ])
+            (backspaceCommands ++ [ ( "backspaceWord", transformCommand backspaceWord ) ])
         |> set [ inputEvent "deleteContentForward", key [ deleteKey ] ]
-            (deleteCommands ++ [ ( "deleteText", deleteText ) ])
+            (deleteCommands ++ [ ( "deleteText", transformCommand deleteText ) ])
         |> set [ inputEvent "deleteWordForward", key [ altKey, deleteKey ] ]
-            (deleteCommands ++ [ ( "deleteWord", deleteWord ) ])
+            (deleteCommands ++ [ ( "deleteWord", transformCommand deleteWord ) ])
         |> set [ key [ metaKey, "a" ] ]
-            [ ( "selectAll", selectAll ) ]
+            [ ( "selectAll", transformCommand selectAll ) ]
+        |> set [ key [ metaKey, "z" ] ]
+            [ ( "undo", internalCommand Undo ) ]
+        |> set [ key [ metaKey, shiftKey, "z" ] ]
+            [ ( "redo", internalCommand Redo ) ]
+        |> setDefaultKeyCommand defaultKeyCommand
+        |> setDefaultInputEventCommand defaultInputEventCommand
 
 
-joinBackward : Command
+defaultKeyCommand : KeyboardEvent -> NamedCommandList
+defaultKeyCommand event =
+    if not event.altKey && not event.metaKey && not event.ctrlKey && String.length event.key == 1 then
+        [ ( "removeRangeAndInsert", transformCommand <| removeRangeSelectionAndInsert event.key ) ]
+
+    else
+        []
+
+
+defaultInputEventCommand : InputEvent -> NamedCommandList
+defaultInputEventCommand event =
+    if event.inputType == "insertText" then
+        case event.data of
+            Nothing ->
+                []
+
+            Just data ->
+                [ ( "removeRangeAndInsert", transformCommand <| removeRangeSelectionAndInsert data ) ]
+
+    else
+        []
+
+
+removeRangeSelectionAndInsert : String -> Transform
+removeRangeSelectionAndInsert s editorState =
+    case removeRangeSelection editorState of
+        Err e ->
+            Err e
+
+        Ok removedRangeEditorState ->
+            Ok <|
+                Result.withDefault
+                    removedRangeEditorState
+                    (insertTextAtSelection s removedRangeEditorState)
+
+
+insertTextAtSelection : String -> Transform
+insertTextAtSelection s editorState =
+    case editorState.selection of
+        Nothing ->
+            Err "Nothing is selected"
+
+        Just selection ->
+            if not <| isCollapsed selection then
+                Err "I can only insert text if the range is collapsed"
+
+            else
+                case nodeAt selection.anchorNode editorState.root of
+                    Nothing ->
+                        Err "Invalid selection after remove range"
+
+                    Just node ->
+                        case node of
+                            BlockNodeWrapper bn ->
+                                Err "I was expected a text leaf, but instead I found a block node"
+
+                            InlineLeafWrapper il ->
+                                case il of
+                                    InlineLeaf _ ->
+                                        Err "I was expecting a text leaf, but instead found a block node"
+
+                                    TextLeaf tl ->
+                                        let
+                                            newText =
+                                                String.Extra.insertAt s selection.anchorOffset tl.text
+
+                                            newTextLeaf =
+                                                TextLeaf { tl | text = newText }
+                                        in
+                                        case replace selection.anchorNode (InlineLeafWrapper newTextLeaf) editorState.root of
+                                            Err e ->
+                                                Err e
+
+                                            Ok newRoot ->
+                                                Ok
+                                                    { editorState
+                                                        | root = newRoot
+                                                        , selection = Just <| caretSelection selection.anchorNode (selection.anchorOffset + 1)
+                                                    }
+
+
+joinBackward : Transform
 joinBackward editorState =
     case editorState.selection of
         Nothing ->
@@ -352,7 +436,7 @@ selectionIsEndOfTextBlock selection root =
                         False
 
 
-joinForward : Command
+joinForward : Transform
 joinForward editorState =
     case editorState.selection of
         Nothing ->
@@ -443,7 +527,7 @@ findPreviousTextBlock =
     findTextBlock findBackwardFromExclusive
 
 
-removeRangeSelection : Command
+removeRangeSelection : Transform
 removeRangeSelection editorState =
     case editorState.selection of
         Nothing ->
@@ -508,7 +592,7 @@ removeRangeSelection editorState =
                                         Ok <| Result.withDefault newEditorState (joinForward newEditorState)
 
 
-insertLineBreak : Command
+insertLineBreak : Transform
 insertLineBreak =
     insertInlineElement
         (InlineLeaf
@@ -518,7 +602,7 @@ insertLineBreak =
         )
 
 
-insertInlineElement : EditorInlineLeaf -> Command
+insertInlineElement : EditorInlineLeaf -> Transform
 insertInlineElement leaf editorState =
     case editorState.selection of
         Nothing ->
@@ -594,12 +678,12 @@ insertInlineElement leaf editorState =
                                 Err "I can not insert an inline element in a block node"
 
 
-splitTextBlock : Command
+splitTextBlock : Transform
 splitTextBlock =
     splitBlock findTextBlockNodeAncestor
 
 
-splitBlock : (NodePath -> EditorBlockNode -> Maybe ( NodePath, EditorBlockNode )) -> Command
+splitBlock : (NodePath -> EditorBlockNode -> Maybe ( NodePath, EditorBlockNode )) -> Transform
 splitBlock ancestorFunc editorState =
     case editorState.selection of
         Nothing ->
@@ -692,8 +776,8 @@ removeTextAtRange nodePath start maybeEnd root =
             Err <| "There is no node at node path " ++ toString nodePath
 
 
-removeSelectedLeafElementCommand : Command
-removeSelectedLeafElementCommand editorState =
+removeSelectedLeafElement : Transform
+removeSelectedLeafElement editorState =
     case editorState.selection of
         Nothing ->
             Err "Nothing is selected"
@@ -743,7 +827,7 @@ removeSelectedLeafElementCommand editorState =
 -- other offset, allow browser to do the default behavior
 
 
-backspaceText : Command
+backspaceText : Transform
 backspaceText editorState =
     case editorState.selection of
         Nothing ->
@@ -926,7 +1010,7 @@ toggleMarkSingleInlineNode mark action editorState =
                                         Ok { editorState | selection = Just newSelection, root = newRoot }
 
 
-toggleMarkOnInlineNodes : Mark -> Command
+toggleMarkOnInlineNodes : Mark -> Transform
 toggleMarkOnInlineNodes mark editorState =
     case editorState.selection of
         Nothing ->
@@ -1050,7 +1134,7 @@ toggleMarkOnInlineNodes mark editorState =
                 Ok { modifiedStartNodeEditorState | selection = Just newSelection }
 
 
-toggleBlock : List String -> ElementParameters -> ElementParameters -> Command
+toggleBlock : List String -> ElementParameters -> ElementParameters -> Transform
 toggleBlock allowedBlocks onParams offParams editorState =
     case editorState.selection of
         Nothing ->
@@ -1122,7 +1206,7 @@ toggleBlock allowedBlocks onParams offParams editorState =
             Ok { editorState | root = newRoot }
 
 
-wrap : (EditorBlockNode -> EditorBlockNode) -> ElementParameters -> Command
+wrap : (EditorBlockNode -> EditorBlockNode) -> ElementParameters -> Transform
 wrap contentsMapFunc elementParameters editorState =
     case editorState.selection of
         Nothing ->
@@ -1246,7 +1330,7 @@ wrap contentsMapFunc elementParameters editorState =
                                                 Err "Invalid ancestor path... somehow we have an inline leaf"
 
 
-selectAll : Command
+selectAll : Transform
 selectAll editorState =
     let
         ( fl, lastOffset ) =
@@ -1383,7 +1467,7 @@ liftConcatMapFunc node =
             [ node ]
 
 
-lift : Command
+lift : Transform
 lift editorState =
     case editorState.selection of
         Nothing ->
@@ -1410,7 +1494,7 @@ lift editorState =
                 }
 
 
-liftEmpty : Command
+liftEmpty : Transform
 liftEmpty editorState =
     case editorState.selection of
         Nothing ->
@@ -1468,7 +1552,7 @@ isEmptyTextBlock node =
             False
 
 
-splitBlockHeaderToNewParagraph : List String -> String -> Command
+splitBlockHeaderToNewParagraph : List String -> String -> Transform
 splitBlockHeaderToNewParagraph headerElements paragraphElement editorState =
     case splitTextBlock editorState of
         Err s ->
@@ -1522,7 +1606,7 @@ splitBlockHeaderToNewParagraph headerElements paragraphElement editorState =
                                         Ok splitEditorState
 
 
-insertBlockNode : EditorBlockNode -> Command
+insertBlockNode : EditorBlockNode -> Transform
 insertBlockNode node editorState =
     case editorState.selection of
         Nothing ->
@@ -1566,7 +1650,7 @@ insertBlockNode node editorState =
                                         insertBlockNodeBeforeSelection node splitEditorState
 
 
-insertBlockNodeBeforeSelection : EditorBlockNode -> Command
+insertBlockNodeBeforeSelection : EditorBlockNode -> Transform
 insertBlockNodeBeforeSelection node editorState =
     case editorState.selection of
         Nothing ->
@@ -1619,7 +1703,7 @@ insertBlockNodeBeforeSelection node editorState =
                                 Err "Invalid state! I was expecting a block node."
 
 
-backspaceInlineElement : Command
+backspaceInlineElement : Transform
 backspaceInlineElement editorState =
     case editorState.selection of
         Nothing ->
@@ -1665,7 +1749,7 @@ backspaceInlineElement editorState =
                                 Err "There is no previous inline leaf element, found a block node"
 
 
-backspaceBlockNode : Command
+backspaceBlockNode : Transform
 backspaceBlockNode editorState =
     case editorState.selection of
         Nothing ->
@@ -1766,7 +1850,7 @@ lengthsFromGroup leaves =
 -- find where to backspace
 
 
-backspaceWord : Command
+backspaceWord : Transform
 backspaceWord editorState =
     case editorState.selection of
         Nothing ->
@@ -1875,7 +1959,7 @@ backspaceWord editorState =
                                 Err "I expected an inline leaf array"
 
 
-deleteText : Command
+deleteText : Transform
 deleteText editorState =
     case editorState.selection of
         Nothing ->
@@ -1939,7 +2023,7 @@ deleteText editorState =
                                                                     Err "Cannot backspace the text of an inline leaf"
 
 
-deleteInlineElement : Command
+deleteInlineElement : Transform
 deleteInlineElement editorState =
     case editorState.selection of
         Nothing ->
@@ -2000,7 +2084,7 @@ deleteInlineElement editorState =
                                                     Err "There is no next inline leaf, found a block node"
 
 
-deleteBlockNode : Command
+deleteBlockNode : Transform
 deleteBlockNode editorState =
     case editorState.selection of
         Nothing ->
@@ -2034,7 +2118,7 @@ deleteBlockNode editorState =
                                 Err "The next node is not a block leaf, it's an inline leaf"
 
 
-deleteWord : Command
+deleteWord : Transform
 deleteWord editorState =
     case editorState.selection of
         Nothing ->
