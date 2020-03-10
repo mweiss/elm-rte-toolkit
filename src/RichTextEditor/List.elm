@@ -1,9 +1,9 @@
-module Rte.List exposing (..)
+module RichTextEditor.List exposing (..)
 
 import Array exposing (Array)
 import List.Extra
-import Rte.Annotation exposing (clearAnnotations)
-import Rte.Commands
+import RichTextEditor.Annotation exposing (clearAnnotations)
+import RichTextEditor.Commands
     exposing
         ( altKey
         , backspaceKey
@@ -18,7 +18,7 @@ import Rte.Commands
         , returnKey
         , set
         )
-import Rte.Model
+import RichTextEditor.Internal.Model
     exposing
         ( ChildNodes(..)
         , CommandMap
@@ -33,7 +33,7 @@ import Rte.Model
         , elementParameters
         , transformCommand
         )
-import Rte.Node
+import RichTextEditor.Node
     exposing
         ( concatMap
         , findAncestor
@@ -43,8 +43,8 @@ import Rte.Node
         , replace
         , replaceWithFragment
         )
-import Rte.NodePath exposing (commonAncestor, decrement, increment)
-import Rte.Selection
+import RichTextEditor.NodePath exposing (commonAncestor, decrement, increment)
+import RichTextEditor.Selection
     exposing
         ( annotateSelection
         , clearSelectionAnnotations
@@ -105,7 +105,7 @@ addListItem definition node =
 
 wrap : ListDefinition -> ListType -> Transform
 wrap definition type_ editorState =
-    Rte.Commands.wrap (addListItem definition)
+    RichTextEditor.Commands.wrap (addListItem definition)
         (if type_ == Ordered then
             definition.ordered
 
@@ -122,7 +122,7 @@ findListItemAncestor parameters =
 
 split : ListDefinition -> Transform
 split definition =
-    Rte.Commands.splitBlock (findListItemAncestor definition.item)
+    RichTextEditor.Commands.splitBlock (findListItemAncestor definition.item)
 
 
 isListNode : ListDefinition -> EditorNode -> Bool
@@ -140,7 +140,7 @@ isListNode definition node =
 
 addLiftAnnotationAtPathAndChildren : NodePath -> EditorBlockNode -> Result String EditorBlockNode
 addLiftAnnotationAtPathAndChildren path root =
-    case Rte.Annotation.addAnnotationAtPath liftAnnotation path root of
+    case RichTextEditor.Annotation.addAnnotationAtPath liftAnnotation path root of
         Err s ->
             Err s
 
@@ -161,7 +161,7 @@ addLiftAnnotationAtPathAndChildren path root =
                                                     result
 
                                                 Ok n ->
-                                                    Rte.Annotation.addAnnotationAtPath liftAnnotation (path ++ [ i ]) n
+                                                    RichTextEditor.Annotation.addAnnotationAtPath liftAnnotation (path ++ [ i ]) n
                                         )
                                         (Ok newRoot)
                                         (List.range 0 (Array.length ba - 1))

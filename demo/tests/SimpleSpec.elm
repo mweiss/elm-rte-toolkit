@@ -1,7 +1,7 @@
 module SimpleSpec exposing (..)
 
 import Array exposing (Array)
-import Rte.Model
+import RichTextEditor.Internal.Model
     exposing
         ( ContentType(..)
         , EditorFragment(..)
@@ -17,7 +17,7 @@ import Rte.Model
         , nodeDefinition
         , textBlockContentType
         )
-import Rte.Spec exposing (defaultElementToHtml, defaultHtmlToElement, defaultHtmlToMark)
+import RichTextEditor.Spec exposing (defaultElementToHtml, defaultHtmlToElement, defaultHtmlToMark)
 import Set
 
 

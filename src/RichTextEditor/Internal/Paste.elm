@@ -1,11 +1,11 @@
-module Rte.Paste exposing (..)
+module RichTextEditor.Paste exposing (..)
 
 import Array exposing (Array)
 import List.Extra
 import Result exposing (Result)
-import Rte.Commands exposing (joinBackward, joinForward, removeRangeSelection, splitTextBlock)
-import Rte.EditorUtils exposing (applyNamedCommandList)
-import Rte.Model
+import RichTextEditor.Commands exposing (joinBackward, joinForward, removeRangeSelection, splitTextBlock)
+import RichTextEditor.Editor exposing (applyNamedCommandList)
+import RichTextEditor.Internal.Model
     exposing
         ( ChildNodes(..)
         , Editor
@@ -20,7 +20,7 @@ import Rte.Model
         , transformCommand
         , zeroWidthSpace
         )
-import Rte.Node
+import RichTextEditor.Node
     exposing
         ( findTextBlockNodeAncestor
         , insert
@@ -28,8 +28,8 @@ import Rte.Node
         , replaceWithFragment
         , splitTextLeaf
         )
-import Rte.NodePath exposing (parent)
-import Rte.Selection
+import RichTextEditor.NodePath exposing (parent)
+import RichTextEditor.Selection
     exposing
         ( annotateSelection
         , caretSelection
@@ -37,7 +37,7 @@ import Rte.Selection
         , isCollapsed
         , selectionFromAnnotations
         )
-import Rte.Spec exposing (htmlToElementArray)
+import RichTextEditor.Spec exposing (htmlToElementArray)
 import Set
 
 

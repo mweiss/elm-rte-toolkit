@@ -1,23 +1,12 @@
-module Rte.EditorUtils exposing (..)
+module RichTextEditor.Editor exposing (..)
 
 import BoundedDeque exposing (BoundedDeque)
-import Rte.EditorState exposing (reduceEditorState)
-import Rte.Model
-    exposing
-        ( Command(..)
-        , Editor
-        , EditorState
-        , InternalAction(..)
-        , NamedCommand
-        , NamedCommandList
-        , Transform
-        )
-import Rte.Spec exposing (validate)
-
-
-forceRerender : Editor msg -> Editor msg
-forceRerender editor =
-    { editor | renderCount = editor.renderCount + 1 }
+import RichTextEditor.EditorState exposing (reduceEditorState)
+import RichTextEditor.Internal.Model.Command exposing (InternalAction(..))
+import RichTextEditor.Internal.Model.Editor exposing (Editor, history, state, withHistory, withState)
+import RichTextEditor.Internal.Model.EditorState exposing (State)
+import RichTextEditor.Internal.Model.History exposing (contents, fromContents)
+import RichTextEditor.Spec exposing (validate)
 
 
 applyInternalCommand : InternalAction -> Editor msg -> Result String (Editor msg)
@@ -30,7 +19,7 @@ applyInternalCommand action editor =
             handleRedo editor
 
 
-findNextState : EditorState -> BoundedDeque ( String, EditorState ) -> ( Maybe EditorState, BoundedDeque ( String, EditorState ) )
+findNextState : State -> BoundedDeque ( String, State ) -> ( Maybe State, BoundedDeque ( String, State ) )
 findNextState editorState undoDeque =
     let
         ( maybeState, rest ) =
@@ -51,11 +40,14 @@ findNextState editorState undoDeque =
 handleUndo : Editor msg -> Result String (Editor msg)
 handleUndo editor =
     let
-        history =
-            editor.history
+        editorHistory =
+            contents (history editor)
+
+        editorState =
+            state editor
 
         ( maybeState, newUndoDeque ) =
-            findNextState editor.editorState history.undoDeque
+            findNextState editorState editorHistory.undoDeque
     in
     case maybeState of
         Nothing ->
@@ -64,47 +56,47 @@ handleUndo editor =
         Just newState ->
             let
                 newHistory =
-                    { history | undoDeque = newUndoDeque, redoStack = editor.editorState :: history.redoStack }
+                    { editorHistory | undoDeque = newUndoDeque, redoStack = editorState :: editorHistory.redoStack }
             in
-            Ok { editor | editorState = newState, history = newHistory }
+            Ok <| editor |> withState newState |> withHistory (fromContents newHistory)
 
 
 handleRedo : Editor msg -> Result String (Editor msg)
 handleRedo editor =
     let
-        history =
-            editor.history
+        editorHistory =
+            contents (history editor)
     in
-    case editor.history.redoStack of
+    case editorHistory.redoStack of
         [] ->
             Err "There are no states on the redo stack"
 
         newState :: xs ->
             let
                 newHistory =
-                    { history
+                    { editorHistory
                         | undoDeque =
-                            BoundedDeque.pushFront ( "redo", editor.editorState )
-                                history.undoDeque
+                            BoundedDeque.pushFront ( "redo", state editor )
+                                editorHistory.undoDeque
                         , redoStack = xs
                     }
             in
-            Ok { editor | editorState = newState, history = newHistory }
+            Ok <| editor |> withState newState |> withHistory (fromContents newHistory)
 
 
-updateEditorState : String -> EditorState -> Editor msg -> Editor msg
-updateEditorState action editorState editor =
+updateEditorState : String -> State -> Editor msg -> Editor msg
+updateEditorState action newState editor =
     let
-        history =
-            editor.history
+        editorHistory =
+            contents (history editor)
 
         newHistory =
-            { history
-                | undoDeque = BoundedDeque.pushFront ( action, editor.editorState ) history.undoDeque
+            { editorHistory
+                | undoDeque = BoundedDeque.pushFront ( action, state editor ) editorHistory.undoDeque
                 , redoStack = []
             }
     in
-    { editor | history = newHistory, editorState = editorState }
+    editor |> withState newState |> withHistory (fromContents newHistory)
 
 
 applyCommand : NamedCommand -> Editor msg -> Result String (Editor msg)
@@ -148,8 +140,3 @@ applyNamedCommandList list editor =
         )
         (Err "No commands found")
         list
-
-
-forceReselection : Editor msg -> Editor msg
-forceReselection editor =
-    { editor | selectionCount = editor.selectionCount + 1 }

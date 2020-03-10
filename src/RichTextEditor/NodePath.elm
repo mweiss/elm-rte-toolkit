@@ -1,4 +1,4 @@
-module Rte.NodePath exposing
+module RichTextEditor.NodePath exposing
     ( commonAncestor
     , decrement
     , domToEditor
@@ -19,7 +19,7 @@ module Rte.NodePath exposing
 
 import Array exposing (Array)
 import List.Extra
-import Rte.Model
+import RichTextEditor.Internal.Model
     exposing
         ( ChildNodes(..)
         , EditorBlockNode
@@ -32,7 +32,7 @@ import Rte.Model
         , Selection
         , Spec
         )
-import Rte.Spec
+import RichTextEditor.Spec
     exposing
         ( childNodesPlaceholder
         , findMarkDefinitionFromSpecWithDefault

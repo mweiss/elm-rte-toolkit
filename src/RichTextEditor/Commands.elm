@@ -1,20 +1,13 @@
-module Rte.Commands exposing (..)
+module RichTextEditor.Commands exposing (..)
 
 import Array exposing (Array)
 import Array.Extra
 import Dict exposing (Dict)
 import List.Extra
 import Regex
-import Rte.Annotation exposing (clearAnnotations)
-import Rte.DeleteWord as DeleteWord
-import Rte.Marks
-    exposing
-        ( ToggleAction(..)
-        , hasMarkWithName
-        , toggle
-        , toggleMark
-        )
-import Rte.Model
+import RichTextEditor.Annotation exposing (clearAnnotations)
+import RichTextEditor.DeleteWord as DeleteWord
+import RichTextEditor.Internal.Model
     exposing
         ( ChildNodes(..)
         , CommandBinding(..)
@@ -40,7 +33,14 @@ import Rte.Model
         , internalCommand
         , transformCommand
         )
-import Rte.Node
+import RichTextEditor.Marks
+    exposing
+        ( ToggleAction(..)
+        , hasMarkWithName
+        , toggle
+        , toggleMark
+        )
+import RichTextEditor.Node
     exposing
         ( allRange
         , concatMap
@@ -64,7 +64,7 @@ import Rte.Node
         , splitBlockAtPathAndOffset
         , splitTextLeaf
         )
-import Rte.NodePath as NodePath
+import RichTextEditor.NodePath as NodePath
     exposing
         ( commonAncestor
         , decrement
@@ -72,7 +72,7 @@ import Rte.NodePath as NodePath
         , parent
         , toString
         )
-import Rte.Selection
+import RichTextEditor.Selection
     exposing
         ( annotateSelection
         , caretSelection
@@ -216,14 +216,6 @@ emptyCommandBinding =
     , defaultKeyCommand = \_ -> []
     , defaultInputEventCommand = \_ -> []
     }
-
-
-inputEvent type_ =
-    InputEventType type_
-
-
-key keys =
-    Key <| List.sort keys
 
 
 backspaceCommands =
@@ -1442,7 +1434,7 @@ addLiftMarkToBlocksInSelection selection root =
                                             False
                             in
                             if addMarker then
-                                Rte.Annotation.add liftAnnotation <| BlockNodeWrapper bn
+                                RichTextEditor.Annotation.add liftAnnotation <| BlockNodeWrapper bn
 
                             else
                                 node

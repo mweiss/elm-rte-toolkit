@@ -1,10 +1,10 @@
-module Rte.KeyDown exposing (..)
+module RichTextEditor.KeyDown exposing (..)
 
 import Dict
 import Json.Decode as D
-import Rte.Commands exposing (altKey, ctrlKey, metaKey, shiftKey)
-import Rte.EditorUtils exposing (applyNamedCommandList)
-import Rte.Model
+import RichTextEditor.Commands exposing (altKey, ctrlKey, metaKey, shiftKey)
+import RichTextEditor.Editor exposing (applyNamedCommandList)
+import RichTextEditor.Internal.Model
     exposing
         ( Editor
         , EditorState

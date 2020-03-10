@@ -7,13 +7,12 @@ import BoundedDeque
 import Browser
 import Html exposing (Html, div)
 import Html.Attributes
-import Rte.Commands exposing (enterKey, inputEvent, insertBlockNode, key, lift, liftEmpty, returnKey, set, splitBlockHeaderToNewParagraph, toggleBlock, toggleMarkOnInlineNodes, wrap)
-import Rte.Decorations exposing (addElementDecoration, emptyDecorations, selectableDecoration)
-import Rte.Editor exposing (internalUpdate)
-import Rte.EditorUtils exposing (applyCommand)
-import Rte.List exposing (ListType, defaultListDefinition)
-import Rte.Model exposing (ChildNodes(..), Editor, EditorAttribute(..), EditorBlockNode, EditorInlineLeaf(..), InternalEditorMsg(..), Mark, elementParameters, inlineLeafArray, selectableAnnotation, transformCommand)
-import Rte.Spec exposing (markOrderFromSpec)
+import RichTextEditor.Commands exposing (enterKey, inputEvent, insertBlockNode, key, lift, liftEmpty, returnKey, set, splitBlockHeaderToNewParagraph, toggleBlock, toggleMarkOnInlineNodes, wrap)
+import RichTextEditor.Decorations exposing (addElementDecoration, emptyDecorations, selectableDecoration)
+import RichTextEditor.Editor exposing (applyCommand, internalUpdate)
+import RichTextEditor.Internal.Model exposing (ChildNodes(..), Editor, EditorAttribute(..), EditorBlockNode, EditorInlineLeaf(..), InternalEditorMsg(..), Mark, elementParameters, inlineLeafArray, selectableAnnotation, transformCommand)
+import RichTextEditor.List exposing (ListType, defaultListDefinition)
+import RichTextEditor.Spec exposing (markOrderFromSpec)
 import Set
 
 
@@ -66,13 +65,13 @@ initialEditorNode =
 
 
 listCommandBindings =
-    Rte.List.commandBindings Rte.List.defaultListDefinition
+    RichTextEditor.List.commandBindings RichTextEditor.List.defaultListDefinition
 
 
 commandBindings =
-    Rte.Commands.combine
+    RichTextEditor.Commands.combine
         listCommandBindings
-        (Rte.Commands.defaultCommandBindings
+        (RichTextEditor.Commands.defaultCommandBindings
             |> set [ inputEvent "insertParagraph", key [ enterKey ], key [ returnKey ] ]
                 [ ( "liftEmpty", transformCommand <| liftEmpty )
                 , ( "splitBlockHeaderToNewParagraph"
@@ -308,7 +307,7 @@ handleWrapInList listType model =
     { model
         | editor =
             Result.withDefault model.editor
-                (applyCommand ( "wrapList", transformCommand <| Rte.List.wrap defaultListDefinition listType ) model.editor)
+                (applyCommand ( "wrapList", transformCommand <| RichTextEditor.List.wrap defaultListDefinition listType ) model.editor)
     }
 
 
@@ -444,7 +443,7 @@ view : Model -> Html Msg
 view model =
     div [ Html.Attributes.class "editor-container" ]
         [ BasicEditorControls.editorControlPanel []
-        , Rte.Editor.renderEditor model.editor
+        , RichTextEditor.Editor.renderEditor model.editor
         , BasicEditorControls.renderInsertLinkModal model.insertLinkModal
         , BasicEditorControls.renderInsertImageModal model.insertImageModal
         ]

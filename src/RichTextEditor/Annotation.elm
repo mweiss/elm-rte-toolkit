@@ -1,6 +1,6 @@
-module Rte.Annotation exposing (..)
+module RichTextEditor.Annotation exposing (..)
 
-import Rte.Model
+import RichTextEditor.Internal.Model
     exposing
         ( Annotation
         , EditorBlockNode
@@ -8,7 +8,7 @@ import Rte.Model
         , EditorNode(..)
         , NodePath
         )
-import Rte.Node exposing (indexedFoldl, map, nodeAt, replace)
+import RichTextEditor.Node exposing (indexedFoldl, map, nodeAt, replace)
 import Set exposing (Set)
 
 

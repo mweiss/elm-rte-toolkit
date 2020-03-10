@@ -1,8 +1,8 @@
-module Rte.EditorState exposing (..)
+module RichTextEditor.EditorState exposing (..)
 
 import Array exposing (Array)
 import List.Extra
-import Rte.Model
+import RichTextEditor.Internal.Model
     exposing
         ( ChildNodes(..)
         , EditorBlockNode
@@ -14,8 +14,8 @@ import Rte.Model
         , inlineLeafArray
         , selectionAnnotation
         )
-import Rte.Node exposing (findTextBlockNodeAncestor, map)
-import Rte.Selection exposing (annotateSelection, clearSelectionAnnotations, rangeSelection)
+import RichTextEditor.Node exposing (findTextBlockNodeAncestor, map)
+import RichTextEditor.Selection exposing (annotateSelection, clearSelectionAnnotations, rangeSelection)
 import Set
 
 

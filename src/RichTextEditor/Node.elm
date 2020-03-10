@@ -1,4 +1,4 @@
-module Rte.Node exposing
+module RichTextEditor.Node exposing
     ( Iterator
     , allRange
     , anyRange
@@ -33,7 +33,7 @@ module Rte.Node exposing
 
 import Array exposing (Array)
 import Array.Extra
-import Rte.Model
+import RichTextEditor.Internal.Model
     exposing
         ( Annotation
         , ChildNodes(..)

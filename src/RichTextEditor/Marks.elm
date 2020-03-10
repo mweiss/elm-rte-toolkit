@@ -1,7 +1,7 @@
-module Rte.Marks exposing (..)
+module RichTextEditor.Marks exposing (..)
 
 import Dict
-import Rte.Model
+import RichTextEditor.Internal.Model
     exposing
         ( EditorBlockNode
         , EditorInlineLeaf(..)
@@ -11,7 +11,7 @@ import Rte.Model
         , MarkOrder
         , NodePath
         )
-import Rte.Node exposing (nodeAt, replace)
+import RichTextEditor.Node exposing (nodeAt, replace)
 
 
 hasMarkWithName : String -> List Mark -> Bool

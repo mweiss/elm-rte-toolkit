@@ -1,4 +1,4 @@
-module Rte.Editor exposing (..)
+module RichTextEditor.Editor exposing (..)
 
 import Array exposing (Array)
 import Html exposing (Html)
@@ -7,25 +7,25 @@ import Html.Events
 import Html.Keyed
 import Json.Decode as D
 import List.Extra
-import Rte.BeforeInput
-import Rte.Commands exposing (removeRangeSelection)
-import Rte.Decorations exposing (getElementDecorators, getMarkDecorators)
-import Rte.DomNode exposing (decodeDomNode, extractRootEditorBlockNode, findTextChanges)
-import Rte.EditorUtils
+import RichTextEditor.BeforeInput
+import RichTextEditor.Commands exposing (removeRangeSelection)
+import RichTextEditor.Decorations exposing (getElementDecorators, getMarkDecorators)
+import RichTextEditor.DomNode exposing (decodeDomNode, extractRootEditorBlockNode, findTextChanges)
+import RichTextEditor.Editor
     exposing
         ( applyNamedCommandList
         , forceRerender
         , forceReselection
         , updateEditorState
         )
-import Rte.HtmlNode exposing (editorBlockNodeToHtmlNode)
-import Rte.KeyDown
-import Rte.Model exposing (..)
-import Rte.Node exposing (nodeAt)
-import Rte.NodePath as NodePath exposing (toString)
-import Rte.Paste
-import Rte.Selection exposing (annotateSelection, domToEditor, editorToDom, isCollapsed)
-import Rte.Spec exposing (childNodesPlaceholder, findNodeDefinitionFromSpecWithDefault)
+import RichTextEditor.HtmlNode exposing (editorBlockNodeToHtmlNode)
+import RichTextEditor.Internal.Model exposing (..)
+import RichTextEditor.KeyDown
+import RichTextEditor.Node exposing (nodeAt)
+import RichTextEditor.NodePath as NodePath exposing (toString)
+import RichTextEditor.Paste
+import RichTextEditor.Selection exposing (annotateSelection, domToEditor, editorToDom, isCollapsed)
+import RichTextEditor.Spec exposing (childNodesPlaceholder, findNodeDefinitionFromSpecWithDefault)
 
 
 updateSelection : Maybe Selection -> Bool -> Editor msg -> Editor msg
@@ -60,7 +60,7 @@ internalUpdate msg editor =
             updateSelection selection isDomPath editor
 
         BeforeInputEvent inputEvent ->
-            Rte.BeforeInput.handleBeforeInput inputEvent editor
+            RichTextEditor.BeforeInput.handleBeforeInput inputEvent editor
 
         CompositionStart ->
             handleCompositionStart editor
@@ -69,10 +69,10 @@ internalUpdate msg editor =
             handleCompositionEnd editor
 
         KeyDownEvent e ->
-            Rte.KeyDown.handleKeyDown e editor
+            RichTextEditor.KeyDown.handleKeyDown e editor
 
         PasteWithDataEvent e ->
-            Rte.Paste.handlePaste e editor
+            RichTextEditor.Paste.handlePaste e editor
 
         CutEvent ->
             handleCut editor
@@ -405,12 +405,12 @@ selectionAttribute maybeSelection renderCount selectionCount =
 
 onBeforeInput : Editor msg -> Html.Attribute msg
 onBeforeInput editor =
-    Html.Events.preventDefaultOn "beforeinput" (Rte.BeforeInput.preventDefaultOnBeforeInputDecoder editor)
+    Html.Events.preventDefaultOn "beforeinput" (RichTextEditor.BeforeInput.preventDefaultOnBeforeInputDecoder editor)
 
 
 onKeyDown : Editor msg -> Html.Attribute msg
 onKeyDown editor =
-    Html.Events.preventDefaultOn "keydown" (Rte.KeyDown.preventDefaultOnKeyDownDecoder editor)
+    Html.Events.preventDefaultOn "keydown" (RichTextEditor.KeyDown.preventDefaultOnKeyDownDecoder editor)
 
 
 handleCompositionStart : Editor msg -> Editor msg
@@ -634,8 +634,3 @@ renderInlineLeaf editor backwardsPath leaf =
 
         TextLeaf v ->
             renderText v.text
-
-
-forceCompleteRerender : Editor msg -> Editor msg
-forceCompleteRerender editor =
-    { editor | completeRerenderCount = editor.completeRerenderCount + 1 }

@@ -1,11 +1,11 @@
-module Rte.Decorations exposing (..)
+module RichTextEditor.Decorations exposing (..)
 
 import Dict
 import Html
 import Html.Attributes
 import Html.Events
-import Rte.Model exposing (..)
-import Rte.Selection exposing (caretSelection)
+import RichTextEditor.Internal.Model exposing (..)
+import RichTextEditor.Selection exposing (caretSelection)
 import Set
 
 

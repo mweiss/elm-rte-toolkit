@@ -1,4 +1,4 @@
-module Rte.DomNode exposing
+module RichTextEditor.DomNode exposing
     ( decodeDomNode
     , domElementNodeType
     , domTextNodeType
@@ -10,15 +10,11 @@ import Array
 import Array.Extra
 import Json.Decode as D
 import Json.Decode.Extra as DE
-import Rte.Model
-    exposing
-        ( DomNode(..)
-        , DomNodeContents
-        , HtmlNode(..)
-        , NodePath
-        , TextChange
-        , zeroWidthSpace
-        )
+import RichTextEditor.Internal.Model.Constants exposing (zeroWidthSpace)
+import RichTextEditor.Internal.Model.DomNode exposing (DomNode, DomNodeContents)
+import RichTextEditor.Internal.Model.Event exposing (TextChange)
+import RichTextEditor.Internal.Model.HtmlNode exposing (HtmlNode(..))
+import RichTextEditor.Internal.Model.Node exposing (NodePath)
 
 
 {-| The DOM text node nodeType value as specified by the w3c spec [w3c spec][w3c-custom-types-text-node]

@@ -1,7 +1,7 @@
-module Rte.HtmlNode exposing (..)
+module RichTextEditor.HtmlNode exposing (..)
 
 import Array exposing (Array)
-import Rte.Model
+import RichTextEditor.Internal.Model
     exposing
         ( ChildNodes(..)
         , EditorBlockNode
@@ -13,7 +13,7 @@ import Rte.Model
         , Spec
         , TextLeafContents
         )
-import Rte.Spec
+import RichTextEditor.Spec
     exposing
         ( findMarkDefinitionFromSpecWithDefault
         , findNodeDefinitionFromSpecWithDefault

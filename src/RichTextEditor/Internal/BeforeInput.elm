@@ -1,16 +1,11 @@
-module Rte.BeforeInput exposing (..)
+module RichTextEditor.BeforeInput exposing (..)
 
 import Dict
 import Json.Decode as D
-import Rte.EditorUtils exposing (applyNamedCommandList, forceRerender)
-import Rte.Model
-    exposing
-        ( Editor
-        , EditorState
-        , InputEvent
-        , InputEventTypeMap
-        , InternalEditorMsg(..)
-        )
+import RichTextEditor.Editor exposing (applyNamedCommandList, forceRerender)
+import RichTextEditor.Internal.Model.Command exposing (namedCommandListFromInputEvent)
+import RichTextEditor.Internal.Model.Editor exposing (Editor, InternalEditorMsg(..), commandMap, decoder)
+import RichTextEditor.Internal.Model.Event exposing (InputEvent)
 
 
 preventDefaultOn : Editor msg -> InternalEditorMsg -> ( InternalEditorMsg, Bool )
@@ -35,7 +30,7 @@ shouldPreventDefault editor inputEvent =
 
 preventDefaultOnBeforeInputDecoder : Editor msg -> D.Decoder ( msg, Bool )
 preventDefaultOnBeforeInputDecoder editor =
-    D.map (\( i, b ) -> ( editor.decoder i, b )) (D.map (preventDefaultOn editor) beforeInputDecoder)
+    D.map (\( i, b ) -> ( decoder editor i, b )) (D.map (preventDefaultOn editor) beforeInputDecoder)
 
 
 beforeInputDecoder : D.Decoder InternalEditorMsg
@@ -52,8 +47,7 @@ handleInputEvent : Editor msg -> InputEvent -> Result String (Editor msg)
 handleInputEvent editor inputEvent =
     let
         namedCommandList =
-            Maybe.withDefault (editor.commandMap.defaultInputEventCommand inputEvent)
-                (Dict.get inputEvent.inputType editor.commandMap.inputEventTypeMap)
+            namedCommandListFromInputEvent inputEvent (commandMap editor)
     in
     applyNamedCommandList namedCommandList editor
 

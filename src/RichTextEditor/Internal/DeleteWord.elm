@@ -1,4 +1,4 @@
-module Rte.DeleteWord exposing (..)
+module RichTextEditor.DeleteWord exposing (..)
 
 {-
    This is a helper module taken from the DraftJS logic for determining how to find delete a word.

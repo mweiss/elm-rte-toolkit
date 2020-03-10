@@ -2,8 +2,8 @@ module TestNodePath exposing (..)
 
 import Array exposing (Array)
 import Expect
-import Rte.Model exposing (ChildNodes(..), EditorBlockNode, EditorInlineLeaf(..), ElementParameters, HtmlNode(..), Mark, Spec, inlineLeafArray)
-import Rte.NodePath
+import RichTextEditor.Internal.Model exposing (ChildNodes(..), EditorBlockNode, EditorInlineLeaf(..), ElementParameters, HtmlNode(..), Mark, Spec, inlineLeafArray)
+import RichTextEditor.NodePath
     exposing
         ( commonAncestor
         , decrement
@@ -13,7 +13,7 @@ import Rte.NodePath
         , parent
         , toString
         )
-import Rte.Spec exposing (emptySpec)
+import RichTextEditor.Spec exposing (emptySpec)
 import Set
 import SimpleSpec exposing (simpleSpec)
 import Test exposing (..)

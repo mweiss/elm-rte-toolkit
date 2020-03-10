@@ -1,12 +1,11 @@
-module Rte.Spec exposing (..)
+module RichTextEditor.Spec exposing (..)
 
 import Array exposing (Array)
 import Dict exposing (Dict)
 import Html.Parser exposing (Node(..))
 import List.Extra
 import Result exposing (Result)
-import Rte.Marks exposing (ToggleAction(..), toggle)
-import Rte.Model
+import RichTextEditor.Internal.Model
     exposing
         ( ChildNodes(..)
         , ContentType(..)
@@ -30,6 +29,7 @@ import Rte.Model
         , nodeDefinition
         , zeroWidthSpace
         )
+import RichTextEditor.Marks exposing (ToggleAction(..), toggle)
 import Set exposing (Set)
 
 

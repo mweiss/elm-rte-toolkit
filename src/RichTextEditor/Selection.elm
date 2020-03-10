@@ -1,4 +1,4 @@
-module Rte.Selection exposing
+module RichTextEditor.Selection exposing
     ( annotateSelection
     , caretSelection
     , clearSelectionAnnotations
@@ -11,13 +11,13 @@ module Rte.Selection exposing
     , singleNodeRangeSelection
     )
 
-import Rte.Annotation
+import RichTextEditor.Annotation
     exposing
         ( addAnnotationAtPath
         , clearAnnotations
         , findPathsWithAnnotation
         )
-import Rte.Model
+import RichTextEditor.Internal.Model
     exposing
         ( Annotation
         , ChildNodes(..)
@@ -32,7 +32,7 @@ import Rte.Model
         , Spec
         , selectionAnnotation
         )
-import Rte.NodePath as Path
+import RichTextEditor.NodePath as Path
 
 
 domToEditor : Spec -> EditorBlockNode -> Selection -> Maybe Selection

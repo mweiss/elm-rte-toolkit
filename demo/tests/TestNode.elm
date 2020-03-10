@@ -2,7 +2,7 @@ module TestNode exposing (..)
 
 import Array
 import Expect
-import Rte.Model
+import RichTextEditor.Internal.Model
     exposing
         ( Annotation
         , ChildNodes(..)
@@ -15,7 +15,7 @@ import Rte.Model
         , inlineLeafArray
         , selectableAnnotation
         )
-import Rte.Node
+import RichTextEditor.Node
     exposing
         ( allRange
         , anyRange
@@ -43,7 +43,7 @@ import Rte.Node
         , splitBlockAtPathAndOffset
         , splitTextLeaf
         )
-import Rte.NodePath exposing (toString)
+import RichTextEditor.NodePath exposing (toString)
 import Set
 import Test exposing (Test, describe, test)
 
