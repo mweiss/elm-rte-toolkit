@@ -1,4 +1,4 @@
-module RichTextEditor.Internal.Model.Attribute exposing
+module RichTextEditor.Model.Attribute exposing
     ( Attribute
     , bool
     , findBoolAttribute

@@ -3,23 +3,42 @@ module RichTextEditor.Paste exposing (..)
 import Array exposing (Array)
 import List.Extra
 import Result exposing (Result)
-import RichTextEditor.Commands exposing (joinBackward, joinForward, removeRangeSelection, splitTextBlock)
-import RichTextEditor.Editor exposing (applyNamedCommandList)
-import RichTextEditor.Internal.Model
+import RichTextEditor.Commands
+    exposing
+        ( joinBackward
+        , joinForward
+        , removeRangeSelection
+        , splitTextBlock
+        )
+import RichTextEditor.Internal.Editor exposing (applyNamedCommandList)
+import RichTextEditor.Model.Command exposing (Transform, transformCommand)
+import RichTextEditor.Model.Constants exposing (zeroWidthSpace)
+import RichTextEditor.Model.Editor exposing (Editor, spec)
+import RichTextEditor.Model.Event exposing (PasteEvent)
+import RichTextEditor.Model.Node
     exposing
         ( ChildNodes(..)
-        , Editor
         , EditorBlockNode
         , EditorFragment(..)
         , EditorInlineLeaf(..)
         , EditorNode(..)
-        , PasteEvent
-        , Spec
-        , Transform
+        , arrayFromInlineArray
+        , childNodes
+        , editorBlockNode
+        , elementParametersFromBlockNode
         , inlineLeafArray
-        , transformCommand
-        , zeroWidthSpace
+        , textLeafWithText
         )
+import RichTextEditor.Model.Selection
+    exposing
+        ( anchorNode
+        , anchorOffset
+        , caretSelection
+        , focusOffset
+        , isCollapsed
+        )
+import RichTextEditor.Model.Spec exposing (Spec)
+import RichTextEditor.Model.State as State exposing (withRoot, withSelection)
 import RichTextEditor.Node
     exposing
         ( findTextBlockNodeAncestor
@@ -32,20 +51,17 @@ import RichTextEditor.NodePath exposing (parent)
 import RichTextEditor.Selection
     exposing
         ( annotateSelection
-        , caretSelection
         , clearSelectionAnnotations
-        , isCollapsed
         , selectionFromAnnotations
         )
 import RichTextEditor.Spec exposing (htmlToElementArray)
-import Set
 
 
 handlePaste : PasteEvent -> Editor msg -> Editor msg
 handlePaste event editor =
     let
         commandArray =
-            [ ( "pasteHtml", transformCommand <| pasteHtml editor.spec event.html )
+            [ ( "pasteHtml", transformCommand <| pasteHtml (spec editor) event.html )
             , ( "pasteText", transformCommand <| pasteText event.text )
             ]
     in
@@ -58,7 +74,7 @@ pasteText text editorState =
         Err "There is no text to paste"
 
     else
-        case editorState.selection of
+        case State.selection editorState of
             Nothing ->
                 Err "Nothing is selected"
 
@@ -71,26 +87,21 @@ pasteText text editorState =
                         lines =
                             String.split "\n" (String.replace zeroWidthSpace "" text)
                     in
-                    case findTextBlockNodeAncestor selection.anchorNode editorState.root of
+                    case findTextBlockNodeAncestor (anchorNode selection) (State.root editorState) of
                         Nothing ->
                             Err "I can only paste test if there is a text block ancestor"
 
-                        Just ( tbPath, tbNode ) ->
+                        Just ( _, tbNode ) ->
                             let
                                 newLines =
                                     List.map
                                         (\line ->
-                                            { parameters = tbNode.parameters
-                                            , childNodes =
-                                                inlineLeafArray <|
+                                            editorBlockNode (elementParametersFromBlockNode tbNode)
+                                                (inlineLeafArray <|
                                                     Array.fromList
-                                                        [ TextLeaf
-                                                            { text = line
-                                                            , marks = []
-                                                            , annotations = Set.empty
-                                                            }
+                                                        [ textLeafWithText line
                                                         ]
-                                            }
+                                                )
                                         )
                                         lines
 
@@ -136,7 +147,7 @@ pasteFragment fragment editorState =
 
 pasteInlineArray : Array EditorInlineLeaf -> Transform
 pasteInlineArray inlineFragment editorState =
-    case editorState.selection of
+    case State.selection editorState of
         Nothing ->
             Err "Nothing is selected"
 
@@ -145,25 +156,25 @@ pasteInlineArray inlineFragment editorState =
                 removeRangeSelection editorState |> Result.andThen (pasteInlineArray inlineFragment)
 
             else
-                case findTextBlockNodeAncestor selection.anchorNode editorState.root of
+                case findTextBlockNodeAncestor (anchorNode selection) (State.root editorState) of
                     Nothing ->
                         Err "I can only paste an inline array into a text block node"
 
                     Just ( path, node ) ->
                         case node.childNodes of
-                            BlockArray _ ->
+                            BlockChildren _ ->
                                 Err "I cannot add an inline array to a block array"
 
                             Leaf ->
                                 Err "I cannot add an inline array to a block leaf"
 
-                            InlineLeafArray a ->
-                                case List.Extra.last selection.anchorNode of
+                            InlineChildren a ->
+                                case List.Extra.last (anchorNode selection) of
                                     Nothing ->
                                         Err "Invalid state, somehow the anchor node is the root node"
 
                                     Just index ->
-                                        case Array.get index a.array of
+                                        case Array.get index (arrayFromInlineArray a) of
                                             Nothing ->
                                                 Err "Invalid anchor node path"
 
@@ -172,13 +183,15 @@ pasteInlineArray inlineFragment editorState =
                                                     TextLeaf tl ->
                                                         let
                                                             ( previous, next ) =
-                                                                splitTextLeaf selection.anchorOffset tl
+                                                                splitTextLeaf (anchorOffset selection) tl
 
                                                             newFragment =
                                                                 Array.fromList <| TextLeaf previous :: (Array.toList inlineFragment ++ [ TextLeaf next ])
 
                                                             replaceResult =
-                                                                replaceWithFragment selection.anchorNode (InlineLeafFragment newFragment) editorState.root
+                                                                replaceWithFragment (anchorNode selection)
+                                                                    (InlineLeafFragment newFragment)
+                                                                    (State.root editorState)
 
                                                             newSelection =
                                                                 caretSelection (path ++ [ index + Array.length inlineFragment + 1 ]) 0
@@ -188,12 +201,15 @@ pasteInlineArray inlineFragment editorState =
                                                                 Err s
 
                                                             Ok newRoot ->
-                                                                Ok { editorState | selection = Just newSelection, root = newRoot }
+                                                                Ok <|
+                                                                    editorState
+                                                                        |> withSelection (Just newSelection)
+                                                                        |> withRoot newRoot
 
                                                     InlineLeaf _ ->
                                                         let
                                                             replaceResult =
-                                                                replaceWithFragment selection.anchorNode (InlineLeafFragment inlineFragment) editorState.root
+                                                                replaceWithFragment (anchorNode selection) (InlineLeafFragment inlineFragment) (State.root editorState)
 
                                                             newSelection =
                                                                 caretSelection (path ++ [ index + Array.length inlineFragment - 1 ]) 0
@@ -203,13 +219,16 @@ pasteInlineArray inlineFragment editorState =
                                                                 Err s
 
                                                             Ok newRoot ->
-                                                                Ok { editorState | selection = Just newSelection, root = newRoot }
+                                                                Ok <|
+                                                                    editorState
+                                                                        |> withSelection (Just newSelection)
+                                                                        |> withRoot newRoot
 
 
 pasteBlockArray : Array EditorBlockNode -> Transform
 pasteBlockArray blockFragment editorState =
     -- split, add nodes, select beginning, join backwards, select end, join forward
-    case editorState.selection of
+    case State.selection editorState of
         Nothing ->
             Err "Nothing is selected"
 
@@ -220,9 +239,9 @@ pasteBlockArray blockFragment editorState =
             else
                 let
                     parentPath =
-                        parent selection.anchorNode
+                        parent (anchorNode selection)
                 in
-                case nodeAt parentPath editorState.root of
+                case nodeAt parentPath (State.root editorState) of
                     Nothing ->
                         Err "I cannot find the parent node of the selection"
 
@@ -232,17 +251,21 @@ pasteBlockArray blockFragment editorState =
                                 Err "Invalid parent node"
 
                             BlockNodeWrapper bn ->
-                                case bn.childNodes of
+                                case childNodes bn of
                                     Leaf ->
                                         Err "Invalid parent node, somehow the parent node was a leaf"
 
-                                    BlockArray _ ->
-                                        case replaceWithFragment selection.anchorNode (BlockNodeFragment blockFragment) editorState.root of
+                                    BlockChildren _ ->
+                                        case
+                                            replaceWithFragment (anchorNode selection)
+                                                (BlockNodeFragment blockFragment)
+                                                (State.root editorState)
+                                        of
                                             Err s ->
                                                 Err s
 
                                             Ok newRoot ->
-                                                case List.Extra.last selection.anchorNode of
+                                                case List.Extra.last (anchorNode selection) of
                                                     Nothing ->
                                                         Err "Invalid anchor node, somehow the parent is root"
 
@@ -251,9 +274,12 @@ pasteBlockArray blockFragment editorState =
                                                             newSelection =
                                                                 caretSelection (parentPath ++ [ index + Array.length blockFragment - 1 ]) 0
                                                         in
-                                                        Ok { editorState | root = newRoot, selection = Just newSelection }
+                                                        Ok <|
+                                                            editorState
+                                                                |> withSelection (Just newSelection)
+                                                                |> withRoot newRoot
 
-                                    InlineLeafArray a ->
+                                    InlineChildren _ ->
                                         case splitTextBlock editorState of
                                             Err s ->
                                                 Err s
@@ -275,19 +301,30 @@ pasteBlockArray blockFragment editorState =
                                                             Ok addedNodesRoot ->
                                                                 let
                                                                     addNodesEditorState =
-                                                                        { editorState | root = addedNodesRoot }
+                                                                        editorState |> withRoot addedNodesRoot
 
                                                                     joinBeginningState =
                                                                         Result.withDefault
                                                                             addNodesEditorState
-                                                                            (joinForward { addNodesEditorState | selection = Just <| caretSelection selection.anchorNode selection.anchorOffset })
+                                                                            (joinForward
+                                                                                (addNodesEditorState
+                                                                                    |> withSelection
+                                                                                        (Just <|
+                                                                                            caretSelection
+                                                                                                (anchorNode selection)
+                                                                                                (anchorOffset selection)
+                                                                                        )
+                                                                                )
+                                                                            )
 
                                                                     annotatedSelection =
-                                                                        selectionFromAnnotations joinBeginningState.root splitSelection.anchorOffset splitSelection.focusOffset
+                                                                        selectionFromAnnotations (State.root joinBeginningState)
+                                                                            (anchorOffset splitSelection)
+                                                                            (focusOffset splitSelection)
 
                                                                     joinEndState =
                                                                         Result.withDefault
                                                                             joinBeginningState
-                                                                            (joinBackward { joinBeginningState | selection = annotatedSelection })
+                                                                            (joinBackward (joinBeginningState |> withSelection annotatedSelection))
                                                                 in
-                                                                Ok { joinEndState | root = clearSelectionAnnotations joinEndState.root }
+                                                                Ok <| joinEndState |> withRoot (clearSelectionAnnotations (State.root joinEndState))

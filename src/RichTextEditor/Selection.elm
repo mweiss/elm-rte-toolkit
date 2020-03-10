@@ -17,7 +17,7 @@ import RichTextEditor.Annotation
         , clearAnnotations
         , findPathsWithAnnotation
         )
-import RichTextEditor.Internal.Model
+import RichTextEditor.Model
     exposing
         ( Annotation
         , ChildNodes(..)
@@ -58,55 +58,6 @@ transformSelection transformation spec node selection =
 
                 Just focusNode ->
                     Just <| rangeSelection anchorNode selection.anchorOffset focusNode selection.focusOffset
-
-
-{-| This is a helper method for constructing a caret selection.
--}
-caretSelection : NodePath -> Int -> Selection
-caretSelection nodePath offset =
-    singleNodeRangeSelection nodePath offset offset
-
-
-{-| This is a helper method for determining if a selection is collapsed.
--}
-isCollapsed : Selection -> Bool
-isCollapsed selection =
-    selection.anchorOffset == selection.focusOffset && selection.anchorNode == selection.focusNode
-
-
-{-| This is a helper method for creating a range selection
--}
-rangeSelection : NodePath -> Int -> NodePath -> Int -> Selection
-rangeSelection anchorNode anchorOffset focusNode focusOffset =
-    { anchorOffset = anchorOffset
-    , anchorNode = anchorNode
-    , focusOffset = focusOffset
-    , focusNode = focusNode
-    }
-
-
-{-| This is a helper method for creating a selection over a single node
--}
-singleNodeRangeSelection : NodePath -> Int -> Int -> Selection
-singleNodeRangeSelection node anchorOffset focusOffset =
-    rangeSelection node anchorOffset node focusOffset
-
-
-{-| Sorts the selection's anchor to be before the focus. This method is helpful because in the selection
-API, a selection's anchor node is not always before a selection's focus node, but when reasoning about editor
-operations, we want the anchor to be before the focus.
--}
-normalizeSelection : Selection -> Selection
-normalizeSelection selection =
-    case compare selection.anchorNode selection.focusNode of
-        EQ ->
-            { selection | anchorOffset = min selection.focusOffset selection.anchorOffset, focusOffset = max selection.focusOffset selection.anchorOffset }
-
-        LT ->
-            selection
-
-        GT ->
-            { selection | focusNode = selection.anchorNode, focusOffset = selection.anchorOffset, anchorNode = selection.focusNode, anchorOffset = selection.focusOffset }
 
 
 annotateSelection : Selection -> EditorBlockNode -> EditorBlockNode

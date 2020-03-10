@@ -1,11 +1,10 @@
 module RichTextEditor.BeforeInput exposing (..)
 
-import Dict
 import Json.Decode as D
-import RichTextEditor.Editor exposing (applyNamedCommandList, forceRerender)
-import RichTextEditor.Internal.Model.Command exposing (namedCommandListFromInputEvent)
-import RichTextEditor.Internal.Model.Editor exposing (Editor, InternalEditorMsg(..), commandMap, decoder)
-import RichTextEditor.Internal.Model.Event exposing (InputEvent)
+import RichTextEditor.Internal.Editor exposing (applyNamedCommandList)
+import RichTextEditor.Model.Command exposing (namedCommandListFromInputEvent)
+import RichTextEditor.Model.Editor exposing (Editor, InternalEditorMsg(..), commandMap, decoder, forceRerender)
+import RichTextEditor.Model.Event exposing (InputEvent)
 
 
 preventDefaultOn : Editor msg -> InternalEditorMsg -> ( InternalEditorMsg, Bool )

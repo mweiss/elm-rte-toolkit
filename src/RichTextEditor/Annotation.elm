@@ -1,13 +1,7 @@
 module RichTextEditor.Annotation exposing (..)
 
-import RichTextEditor.Internal.Model
-    exposing
-        ( Annotation
-        , EditorBlockNode
-        , EditorInlineLeaf(..)
-        , EditorNode(..)
-        , NodePath
-        )
+import RichTextEditor.Model.Annotation exposing (Annotation)
+import RichTextEditor.Model.Node exposing (EditorBlockNode, EditorInlineLeaf(..), EditorNode(..), ElementParameters, NodePath, annotationsFromElementParameters, annotationsFromTextLeafParameters, blockNodeWithParameters, elementParametersFromBlockNode, elementParametersFromInlineLeafParameters, elementParametersWithAnnotations, inlineLeafParametersWithElementParameters, textLeafParametersWithAnnotations)
 import RichTextEditor.Node exposing (indexedFoldl, map, nodeAt, replace)
 import Set exposing (Set)
 
@@ -52,28 +46,40 @@ add =
     toggle addAnnotationToSet
 
 
+toggleElementParameters : (Annotation -> Set Annotation -> Set Annotation) -> Annotation -> ElementParameters -> ElementParameters
+toggleElementParameters func annotation parameters =
+    let
+        annotations =
+            annotationsFromElementParameters parameters
+    in
+    elementParametersWithAnnotations (func annotation annotations) parameters
+
+
 toggle : (Annotation -> Set Annotation -> Set Annotation) -> Annotation -> EditorNode -> EditorNode
 toggle func annotation node =
     case node of
         BlockNodeWrapper bn ->
             let
-                p =
-                    bn.parameters
+                newParameters =
+                    toggleElementParameters func annotation (elementParametersFromBlockNode bn)
+
+                newBlockNode =
+                    bn |> blockNodeWithParameters newParameters
             in
-            BlockNodeWrapper { bn | parameters = { p | annotations = func annotation bn.parameters.annotations } }
+            BlockNodeWrapper newBlockNode
 
         InlineLeafWrapper il ->
             InlineLeafWrapper <|
                 case il of
                     InlineLeaf l ->
                         let
-                            p =
-                                l.parameters
+                            newParameters =
+                                toggleElementParameters func annotation (elementParametersFromInlineLeafParameters l)
                         in
-                        InlineLeaf { l | parameters = { p | annotations = func annotation l.parameters.annotations } }
+                        InlineLeaf <| inlineLeafParametersWithElementParameters newParameters l
 
                     TextLeaf tl ->
-                        TextLeaf { tl | annotations = func annotation tl.annotations }
+                        TextLeaf <| tl |> textLeafParametersWithAnnotations (func annotation <| annotationsFromTextLeafParameters tl)
 
 
 clearAnnotations : Annotation -> EditorBlockNode -> EditorBlockNode
@@ -90,15 +96,15 @@ getAnnotationsFromNode : EditorNode -> Set Annotation
 getAnnotationsFromNode node =
     case node of
         BlockNodeWrapper blockNode ->
-            blockNode.parameters.annotations
+            annotationsFromElementParameters <| elementParametersFromBlockNode blockNode
 
         InlineLeafWrapper inlineLeaf ->
             case inlineLeaf of
                 InlineLeaf p ->
-                    p.parameters.annotations
+                    annotationsFromElementParameters <| elementParametersFromInlineLeafParameters p
 
                 TextLeaf p ->
-                    p.annotations
+                    annotationsFromTextLeafParameters p
 
 
 findPathsWithAnnotation : Annotation -> EditorBlockNode -> List NodePath

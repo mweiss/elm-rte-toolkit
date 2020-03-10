@@ -4,8 +4,8 @@ import Html exposing (Attribute, Html, div, span, text)
 import Html.Attributes exposing (class)
 import Html.Events exposing (preventDefaultOn)
 import Json.Decode exposing (succeed)
-import RichTextEditor.Internal.Model exposing (EditorState, InternalEditorMsg)
 import RichTextEditor.List exposing (ListType(..))
+import RichTextEditor.Model exposing (EditorState, InternalEditorMsg)
 
 
 type alias InsertLinkModal =

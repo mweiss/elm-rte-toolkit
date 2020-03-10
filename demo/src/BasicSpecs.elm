@@ -1,7 +1,7 @@
 module BasicSpecs exposing (..)
 
 import Array exposing (Array)
-import RichTextEditor.Internal.Model exposing (ContentType(..), EditorAttribute(..), ElementParameters, ElementToHtml, HtmlNode(..), HtmlToElement, HtmlToMark, Mark, MarkDefinition, MarkToHtml, NodeDefinition, Spec, blockLeafContentType, blockNodeContentType, elementParameters, findIntegerAttribute, findStringAttribute, inlineLeafContentType, mark, markDefinition, nodeDefinition, selectableAnnotation, textBlockContentType)
+import RichTextEditor.Model exposing (ContentType(..), EditorAttribute(..), ElementParameters, ElementToHtml, HtmlNode(..), HtmlToElement, HtmlToMark, Mark, MarkDefinition, MarkToHtml, NodeDefinition, Spec, blockLeafContentType, blockNodeContentType, elementParameters, findIntegerAttribute, findStringAttribute, inlineLeafContentType, mark, markDefinition, nodeDefinition, selectableAnnotation, textBlockContentType)
 import RichTextEditor.Spec exposing (defaultElementToHtml, defaultHtmlToElement, defaultHtmlToMark)
 import Set
 

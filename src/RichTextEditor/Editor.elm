@@ -11,20 +11,14 @@ import RichTextEditor.BeforeInput
 import RichTextEditor.Commands exposing (removeRangeSelection)
 import RichTextEditor.Decorations exposing (getElementDecorators, getMarkDecorators)
 import RichTextEditor.DomNode exposing (decodeDomNode, extractRootEditorBlockNode, findTextChanges)
-import RichTextEditor.Editor
-    exposing
-        ( applyNamedCommandList
-        , forceRerender
-        , forceReselection
-        , updateEditorState
-        )
 import RichTextEditor.HtmlNode exposing (editorBlockNodeToHtmlNode)
-import RichTextEditor.Internal.Model exposing (..)
 import RichTextEditor.KeyDown
+import RichTextEditor.Model.Editor exposing (Editor, state)
+import RichTextEditor.Model.Selection exposing (Selection)
 import RichTextEditor.Node exposing (nodeAt)
 import RichTextEditor.NodePath as NodePath exposing (toString)
 import RichTextEditor.Paste
-import RichTextEditor.Selection exposing (annotateSelection, domToEditor, editorToDom, isCollapsed)
+import RichTextEditor.Selection exposing (annotateSelection, domToEditor)
 import RichTextEditor.Spec exposing (childNodesPlaceholder, findNodeDefinitionFromSpecWithDefault)
 
 
@@ -32,7 +26,7 @@ updateSelection : Maybe Selection -> Bool -> Editor msg -> Editor msg
 updateSelection maybeSelection isDomPath editor =
     let
         editorState =
-            editor.editorState
+            (state editor)
     in
     case maybeSelection of
         Nothing ->
@@ -430,7 +424,7 @@ handleCompositionEnd editor =
 
 shouldHideCaret : EditorState -> Bool
 shouldHideCaret editorState =
-    case editorState.selection of
+    case (State.selection editorState) of
         Nothing ->
             True
 
@@ -459,7 +453,7 @@ shouldHideCaret editorState =
 
 markCaretSelectionOnEditorNodes : EditorState -> EditorBlockNode
 markCaretSelectionOnEditorNodes editorState =
-    case editorState.selection of
+    case (State.selection editorState) of
         Nothing ->
             editorState.root
 
@@ -473,7 +467,7 @@ markCaretSelectionOnEditorNodes editorState =
 
 editorToDomSelection : Editor msg -> Maybe Selection
 editorToDomSelection editor =
-    case editor.editorState.selection of
+    case editor.(State.selection editorState) of
         Nothing ->
             Nothing
 

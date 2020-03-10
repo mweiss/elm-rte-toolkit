@@ -2,7 +2,7 @@ module TestNode exposing (..)
 
 import Array
 import Expect
-import RichTextEditor.Internal.Model
+import RichTextEditor.Model
     exposing
         ( Annotation
         , ChildNodes(..)

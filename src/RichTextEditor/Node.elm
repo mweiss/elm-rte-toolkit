@@ -33,7 +33,7 @@ module RichTextEditor.Node exposing
 
 import Array exposing (Array)
 import Array.Extra
-import RichTextEditor.Internal.Model
+import RichTextEditor.Model
     exposing
         ( Annotation
         , ChildNodes(..)

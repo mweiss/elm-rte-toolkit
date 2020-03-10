@@ -1,7 +1,7 @@
 module SimpleSpec exposing (..)
 
 import Array exposing (Array)
-import RichTextEditor.Internal.Model
+import RichTextEditor.Model
     exposing
         ( ContentType(..)
         , EditorFragment(..)

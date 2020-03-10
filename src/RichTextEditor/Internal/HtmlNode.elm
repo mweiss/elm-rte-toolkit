@@ -1,18 +1,10 @@
 module RichTextEditor.HtmlNode exposing (..)
 
 import Array exposing (Array)
-import RichTextEditor.Internal.Model
-    exposing
-        ( ChildNodes(..)
-        , EditorBlockNode
-        , EditorInlineLeaf(..)
-        , ElementParameters
-        , HtmlNode(..)
-        , InlineLeafTree(..)
-        , Mark
-        , Spec
-        , TextLeafContents
-        )
+import RichTextEditor.Model.HtmlNode exposing (HtmlNode(..))
+import RichTextEditor.Model.Mark exposing (Mark, name)
+import RichTextEditor.Model.Node exposing (ChildNodes(..), EditorBlockNode, EditorInlineLeaf(..), ElementParameters, InlineLeafTree(..), arrayFromBlockArray, arrayFromInlineArray, childNodes, elementParametersFromBlockNode, elementParametersFromInlineLeafParameters, nameFromElementParameters, text, treeFromInlineArray)
+import RichTextEditor.Model.Spec exposing (Spec)
 import RichTextEditor.Spec
     exposing
         ( findMarkDefinitionFromSpecWithDefault
@@ -26,7 +18,7 @@ markToHtmlNode : Spec -> Mark -> Array HtmlNode -> HtmlNode
 markToHtmlNode spec mark children =
     let
         markDefinition =
-            findMarkDefinitionFromSpecWithDefault mark.name spec
+            findMarkDefinitionFromSpecWithDefault (name mark) spec
     in
     markDefinition.toHtmlNode mark children
 
@@ -37,7 +29,7 @@ elementToHtmlNode : Spec -> ElementParameters -> Array HtmlNode -> HtmlNode
 elementToHtmlNode spec parameters children =
     let
         nodeDefinition =
-            findNodeDefinitionFromSpecWithDefault parameters.name spec
+            findNodeDefinitionFromSpecWithDefault (nameFromElementParameters parameters) spec
     in
     nodeDefinition.toHtmlNode parameters children
 
@@ -46,7 +38,7 @@ elementToHtmlNode spec parameters children =
 -}
 editorBlockNodeToHtmlNode : Spec -> EditorBlockNode -> HtmlNode
 editorBlockNodeToHtmlNode spec node =
-    elementToHtmlNode spec node.parameters (childNodesToHtmlNode spec node.childNodes)
+    elementToHtmlNode spec (elementParametersFromBlockNode node) (childNodesToHtmlNode spec (childNodes node))
 
 
 {-| Renders child nodes to their HtmlNode representation.
@@ -54,11 +46,11 @@ editorBlockNodeToHtmlNode spec node =
 childNodesToHtmlNode : Spec -> ChildNodes -> Array HtmlNode
 childNodesToHtmlNode spec childNodes =
     case childNodes of
-        BlockArray blockArray ->
-            Array.map (editorBlockNodeToHtmlNode spec) blockArray
+        BlockChildren blockArray ->
+            Array.map (editorBlockNodeToHtmlNode spec) (arrayFromBlockArray blockArray)
 
-        InlineLeafArray inlineLeafArray ->
-            Array.map (editorInlineLeafTreeToHtmlNode spec inlineLeafArray.array) inlineLeafArray.tree
+        InlineChildren inlineLeafArray ->
+            Array.map (editorInlineLeafTreeToHtmlNode spec (arrayFromInlineArray inlineLeafArray)) (treeFromInlineArray inlineLeafArray)
 
         Leaf ->
             Array.empty
@@ -66,9 +58,9 @@ childNodesToHtmlNode spec childNodes =
 
 {-| Renders text nodes to their HtmlNode representation.
 -}
-textToHtmlNode : TextLeafContents -> HtmlNode
-textToHtmlNode contents =
-    TextNode contents.text
+textToHtmlNode : String -> HtmlNode
+textToHtmlNode text =
+    TextNode text
 
 
 errorNode : HtmlNode
@@ -97,7 +89,7 @@ editorInlineLeafToHtmlNode : Spec -> EditorInlineLeaf -> HtmlNode
 editorInlineLeafToHtmlNode spec node =
     case node of
         TextLeaf contents ->
-            textToHtmlNode contents
+            textToHtmlNode (text contents)
 
         InlineLeaf l ->
-            elementToHtmlNode spec l.parameters Array.empty
+            elementToHtmlNode spec (elementParametersFromInlineLeafParameters l) Array.empty

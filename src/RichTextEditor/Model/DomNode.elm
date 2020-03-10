@@ -1,4 +1,4 @@
-module RichTextEditor.Internal.Model.DomNode exposing (DomNode(..), DomNodeContents)
+module RichTextEditor.Model.DomNode exposing (DomNode(..), DomNodeContents)
 
 import Array exposing (Array)
 

@@ -2,7 +2,7 @@ module TestModel exposing (..)
 
 import Array
 import Expect
-import RichTextEditor.Internal.Model exposing (InlineLeafTree(..), Mark, marksToMarkNodeList)
+import RichTextEditor.Model exposing (InlineLeafTree(..), Mark, marksToMarkNodeList)
 import Test exposing (Test, describe, test)
 
 

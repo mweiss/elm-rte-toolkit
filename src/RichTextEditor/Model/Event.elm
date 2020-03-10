@@ -1,8 +1,8 @@
-module RichTextEditor.Internal.Model.Event exposing (..)
+module RichTextEditor.Model.Event exposing (..)
 
 import Json.Encode as E
-import RichTextEditor.Internal.Model.Node exposing (NodePath)
-import RichTextEditor.Internal.Model.Selection exposing (Selection)
+import RichTextEditor.Model.Node exposing (NodePath)
+import RichTextEditor.Model.Selection exposing (Selection)
 
 
 {-| Whenever the elm-editor MutationObserver detects a change, it triggers an editor change event

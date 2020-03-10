@@ -18,7 +18,7 @@ import RichTextEditor.Commands
         , returnKey
         , set
         )
-import RichTextEditor.Internal.Model
+import RichTextEditor.Model
     exposing
         ( ChildNodes(..)
         , CommandMap
@@ -227,7 +227,7 @@ addLiftMarkToListItems definition selection root =
 
 lift : ListDefinition -> Transform
 lift definition editorState =
-    case editorState.selection of
+    case State.selection editorState of
         Nothing ->
             Err "Nothing is selected"
 
@@ -247,7 +247,7 @@ lift definition editorState =
                             concatMap liftConcatMapFunc <| concatMap liftConcatMapFunc markedRoot
 
                         newSelection =
-                            selectionFromAnnotations liftedRoot normalizedSelection.anchorOffset normalizedSelection.focusOffset
+                            selectionFromAnnotations liftedRoot (anchorOffset normalizedSelection) (focusOffset normalizedSelection)
                     in
                     Ok
                         { editorState
@@ -258,7 +258,7 @@ lift definition editorState =
 
 liftEmpty : ListDefinition -> Transform
 liftEmpty definition editorState =
-    case editorState.selection of
+    case State.selection editorState of
         Nothing ->
             Err "Nothing is selected"
 
@@ -312,7 +312,7 @@ isBeginningOfListItem definition selection root =
 
 joinBackward : ListDefinition -> Transform
 joinBackward definition editorState =
-    case editorState.selection of
+    case State.selection editorState of
         Nothing ->
             Err "Nothing is selected"
 
@@ -409,7 +409,7 @@ isEndOfListItem definition selection root =
 
 joinForward : ListDefinition -> Transform
 joinForward definition editorState =
-    case editorState.selection of
+    case State.selection editorState of
         Nothing ->
             Err "Nothing is selected"
 

@@ -2,7 +2,7 @@ module TestSpec exposing (..)
 
 import Array exposing (Array)
 import Expect
-import RichTextEditor.Internal.Model exposing (ChildNodes(..), ContentType(..), EditorFragment(..), EditorInlineLeaf(..), ElementParameters, HtmlNode(..), Mark, Spec, inlineLeafArray)
+import RichTextEditor.Model exposing (ChildNodes(..), ContentType(..), EditorFragment(..), EditorInlineLeaf(..), ElementParameters, HtmlNode(..), Mark, Spec, inlineLeafArray)
 import RichTextEditor.Spec exposing (htmlToElementArray)
 import Set
 import SimpleSpec exposing (simpleSpec)

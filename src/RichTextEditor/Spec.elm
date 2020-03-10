@@ -5,7 +5,8 @@ import Dict exposing (Dict)
 import Html.Parser exposing (Node(..))
 import List.Extra
 import Result exposing (Result)
-import RichTextEditor.Internal.Model
+import RichTextEditor.Marks exposing (ToggleAction(..), toggle)
+import RichTextEditor.Model
     exposing
         ( ChildNodes(..)
         , ContentType(..)
@@ -29,7 +30,6 @@ import RichTextEditor.Internal.Model
         , nodeDefinition
         , zeroWidthSpace
         )
-import RichTextEditor.Marks exposing (ToggleAction(..), toggle)
 import Set exposing (Set)
 
 

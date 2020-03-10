@@ -1,7 +1,7 @@
 module RichTextEditor.DeleteWord exposing (..)
 
 {-
-   This is a helper module taken from the DraftJS logic for determining how to find delete a word.
+   This is a helper module derived from the DraftJS logic for determining how to delete a word.
 -}
 
 import Regex

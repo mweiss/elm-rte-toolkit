@@ -1,11 +1,11 @@
-module RichTextEditor.Editor exposing (..)
+module RichTextEditor.Internal.Editor exposing (..)
 
 import BoundedDeque exposing (BoundedDeque)
 import RichTextEditor.EditorState exposing (reduceEditorState)
-import RichTextEditor.Internal.Model.Command exposing (InternalAction(..))
-import RichTextEditor.Internal.Model.Editor exposing (Editor, history, state, withHistory, withState)
-import RichTextEditor.Internal.Model.EditorState exposing (State)
-import RichTextEditor.Internal.Model.History exposing (contents, fromContents)
+import RichTextEditor.Model.Command exposing (Command(..), InternalAction(..), NamedCommand, NamedCommandList)
+import RichTextEditor.Model.Editor exposing (Editor, forceReselection, history, spec, state, withHistory, withState)
+import RichTextEditor.Model.History exposing (contents, fromContents)
+import RichTextEditor.Model.State exposing (State)
 import RichTextEditor.Spec exposing (validate)
 
 
@@ -106,7 +106,7 @@ applyCommand ( name, command ) editor =
             applyInternalCommand action editor
 
         TransformCommand transform ->
-            case transform editor.editorState |> Result.andThen (validate editor.spec) of
+            case transform (state editor) |> Result.andThen (validate (spec editor)) of
                 Err s ->
                     Err s
 

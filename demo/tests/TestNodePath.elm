@@ -2,7 +2,7 @@ module TestNodePath exposing (..)
 
 import Array exposing (Array)
 import Expect
-import RichTextEditor.Internal.Model exposing (ChildNodes(..), EditorBlockNode, EditorInlineLeaf(..), ElementParameters, HtmlNode(..), Mark, Spec, inlineLeafArray)
+import RichTextEditor.Model exposing (ChildNodes(..), EditorBlockNode, EditorInlineLeaf(..), ElementParameters, HtmlNode(..), Mark, Spec, inlineLeafArray)
 import RichTextEditor.NodePath
     exposing
         ( commonAncestor

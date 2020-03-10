@@ -1,7 +1,7 @@
 module RichTextEditor.Marks exposing (..)
 
 import Dict
-import RichTextEditor.Internal.Model
+import RichTextEditor.Model
     exposing
         ( EditorBlockNode
         , EditorInlineLeaf(..)

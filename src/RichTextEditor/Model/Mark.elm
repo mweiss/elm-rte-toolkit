@@ -1,11 +1,11 @@
-module RichTextEditor.Internal.Model.Mark exposing (Mark, mark)
+module RichTextEditor.Model.Mark exposing (Mark, MarkOrder, attributes, mark, name)
 
 {-| A mark is a piece of information that can be attached to a node. It can be used to as extra
 information when rendering a node (like color, font, and link information).
 -}
 
 import Dict exposing (Dict)
-import RichTextEditor.Internal.Model.Attribute exposing (Attribute)
+import RichTextEditor.Model.Attribute exposing (Attribute)
 
 
 type Mark
@@ -17,8 +17,22 @@ type alias Contents =
 
 
 mark : String -> List Attribute -> Mark
-mark name attributes =
-    Mark { name = name, attributes = attributes }
+mark n a =
+    Mark { name = n, attributes = a }
+
+
+name : Mark -> String
+name m =
+    case m of
+        Mark c ->
+            c.name
+
+
+attributes : Mark -> List Attribute
+attributes m =
+    case m of
+        Mark c ->
+            c.attributes
 
 
 type MarkOrder

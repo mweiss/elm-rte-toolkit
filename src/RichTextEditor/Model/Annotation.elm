@@ -1,4 +1,4 @@
-module RichTextEditor.Internal.Model.Annotation exposing
+module RichTextEditor.Model.Annotation exposing
     ( Annotation
     , selectableAnnotation
     , selectionAnnotation

@@ -10,8 +10,8 @@ import Html.Attributes
 import RichTextEditor.Commands exposing (enterKey, inputEvent, insertBlockNode, key, lift, liftEmpty, returnKey, set, splitBlockHeaderToNewParagraph, toggleBlock, toggleMarkOnInlineNodes, wrap)
 import RichTextEditor.Decorations exposing (addElementDecoration, emptyDecorations, selectableDecoration)
 import RichTextEditor.Editor exposing (applyCommand, internalUpdate)
-import RichTextEditor.Internal.Model exposing (ChildNodes(..), Editor, EditorAttribute(..), EditorBlockNode, EditorInlineLeaf(..), InternalEditorMsg(..), Mark, elementParameters, inlineLeafArray, selectableAnnotation, transformCommand)
 import RichTextEditor.List exposing (ListType, defaultListDefinition)
+import RichTextEditor.Model exposing (ChildNodes(..), Editor, EditorAttribute(..), EditorBlockNode, EditorInlineLeaf(..), InternalEditorMsg(..), Mark, elementParameters, inlineLeafArray, selectableAnnotation, transformCommand)
 import RichTextEditor.Spec exposing (markOrderFromSpec)
 import Set
 

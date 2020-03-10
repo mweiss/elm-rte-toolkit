@@ -1,7 +1,7 @@
-module RichTextEditor.Internal.Model.History exposing (..)
+module RichTextEditor.Model.History exposing (..)
 
 import BoundedDeque exposing (BoundedDeque)
-import RichTextEditor.Internal.Model.EditorState exposing (State)
+import RichTextEditor.Model.State exposing (State)
 
 
 type History

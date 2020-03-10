@@ -2,37 +2,10 @@ module RichTextEditor.Commands exposing (..)
 
 import Array exposing (Array)
 import Array.Extra
-import Dict exposing (Dict)
 import List.Extra
 import Regex
 import RichTextEditor.Annotation exposing (clearAnnotations)
 import RichTextEditor.DeleteWord as DeleteWord
-import RichTextEditor.Internal.Model
-    exposing
-        ( ChildNodes(..)
-        , CommandBinding(..)
-        , CommandMap
-        , Editor
-        , EditorBlockNode
-        , EditorFragment(..)
-        , EditorInlineLeaf(..)
-        , EditorNode(..)
-        , EditorState
-        , ElementParameters
-        , InputEvent
-        , InternalAction(..)
-        , KeyboardEvent
-        , Mark
-        , MarkOrder
-        , NamedCommandList
-        , NodePath
-        , Selection
-        , Transform
-        , findMarksFromInlineLeaf
-        , inlineLeafArray
-        , internalCommand
-        , transformCommand
-        )
 import RichTextEditor.Marks
     exposing
         ( ToggleAction(..)
@@ -40,6 +13,78 @@ import RichTextEditor.Marks
         , toggle
         , toggleMark
         )
+import RichTextEditor.Model.Command
+    exposing
+        ( CommandBinding
+        , CommandMap
+        , InternalAction(..)
+        , NamedCommandList
+        , Transform
+        , emptyCommandMap
+        , inputEvent
+        , internalCommand
+        , key
+        , set
+        , transformCommand
+        , withDefaultInputEventCommand
+        , withDefaultKeyCommand
+        )
+import RichTextEditor.Model.Event exposing (InputEvent, KeyboardEvent)
+import RichTextEditor.Model.Keys
+    exposing
+        ( altKey
+        , backspaceKey
+        , deleteKey
+        , enterKey
+        , metaKey
+        , returnKey
+        , shiftKey
+        )
+import RichTextEditor.Model.Mark as Mark exposing (Mark, MarkOrder)
+import RichTextEditor.Model.Node
+    exposing
+        ( BlockArray
+        , ChildNodes(..)
+        , EditorBlockNode
+        , EditorFragment(..)
+        , EditorInlineLeaf(..)
+        , EditorNode(..)
+        , ElementParameters
+        , NodePath
+        , annotationsFromBlockNode
+        , arrayFromBlockArray
+        , arrayFromInlineArray
+        , blockArray
+        , blockNodeWithParameters
+        , childNodes
+        , editorBlockNode
+        , elementParameters
+        , elementParametersFromBlockNode
+        , elementParametersWithName
+        , inlineLeafArray
+        , inlineLeafParameters
+        , inlineLeafParametersWithMarks
+        , marksFromInlineLeaf
+        , nameFromElementParameters
+        , text
+        , textLeafParametersWithMarks
+        , withChildNodes
+        , withText
+        )
+import RichTextEditor.Model.Selection
+    exposing
+        ( Selection
+        , anchorNode
+        , anchorOffset
+        , caretSelection
+        , focusNode
+        , focusOffset
+        , isCollapsed
+        , normalizeSelection
+        , rangeSelection
+        , singleNodeRangeSelection
+        )
+import RichTextEditor.Model.State as State exposing (State, withRoot, withSelection)
 import RichTextEditor.Node
     exposing
         ( allRange
@@ -53,7 +98,6 @@ import RichTextEditor.Node
         , indexedMap
         , isSelectable
         , joinBlocks
-        , map
         , next
         , nodeAt
         , previous
@@ -75,147 +119,11 @@ import RichTextEditor.NodePath as NodePath
 import RichTextEditor.Selection
     exposing
         ( annotateSelection
-        , caretSelection
         , clearSelectionAnnotations
-        , isCollapsed
-        , normalizeSelection
-        , rangeSelection
         , selectionFromAnnotations
-        , singleNodeRangeSelection
         )
 import Set
 import String.Extra
-
-
-altKey : String
-altKey =
-    "Alt"
-
-
-metaKey : String
-metaKey =
-    "Meta"
-
-
-ctrlKey : String
-ctrlKey =
-    "Ctrl"
-
-
-shiftKey : String
-shiftKey =
-    "Shift"
-
-
-returnKey : String
-returnKey =
-    "Return"
-
-
-enterKey : String
-enterKey =
-    "Enter"
-
-
-backspaceKey : String
-backspaceKey =
-    "Backspace"
-
-
-deleteKey : String
-deleteKey =
-    "Delete"
-
-
-set : List CommandBinding -> NamedCommandList -> CommandMap -> CommandMap
-set bindings func map =
-    List.foldl
-        (\binding accMap ->
-            case binding of
-                Key keys ->
-                    { accMap | keyMap = Dict.insert keys func accMap.keyMap }
-
-                InputEventType type_ ->
-                    { accMap | inputEventTypeMap = Dict.insert type_ func accMap.inputEventTypeMap }
-        )
-        map
-        bindings
-
-
-setDefaultKeyCommand : (KeyboardEvent -> NamedCommandList) -> CommandMap -> CommandMap
-setDefaultKeyCommand func map =
-    { map | defaultKeyCommand = func }
-
-
-setDefaultInputEventCommand : (InputEvent -> NamedCommandList) -> CommandMap -> CommandMap
-setDefaultInputEventCommand func map =
-    { map | defaultInputEventCommand = func }
-
-
-compose : comparable -> NamedCommandList -> Dict comparable NamedCommandList -> Dict comparable NamedCommandList
-compose k commandList d =
-    case Dict.get k d of
-        Nothing ->
-            Dict.insert k commandList d
-
-        Just v ->
-            Dict.insert k (commandList ++ v) d
-
-
-combine : CommandMap -> CommandMap -> CommandMap
-combine map1 map2 =
-    { inputEventTypeMap =
-        Dict.foldl
-            compose
-            map2.inputEventTypeMap
-            map1.inputEventTypeMap
-    , keyMap = Dict.foldl compose map2.keyMap map1.keyMap
-    , defaultKeyCommand =
-        if map1.defaultKeyCommand == emptyCommandBinding.defaultKeyCommand then
-            map2.defaultKeyCommand
-
-        else
-            map1.defaultKeyCommand
-    , defaultInputEventCommand =
-        if map1.defaultInputEventCommand == emptyCommandBinding.defaultInputEventCommand then
-            map2.defaultInputEventCommand
-
-        else
-            map1.defaultInputEventCommand
-    }
-
-
-stack : List CommandBinding -> NamedCommandList -> CommandMap -> CommandMap
-stack bindings list map =
-    List.foldl
-        (\binding accMap ->
-            case binding of
-                Key keys ->
-                    case Dict.get keys accMap.keyMap of
-                        Nothing ->
-                            { accMap | keyMap = Dict.insert keys list accMap.keyMap }
-
-                        Just f ->
-                            { accMap | keyMap = Dict.insert keys (list ++ f) accMap.keyMap }
-
-                InputEventType type_ ->
-                    case Dict.get type_ accMap.inputEventTypeMap of
-                        Nothing ->
-                            { accMap | inputEventTypeMap = Dict.insert type_ list accMap.inputEventTypeMap }
-
-                        Just f ->
-                            { accMap | inputEventTypeMap = Dict.insert type_ (list ++ f) accMap.inputEventTypeMap }
-        )
-        map
-        bindings
-
-
-emptyCommandBinding =
-    { keyMap = Dict.empty
-    , inputEventTypeMap = Dict.empty
-    , defaultKeyCommand = \_ -> []
-    , defaultInputEventCommand = \_ -> []
-    }
 
 
 backspaceCommands =
@@ -237,7 +145,7 @@ deleteCommands =
 
 
 defaultCommandBindings =
-    emptyCommandBinding
+    emptyCommandMap
         |> set
             [ inputEvent "insertLineBreak", key [ shiftKey, enterKey ], key [ shiftKey, enterKey ] ]
             [ ( "insertLineBreak", transformCommand insertLineBreak ) ]
@@ -257,8 +165,8 @@ defaultCommandBindings =
             [ ( "undo", internalCommand Undo ) ]
         |> set [ key [ metaKey, shiftKey, "z" ] ]
             [ ( "redo", internalCommand Redo ) ]
-        |> setDefaultKeyCommand defaultKeyCommand
-        |> setDefaultInputEventCommand defaultInputEventCommand
+        |> withDefaultKeyCommand defaultKeyCommand
+        |> withDefaultInputEventCommand defaultInputEventCommand
 
 
 defaultKeyCommand : KeyboardEvent -> NamedCommandList
@@ -299,7 +207,7 @@ removeRangeSelectionAndInsert s editorState =
 
 insertTextAtSelection : String -> Transform
 insertTextAtSelection s editorState =
-    case editorState.selection of
+    case State.selection editorState of
         Nothing ->
             Err "Nothing is selected"
 
@@ -308,13 +216,13 @@ insertTextAtSelection s editorState =
                 Err "I can only insert text if the range is collapsed"
 
             else
-                case nodeAt selection.anchorNode editorState.root of
+                case nodeAt (anchorNode selection) (State.root editorState) of
                     Nothing ->
                         Err "Invalid selection after remove range"
 
                     Just node ->
                         case node of
-                            BlockNodeWrapper bn ->
+                            BlockNodeWrapper _ ->
                                 Err "I was expected a text leaf, but instead I found a block node"
 
                             InlineLeafWrapper il ->
@@ -325,49 +233,62 @@ insertTextAtSelection s editorState =
                                     TextLeaf tl ->
                                         let
                                             newText =
-                                                String.Extra.insertAt s selection.anchorOffset tl.text
+                                                String.Extra.insertAt s (anchorOffset selection) (text tl)
 
                                             newTextLeaf =
-                                                TextLeaf { tl | text = newText }
+                                                TextLeaf <| tl |> withText newText
                                         in
-                                        case replace selection.anchorNode (InlineLeafWrapper newTextLeaf) editorState.root of
+                                        case
+                                            replace
+                                                (anchorNode selection)
+                                                (InlineLeafWrapper newTextLeaf)
+                                                (State.root editorState)
+                                        of
                                             Err e ->
                                                 Err e
 
                                             Ok newRoot ->
-                                                Ok
-                                                    { editorState
-                                                        | root = newRoot
-                                                        , selection = Just <| caretSelection selection.anchorNode (selection.anchorOffset + 1)
-                                                    }
+                                                Ok <|
+                                                    editorState
+                                                        |> withRoot newRoot
+                                                        |> withSelection
+                                                            (Just <|
+                                                                caretSelection
+                                                                    (anchorNode selection)
+                                                                    (anchorOffset selection + 1)
+                                                            )
 
 
 joinBackward : Transform
 joinBackward editorState =
-    case editorState.selection of
+    case State.selection editorState of
         Nothing ->
             Err "Nothing is selected"
 
         Just selection ->
-            if not <| selectionIsBeginningOfTextBlock selection editorState.root then
+            if not <| selectionIsBeginningOfTextBlock selection (State.root editorState) then
                 Err "I cannot join a selection that is not the beginning of a text block"
 
             else
-                case findTextBlockNodeAncestor selection.anchorNode editorState.root of
+                case findTextBlockNodeAncestor (anchorNode selection) (State.root editorState) of
                     Nothing ->
                         Err "There is no text block at the selection"
 
                     Just ( textBlockPath, _ ) ->
-                        case findPreviousTextBlock textBlockPath editorState.root of
+                        case findPreviousTextBlock textBlockPath (State.root editorState) of
                             Nothing ->
                                 Err "There is no text block I can join backward with"
 
                             Just ( p, n ) ->
                                 -- We're going to transpose this into joinForward by setting the selection to the end of the
                                 -- given text block
-                                case n.childNodes of
-                                    InlineLeafArray a ->
-                                        case Array.get (Array.length a.array - 1) a.array of
+                                case childNodes n of
+                                    InlineChildren a ->
+                                        let
+                                            array =
+                                                arrayFromInlineArray a
+                                        in
+                                        case Array.get (Array.length array - 1) array of
                                             Nothing ->
                                                 Err "There must be at least one element in the inline node to join with"
 
@@ -376,12 +297,18 @@ joinBackward editorState =
                                                     newSelection =
                                                         case leaf of
                                                             TextLeaf tl ->
-                                                                caretSelection (p ++ [ Array.length a.array - 1 ]) (String.length tl.text)
+                                                                caretSelection
+                                                                    (p ++ [ Array.length array - 1 ])
+                                                                    (String.length (text tl))
 
                                                             InlineLeaf _ ->
-                                                                caretSelection (p ++ [ Array.length a.array - 1 ]) 0
+                                                                caretSelection
+                                                                    (p ++ [ Array.length array - 1 ])
+                                                                    0
                                                 in
-                                                joinForward { editorState | selection = Just newSelection }
+                                                joinForward <|
+                                                    editorState
+                                                        |> withSelection (Just newSelection)
 
                                     _ ->
                                         Err "I can only join with text blocks"
@@ -393,23 +320,23 @@ selectionIsBeginningOfTextBlock selection root =
         False
 
     else
-        case findTextBlockNodeAncestor selection.anchorNode root of
+        case findTextBlockNodeAncestor (anchorNode selection) root of
             Nothing ->
                 False
 
             Just ( _, n ) ->
                 case n.childNodes of
-                    InlineLeafArray a ->
-                        case List.Extra.last selection.anchorNode of
+                    InlineChildren a ->
+                        case List.Extra.last (anchorNode selection) of
                             Nothing ->
                                 False
 
                             Just i ->
-                                if i /= 0 || Array.isEmpty a.array then
+                                if i /= 0 || Array.isEmpty (arrayFromInlineArray a) then
                                     False
 
                                 else
-                                    selection.anchorOffset == 0
+                                    anchorOffset selection == 0
 
                     _ ->
                         False
@@ -421,30 +348,30 @@ selectionIsEndOfTextBlock selection root =
         False
 
     else
-        case findTextBlockNodeAncestor selection.anchorNode root of
+        case findTextBlockNodeAncestor (anchorNode selection) root of
             Nothing ->
                 False
 
             Just ( _, n ) ->
                 case n.childNodes of
-                    InlineLeafArray a ->
-                        case List.Extra.last selection.anchorNode of
+                    InlineChildren a ->
+                        case List.Extra.last (anchorNode selection) of
                             Nothing ->
                                 False
 
                             Just i ->
-                                if i /= Array.length a.array - 1 then
+                                if i /= Array.length (arrayFromInlineArray a) - 1 then
                                     False
 
                                 else
-                                    case Array.get i a.array of
+                                    case Array.get i (arrayFromInlineArray a) of
                                         Nothing ->
                                             False
 
                                         Just leaf ->
                                             case leaf of
                                                 TextLeaf tl ->
-                                                    String.length tl.text == selection.anchorOffset
+                                                    String.length (text tl) == anchorOffset selection
 
                                                 InlineLeaf _ ->
                                                     True
@@ -455,21 +382,21 @@ selectionIsEndOfTextBlock selection root =
 
 joinForward : Transform
 joinForward editorState =
-    case editorState.selection of
+    case State.selection editorState of
         Nothing ->
             Err "Nothing is selected"
 
         Just selection ->
-            if not <| selectionIsEndOfTextBlock selection editorState.root then
+            if not <| selectionIsEndOfTextBlock selection (State.root editorState) then
                 Err "I cannot join a selection that is not at the end of a text block"
 
             else
-                case findTextBlockNodeAncestor selection.anchorNode editorState.root of
+                case findTextBlockNodeAncestor (anchorNode selection) (State.root editorState) of
                     Nothing ->
                         Err "The selection has no text block ancestor"
 
                     Just ( p1, n1 ) ->
-                        case findNextTextBlock selection.anchorNode editorState.root of
+                        case findNextTextBlock (anchorNode selection) (State.root editorState) of
                             Nothing ->
                                 Err "There is no text block I can join forward with"
 
@@ -485,22 +412,24 @@ joinForward editorState =
                                     Just newBlock ->
                                         let
                                             removed =
-                                                removeNodeAndEmptyParents p2 editorState.root
+                                                removeNodeAndEmptyParents p2 (State.root editorState)
                                         in
                                         case replace p1 (BlockNodeWrapper newBlock) removed of
                                             Err e ->
                                                 Err e
 
                                             Ok b ->
-                                                Ok { editorState | root = b }
+                                                Ok <|
+                                                    editorState
+                                                        |> withRoot b
 
 
 isTextBlock : NodePath -> EditorNode -> Bool
 isTextBlock _ node =
     case node of
         BlockNodeWrapper bn ->
-            case bn.childNodes of
-                InlineLeafArray _ ->
+            case childNodes bn of
+                InlineChildren _ ->
                     True
 
                 _ ->
@@ -546,7 +475,7 @@ findPreviousTextBlock =
 
 removeRangeSelection : Transform
 removeRangeSelection editorState =
-    case editorState.selection of
+    case State.selection editorState of
         Nothing ->
             Err "Nothing is selected"
 
@@ -559,14 +488,23 @@ removeRangeSelection editorState =
                     normalizedSelection =
                         normalizeSelection selection
                 in
-                if normalizedSelection.anchorNode == normalizedSelection.focusNode then
-                    case removeTextAtRange normalizedSelection.anchorNode normalizedSelection.anchorOffset (Just normalizedSelection.focusOffset) editorState.root of
+                if anchorNode normalizedSelection == focusNode normalizedSelection then
+                    case
+                        removeTextAtRange
+                            (anchorNode normalizedSelection)
+                            (anchorOffset normalizedSelection)
+                            (Just (focusOffset normalizedSelection))
+                            (State.root editorState)
+                    of
                         Ok newRoot ->
                             let
                                 newSelection =
-                                    caretSelection normalizedSelection.anchorNode normalizedSelection.anchorOffset
+                                    caretSelection (anchorNode normalizedSelection) (anchorOffset normalizedSelection)
                             in
-                            Ok { editorState | root = newRoot, selection = Just newSelection }
+                            Ok <|
+                                editorState
+                                    |> withRoot newRoot
+                                    |> withSelection (Just newSelection)
 
                         Err s ->
                             Err s
@@ -574,17 +512,32 @@ removeRangeSelection editorState =
                 else
                     let
                         anchorTextBlock =
-                            findTextBlockNodeAncestor normalizedSelection.anchorNode editorState.root
+                            findTextBlockNodeAncestor
+                                (anchorNode normalizedSelection)
+                                (State.root editorState)
 
                         focusTextBlock =
-                            findTextBlockNodeAncestor normalizedSelection.focusNode editorState.root
+                            findTextBlockNodeAncestor
+                                (focusNode normalizedSelection)
+                                (State.root editorState)
                     in
-                    case removeTextAtRange normalizedSelection.focusNode 0 (Just normalizedSelection.focusOffset) editorState.root of
+                    case
+                        removeTextAtRange (focusNode normalizedSelection)
+                            0
+                            (Just (focusOffset normalizedSelection))
+                            (State.root editorState)
+                    of
                         Err s ->
                             Err s
 
                         Ok removedEnd ->
-                            case removeTextAtRange normalizedSelection.anchorNode normalizedSelection.anchorOffset Nothing removedEnd of
+                            case
+                                removeTextAtRange
+                                    (anchorNode normalizedSelection)
+                                    (anchorOffset normalizedSelection)
+                                    Nothing
+                                    removedEnd
+                            of
                                 Err s ->
                                     Err s
 
@@ -592,15 +545,19 @@ removeRangeSelection editorState =
                                     let
                                         removedNodes =
                                             removeInRange
-                                                (increment normalizedSelection.anchorNode)
-                                                (decrement normalizedSelection.focusNode)
+                                                (increment (anchorNode normalizedSelection))
+                                                (decrement (focusNode normalizedSelection))
                                                 removedStart
 
                                         newSelection =
-                                            caretSelection normalizedSelection.anchorNode normalizedSelection.anchorOffset
+                                            caretSelection
+                                                (anchorNode normalizedSelection)
+                                                (anchorOffset normalizedSelection)
 
                                         newEditorState =
-                                            { editorState | root = removedNodes, selection = Just newSelection }
+                                            editorState
+                                                |> withRoot removedNodes
+                                                |> withSelection (Just newSelection)
                                     in
                                     if anchorTextBlock == Nothing || anchorTextBlock == focusTextBlock then
                                         Ok newEditorState
@@ -612,16 +569,12 @@ removeRangeSelection editorState =
 insertLineBreak : Transform
 insertLineBreak =
     insertInlineElement
-        (InlineLeaf
-            { marks = []
-            , parameters = { name = "hard_break", attributes = [], annotations = Set.empty }
-            }
-        )
+        (InlineLeaf (inlineLeafParameters (elementParameters "hard_break" [] Set.empty) []))
 
 
 insertInlineElement : EditorInlineLeaf -> Transform
 insertInlineElement leaf editorState =
-    case editorState.selection of
+    case State.selection editorState of
         Nothing ->
             Err "Nothing is selected"
 
@@ -630,7 +583,7 @@ insertInlineElement leaf editorState =
                 removeRangeSelection editorState |> Result.andThen (insertInlineElement leaf)
 
             else
-                case nodeAt selection.anchorNode editorState.root of
+                case nodeAt (anchorNode selection) (State.root editorState) of
                     Nothing ->
                         Err "Invalid selection"
 
@@ -639,7 +592,12 @@ insertInlineElement leaf editorState =
                             InlineLeafWrapper il ->
                                 case il of
                                     InlineLeaf _ ->
-                                        case replace selection.anchorNode (InlineLeafWrapper leaf) editorState.root of
+                                        case
+                                            replace
+                                                (anchorNode selection)
+                                                (InlineLeafWrapper leaf)
+                                                (State.root editorState)
+                                        of
                                             Err e ->
                                                 Err e
 
@@ -649,7 +607,7 @@ insertInlineElement leaf editorState =
                                                         case
                                                             findForwardFrom
                                                                 (\_ n -> isSelectable n)
-                                                                selection.anchorNode
+                                                                (anchorNode selection)
                                                                 newRoot
                                                         of
                                                             Nothing ->
@@ -658,18 +616,25 @@ insertInlineElement leaf editorState =
                                                             Just ( p, _ ) ->
                                                                 Just (caretSelection p 0)
                                                 in
-                                                Ok { editorState | root = newRoot, selection = newSelection }
+                                                Ok <|
+                                                    editorState
+                                                        |> withRoot newRoot
+                                                        |> withSelection newSelection
 
                                     TextLeaf tl ->
                                         let
                                             ( before, after ) =
-                                                splitTextLeaf selection.anchorOffset tl
+                                                splitTextLeaf (anchorOffset selection) tl
                                         in
                                         case
                                             replaceWithFragment
-                                                selection.anchorNode
-                                                (InlineLeafFragment (Array.fromList [ TextLeaf before, leaf, TextLeaf after ]))
-                                                editorState.root
+                                                (anchorNode selection)
+                                                (InlineLeafFragment
+                                                    (Array.fromList
+                                                        [ TextLeaf before, leaf, TextLeaf after ]
+                                                    )
+                                                )
+                                                (State.root editorState)
                                         of
                                             Err e ->
                                                 Err e
@@ -680,7 +645,7 @@ insertInlineElement leaf editorState =
                                                         case
                                                             findForwardFromExclusive
                                                                 (\_ n -> isSelectable n)
-                                                                selection.anchorNode
+                                                                (anchorNode selection)
                                                                 newRoot
                                                         of
                                                             Nothing ->
@@ -689,7 +654,10 @@ insertInlineElement leaf editorState =
                                                             Just ( p, _ ) ->
                                                                 Just (caretSelection p 0)
                                                 in
-                                                Ok { editorState | root = newRoot, selection = newSelection }
+                                                Ok <|
+                                                    editorState
+                                                        |> withRoot newRoot
+                                                        |> withSelection newSelection
 
                             _ ->
                                 Err "I can not insert an inline element in a block node"
@@ -702,7 +670,7 @@ splitTextBlock =
 
 splitBlock : (NodePath -> EditorBlockNode -> Maybe ( NodePath, EditorBlockNode )) -> Transform
 splitBlock ancestorFunc editorState =
-    case editorState.selection of
+    case State.selection editorState of
         Nothing ->
             Err "Nothing is selected"
 
@@ -711,21 +679,26 @@ splitBlock ancestorFunc editorState =
                 removeRangeSelection editorState |> Result.andThen (splitBlock ancestorFunc)
 
             else
-                case ancestorFunc selection.anchorNode editorState.root of
+                case ancestorFunc (anchorNode selection) (State.root editorState) of
                     Nothing ->
                         Err "I cannot find a proper ancestor to split"
 
                     Just ( textBlockPath, textBlockNode ) ->
                         let
                             relativePath =
-                                List.drop (List.length textBlockPath) selection.anchorNode
+                                List.drop (List.length textBlockPath) (anchorNode selection)
                         in
-                        case splitBlockAtPathAndOffset relativePath selection.anchorOffset textBlockNode of
+                        case splitBlockAtPathAndOffset relativePath (anchorOffset selection) textBlockNode of
                             Nothing ->
-                                Err <| "Can not split block at path " ++ toString selection.anchorNode
+                                Err <| "Can not split block at path " ++ toString (anchorNode selection)
 
                             Just ( before, after ) ->
-                                case replaceWithFragment textBlockPath (BlockNodeFragment (Array.fromList [ before, after ])) editorState.root of
+                                case
+                                    replaceWithFragment
+                                        textBlockPath
+                                        (BlockNodeFragment (Array.fromList [ before, after ]))
+                                        (State.root editorState)
+                                of
                                     Err s ->
                                         Err s
 
@@ -737,7 +710,10 @@ splitBlock ancestorFunc editorState =
                                             newSelection =
                                                 caretSelection newSelectionPath 0
                                         in
-                                        Ok { editorState | root = newRoot, selection = Just newSelection }
+                                        Ok <|
+                                            editorState
+                                                |> withRoot newRoot
+                                                |> withSelection (Just newSelection)
 
 
 isLeafNode : NodePath -> EditorBlockNode -> Bool
@@ -749,7 +725,7 @@ isLeafNode path root =
         Just node ->
             case node of
                 BlockNodeWrapper bn ->
-                    if bn.childNodes == Leaf then
+                    if childNodes bn == Leaf then
                         True
 
                     else
@@ -782,10 +758,17 @@ removeTextAtRange nodePath start maybeEnd root =
                                 textNode =
                                     case maybeEnd of
                                         Nothing ->
-                                            TextLeaf { v | text = String.left start v.text }
+                                            TextLeaf <|
+                                                v
+                                                    |> withText (String.left start (text v))
 
                                         Just end ->
-                                            TextLeaf { v | text = String.left start v.text ++ String.dropLeft end v.text }
+                                            TextLeaf <|
+                                                v
+                                                    |> withText
+                                                        (String.left start (text v)
+                                                            ++ String.dropLeft end (text v)
+                                                        )
                             in
                             replace nodePath (InlineLeafWrapper textNode) root
 
@@ -795,7 +778,7 @@ removeTextAtRange nodePath start maybeEnd root =
 
 removeSelectedLeafElement : Transform
 removeSelectedLeafElement editorState =
-    case editorState.selection of
+    case State.selection editorState of
         Nothing ->
             Err "Nothing is selected"
 
@@ -803,10 +786,15 @@ removeSelectedLeafElement editorState =
             if not <| isCollapsed selection then
                 Err "I cannot remove a block element if it is not"
 
-            else if isLeafNode selection.anchorNode editorState.root then
+            else if isLeafNode (anchorNode selection) (State.root editorState) then
                 let
                     newSelection =
-                        case findBackwardFromExclusive (\_ n -> isSelectable n) selection.anchorNode editorState.root of
+                        case
+                            findBackwardFromExclusive
+                                (\_ n -> isSelectable n)
+                                (anchorNode selection)
+                                (State.root editorState)
+                        of
                             Nothing ->
                                 Nothing
 
@@ -817,7 +805,7 @@ removeSelectedLeafElement editorState =
                                             InlineLeafWrapper il ->
                                                 case il of
                                                     TextLeaf t ->
-                                                        String.length t.text
+                                                        String.length (text t)
 
                                                     _ ->
                                                         0
@@ -827,11 +815,10 @@ removeSelectedLeafElement editorState =
                                 in
                                 Just (caretSelection p offset)
                 in
-                Ok
-                    { editorState
-                        | root = removeNodeAndEmptyParents selection.anchorNode editorState.root
-                        , selection = newSelection
-                    }
+                Ok <|
+                    editorState
+                        |> withRoot (removeNodeAndEmptyParents (anchorNode selection) (State.root editorState))
+                        |> withSelection newSelection
 
             else
                 Err "There's no leaf node at the given selection"
@@ -846,7 +833,7 @@ removeSelectedLeafElement editorState =
 
 backspaceText : Transform
 backspaceText editorState =
-    case editorState.selection of
+    case State.selection editorState of
         Nothing ->
             Err "Nothing is selected"
 
@@ -854,7 +841,7 @@ backspaceText editorState =
             if not <| isCollapsed selection then
                 Err "I can only backspace a collapsed selection"
 
-            else if selection.anchorOffset > 1 then
+            else if anchorOffset selection > 1 then
                 {-
                    -- This would be the logic if we didn't revert to using the native behavior.
                    removeRangeSelection
@@ -862,9 +849,9 @@ backspaceText editorState =
                            | selection =
                                Just <|
                                    singleNodeRangeSelection
-                                       selection.anchorNode
-                                       (selection.anchorOffset - 1)
-                                       selection.anchorOffset
+                                       (anchorNode selection)
+                                       ((anchorOffset selection) - 1)
+                                       (anchorOffset selection)
                        }
                 -}
                 Err <|
@@ -872,7 +859,7 @@ backspaceText editorState =
                         ++ "anchor offset could not result in a node change"
 
             else
-                case nodeAt selection.anchorNode editorState.root of
+                case nodeAt (anchorNode selection) (State.root editorState) of
                     Nothing ->
                         Err "Invalid selection"
 
@@ -887,20 +874,32 @@ backspaceText editorState =
                                         Err "I cannot backspace text of an inline leaf"
 
                                     TextLeaf tl ->
-                                        if selection.anchorOffset == 1 then
-                                            case replace selection.anchorNode (InlineLeafWrapper (TextLeaf { tl | text = String.dropLeft 1 tl.text })) editorState.root of
+                                        if anchorOffset selection == 1 then
+                                            case
+                                                replace (anchorNode selection)
+                                                    (InlineLeafWrapper
+                                                        (TextLeaf <|
+                                                            tl
+                                                                |> withText (String.dropLeft 1 (text tl))
+                                                        )
+                                                    )
+                                                    (State.root editorState)
+                                            of
                                                 Err s ->
                                                     Err s
 
                                                 Ok newRoot ->
                                                     let
                                                         newSelection =
-                                                            caretSelection selection.anchorNode 0
+                                                            caretSelection (anchorNode selection) 0
                                                     in
-                                                    Ok { editorState | root = newRoot, selection = Just newSelection }
+                                                    Ok <|
+                                                        editorState
+                                                            |> withRoot newRoot
+                                                            |> withSelection (Just newSelection)
 
                                         else
-                                            case previous selection.anchorNode editorState.root of
+                                            case previous (anchorNode selection) (State.root editorState) of
                                                 Nothing ->
                                                     Err "No previous node to backspace text"
 
@@ -911,12 +910,14 @@ backspaceText editorState =
                                                                 TextLeaf previousTextLeaf ->
                                                                     let
                                                                         l =
-                                                                            String.length previousTextLeaf.text
+                                                                            String.length (text previousTextLeaf)
 
                                                                         newSelection =
                                                                             singleNodeRangeSelection previousPath l (max 0 (l - 1))
                                                                     in
-                                                                    removeRangeSelection { editorState | selection = Just newSelection }
+                                                                    removeRangeSelection <|
+                                                                        editorState
+                                                                            |> withSelection (Just newSelection)
 
                                                                 InlineLeaf _ ->
                                                                     Err "Cannot backspace the text of an inline leaf"
@@ -929,20 +930,20 @@ isBlockOrInlineNodeWithMark : String -> EditorNode -> Bool
 isBlockOrInlineNodeWithMark markName node =
     case node of
         InlineLeafWrapper il ->
-            hasMarkWithName markName (findMarksFromInlineLeaf il)
+            hasMarkWithName markName (marksFromInlineLeaf il)
 
         _ ->
             True
 
 
-toggleMarkSingleInlineNode : MarkOrder -> Mark -> ToggleAction -> EditorState -> Result String EditorState
+toggleMarkSingleInlineNode : MarkOrder -> Mark -> ToggleAction -> Transform
 toggleMarkSingleInlineNode markOrder mark action editorState =
-    case editorState.selection of
+    case State.selection editorState of
         Nothing ->
             Err "Nothing is selected"
 
         Just selection ->
-            if selection.anchorNode /= selection.focusNode then
+            if anchorNode selection /= focusNode selection then
                 Err "I can only toggle a single inline node"
 
             else
@@ -950,7 +951,7 @@ toggleMarkSingleInlineNode markOrder mark action editorState =
                     normalizedSelection =
                         normalizeSelection selection
                 in
-                case nodeAt normalizedSelection.anchorNode editorState.root of
+                case nodeAt (anchorNode normalizedSelection) (State.root editorState) of
                     Nothing ->
                         Err "No node at selection"
 
@@ -962,79 +963,102 @@ toggleMarkSingleInlineNode markOrder mark action editorState =
                             InlineLeafWrapper il ->
                                 let
                                     newMarks =
-                                        toggle action markOrder mark (findMarksFromInlineLeaf il)
+                                        toggle action markOrder mark (marksFromInlineLeaf il)
 
                                     leaves =
                                         case il of
                                             InlineLeaf leaf ->
-                                                [ InlineLeaf { leaf | marks = newMarks } ]
+                                                [ InlineLeaf <|
+                                                    leaf
+                                                        |> inlineLeafParametersWithMarks newMarks
+                                                ]
 
                                             TextLeaf leaf ->
-                                                if String.length leaf.text == normalizedSelection.focusOffset && normalizedSelection.anchorOffset == 0 then
-                                                    [ TextLeaf { leaf | marks = newMarks } ]
+                                                if
+                                                    String.length (text leaf)
+                                                        == focusOffset normalizedSelection
+                                                        && anchorOffset normalizedSelection
+                                                        == 0
+                                                then
+                                                    [ TextLeaf <| leaf |> textLeafParametersWithMarks newMarks ]
 
                                                 else
                                                     let
                                                         newNode =
-                                                            TextLeaf
-                                                                { leaf
-                                                                    | marks = newMarks
-                                                                    , text =
-                                                                        String.slice
-                                                                            normalizedSelection.anchorOffset
-                                                                            normalizedSelection.focusOffset
-                                                                            leaf.text
-                                                                }
+                                                            TextLeaf <|
+                                                                leaf
+                                                                    |> textLeafParametersWithMarks newMarks
+                                                                    |> withText
+                                                                        (String.slice
+                                                                            (anchorOffset normalizedSelection)
+                                                                            (focusOffset normalizedSelection)
+                                                                            (text leaf)
+                                                                        )
 
                                                         left =
-                                                            TextLeaf { leaf | text = String.left normalizedSelection.anchorOffset leaf.text }
+                                                            TextLeaf <|
+                                                                leaf
+                                                                    |> withText
+                                                                        (String.left
+                                                                            (anchorOffset normalizedSelection)
+                                                                            (text leaf)
+                                                                        )
 
                                                         right =
-                                                            TextLeaf { leaf | text = String.dropLeft normalizedSelection.focusOffset leaf.text }
+                                                            TextLeaf <|
+                                                                leaf
+                                                                    |> withText
+                                                                        (String.dropLeft
+                                                                            (focusOffset normalizedSelection)
+                                                                            (text leaf)
+                                                                        )
                                                     in
-                                                    if normalizedSelection.anchorOffset == 0 then
+                                                    if anchorOffset normalizedSelection == 0 then
                                                         [ newNode, right ]
 
-                                                    else if String.length leaf.text == normalizedSelection.focusOffset then
+                                                    else if String.length (text leaf) == focusOffset normalizedSelection then
                                                         [ left, newNode ]
 
                                                     else
                                                         [ left, newNode, right ]
 
                                     path =
-                                        if normalizedSelection.anchorOffset == 0 then
-                                            normalizedSelection.anchorNode
+                                        if anchorOffset normalizedSelection == 0 then
+                                            anchorNode normalizedSelection
 
                                         else
-                                            increment normalizedSelection.anchorNode
+                                            increment (anchorNode normalizedSelection)
 
                                     newSelection =
                                         singleNodeRangeSelection
                                             path
                                             0
-                                            (normalizedSelection.focusOffset - normalizedSelection.anchorOffset)
+                                            (focusOffset normalizedSelection - anchorOffset normalizedSelection)
                                 in
                                 case
                                     replaceWithFragment
-                                        normalizedSelection.anchorNode
+                                        (anchorNode normalizedSelection)
                                         (InlineLeafFragment <| Array.fromList leaves)
-                                        editorState.root
+                                        (State.root editorState)
                                 of
                                     Err s ->
                                         Err s
 
                                     Ok newRoot ->
-                                        Ok { editorState | selection = Just newSelection, root = newRoot }
+                                        Ok <|
+                                            editorState
+                                                |> withSelection (Just newSelection)
+                                                |> withRoot newRoot
 
 
 toggleMarkOnInlineNodes : MarkOrder -> Mark -> Transform
 toggleMarkOnInlineNodes markOrder mark editorState =
-    case editorState.selection of
+    case State.selection editorState of
         Nothing ->
             Err "Nothing is selected"
 
         Just selection ->
-            if selection.focusNode == selection.anchorNode then
+            if focusNode selection == anchorNode selection then
                 toggleMarkSingleInlineNode markOrder mark Flip editorState
 
             else
@@ -1045,10 +1069,10 @@ toggleMarkOnInlineNodes markOrder mark editorState =
                     toggleAction =
                         if
                             allRange
-                                (isBlockOrInlineNodeWithMark mark.name)
-                                normalizedSelection.anchorNode
-                                normalizedSelection.focusNode
-                                editorState.root
+                                (isBlockOrInlineNodeWithMark (Mark.name mark))
+                                (anchorNode normalizedSelection)
+                                (focusNode normalizedSelection)
+                                (State.root editorState)
                         then
                             Remove
 
@@ -1056,14 +1080,14 @@ toggleMarkOnInlineNodes markOrder mark editorState =
                             Add
 
                     betweenRoot =
-                        case next normalizedSelection.anchorNode editorState.root of
+                        case next (anchorNode normalizedSelection) (State.root editorState) of
                             Nothing ->
-                                editorState.root
+                                State.root editorState
 
                             Just ( afterAnchor, _ ) ->
-                                case previous normalizedSelection.focusNode editorState.root of
+                                case previous (focusNode normalizedSelection) (State.root editorState) of
                                     Nothing ->
-                                        editorState.root
+                                        State.root editorState
 
                                     Just ( beforeFocus, _ ) ->
                                         case
@@ -1080,26 +1104,34 @@ toggleMarkOnInlineNodes markOrder mark editorState =
                                                             InlineLeafWrapper _ ->
                                                                 toggleMark toggleAction markOrder mark node
                                                 )
-                                                (BlockNodeWrapper editorState.root)
+                                                (BlockNodeWrapper (State.root editorState))
                                         of
                                             BlockNodeWrapper bn ->
                                                 bn
 
                                             _ ->
-                                                editorState.root
+                                                State.root editorState
 
                     modifiedEndNodeEditorState =
-                        Result.withDefault { editorState | root = betweenRoot } <|
+                        Result.withDefault (editorState |> withRoot betweenRoot) <|
                             toggleMarkSingleInlineNode
                                 markOrder
                                 mark
                                 toggleAction
-                                { root = betweenRoot
-                                , selection = Just (singleNodeRangeSelection normalizedSelection.focusNode 0 normalizedSelection.focusOffset)
-                                }
+                                (editorState
+                                    |> withRoot betweenRoot
+                                    |> withSelection
+                                        (Just
+                                            (singleNodeRangeSelection
+                                                (focusNode normalizedSelection)
+                                                0
+                                                (focusOffset normalizedSelection)
+                                            )
+                                        )
+                                )
 
                     modifiedStartNodeEditorState =
-                        case nodeAt normalizedSelection.anchorNode editorState.root of
+                        case nodeAt (anchorNode normalizedSelection) (State.root editorState) of
                             Nothing ->
                                 modifiedEndNodeEditorState
 
@@ -1110,7 +1142,7 @@ toggleMarkOnInlineNodes markOrder mark editorState =
                                             focusOffset =
                                                 case il of
                                                     TextLeaf leaf ->
-                                                        String.length leaf.text
+                                                        String.length (text leaf)
 
                                                     InlineLeaf _ ->
                                                         0
@@ -1120,42 +1152,51 @@ toggleMarkOnInlineNodes markOrder mark editorState =
                                                 markOrder
                                                 mark
                                                 toggleAction
-                                                { modifiedEndNodeEditorState
-                                                    | selection = Just (singleNodeRangeSelection normalizedSelection.anchorNode normalizedSelection.anchorOffset focusOffset)
-                                                }
+                                                (modifiedEndNodeEditorState
+                                                    |> withSelection
+                                                        (Just
+                                                            (singleNodeRangeSelection
+                                                                (anchorNode normalizedSelection)
+                                                                (anchorOffset normalizedSelection)
+                                                                focusOffset
+                                                            )
+                                                        )
+                                                )
 
                                     _ ->
                                         modifiedEndNodeEditorState
 
                     incrementAnchorOffset =
-                        normalizedSelection.anchorOffset /= 0
+                        anchorOffset normalizedSelection /= 0
 
                     anchorAndFocusHaveSameParent =
-                        parent normalizedSelection.anchorNode == parent normalizedSelection.focusNode
+                        parent (anchorNode normalizedSelection) == parent (focusNode normalizedSelection)
 
                     newSelection =
                         rangeSelection
                             (if incrementAnchorOffset then
-                                increment normalizedSelection.anchorNode
+                                increment (anchorNode normalizedSelection)
 
                              else
-                                normalizedSelection.anchorNode
+                                anchorNode normalizedSelection
                             )
                             0
                             (if incrementAnchorOffset && anchorAndFocusHaveSameParent then
-                                increment normalizedSelection.focusNode
+                                increment (focusNode normalizedSelection)
 
                              else
-                                normalizedSelection.focusNode
+                                focusNode normalizedSelection
                             )
-                            normalizedSelection.focusOffset
+                            (focusOffset normalizedSelection)
                 in
-                Ok { modifiedStartNodeEditorState | selection = Just newSelection }
+                Ok <|
+                    modifiedStartNodeEditorState
+                        |> withSelection (Just newSelection)
 
 
 toggleBlock : List String -> ElementParameters -> ElementParameters -> Transform
 toggleBlock allowedBlocks onParams offParams editorState =
-    case editorState.selection of
+    case State.selection editorState of
         Nothing ->
             Err "Nothing is selected."
 
@@ -1165,24 +1206,24 @@ toggleBlock allowedBlocks onParams offParams editorState =
                     normalizeSelection selection
 
                 anchorPath =
-                    findClosestBlockPath normalizedSelection.anchorNode editorState.root
+                    findClosestBlockPath (anchorNode normalizedSelection) (State.root editorState)
 
                 focusPath =
-                    findClosestBlockPath normalizedSelection.focusNode editorState.root
+                    findClosestBlockPath (focusNode normalizedSelection) (State.root editorState)
 
                 doOffBehavior =
                     allRange
                         (\node ->
                             case node of
                                 BlockNodeWrapper bn ->
-                                    bn.parameters == onParams
+                                    elementParametersFromBlockNode bn == onParams
 
                                 _ ->
                                     True
                         )
                         anchorPath
                         focusPath
-                        editorState.root
+                        (State.root editorState)
 
                 newParams =
                     if doOffBehavior then
@@ -1203,10 +1244,10 @@ toggleBlock allowedBlocks onParams offParams editorState =
                                         BlockNodeWrapper bn ->
                                             let
                                                 p =
-                                                    bn.parameters
+                                                    elementParametersFromBlockNode bn
                                             in
-                                            if List.member p.name allowedBlocks then
-                                                BlockNodeWrapper { bn | parameters = newParams }
+                                            if List.member (nameFromElementParameters p) allowedBlocks then
+                                                BlockNodeWrapper <| bn |> blockNodeWithParameters newParams
 
                                             else
                                                 node
@@ -1214,20 +1255,20 @@ toggleBlock allowedBlocks onParams offParams editorState =
                                         InlineLeafWrapper _ ->
                                             node
                             )
-                            (BlockNodeWrapper editorState.root)
+                            (BlockNodeWrapper (State.root editorState))
                     of
                         BlockNodeWrapper bn ->
                             bn
 
                         _ ->
-                            editorState.root
+                            State.root editorState
             in
-            Ok { editorState | root = newRoot }
+            Ok <| editorState |> withRoot newRoot
 
 
 wrap : (EditorBlockNode -> EditorBlockNode) -> ElementParameters -> Transform
 wrap contentsMapFunc elementParameters editorState =
-    case editorState.selection of
+    case State.selection editorState of
         Nothing ->
             Err "Nothing is selected"
 
@@ -1237,13 +1278,13 @@ wrap contentsMapFunc elementParameters editorState =
                     normalizeSelection selection
 
                 markedRoot =
-                    annotateSelection normalizedSelection editorState.root
+                    annotateSelection normalizedSelection (State.root editorState)
 
                 anchorBlock =
-                    findClosestBlockPath normalizedSelection.anchorNode markedRoot
+                    findClosestBlockPath (anchorNode normalizedSelection) markedRoot
 
                 focusBlock =
-                    findClosestBlockPath normalizedSelection.focusNode markedRoot
+                    findClosestBlockPath (focusNode normalizedSelection) markedRoot
 
                 ancestor =
                     commonAncestor anchorBlock focusBlock
@@ -1258,36 +1299,36 @@ wrap contentsMapFunc elementParameters editorState =
                             newChildren =
                                 case node of
                                     BlockNodeWrapper bn ->
-                                        BlockArray (Array.map contentsMapFunc (Array.fromList [ bn ]))
+                                        blockArray (Array.map contentsMapFunc (Array.fromList [ bn ]))
 
                                     InlineLeafWrapper il ->
                                         inlineLeafArray (Array.fromList [ il ])
 
                             newNode =
-                                { parameters = elementParameters, childNodes = newChildren }
+                                editorBlockNode elementParameters newChildren
                         in
                         case replace ancestor (BlockNodeWrapper newNode) markedRoot of
                             Err err ->
                                 Err err
 
                             Ok newRoot ->
-                                Ok
-                                    { editorState
-                                        | root = clearSelectionAnnotations newRoot
-                                        , selection =
-                                            selectionFromAnnotations
+                                Ok <|
+                                    editorState
+                                        |> withRoot (clearSelectionAnnotations newRoot)
+                                        |> withSelection
+                                            (selectionFromAnnotations
                                                 newRoot
-                                                selection.anchorOffset
-                                                selection.focusOffset
-                                    }
+                                                (anchorOffset selection)
+                                                (focusOffset selection)
+                                            )
 
             else
-                case List.Extra.getAt (List.length ancestor) normalizedSelection.anchorNode of
+                case List.Extra.getAt (List.length ancestor) (anchorNode normalizedSelection) of
                     Nothing ->
                         Err "Invalid ancestor path at anchor node"
 
                     Just childAnchorIndex ->
-                        case List.Extra.getAt (List.length ancestor) normalizedSelection.focusNode of
+                        case List.Extra.getAt (List.length ancestor) (focusNode normalizedSelection) of
                             Nothing ->
                                 Err "Invalid ancestor path at focus node"
 
@@ -1299,47 +1340,54 @@ wrap contentsMapFunc elementParameters editorState =
                                     Just node ->
                                         case node of
                                             BlockNodeWrapper bn ->
-                                                case bn.childNodes of
-                                                    BlockArray a ->
+                                                case childNodes bn of
+                                                    BlockChildren a ->
                                                         let
                                                             newChildNode =
-                                                                { parameters = elementParameters
-                                                                , childNodes =
-                                                                    BlockArray <|
+                                                                editorBlockNode elementParameters
+                                                                    (blockArray <|
                                                                         Array.map
                                                                             contentsMapFunc
-                                                                            (Array.slice childAnchorIndex (childFocusIndex + 1) a)
-                                                                }
-
-                                                            newBlockArray =
-                                                                BlockArray
-                                                                    (Array.append
-                                                                        (Array.append
-                                                                            (Array.Extra.sliceUntil childAnchorIndex a)
-                                                                            (Array.fromList [ newChildNode ])
-                                                                        )
-                                                                        (Array.Extra.sliceFrom (childFocusIndex + 1) a)
+                                                                            (Array.slice childAnchorIndex
+                                                                                (childFocusIndex + 1)
+                                                                                (arrayFromBlockArray a)
+                                                                            )
                                                                     )
 
+                                                            newBlockArray =
+                                                                blockArray <|
+                                                                    Array.append
+                                                                        (Array.append
+                                                                            (Array.Extra.sliceUntil
+                                                                                childAnchorIndex
+                                                                                (arrayFromBlockArray a)
+                                                                            )
+                                                                            (Array.fromList [ newChildNode ])
+                                                                        )
+                                                                        (Array.Extra.sliceFrom
+                                                                            (childFocusIndex + 1)
+                                                                            (arrayFromBlockArray a)
+                                                                        )
+
                                                             newNode =
-                                                                { bn | childNodes = newBlockArray }
+                                                                bn |> withChildNodes newBlockArray
                                                         in
                                                         case replace ancestor (BlockNodeWrapper newNode) markedRoot of
                                                             Err s ->
                                                                 Err s
 
                                                             Ok newRoot ->
-                                                                Ok
-                                                                    { editorState
-                                                                        | root = clearSelectionAnnotations newRoot
-                                                                        , selection =
-                                                                            selectionFromAnnotations
+                                                                Ok <|
+                                                                    editorState
+                                                                        |> withRoot (clearSelectionAnnotations newRoot)
+                                                                        |> withSelection
+                                                                            (selectionFromAnnotations
                                                                                 newRoot
-                                                                                selection.anchorOffset
-                                                                                selection.focusOffset
-                                                                    }
+                                                                                (anchorOffset selection)
+                                                                                (focusOffset selection)
+                                                                            )
 
-                                                    InlineLeafArray _ ->
+                                                    InlineChildren _ ->
                                                         Err "Cannot wrap inline elements"
 
                                                     Leaf ->
@@ -1362,7 +1410,7 @@ selectAll editorState =
                                     InlineLeafWrapper il ->
                                         case il of
                                             TextLeaf tl ->
-                                                String.length tl.text
+                                                String.length (text tl)
 
                                             InlineLeaf _ ->
                                                 0
@@ -1381,14 +1429,16 @@ selectAll editorState =
                         ( firstAndLast, offset )
                 )
                 ( Nothing, 0 )
-                (BlockNodeWrapper editorState.root)
+                (BlockNodeWrapper (State.root editorState))
     in
     case fl of
         Nothing ->
             Err "Nothing is selectable"
 
         Just ( first, last ) ->
-            Ok { editorState | selection = Just <| rangeSelection first 0 last lastOffset }
+            Ok <|
+                editorState
+                    |> withSelection (Just <| rangeSelection first 0 last lastOffset)
 
 
 
@@ -1404,10 +1454,10 @@ addLiftMarkToBlocksInSelection : Selection -> EditorBlockNode -> EditorBlockNode
 addLiftMarkToBlocksInSelection selection root =
     let
         start =
-            findClosestBlockPath selection.anchorNode root
+            findClosestBlockPath (anchorNode selection) root
 
         end =
-            findClosestBlockPath selection.focusNode root
+            findClosestBlockPath (focusNode selection) root
     in
     case
         indexedMap
@@ -1419,15 +1469,12 @@ addLiftMarkToBlocksInSelection selection root =
                     case node of
                         BlockNodeWrapper bn ->
                             let
-                                parameters =
-                                    bn.parameters
-
                                 addMarker =
-                                    case bn.childNodes of
+                                    case childNodes bn of
                                         Leaf ->
                                             True
 
-                                        InlineLeafArray _ ->
+                                        InlineChildren _ ->
                                             True
 
                                         _ ->
@@ -1455,30 +1502,35 @@ liftConcatMapFunc : EditorNode -> List EditorNode
 liftConcatMapFunc node =
     case node of
         BlockNodeWrapper bn ->
-            case bn.childNodes of
+            case childNodes bn of
                 Leaf ->
                     [ node ]
 
-                InlineLeafArray _ ->
+                InlineChildren _ ->
                     [ node ]
 
-                BlockArray a ->
+                BlockChildren a ->
                     let
                         groupedBlockNodes =
                             List.Extra.groupWhile
                                 (\n1 n2 ->
-                                    Set.member liftAnnotation n1.parameters.annotations == Set.member liftAnnotation n2.parameters.annotations
+                                    Set.member
+                                        liftAnnotation
+                                        (annotationsFromBlockNode n1)
+                                        == Set.member
+                                            liftAnnotation
+                                            (annotationsFromBlockNode n2)
                                 )
-                                (Array.toList a)
+                                (Array.toList (arrayFromBlockArray a))
                     in
                     List.map BlockNodeWrapper <|
                         List.concatMap
                             (\( n, l ) ->
-                                if Set.member liftAnnotation n.parameters.annotations then
+                                if Set.member liftAnnotation (annotationsFromBlockNode n) then
                                     n :: l
 
                                 else
-                                    [ { bn | childNodes = BlockArray (Array.fromList <| n :: l) } ]
+                                    [ bn |> withChildNodes (blockArray (Array.fromList <| n :: l)) ]
                             )
                             groupedBlockNodes
 
@@ -1488,7 +1540,7 @@ liftConcatMapFunc node =
 
 lift : Transform
 lift editorState =
-    case editorState.selection of
+    case State.selection editorState of
         Nothing ->
             Err "Nothing is selected"
 
@@ -1498,37 +1550,43 @@ lift editorState =
                     normalizeSelection selection
 
                 markedRoot =
-                    addLiftMarkToBlocksInSelection normalizedSelection <| annotateSelection normalizedSelection editorState.root
+                    addLiftMarkToBlocksInSelection normalizedSelection <|
+                        annotateSelection normalizedSelection (State.root editorState)
 
                 liftedRoot =
                     concatMap liftConcatMapFunc markedRoot
 
                 newSelection =
-                    selectionFromAnnotations liftedRoot normalizedSelection.anchorOffset normalizedSelection.focusOffset
+                    selectionFromAnnotations
+                        liftedRoot
+                        (anchorOffset normalizedSelection)
+                        (focusOffset normalizedSelection)
             in
-            Ok
-                { editorState
-                    | selection = newSelection
-                    , root = clearAnnotations liftAnnotation <| clearSelectionAnnotations liftedRoot
-                }
+            Ok <|
+                editorState
+                    |> withSelection newSelection
+                    |> withRoot
+                        (clearAnnotations liftAnnotation <|
+                            clearSelectionAnnotations liftedRoot
+                        )
 
 
 liftEmpty : Transform
 liftEmpty editorState =
-    case editorState.selection of
+    case State.selection editorState of
         Nothing ->
             Err "Nothing is selected"
 
         Just selection ->
-            if (not <| isCollapsed selection) || selection.anchorOffset /= 0 then
+            if (not <| isCollapsed selection) || anchorOffset selection /= 0 then
                 Err "Can only lift empty text blocks"
 
             else
                 let
                     p =
-                        findClosestBlockPath selection.anchorNode editorState.root
+                        findClosestBlockPath (anchorNode selection) (State.root editorState)
                 in
-                case nodeAt p editorState.root of
+                case nodeAt p (State.root editorState) of
                     Nothing ->
                         Err "Invalid root path"
 
@@ -1547,18 +1605,22 @@ isEmptyTextBlock : EditorNode -> Bool
 isEmptyTextBlock node =
     case node of
         BlockNodeWrapper bn ->
-            case bn.childNodes of
-                InlineLeafArray a ->
-                    case Array.get 0 a.array of
+            case childNodes bn of
+                InlineChildren a ->
+                    let
+                        array =
+                            arrayFromInlineArray a
+                    in
+                    case Array.get 0 array of
                         Nothing ->
-                            Array.isEmpty a.array
+                            Array.isEmpty array
 
                         Just n ->
-                            Array.length a.array
+                            Array.length array
                                 == 1
                                 && (case n of
                                         TextLeaf t ->
-                                            String.isEmpty t.text
+                                            String.isEmpty (text t)
 
                                         _ ->
                                             False
@@ -1578,20 +1640,22 @@ splitBlockHeaderToNewParagraph headerElements paragraphElement editorState =
             Err s
 
         Ok splitEditorState ->
-            case splitEditorState.selection of
+            case State.selection splitEditorState of
                 Nothing ->
                     Ok splitEditorState
 
                 Just selection ->
-                    if (not <| isCollapsed selection) || selection.anchorOffset /= 0 then
+                    if (not <| isCollapsed selection) || anchorOffset selection /= 0 then
                         Ok splitEditorState
 
                     else
                         let
                             p =
-                                findClosestBlockPath selection.anchorNode splitEditorState.root
+                                findClosestBlockPath
+                                    (anchorNode selection)
+                                    (State.root splitEditorState)
                         in
-                        case nodeAt p splitEditorState.root of
+                        case nodeAt p (State.root splitEditorState) of
                             Nothing ->
                                 Ok splitEditorState
 
@@ -1600,23 +1664,31 @@ splitBlockHeaderToNewParagraph headerElements paragraphElement editorState =
                                     BlockNodeWrapper bn ->
                                         let
                                             parameters =
-                                                bn.parameters
+                                                elementParametersFromBlockNode bn
                                         in
-                                        if List.member parameters.name headerElements && isEmptyTextBlock node then
+                                        if
+                                            List.member
+                                                (nameFromElementParameters parameters)
+                                                headerElements
+                                                && isEmptyTextBlock node
+                                        then
                                             case
                                                 replace p
-                                                    (BlockNodeWrapper
-                                                        { bn
-                                                            | parameters = { parameters | name = paragraphElement }
-                                                        }
+                                                    (BlockNodeWrapper <|
+                                                        bn
+                                                            |> blockNodeWithParameters
+                                                                (elementParametersWithName
+                                                                    paragraphElement
+                                                                    parameters
+                                                                )
                                                     )
-                                                    splitEditorState.root
+                                                    (State.root splitEditorState)
                                             of
                                                 Err _ ->
                                                     Ok splitEditorState
 
                                                 Ok newRoot ->
-                                                    Ok { splitEditorState | root = newRoot }
+                                                    Ok <| splitEditorState |> withRoot newRoot
 
                                         else
                                             Ok splitEditorState
@@ -1627,7 +1699,7 @@ splitBlockHeaderToNewParagraph headerElements paragraphElement editorState =
 
 insertBlockNode : EditorBlockNode -> Transform
 insertBlockNode node editorState =
-    case editorState.selection of
+    case State.selection editorState of
         Nothing ->
             Err "Nothing is selected"
 
@@ -1636,7 +1708,7 @@ insertBlockNode node editorState =
                 removeRangeSelection editorState |> Result.andThen (insertBlockNode node)
 
             else
-                case nodeAt selection.anchorNode editorState.root of
+                case nodeAt (anchorNode selection) (State.root editorState) of
                     Nothing ->
                         Err "Invalid selection"
 
@@ -1644,7 +1716,12 @@ insertBlockNode node editorState =
                         case anchorNode of
                             -- if a block node is selected, then insert after the selected block
                             BlockNodeWrapper bn ->
-                                case replaceWithFragment selection.anchorNode (BlockNodeFragment (Array.fromList [ bn, node ])) editorState.root of
+                                case
+                                    replaceWithFragment
+                                        (anchorNode selection)
+                                        (BlockNodeFragment (Array.fromList [ bn, node ]))
+                                        (State.root editorState)
+                                of
                                     Err s ->
                                         Err s
 
@@ -1652,12 +1729,15 @@ insertBlockNode node editorState =
                                         let
                                             newSelection =
                                                 if isSelectable (BlockNodeWrapper node) then
-                                                    caretSelection (increment selection.anchorNode) 0
+                                                    caretSelection (increment (anchorNode selection)) 0
 
                                                 else
                                                     selection
                                         in
-                                        Ok { editorState | selection = Just newSelection, root = newRoot }
+                                        Ok <|
+                                            editorState
+                                                |> withSelection (Just newSelection)
+                                                |> withRoot newRoot
 
                             -- if an inline node is selected, then split the block and insert before
                             InlineLeafWrapper _ ->
@@ -1671,7 +1751,7 @@ insertBlockNode node editorState =
 
 insertBlockNodeBeforeSelection : EditorBlockNode -> Transform
 insertBlockNodeBeforeSelection node editorState =
-    case editorState.selection of
+    case State.selection editorState of
         Nothing ->
             Err "Nothing is selected"
 
@@ -1682,10 +1762,10 @@ insertBlockNodeBeforeSelection node editorState =
             else
                 let
                     markedRoot =
-                        annotateSelection selection editorState.root
+                        annotateSelection selection (State.root editorState)
 
                     closestBlockPath =
-                        findClosestBlockPath selection.anchorNode markedRoot
+                        findClosestBlockPath (anchorNode selection) markedRoot
                 in
                 case nodeAt closestBlockPath markedRoot of
                     Nothing ->
@@ -1702,7 +1782,12 @@ insertBlockNodeBeforeSelection node editorState =
                                         else
                                             [ node, bn ]
                                 in
-                                case replaceWithFragment closestBlockPath (BlockNodeFragment (Array.fromList newFragment)) markedRoot of
+                                case
+                                    replaceWithFragment
+                                        closestBlockPath
+                                        (BlockNodeFragment (Array.fromList newFragment))
+                                        markedRoot
+                                of
                                     Err s ->
                                         Err s
 
@@ -1713,9 +1798,15 @@ insertBlockNodeBeforeSelection node editorState =
                                                     Just <| caretSelection closestBlockPath 0
 
                                                 else
-                                                    selectionFromAnnotations newRoot selection.anchorOffset selection.focusOffset
+                                                    selectionFromAnnotations
+                                                        newRoot
+                                                        (anchorOffset selection)
+                                                        (focusOffset selection)
                                         in
-                                        Ok { editorState | selection = newSelection, root = clearSelectionAnnotations newRoot }
+                                        Ok <|
+                                            editorState
+                                                |> withSelection newSelection
+                                                |> withRoot (clearSelectionAnnotations newRoot)
 
                             -- if an inline node is selected, then split the block and insert before
                             InlineLeafWrapper _ ->
@@ -1724,7 +1815,7 @@ insertBlockNodeBeforeSelection node editorState =
 
 backspaceInlineElement : Transform
 backspaceInlineElement editorState =
-    case editorState.selection of
+    case State.selection editorState of
         Nothing ->
             Err "Nothing is selected"
 
@@ -1732,15 +1823,15 @@ backspaceInlineElement editorState =
             if not <| isCollapsed selection then
                 Err "I can only backspace an inline element if the selection is collapsed"
 
-            else if selection.anchorOffset /= 0 then
+            else if anchorOffset selection /= 0 then
                 Err "I can only backspace an inline element if the offset is 0"
 
             else
                 let
                     decrementedPath =
-                        decrement selection.anchorNode
+                        decrement (anchorNode selection)
                 in
-                case nodeAt decrementedPath editorState.root of
+                case nodeAt decrementedPath (State.root editorState) of
                     Nothing ->
                         Err "There is no previous inline element"
 
@@ -1749,17 +1840,20 @@ backspaceInlineElement editorState =
                             InlineLeafWrapper il ->
                                 case il of
                                     InlineLeaf _ ->
-                                        case replaceWithFragment decrementedPath (InlineLeafFragment Array.empty) editorState.root of
+                                        case
+                                            replaceWithFragment
+                                                decrementedPath
+                                                (InlineLeafFragment Array.empty)
+                                                (State.root editorState)
+                                        of
                                             Err s ->
                                                 Err s
 
                                             Ok newRoot ->
-                                                Ok
-                                                    { editorState
-                                                        | selection =
-                                                            Just <| caretSelection decrementedPath 0
-                                                        , root = newRoot
-                                                    }
+                                                Ok <|
+                                                    editorState
+                                                        |> withSelection (Just <| caretSelection decrementedPath 0)
+                                                        |> withRoot newRoot
 
                                     TextLeaf _ ->
                                         Err "There is no previous inline leaf element, found a text leaf"
@@ -1770,41 +1864,45 @@ backspaceInlineElement editorState =
 
 backspaceBlockNode : Transform
 backspaceBlockNode editorState =
-    case editorState.selection of
+    case State.selection editorState of
         Nothing ->
             Err "Nothing is selected"
 
         Just selection ->
-            if not <| selectionIsBeginningOfTextBlock selection editorState.root then
+            if not <| selectionIsBeginningOfTextBlock selection (State.root editorState) then
                 Err "Cannot backspace a block element if we're not at the beginning of a text block"
 
             else
                 let
                     blockPath =
-                        findClosestBlockPath selection.anchorNode editorState.root
+                        findClosestBlockPath (anchorNode selection) (State.root editorState)
 
                     markedRoot =
-                        annotateSelection selection editorState.root
+                        annotateSelection selection (State.root editorState)
                 in
-                case previous blockPath editorState.root of
+                case previous blockPath (State.root editorState) of
                     Nothing ->
                         Err "There is no previous element to backspace"
 
                     Just ( path, node ) ->
                         case node of
                             BlockNodeWrapper bn ->
-                                case bn.childNodes of
+                                case childNodes bn of
                                     Leaf ->
                                         case replaceWithFragment path (BlockNodeFragment Array.empty) markedRoot of
                                             Err s ->
                                                 Err s
 
                                             Ok newRoot ->
-                                                Ok
-                                                    { editorState
-                                                        | root = clearSelectionAnnotations newRoot
-                                                        , selection = selectionFromAnnotations newRoot selection.anchorOffset selection.focusOffset
-                                                    }
+                                                Ok <|
+                                                    editorState
+                                                        |> withRoot (clearSelectionAnnotations newRoot)
+                                                        |> withSelection
+                                                            (selectionFromAnnotations
+                                                                newRoot
+                                                                (anchorOffset selection)
+                                                                (focusOffset selection)
+                                                            )
 
                                     _ ->
                                         Err "The previous element is not a block leaf"
@@ -1840,7 +1938,7 @@ textFromGroup leaves =
             (\leaf ->
                 case leaf of
                     TextLeaf t ->
-                        t.text
+                        text t
 
                     _ ->
                         ""
@@ -1854,7 +1952,7 @@ lengthsFromGroup leaves =
         (\il ->
             case il of
                 TextLeaf tl ->
-                    String.length tl.text
+                    String.length (text tl)
 
                 InlineLeaf _ ->
                     0
@@ -1871,7 +1969,7 @@ lengthsFromGroup leaves =
 
 backspaceWord : Transform
 backspaceWord editorState =
-    case editorState.selection of
+    case State.selection editorState of
         Nothing ->
             Err "Nothing is selected"
 
@@ -1880,21 +1978,21 @@ backspaceWord editorState =
                 Err "I cannot remove a word of a range selection"
 
             else
-                case findTextBlockNodeAncestor selection.anchorNode editorState.root of
+                case findTextBlockNodeAncestor (anchorNode selection) (State.root editorState) of
                     Nothing ->
                         Err "I can only remove a word on a text leaf"
 
                     Just ( p, n ) ->
                         case n.childNodes of
-                            InlineLeafArray arr ->
+                            InlineChildren arr ->
                                 let
                                     groupedLeaves =
                                         -- group text nodes together
                                         List.Extra.groupWhile
                                             groupSameTypeInlineLeaf
-                                            (Array.toList arr.array)
+                                            (Array.toList (arrayFromInlineArray arr))
                                 in
-                                case List.Extra.last selection.anchorNode of
+                                case List.Extra.last (anchorNode selection) of
                                     Nothing ->
                                         Err "Somehow the anchor node is the root node"
 
@@ -1926,7 +2024,7 @@ backspaceWord editorState =
                                                         lengthsFromGroup group
 
                                             offset =
-                                                offsetUpToNewIndex + selection.anchorOffset
+                                                offsetUpToNewIndex + anchorOffset selection
 
                                             stringFrom =
                                                 String.left offset groupText
@@ -1967,10 +2065,14 @@ backspaceWord editorState =
                                                     lastIndex - (relativeLastIndex - newGroupIndex)
 
                                                 newSelection =
-                                                    rangeSelection (p ++ [ newIndex ]) newOffset selection.anchorNode selection.anchorOffset
+                                                    rangeSelection
+                                                        (p ++ [ newIndex ])
+                                                        newOffset
+                                                        (anchorNode selection)
+                                                        (anchorOffset selection)
 
                                                 newState =
-                                                    { editorState | selection = Just newSelection }
+                                                    editorState |> withSelection (Just newSelection)
                                             in
                                             removeRangeSelection newState
 
@@ -1980,7 +2082,7 @@ backspaceWord editorState =
 
 deleteText : Transform
 deleteText editorState =
-    case editorState.selection of
+    case State.selection editorState of
         Nothing ->
             Err "Nothing is selected"
 
@@ -1989,7 +2091,7 @@ deleteText editorState =
                 Err "I can only backspace a collapsed selection"
 
             else
-                case nodeAt selection.anchorNode editorState.root of
+                case nodeAt (anchorNode selection) (State.root editorState) of
                     Nothing ->
                         Err "I was given an invalid path to delete text"
 
@@ -2006,21 +2108,30 @@ deleteText editorState =
                                     TextLeaf tl ->
                                         let
                                             textLength =
-                                                String.length tl.text
+                                                String.length (text tl)
                                         in
-                                        if selection.anchorOffset < (textLength - 1) then
+                                        if anchorOffset selection < (textLength - 1) then
                                             Err "I use the default behavior when deleting text when the anchor offset is not at the end of a text node"
 
-                                        else if selection.anchorOffset == (textLength - 1) then
-                                            case replace selection.anchorNode (InlineLeafWrapper (TextLeaf { tl | text = String.dropRight 1 tl.text })) editorState.root of
+                                        else if anchorOffset selection == (textLength - 1) then
+                                            case
+                                                replace
+                                                    (anchorNode selection)
+                                                    (InlineLeafWrapper
+                                                        (TextLeaf
+                                                            (tl |> withText (String.dropRight 1 (text tl)))
+                                                        )
+                                                    )
+                                                    (State.root editorState)
+                                            of
                                                 Err s ->
                                                     Err s
 
                                                 Ok newRoot ->
-                                                    Ok { editorState | root = newRoot }
+                                                    Ok <| editorState |> withRoot newRoot
 
                                         else
-                                            case next selection.anchorNode editorState.root of
+                                            case next (anchorNode selection) (State.root editorState) of
                                                 Nothing ->
                                                     Err "I cannot do delete because there is no neighboring text node"
 
@@ -2036,7 +2147,9 @@ deleteText editorState =
                                                                         newSelection =
                                                                             singleNodeRangeSelection nextPath 0 1
                                                                     in
-                                                                    removeRangeSelection { editorState | selection = Just newSelection }
+                                                                    removeRangeSelection <|
+                                                                        editorState
+                                                                            |> withSelection (Just newSelection)
 
                                                                 InlineLeaf _ ->
                                                                     Err "Cannot backspace the text of an inline leaf"
@@ -2044,7 +2157,7 @@ deleteText editorState =
 
 deleteInlineElement : Transform
 deleteInlineElement editorState =
-    case editorState.selection of
+    case State.selection editorState of
         Nothing ->
             Err "Nothing is selected"
 
@@ -2053,7 +2166,7 @@ deleteInlineElement editorState =
                 Err "I can only delete an inline element if the selection is collapsed"
 
             else
-                case nodeAt selection.anchorNode editorState.root of
+                case nodeAt (anchorNode selection) (State.root editorState) of
                     Nothing ->
                         Err "I was given an invalid path to delete text"
 
@@ -2067,20 +2180,20 @@ deleteInlineElement editorState =
                                     length =
                                         case il of
                                             TextLeaf t ->
-                                                String.length t.text
+                                                String.length (text t)
 
                                             InlineLeaf _ ->
                                                 0
                                 in
-                                if length < selection.anchorOffset then
+                                if length < anchorOffset selection then
                                     Err "I cannot delete an inline element if the cursor is not at the end of an inline node"
 
                                 else
                                     let
                                         incrementedPath =
-                                            increment selection.anchorNode
+                                            increment (anchorNode selection)
                                     in
-                                    case nodeAt incrementedPath editorState.root of
+                                    case nodeAt incrementedPath (State.root editorState) of
                                         Nothing ->
                                             Err "There is no next inline leaf to delete"
 
@@ -2089,12 +2202,17 @@ deleteInlineElement editorState =
                                                 InlineLeafWrapper nil ->
                                                     case nil of
                                                         InlineLeaf _ ->
-                                                            case replaceWithFragment incrementedPath (InlineLeafFragment Array.empty) editorState.root of
+                                                            case
+                                                                replaceWithFragment
+                                                                    incrementedPath
+                                                                    (InlineLeafFragment Array.empty)
+                                                                    (State.root editorState)
+                                                            of
                                                                 Err s ->
                                                                     Err s
 
                                                                 Ok newRoot ->
-                                                                    Ok { editorState | root = newRoot }
+                                                                    Ok <| editorState |> withRoot newRoot
 
                                                         TextLeaf _ ->
                                                             Err "There is no next inline leaf element, found a text leaf"
@@ -2105,30 +2223,35 @@ deleteInlineElement editorState =
 
 deleteBlockNode : Transform
 deleteBlockNode editorState =
-    case editorState.selection of
+    case State.selection editorState of
         Nothing ->
             Err "Nothing is selected"
 
         Just selection ->
-            if not <| selectionIsEndOfTextBlock selection editorState.root then
+            if not <| selectionIsEndOfTextBlock selection (State.root editorState) then
                 Err "Cannot delete a block element if we're not at the end of a text block"
 
             else
-                case next selection.anchorNode editorState.root of
+                case next (anchorNode selection) (State.root editorState) of
                     Nothing ->
                         Err "There is no next node to delete"
 
                     Just ( path, node ) ->
                         case node of
                             BlockNodeWrapper bn ->
-                                case bn.childNodes of
+                                case childNodes bn of
                                     Leaf ->
-                                        case replaceWithFragment path (BlockNodeFragment Array.empty) editorState.root of
+                                        case
+                                            replaceWithFragment
+                                                path
+                                                (BlockNodeFragment Array.empty)
+                                                (State.root editorState)
+                                        of
                                             Err s ->
                                                 Err s
 
                                             Ok newRoot ->
-                                                Ok { editorState | root = clearSelectionAnnotations newRoot }
+                                                Ok <| editorState |> withRoot (clearSelectionAnnotations newRoot)
 
                                     _ ->
                                         Err "The next node is not a block leaf"
@@ -2139,7 +2262,7 @@ deleteBlockNode editorState =
 
 deleteWord : Transform
 deleteWord editorState =
-    case editorState.selection of
+    case State.selection editorState of
         Nothing ->
             Err "Nothing is selected"
 
@@ -2148,20 +2271,20 @@ deleteWord editorState =
                 Err "I cannot remove a word of a range selection"
 
             else
-                case findTextBlockNodeAncestor selection.anchorNode editorState.root of
+                case findTextBlockNodeAncestor (anchorNode selection) (State.root editorState) of
                     Nothing ->
                         Err "I can only remove a word on a text leaf"
 
                     Just ( p, n ) ->
                         case n.childNodes of
-                            InlineLeafArray arr ->
+                            InlineChildren arr ->
                                 let
                                     groupedLeaves =
                                         List.Extra.groupWhile
                                             groupSameTypeInlineLeaf
-                                            (Array.toList arr.array)
+                                            (Array.toList (arrayFromInlineArray arr))
                                 in
-                                case List.Extra.last selection.anchorNode of
+                                case List.Extra.last (anchorNode selection) of
                                     Nothing ->
                                         Err "Somehow the anchor node is the root node"
 
@@ -2193,7 +2316,7 @@ deleteWord editorState =
                                                         lengthsFromGroup group
 
                                             offset =
-                                                offsetUpToNewIndex + selection.anchorOffset
+                                                offsetUpToNewIndex + anchorOffset selection
 
                                             stringTo =
                                                 String.dropLeft offset groupText
@@ -2234,10 +2357,14 @@ deleteWord editorState =
                                                     lastIndex - (relativeLastIndex - newGroupIndex)
 
                                                 newSelection =
-                                                    rangeSelection (p ++ [ newIndex ]) newOffset selection.anchorNode selection.anchorOffset
+                                                    rangeSelection
+                                                        (p ++ [ newIndex ])
+                                                        newOffset
+                                                        (anchorNode selection)
+                                                        (anchorOffset selection)
 
                                                 newState =
-                                                    { editorState | selection = Just newSelection }
+                                                    editorState |> withSelection (Just newSelection)
                                             in
                                             removeRangeSelection newState
 

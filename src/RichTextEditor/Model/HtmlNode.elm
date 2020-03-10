@@ -1,4 +1,4 @@
-module RichTextEditor.Internal.Model.HtmlNode exposing (HtmlAttribute, HtmlNode(..))
+module RichTextEditor.Model.HtmlNode exposing (HtmlAttribute, HtmlNode(..))
 
 {-| HtmlNode is used to determine how to render the editor. We don't use the regular VirtualDOM library
 because we can't inspect a node after it has been created. Note that we also don't allow text nodes

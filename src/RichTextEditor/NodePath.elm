@@ -19,7 +19,7 @@ module RichTextEditor.NodePath exposing
 
 import Array exposing (Array)
 import List.Extra
-import RichTextEditor.Internal.Model
+import RichTextEditor.Model
     exposing
         ( ChildNodes(..)
         , EditorBlockNode

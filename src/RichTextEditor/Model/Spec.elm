@@ -1,4 +1,4 @@
-module RichTextEditor.Internal.Model.Spec exposing
+module RichTextEditor.Model.Spec exposing
     ( ContentType
     , ElementToHtml
     , HtmlToElement
@@ -13,9 +13,9 @@ module RichTextEditor.Internal.Model.Spec exposing
     )
 
 import Array exposing (Array)
-import RichTextEditor.Internal.Model.HtmlNode exposing (HtmlNode)
-import RichTextEditor.Internal.Model.Mark exposing (Mark)
-import RichTextEditor.Internal.Model.Node exposing (ElementParameters)
+import RichTextEditor.Model.HtmlNode exposing (HtmlNode)
+import RichTextEditor.Model.Mark exposing (Mark)
+import RichTextEditor.Model.Node exposing (ElementParameters)
 import Set exposing (Set)
 
 

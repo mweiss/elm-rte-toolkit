@@ -1,12 +1,23 @@
-module RichTextEditor.Internal.Model.Editor exposing
-    ( Decorations
+module RichTextEditor.Model.Editor exposing
+    ( DecoderFunc
+    , Decorations
     , Editor
+    , ElementDecoratorFunction
     , InternalEditorMsg(..)
+    , MarkDecoratorFunction
     , commandMap
     , decoder
+    , elementDecorators
+    , forceCompleteRerender
+    , forceRerender
+    , forceReselection
     , history
+    , markDecorators
+    , spec
     , state
+    , withElementDecorators
     , withHistory
+    , withMarkDecorators
     , withState
     )
 
@@ -35,14 +46,14 @@ A typical use case might be:
 
 import Dict exposing (Dict)
 import Html
-import RichTextEditor.Internal.Model.Command exposing (CommandMap)
-import RichTextEditor.Internal.Model.EditorState exposing (State)
-import RichTextEditor.Internal.Model.Event exposing (EditorChange, InputEvent, KeyboardEvent, PasteEvent)
-import RichTextEditor.Internal.Model.History exposing (History)
-import RichTextEditor.Internal.Model.Mark exposing (Mark)
-import RichTextEditor.Internal.Model.Node exposing (ElementParameters, NodePath)
-import RichTextEditor.Internal.Model.Selection exposing (Selection)
-import RichTextEditor.Internal.Model.Spec exposing (Spec)
+import RichTextEditor.Model.Command exposing (CommandMap)
+import RichTextEditor.Model.Event exposing (EditorChange, InputEvent, KeyboardEvent, PasteEvent)
+import RichTextEditor.Model.History exposing (History)
+import RichTextEditor.Model.Mark exposing (Mark)
+import RichTextEditor.Model.Node exposing (ElementParameters, NodePath)
+import RichTextEditor.Model.Selection exposing (Selection)
+import RichTextEditor.Model.Spec exposing (Spec)
+import RichTextEditor.Model.State exposing (State)
 
 
 type alias DecoderFunc msg =
@@ -162,6 +173,39 @@ type alias DecorationsContents msg =
     { marks : Dict String (List (MarkDecoratorFunction msg))
     , elements : Dict String (List (ElementDecoratorFunction msg))
     }
+
+
+emptyDecorations : Decorations msg
+emptyDecorations =
+    Decorations { marks = Dict.empty, elements = Dict.empty }
+
+
+markDecorators : Decorations msg -> Dict String (List (MarkDecoratorFunction msg))
+markDecorators decorations =
+    case decorations of
+        Decorations c ->
+            c.marks
+
+
+elementDecorators : Decorations msg -> Dict String (List (ElementDecoratorFunction msg))
+elementDecorators decorations =
+    case decorations of
+        Decorations c ->
+            c.elements
+
+
+withMarkDecorators : Dict String (List (MarkDecoratorFunction msg)) -> Decorations msg -> Decorations msg
+withMarkDecorators marks decorations =
+    case decorations of
+        Decorations c ->
+            Decorations { c | marks = marks }
+
+
+withElementDecorators : Dict String (List (ElementDecoratorFunction msg)) -> Decorations msg -> Decorations msg
+withElementDecorators elements decorations =
+    case decorations of
+        Decorations c ->
+            Decorations { c | elements = elements }
 
 
 type alias ElementDecoratorFunction msg =

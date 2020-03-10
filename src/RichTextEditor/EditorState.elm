@@ -2,7 +2,7 @@ module RichTextEditor.EditorState exposing (..)
 
 import Array exposing (Array)
 import List.Extra
-import RichTextEditor.Internal.Model
+import RichTextEditor.Model
     exposing
         ( ChildNodes(..)
         , EditorBlockNode
@@ -112,7 +112,7 @@ reduceEditorState : EditorState -> EditorState
 reduceEditorState editorState =
     let
         markedRoot =
-            case editorState.selection of
+            case State.selection editorState of
                 Nothing ->
                     editorState.root
 
@@ -122,7 +122,7 @@ reduceEditorState editorState =
         reducedRoot =
             clearSelectionAnnotations <| reduceNode markedRoot
     in
-    case editorState.selection of
+    case State.selection editorState of
         Nothing ->
             { editorState | root = reducedRoot }
 
