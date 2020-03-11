@@ -19,19 +19,25 @@ module RichTextEditor.NodePath exposing
 
 import Array exposing (Array)
 import List.Extra
-import RichTextEditor.Model
+import RichTextEditor.Model.HtmlNode exposing (HtmlNode(..))
+import RichTextEditor.Model.Mark as Mark exposing (Mark)
+import RichTextEditor.Model.Node
     exposing
         ( ChildNodes(..)
         , EditorBlockNode
-        , EditorInlineLeaf(..)
+        , EditorInlineLeaf
         , ElementParameters
-        , HtmlNode(..)
         , InlineLeafTree(..)
-        , Mark
         , NodePath
-        , Selection
-        , Spec
+        , arrayFromBlockArray
+        , arrayFromInlineArray
+        , childNodes
+        , elementParametersFromBlockNode
+        , nameFromElementParameters
+        , reverseLookupFromInlineArray
+        , treeFromInlineArray
         )
+import RichTextEditor.Model.Spec exposing (Spec, toHtmlNodeFromMarkDefinition, toHtmlNodeFromNodeDefinition)
 import RichTextEditor.Spec
     exposing
         ( childNodesPlaceholder
@@ -49,10 +55,10 @@ domToEditorInlineLeafTree spec tree path =
         MarkNode n ->
             let
                 markDefinition =
-                    findMarkDefinitionFromSpecWithDefault n.mark.name spec
+                    findMarkDefinitionFromSpecWithDefault (Mark.name n.mark) spec
 
                 structure =
-                    markDefinition.toHtmlNode n.mark childNodesPlaceholder
+                    toHtmlNodeFromMarkDefinition markDefinition n.mark childNodesPlaceholder
             in
             case removePathUpToChildContents structure path of
                 Nothing ->
@@ -82,11 +88,14 @@ domToEditor spec node path =
 
     else
         let
+            parameters =
+                elementParametersFromBlockNode node
+
             nodeDefinition =
-                findNodeDefinitionFromSpecWithDefault node.parameters.name spec
+                findNodeDefinitionFromSpecWithDefault (nameFromElementParameters parameters) spec
 
             structure =
-                nodeDefinition.toHtmlNode node.parameters childNodesPlaceholder
+                toHtmlNodeFromNodeDefinition nodeDefinition parameters childNodesPlaceholder
         in
         case removePathUpToChildContents structure path of
             Nothing ->
@@ -98,9 +107,9 @@ domToEditor spec node path =
                         Just []
 
                     Just i ->
-                        case node.childNodes of
-                            BlockArray l ->
-                                case Array.get i l of
+                        case childNodes node of
+                            BlockChildren l ->
+                                case Array.get i (arrayFromBlockArray l) of
                                     Nothing ->
                                         Nothing
 
@@ -112,8 +121,8 @@ domToEditor spec node path =
                                             Just p ->
                                                 Just (i :: p)
 
-                            InlineLeafArray l ->
-                                case Array.get i l.tree of
+                            InlineChildren l ->
+                                case Array.get i (treeFromInlineArray l) of
                                     Nothing ->
                                         Nothing
 
@@ -136,14 +145,14 @@ editorToDom spec node path =
             Just []
 
         x :: xs ->
-            case pathToChildContentsFromElementParameters spec node.parameters of
+            case pathToChildContentsFromElementParameters spec (elementParametersFromBlockNode node) of
                 Nothing ->
                     Nothing
 
                 Just childPath ->
-                    case node.childNodes of
-                        BlockArray l ->
-                            case Array.get x l of
+                    case childNodes node of
+                        BlockChildren l ->
+                            case Array.get x (arrayFromBlockArray l) of
                                 Nothing ->
                                     Nothing
 
@@ -155,13 +164,19 @@ editorToDom spec node path =
                                         Just p ->
                                             Just (childPath ++ (x :: p))
 
-                        InlineLeafArray l ->
-                            case Array.get x l.reverseLookup of
+                        InlineChildren l ->
+                            case Array.get x (reverseLookupFromInlineArray l) of
                                 Nothing ->
                                     Nothing
 
                                 Just inlineTreePath ->
-                                    case pathToChildContentsFromInlineTreePath spec l.array l.tree inlineTreePath of
+                                    case
+                                        pathToChildContentsFromInlineTreePath
+                                            spec
+                                            (arrayFromInlineArray l)
+                                            (treeFromInlineArray l)
+                                            inlineTreePath
+                                    of
                                         Nothing ->
                                             Nothing
 
@@ -264,11 +279,11 @@ pathToChildContentsFromMark : Spec -> Mark -> Maybe NodePath
 pathToChildContentsFromMark spec mark =
     let
         markDefinition =
-            findMarkDefinitionFromSpecWithDefault mark.name spec
+            findMarkDefinitionFromSpecWithDefault (Mark.name mark) spec
     in
     let
         markStructure =
-            markDefinition.toHtmlNode mark childNodesPlaceholder
+            toHtmlNodeFromMarkDefinition markDefinition mark childNodesPlaceholder
     in
     pathToChildContents markStructure
 
@@ -281,10 +296,10 @@ pathToChildContentsFromElementParameters : Spec -> ElementParameters -> Maybe No
 pathToChildContentsFromElementParameters spec parameters =
     let
         nodeDefinition =
-            findNodeDefinitionFromSpecWithDefault parameters.name spec
+            findNodeDefinitionFromSpecWithDefault (nameFromElementParameters parameters) spec
 
         nodeStructure =
-            nodeDefinition.toHtmlNode parameters childNodesPlaceholder
+            toHtmlNodeFromNodeDefinition nodeDefinition parameters childNodesPlaceholder
     in
     pathToChildContents nodeStructure
 

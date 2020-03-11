@@ -1,5 +1,5 @@
 module RichTextEditor.Model.Spec exposing
-    ( ContentType
+    ( ContentType(..)
     , ElementToHtml
     , HtmlToElement
     , HtmlToMark
@@ -7,9 +7,25 @@ module RichTextEditor.Model.Spec exposing
     , MarkToHtml
     , NodeDefinition
     , Spec
+    , blockLeafContentType
+    , blockNodeContentType
+    , contentTypeFromNodeDefinition
     , emptySpec
-    , withMarks
-    , withNodes
+    , fromHtmlNodeFromMarkDefinition
+    , fromHtmlNodeFromNodeDefinition
+    , groupFromNodeDefinition
+    , inlineLeafContentType
+    , markDefinition
+    , markDefinitions
+    , nameFromMarkDefinition
+    , nameFromNodeDefinition
+    , nodeDefinition
+    , nodeDefinitions
+    , textBlockContentType
+    , toHtmlNodeFromMarkDefinition
+    , toHtmlNodeFromNodeDefinition
+    , withMarkDefinitions
+    , withNodeDefinitions
     )
 
 import Array exposing (Array)
@@ -30,35 +46,19 @@ type alias MarkDefinitionContents =
     }
 
 
-type MarkToHtml
-    = MarkToHtml MarkToHtmlContents
-
-
-type alias MarkToHtmlContents =
+type alias MarkToHtml =
     Mark -> Array HtmlNode -> HtmlNode
 
 
-type HtmlToMark
-    = HtmlToMark HtmlToMarkContents
-
-
-type alias HtmlToMarkContents =
+type alias HtmlToMark =
     HtmlNode -> Maybe ( Mark, Array HtmlNode )
 
 
-type ElementToHtml
-    = ElementToHtml ElementToHtmlContents
-
-
-type alias ElementToHtmlContents =
+type alias ElementToHtml =
     ElementParameters -> Array HtmlNode -> HtmlNode
 
 
-type HtmlToElement
-    = HtmlToElement HtmlToElementContents
-
-
-type alias HtmlToElementContents =
+type alias HtmlToElement =
     HtmlNode -> Maybe ( ElementParameters, Array HtmlNode )
 
 
@@ -86,6 +86,41 @@ nodeDefinition name group contentType toHtml fromHtml =
         }
 
 
+nameFromNodeDefinition : NodeDefinition -> String
+nameFromNodeDefinition d =
+    case d of
+        NodeDefinition c ->
+            c.name
+
+
+groupFromNodeDefinition : NodeDefinition -> String
+groupFromNodeDefinition d =
+    case d of
+        NodeDefinition c ->
+            c.group
+
+
+toHtmlNodeFromNodeDefinition : NodeDefinition -> ElementToHtml
+toHtmlNodeFromNodeDefinition d =
+    case d of
+        NodeDefinition c ->
+            c.toHtmlNode
+
+
+fromHtmlNodeFromNodeDefinition : NodeDefinition -> HtmlToElement
+fromHtmlNodeFromNodeDefinition d =
+    case d of
+        NodeDefinition c ->
+            c.fromHtmlNode
+
+
+contentTypeFromNodeDefinition : NodeDefinition -> ContentType
+contentTypeFromNodeDefinition d =
+    case d of
+        NodeDefinition c ->
+            c.contentType
+
+
 markDefinition : String -> MarkToHtml -> HtmlToMark -> MarkDefinition
 markDefinition name toHtml fromHtml =
     MarkDefinition
@@ -93,6 +128,27 @@ markDefinition name toHtml fromHtml =
         , toHtmlNode = toHtml
         , fromHtmlNode = fromHtml
         }
+
+
+nameFromMarkDefinition : MarkDefinition -> String
+nameFromMarkDefinition d =
+    case d of
+        MarkDefinition c ->
+            c.name
+
+
+toHtmlNodeFromMarkDefinition : MarkDefinition -> MarkToHtml
+toHtmlNodeFromMarkDefinition d =
+    case d of
+        MarkDefinition c ->
+            c.toHtmlNode
+
+
+fromHtmlNodeFromMarkDefinition : MarkDefinition -> HtmlToMark
+fromHtmlNodeFromMarkDefinition d =
+    case d of
+        MarkDefinition c ->
+            c.fromHtmlNode
 
 
 type ContentType
@@ -140,15 +196,29 @@ emptySpec =
     Spec { marks = [], nodes = [] }
 
 
-withMarks : List MarkDefinition -> Spec -> Spec
-withMarks marks spec =
+markDefinitions : Spec -> List MarkDefinition
+markDefinitions spec =
+    case spec of
+        Spec c ->
+            c.marks
+
+
+nodeDefinitions : Spec -> List NodeDefinition
+nodeDefinitions spec =
+    case spec of
+        Spec c ->
+            c.nodes
+
+
+withMarkDefinitions : List MarkDefinition -> Spec -> Spec
+withMarkDefinitions marks spec =
     case spec of
         Spec c ->
             Spec { c | marks = marks }
 
 
-withNodes : List NodeDefinition -> Spec -> Spec
-withNodes nodes spec =
+withNodeDefinitions : List NodeDefinition -> Spec -> Spec
+withNodeDefinitions nodes spec =
     case spec of
         Spec c ->
             Spec { c | nodes = nodes }

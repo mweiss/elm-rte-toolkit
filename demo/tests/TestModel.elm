@@ -2,20 +2,21 @@ module TestModel exposing (..)
 
 import Array
 import Expect
-import RichTextEditor.Model exposing (InlineLeafTree(..), Mark, marksToMarkNodeList)
+import RichTextEditor.Model.Mark exposing (Mark, mark)
+import RichTextEditor.Model.Node exposing (InlineLeafTree(..), marksToMarkNodeList)
 import Test exposing (Test, describe, test)
 
 
 mark1 =
-    Mark "mark1" []
+    mark "mark1" []
 
 
 mark2 =
-    Mark "mark2" []
+    mark "mark2" []
 
 
 mark3 =
-    Mark "mark3" []
+    mark "mark3" []
 
 
 testMarkLists =

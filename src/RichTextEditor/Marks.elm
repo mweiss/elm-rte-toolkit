@@ -1,22 +1,23 @@
 module RichTextEditor.Marks exposing (..)
 
-import Dict
-import RichTextEditor.Model
+import RichTextEditor.Model.Mark as Mark exposing (Mark, MarkOrder, ToggleAction(..), name, toggle)
+import RichTextEditor.Model.Node
     exposing
         ( EditorBlockNode
         , EditorInlineLeaf(..)
         , EditorNode(..)
-        , InlineLeafTree(..)
-        , Mark
-        , MarkOrder
         , NodePath
+        , inlineLeafParametersWithMarks
+        , marksFromInlineLeafParameters
+        , marksFromTextLeafParameters
+        , textLeafParametersWithMarks
         )
 import RichTextEditor.Node exposing (nodeAt, replace)
 
 
 hasMarkWithName : String -> List Mark -> Bool
 hasMarkWithName name marks =
-    List.any (\m -> m.name == name) marks
+    List.any (\m -> name == Mark.name m) marks
 
 
 toggleMarkAtPath : ToggleAction -> MarkOrder -> Mark -> NodePath -> EditorBlockNode -> Result String EditorBlockNode
@@ -27,30 +28,6 @@ toggleMarkAtPath action markOrder mark path node =
 
         Just n ->
             replace path (toggleMark action markOrder mark n) node
-
-
-type ToggleAction
-    = Add
-    | Remove
-    | Flip
-
-
-toggle : ToggleAction -> MarkOrder -> Mark -> List Mark -> List Mark
-toggle toggleAction markOrder mark marks =
-    let
-        isMember =
-            List.any (\m -> m.name == mark.name) marks
-    in
-    if toggleAction == Remove || (toggleAction == Flip && isMember) then
-        List.filter (\x -> x.name /= mark.name) marks
-
-    else if not isMember then
-        List.sortBy
-            (\m -> ( Maybe.withDefault 0 <| Dict.get m.name markOrder, m.name ))
-            (mark :: marks)
-
-    else
-        marks
 
 
 removeMark : MarkOrder -> Mark -> EditorNode -> EditorNode
@@ -73,7 +50,15 @@ toggleMark action markOrder mark node =
             InlineLeafWrapper <|
                 case il of
                     TextLeaf leaf ->
-                        TextLeaf { leaf | marks = toggle action markOrder mark leaf.marks }
+                        TextLeaf <|
+                            (leaf
+                                |> textLeafParametersWithMarks
+                                    (toggle action markOrder mark (marksFromTextLeafParameters leaf))
+                            )
 
                     InlineLeaf leaf ->
-                        InlineLeaf { leaf | marks = toggle action markOrder mark leaf.marks }
+                        InlineLeaf <|
+                            (leaf
+                                |> inlineLeafParametersWithMarks
+                                    (toggle action markOrder mark (marksFromInlineLeafParameters leaf))
+                            )

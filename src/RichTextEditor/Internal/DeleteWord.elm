@@ -1,4 +1,4 @@
-module RichTextEditor.DeleteWord exposing (..)
+module RichTextEditor.Internal.DeleteWord exposing (..)
 
 {-
    This is a helper module derived from the DraftJS logic for determining how to delete a word.

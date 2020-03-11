@@ -58,7 +58,7 @@ handleUndo editor =
                 newHistory =
                     { editorHistory | undoDeque = newUndoDeque, redoStack = editorState :: editorHistory.redoStack }
             in
-            Ok <| editor |> withState newState |> withHistory (fromContents newHistory)
+            Ok (editor |> withState newState |> withHistory (fromContents newHistory))
 
 
 handleRedo : Editor msg -> Result String (Editor msg)
@@ -81,7 +81,7 @@ handleRedo editor =
                         , redoStack = xs
                     }
             in
-            Ok <| editor |> withState newState |> withHistory (fromContents newHistory)
+            Ok (editor |> withState newState |> withHistory (fromContents newHistory))
 
 
 updateEditorState : String -> State -> Editor msg -> Editor msg

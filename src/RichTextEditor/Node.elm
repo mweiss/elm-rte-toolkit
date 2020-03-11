@@ -16,7 +16,7 @@ module RichTextEditor.Node exposing
     , indexedFoldl
     , indexedFoldr
     , indexedMap
-    , insert
+    , insertAfter
     , isSelectable
     , joinBlocks
     , map
@@ -33,37 +33,24 @@ module RichTextEditor.Node exposing
 
 import Array exposing (Array)
 import Array.Extra
-import RichTextEditor.Model
-    exposing
-        ( Annotation
-        , ChildNodes(..)
-        , EditorBlockNode
-        , EditorFragment(..)
-        , EditorInlineLeaf(..)
-        , EditorNode(..)
-        , HtmlNode(..)
-        , NodePath
-        , TextLeafContents
-        , inlineLeafArray
-        , selectableAnnotation
-        )
+import RichTextEditor.Model.Annotation exposing (selectableAnnotation)
+import RichTextEditor.Model.Node exposing (ChildNodes(..), EditorBlockNode, EditorFragment(..), EditorInlineLeaf(..), EditorNode(..), NodePath, TextLeafParameters, annotationsFromElementParameters, arrayFromBlockArray, arrayFromInlineArray, blockArray, childNodes, elementParametersFromBlockNode, elementParametersFromInlineLeafParameters, inlineLeafArray, text, withChildNodes, withText)
+import RichTextEditor.NodePath exposing (parent)
 import Set
-
-
-parent : NodePath -> NodePath
-parent path =
-    List.take (List.length path - 1) path
 
 
 findLastPath : EditorBlockNode -> ( NodePath, EditorNode )
 findLastPath node =
-    case node.childNodes of
-        BlockArray a ->
+    case childNodes node of
+        BlockChildren a ->
             let
+                arr =
+                    arrayFromBlockArray a
+
                 lastIndex =
-                    Array.length a - 1
+                    Array.length arr - 1
             in
-            case Array.get lastIndex a of
+            case Array.get lastIndex arr of
                 Nothing ->
                     ( [], BlockNodeWrapper node )
 
@@ -74,12 +61,15 @@ findLastPath node =
                     in
                     ( lastIndex :: p, n )
 
-        InlineLeafArray a ->
+        InlineChildren a ->
             let
+                array =
+                    arrayFromInlineArray a
+
                 lastIndex =
-                    Array.length a.array - 1
+                    Array.length array - 1
             in
-            case Array.get lastIndex a.array of
+            case Array.get lastIndex array of
                 Nothing ->
                     ( [], BlockNodeWrapper node )
 
@@ -105,9 +95,9 @@ previous path node =
                 prevIndex =
                     x - 1
             in
-            case node.childNodes of
-                BlockArray a ->
-                    case Array.get prevIndex a of
+            case childNodes node of
+                BlockChildren a ->
+                    case Array.get prevIndex (arrayFromBlockArray a) of
                         Nothing ->
                             Just ( [], BlockNodeWrapper node )
 
@@ -118,8 +108,8 @@ previous path node =
                             in
                             Just ( prevIndex :: p, n )
 
-                InlineLeafArray a ->
-                    case Array.get prevIndex a.array of
+                InlineChildren a ->
+                    case Array.get prevIndex (arrayFromInlineArray a) of
                         Nothing ->
                             Just ( [], BlockNodeWrapper node )
 
@@ -130,9 +120,9 @@ previous path node =
                     Just ( [], BlockNodeWrapper node )
 
         x :: xs ->
-            case node.childNodes of
-                BlockArray a ->
-                    case Array.get x a of
+            case childNodes node of
+                BlockChildren a ->
+                    case Array.get x (arrayFromBlockArray a) of
                         Nothing ->
                             Nothing
 
@@ -144,8 +134,8 @@ previous path node =
                                 Just ( p, n ) ->
                                     Just ( x :: p, n )
 
-                InlineLeafArray a ->
-                    case Array.get (x - 1) a.array of
+                InlineChildren a ->
+                    case Array.get (x - 1) (arrayFromInlineArray a) of
                         Nothing ->
                             Just ( [], BlockNodeWrapper node )
 
@@ -160,17 +150,17 @@ next : Iterator
 next path node =
     case path of
         [] ->
-            case node.childNodes of
-                BlockArray a ->
-                    case Array.get 0 a of
+            case childNodes node of
+                BlockChildren a ->
+                    case Array.get 0 (arrayFromBlockArray a) of
                         Nothing ->
                             Nothing
 
                         Just b ->
                             Just ( [ 0 ], BlockNodeWrapper b )
 
-                InlineLeafArray a ->
-                    case Array.get 0 a.array of
+                InlineChildren a ->
+                    case Array.get 0 (arrayFromInlineArray a) of
                         Nothing ->
                             Nothing
 
@@ -181,16 +171,20 @@ next path node =
                     Nothing
 
         x :: xs ->
-            case node.childNodes of
-                BlockArray a ->
-                    case Array.get x a of
+            case childNodes node of
+                BlockChildren a ->
+                    let
+                        arr =
+                            arrayFromBlockArray a
+                    in
+                    case Array.get x arr of
                         Nothing ->
                             Nothing
 
                         Just b ->
                             case next xs b of
                                 Nothing ->
-                                    case Array.get (x + 1) a of
+                                    case Array.get (x + 1) arr of
                                         Nothing ->
                                             Nothing
 
@@ -200,8 +194,8 @@ next path node =
                                 Just ( p, n ) ->
                                     Just ( x :: p, n )
 
-                InlineLeafArray a ->
-                    case Array.get (x + 1) a.array of
+                InlineChildren a ->
+                    case Array.get (x + 1) (arrayFromInlineArray a) of
                         Nothing ->
                             Nothing
 
@@ -236,7 +230,7 @@ isSelectable : EditorNode -> Bool
 isSelectable node =
     case node of
         BlockNodeWrapper bn ->
-            Set.member selectableAnnotation bn.parameters.annotations
+            Set.member selectableAnnotation (annotationsFromElementParameters (elementParametersFromBlockNode bn))
 
         InlineLeafWrapper ln ->
             case ln of
@@ -244,7 +238,7 @@ isSelectable node =
                     True
 
                 InlineLeaf l ->
-                    Set.member selectableAnnotation l.parameters.annotations
+                    Set.member selectableAnnotation (annotationsFromElementParameters (elementParametersFromInlineLeafParameters l))
 
 
 findNodeFromExclusive : Iterator -> (NodePath -> EditorNode -> Bool) -> NodePath -> EditorBlockNode -> Maybe ( NodePath, EditorNode )
@@ -275,11 +269,11 @@ concatMap : (EditorNode -> List EditorNode) -> EditorBlockNode -> EditorBlockNod
 concatMap func node =
     let
         newChildren =
-            case node.childNodes of
+            case childNodes node of
                 Leaf ->
                     Leaf
 
-                BlockArray a ->
+                BlockChildren a ->
                     let
                         c =
                             List.concatMap
@@ -292,11 +286,11 @@ concatMap func node =
                                             []
                                 )
                             <|
-                                List.concatMap func (List.map BlockNodeWrapper (Array.toList a))
+                                List.concatMap func (List.map BlockNodeWrapper (Array.toList (arrayFromBlockArray a)))
                     in
-                    BlockArray <| Array.fromList (List.map (concatMap func) c)
+                    blockArray <| Array.fromList (List.map (concatMap func) c)
 
-                InlineLeafArray a ->
+                InlineChildren a ->
                     inlineLeafArray <|
                         Array.fromList
                             (List.concatMap
@@ -309,10 +303,10 @@ concatMap func node =
                                             [ v ]
                                 )
                              <|
-                                List.concatMap func (List.map InlineLeafWrapper (Array.toList a.array))
+                                List.concatMap func (List.map InlineLeafWrapper (Array.toList (arrayFromInlineArray a)))
                             )
     in
-    { node | childNodes = newChildren }
+    node |> withChildNodes newChildren
 
 
 map : (EditorNode -> EditorNode) -> EditorNode -> EditorNode
@@ -323,12 +317,12 @@ map func node =
     in
     case applied of
         BlockNodeWrapper blockNode ->
-            BlockNodeWrapper
-                { blockNode
-                    | childNodes =
-                        case blockNode.childNodes of
-                            BlockArray a ->
-                                BlockArray <|
+            BlockNodeWrapper <|
+                (blockNode
+                    |> withChildNodes
+                        (case childNodes blockNode of
+                            BlockChildren a ->
+                                blockArray <|
                                     Array.map
                                         (\v ->
                                             case map func (BlockNodeWrapper v) of
@@ -338,9 +332,9 @@ map func node =
                                                 _ ->
                                                     v
                                         )
-                                        a
+                                        (arrayFromBlockArray a)
 
-                            InlineLeafArray a ->
+                            InlineChildren a ->
                                 inlineLeafArray <|
                                     Array.map
                                         (\v ->
@@ -351,11 +345,12 @@ map func node =
                                                 _ ->
                                                     v
                                         )
-                                        a.array
+                                        (arrayFromInlineArray a)
 
                             Leaf ->
                                 Leaf
-                }
+                        )
+                )
 
         InlineLeafWrapper inlineLeaf ->
             InlineLeafWrapper inlineLeaf
@@ -374,39 +369,39 @@ indexedMapRec path func node =
     in
     case applied of
         BlockNodeWrapper blockNode ->
-            BlockNodeWrapper
-                { blockNode
-                    | childNodes =
-                        case blockNode.childNodes of
-                            BlockArray a ->
-                                BlockArray <|
-                                    Array.indexedMap
-                                        (\i v ->
-                                            case indexedMapRec (path ++ [ i ]) func (BlockNodeWrapper v) of
-                                                BlockNodeWrapper b ->
-                                                    b
+            let
+                cn =
+                    case childNodes blockNode of
+                        BlockChildren a ->
+                            blockArray <|
+                                Array.indexedMap
+                                    (\i v ->
+                                        case indexedMapRec (path ++ [ i ]) func (BlockNodeWrapper v) of
+                                            BlockNodeWrapper b ->
+                                                b
 
-                                                _ ->
-                                                    v
-                                        )
-                                        a
+                                            _ ->
+                                                v
+                                    )
+                                    (arrayFromBlockArray a)
 
-                            InlineLeafArray a ->
-                                inlineLeafArray <|
-                                    Array.indexedMap
-                                        (\i v ->
-                                            case indexedMapRec (path ++ [ i ]) func (InlineLeafWrapper v) of
-                                                InlineLeafWrapper b ->
-                                                    b
+                        InlineChildren a ->
+                            inlineLeafArray <|
+                                Array.indexedMap
+                                    (\i v ->
+                                        case indexedMapRec (path ++ [ i ]) func (InlineLeafWrapper v) of
+                                            InlineLeafWrapper b ->
+                                                b
 
-                                                _ ->
-                                                    v
-                                        )
-                                        a.array
+                                            _ ->
+                                                v
+                                    )
+                                    (arrayFromInlineArray a)
 
-                            Leaf ->
-                                Leaf
-                }
+                        Leaf ->
+                            Leaf
+            in
+            BlockNodeWrapper (blockNode |> withChildNodes cn)
 
         InlineLeafWrapper inlineLeaf ->
             InlineLeafWrapper inlineLeaf
@@ -420,15 +415,15 @@ foldr func acc node =
             BlockNodeWrapper blockNode ->
                 let
                     children =
-                        case blockNode.childNodes of
+                        case childNodes blockNode of
                             Leaf ->
                                 Array.empty
 
-                            InlineLeafArray a ->
-                                Array.map InlineLeafWrapper a.array
+                            InlineChildren a ->
+                                Array.map InlineLeafWrapper (arrayFromInlineArray a)
 
-                            BlockArray a ->
-                                Array.map BlockNodeWrapper a
+                            BlockChildren a ->
+                                Array.map BlockNodeWrapper (arrayFromBlockArray a)
                 in
                 Array.foldr
                     (\childNode agg ->
@@ -448,15 +443,15 @@ foldl func acc node =
         BlockNodeWrapper blockNode ->
             let
                 children =
-                    case blockNode.childNodes of
+                    case childNodes blockNode of
                         Leaf ->
                             Array.empty
 
-                        InlineLeafArray a ->
-                            Array.map InlineLeafWrapper a.array
+                        InlineChildren a ->
+                            Array.map InlineLeafWrapper (arrayFromInlineArray a)
 
-                        BlockArray a ->
-                            Array.map BlockNodeWrapper a
+                        BlockChildren a ->
+                            Array.map BlockNodeWrapper (arrayFromBlockArray a)
             in
             Array.foldl
                 (\childNode agg ->
@@ -484,15 +479,15 @@ indexedFoldrRec path func acc node =
                 let
                     children =
                         Array.indexedMap Tuple.pair <|
-                            case blockNode.childNodes of
+                            case childNodes blockNode of
                                 Leaf ->
                                     Array.empty
 
-                                InlineLeafArray a ->
-                                    Array.map InlineLeafWrapper a.array
+                                InlineChildren a ->
+                                    Array.map InlineLeafWrapper (arrayFromInlineArray a)
 
-                                BlockArray a ->
-                                    Array.map BlockNodeWrapper a
+                                BlockChildren a ->
+                                    Array.map BlockNodeWrapper (arrayFromBlockArray a)
                 in
                 Array.foldr
                     (\( index, childNode ) agg ->
@@ -518,15 +513,15 @@ indexedFoldlRec path func acc node =
             let
                 children =
                     Array.indexedMap Tuple.pair <|
-                        case blockNode.childNodes of
+                        case childNodes blockNode of
                             Leaf ->
                                 Array.empty
 
-                            InlineLeafArray a ->
-                                Array.map InlineLeafWrapper a.array
+                            InlineChildren a ->
+                                Array.map InlineLeafWrapper (arrayFromInlineArray a)
 
-                            BlockArray a ->
-                                Array.map BlockNodeWrapper a
+                            BlockChildren a ->
+                                Array.map BlockNodeWrapper (arrayFromBlockArray a)
             in
             Array.foldl
                 (\( index, childNode ) agg ->
@@ -550,41 +545,51 @@ replaceWithFragment path fragment root =
             Err "Invalid path"
 
         [ x ] ->
-            case root.childNodes of
-                BlockArray a ->
+            case childNodes root of
+                BlockChildren a ->
                     case fragment of
                         BlockNodeFragment blocks ->
-                            Ok
-                                { root
-                                    | childNodes =
-                                        BlockArray
+                            let
+                                arr =
+                                    arrayFromBlockArray a
+                            in
+                            Ok <|
+                                (root
+                                    |> withChildNodes
+                                        (blockArray
                                             (Array.append
                                                 (Array.append
-                                                    (Array.Extra.sliceUntil x a)
+                                                    (Array.Extra.sliceUntil x arr)
                                                     blocks
                                                 )
-                                                (Array.Extra.sliceFrom (x + 1) a)
+                                                (Array.Extra.sliceFrom (x + 1) arr)
                                             )
-                                }
+                                        )
+                                )
 
                         InlineLeafFragment _ ->
                             Err "I cannot replace a block fragment with an inline leaf fragment"
 
-                InlineLeafArray a ->
+                InlineChildren a ->
                     case fragment of
                         InlineLeafFragment leaves ->
-                            Ok
-                                { root
-                                    | childNodes =
-                                        inlineLeafArray
+                            let
+                                arr =
+                                    arrayFromInlineArray a
+                            in
+                            Ok <|
+                                (root
+                                    |> withChildNodes
+                                        (inlineLeafArray
                                             (Array.append
                                                 (Array.append
-                                                    (Array.Extra.sliceUntil x a.array)
+                                                    (Array.Extra.sliceUntil x arr)
                                                     leaves
                                                 )
-                                                (Array.Extra.sliceFrom (x + 1) a.array)
+                                                (Array.Extra.sliceFrom (x + 1) arr)
                                             )
-                                }
+                                        )
+                                )
 
                         BlockNodeFragment _ ->
                             Err "I cannot replace an inline fragment with an block fragment"
@@ -593,21 +598,25 @@ replaceWithFragment path fragment root =
                     Err "Not implemented"
 
         x :: xs ->
-            case root.childNodes of
-                BlockArray a ->
-                    case Array.get x a of
+            case childNodes root of
+                BlockChildren a ->
+                    let
+                        arr =
+                            arrayFromBlockArray a
+                    in
+                    case Array.get x arr of
                         Nothing ->
                             Err "I received an invalid path, I can't find a block node at the given index."
 
                         Just node ->
                             case replaceWithFragment xs fragment node of
                                 Ok n ->
-                                    Ok { root | childNodes = BlockArray (Array.set x n a) }
+                                    Ok <| (root |> withChildNodes (blockArray (Array.set x n arr)))
 
                                 Err v ->
                                     Err v
 
-                InlineLeafArray _ ->
+                InlineChildren _ ->
                     Err "I received an invalid path, I reached an inline leaf array but I still have more path left."
 
                 Leaf ->
@@ -648,8 +657,8 @@ findTextBlockNodeAncestor : NodePath -> EditorBlockNode -> Maybe ( NodePath, Edi
 findTextBlockNodeAncestor =
     findAncestor
         (\n ->
-            case n.childNodes of
-                InlineLeafArray _ ->
+            case childNodes n of
+                InlineChildren _ ->
                     True
 
                 _ ->
@@ -667,9 +676,9 @@ findAncestor pred path node =
             Nothing
 
         x :: xs ->
-            case node.childNodes of
-                BlockArray a ->
-                    case Array.get x a of
+            case childNodes node of
+                BlockChildren a ->
+                    case Array.get x (arrayFromBlockArray a) of
                         Nothing ->
                             Nothing
 
@@ -702,17 +711,17 @@ nodeAt path node =
             Just <| BlockNodeWrapper node
 
         x :: xs ->
-            case node.childNodes of
-                BlockArray arr ->
-                    case Array.get x arr of
+            case childNodes node of
+                BlockChildren arr ->
+                    case Array.get x (arrayFromBlockArray arr) of
                         Nothing ->
                             Nothing
 
                         Just childNode ->
                             nodeAt xs childNode
 
-                InlineLeafArray a ->
-                    case Array.get x a.array of
+                InlineChildren a ->
+                    case Array.get x (arrayFromInlineArray a) of
                         Nothing ->
                             Nothing
 
@@ -744,12 +753,12 @@ removeInRange start end node =
 
         endIndex =
             Maybe.withDefault
-                (case node.childNodes of
-                    BlockArray a ->
-                        Array.length a
+                (case childNodes node of
+                    BlockChildren a ->
+                        Array.length (arrayFromBlockArray a)
 
-                    InlineLeafArray a ->
-                        Array.length a.array
+                    InlineChildren a ->
+                        Array.length (arrayFromInlineArray a)
 
                     Leaf ->
                         0
@@ -763,22 +772,26 @@ removeInRange start end node =
         node
 
     else if startIndex == endIndex then
-        case node.childNodes of
-            BlockArray a ->
+        case childNodes node of
+            BlockChildren a ->
+                let
+                    array =
+                        arrayFromBlockArray a
+                in
                 if List.isEmpty startRest && List.isEmpty endRest then
-                    { node | childNodes = BlockArray <| Array.Extra.removeAt startIndex a }
+                    node |> withChildNodes (blockArray <| Array.Extra.removeAt startIndex array)
 
                 else
-                    case Array.get startIndex a of
+                    case Array.get startIndex array of
                         Nothing ->
                             node
 
                         Just b ->
-                            { node | childNodes = BlockArray <| Array.set startIndex (removeInRange startRest endRest b) a }
+                            node |> withChildNodes (blockArray <| Array.set startIndex (removeInRange startRest endRest b) array)
 
-            InlineLeafArray a ->
+            InlineChildren a ->
                 if List.isEmpty startRest && List.isEmpty endRest then
-                    { node | childNodes = inlineLeafArray <| Array.Extra.removeAt startIndex a.array }
+                    node |> withChildNodes (inlineLeafArray <| Array.Extra.removeAt startIndex (arrayFromInlineArray a))
 
                 else
                     node
@@ -787,21 +800,24 @@ removeInRange start end node =
                 node
 
     else
-        case node.childNodes of
-            BlockArray a ->
+        case childNodes node of
+            BlockChildren a ->
                 let
+                    arr =
+                        arrayFromBlockArray a
+
                     left =
-                        Array.Extra.sliceUntil startIndex a
+                        Array.Extra.sliceUntil startIndex arr
 
                     right =
-                        Array.Extra.sliceFrom (endIndex + 1) a
+                        Array.Extra.sliceFrom (endIndex + 1) arr
 
                     leftRest =
                         if List.isEmpty startRest then
                             Array.empty
 
                         else
-                            case Array.get startIndex a of
+                            case Array.get startIndex arr of
                                 Nothing ->
                                     Array.empty
 
@@ -813,17 +829,20 @@ removeInRange start end node =
                             Array.empty
 
                         else
-                            case Array.get endIndex a of
+                            case Array.get endIndex arr of
                                 Nothing ->
                                     Array.empty
 
                                 Just b ->
                                     Array.fromList [ removeInRange startRest endRest b ]
                 in
-                { node | childNodes = BlockArray <| List.foldr Array.append Array.empty [ left, leftRest, rightRest, right ] }
+                node |> withChildNodes (blockArray <| List.foldr Array.append Array.empty [ left, leftRest, rightRest, right ])
 
-            InlineLeafArray a ->
+            InlineChildren a ->
                 let
+                    arr =
+                        arrayFromInlineArray a
+
                     left =
                         Array.Extra.sliceUntil
                             (if List.isEmpty startRest then
@@ -832,7 +851,7 @@ removeInRange start end node =
                              else
                                 startIndex + 1
                             )
-                            a.array
+                            arr
 
                     right =
                         Array.Extra.sliceFrom
@@ -842,9 +861,9 @@ removeInRange start end node =
                              else
                                 endIndex
                             )
-                            a.array
+                            arr
                 in
-                { node | childNodes = inlineLeafArray <| Array.append left right }
+                node |> withChildNodes (inlineLeafArray <| Array.append left right)
 
             Leaf ->
                 node
@@ -857,20 +876,24 @@ removeNodeAndEmptyParents path node =
             node
 
         [ x ] ->
-            case node.childNodes of
-                BlockArray a ->
-                    { node | childNodes = BlockArray <| Array.Extra.removeAt x a }
+            case childNodes node of
+                BlockChildren a ->
+                    node |> withChildNodes (blockArray <| Array.Extra.removeAt x (arrayFromBlockArray a))
 
-                InlineLeafArray a ->
-                    { node | childNodes = inlineLeafArray <| Array.Extra.removeAt x a.array }
+                InlineChildren a ->
+                    node |> withChildNodes (inlineLeafArray <| Array.Extra.removeAt x (arrayFromInlineArray a))
 
                 Leaf ->
                     node
 
         x :: xs ->
-            case node.childNodes of
-                BlockArray a ->
-                    case Array.get x a of
+            case childNodes node of
+                BlockChildren a ->
+                    let
+                        arr =
+                            arrayFromBlockArray a
+                    in
+                    case Array.get x arr of
                         Nothing ->
                             node
 
@@ -879,60 +902,84 @@ removeNodeAndEmptyParents path node =
                                 newNode =
                                     removeNodeAndEmptyParents xs n
                             in
-                            case newNode.childNodes of
-                                BlockArray newNodeChildren ->
-                                    if Array.isEmpty newNodeChildren then
-                                        { node | childNodes = BlockArray <| Array.Extra.removeAt x a }
+                            case childNodes newNode of
+                                BlockChildren newNodeChildren ->
+                                    let
+                                        newChildNodes =
+                                            arrayFromBlockArray newNodeChildren
+                                    in
+                                    if Array.isEmpty newChildNodes then
+                                        node |> withChildNodes (blockArray <| Array.Extra.removeAt x arr)
 
                                     else
-                                        { node | childNodes = BlockArray <| Array.set x newNode a }
+                                        node |> withChildNodes (blockArray <| Array.set x newNode arr)
 
-                                InlineLeafArray newNodeChildren ->
-                                    if Array.isEmpty newNodeChildren.array then
-                                        { node | childNodes = BlockArray <| Array.Extra.removeAt x a }
+                                InlineChildren newNodeChildren ->
+                                    let
+                                        newChildNodes =
+                                            arrayFromInlineArray newNodeChildren
+                                    in
+                                    if Array.isEmpty newChildNodes then
+                                        node |> withChildNodes (blockArray <| Array.Extra.removeAt x arr)
 
                                     else
-                                        { node | childNodes = BlockArray <| Array.set x newNode a }
+                                        node |> withChildNodes (blockArray <| Array.set x newNode arr)
 
                                 _ ->
-                                    { node | childNodes = BlockArray <| Array.set x newNode a }
+                                    node |> withChildNodes (blockArray <| Array.set x newNode arr)
 
-                InlineLeafArray _ ->
+                InlineChildren _ ->
                     node
 
                 Leaf ->
                     node
 
 
-splitTextLeaf : Int -> TextLeafContents -> ( TextLeafContents, TextLeafContents )
+splitTextLeaf : Int -> TextLeafParameters -> ( TextLeafParameters, TextLeafParameters )
 splitTextLeaf offset leaf =
-    ( { leaf | text = String.left offset leaf.text }, { leaf | text = String.dropLeft offset leaf.text } )
+    let
+        leafText =
+            text leaf
+    in
+    ( leaf |> withText (String.left offset leafText), leaf |> withText (String.dropLeft offset leafText) )
 
 
 splitBlockAtPathAndOffset : NodePath -> Int -> EditorBlockNode -> Maybe ( EditorBlockNode, EditorBlockNode )
 splitBlockAtPathAndOffset path offset node =
     case path of
         [] ->
-            case node.childNodes of
-                BlockArray a ->
+            case childNodes node of
+                BlockChildren a ->
+                    let
+                        arr =
+                            arrayFromBlockArray a
+                    in
                     Just
-                        ( { node | childNodes = BlockArray (Array.Extra.sliceUntil offset a) }
-                        , { node | childNodes = BlockArray (Array.Extra.sliceFrom offset a) }
+                        ( node |> withChildNodes (blockArray (Array.Extra.sliceUntil offset arr))
+                        , node |> withChildNodes (blockArray (Array.Extra.sliceFrom offset arr))
                         )
 
-                InlineLeafArray a ->
+                InlineChildren a ->
+                    let
+                        arr =
+                            arrayFromInlineArray a
+                    in
                     Just
-                        ( { node | childNodes = inlineLeafArray (Array.Extra.sliceUntil offset a.array) }
-                        , { node | childNodes = inlineLeafArray (Array.Extra.sliceFrom offset a.array) }
+                        ( node |> withChildNodes (inlineLeafArray (Array.Extra.sliceUntil offset arr))
+                        , node |> withChildNodes (inlineLeafArray (Array.Extra.sliceFrom offset arr))
                         )
 
                 Leaf ->
                     Just ( node, node )
 
         x :: xs ->
-            case node.childNodes of
-                BlockArray a ->
-                    case Array.get x a of
+            case childNodes node of
+                BlockChildren a ->
+                    let
+                        arr =
+                            arrayFromBlockArray a
+                    in
+                    case Array.get x arr of
                         Nothing ->
                             Nothing
 
@@ -943,12 +990,16 @@ splitBlockAtPathAndOffset path offset node =
 
                                 Just ( before, after ) ->
                                     Just
-                                        ( { node | childNodes = BlockArray (Array.append (Array.Extra.sliceUntil x a) (Array.fromList [ before ])) }
-                                        , { node | childNodes = BlockArray (Array.append (Array.fromList [ after ]) (Array.Extra.sliceFrom (x + 1) a)) }
+                                        ( node |> withChildNodes (blockArray (Array.append (Array.Extra.sliceUntil x arr) (Array.fromList [ before ])))
+                                        , node |> withChildNodes (blockArray (Array.append (Array.fromList [ after ]) (Array.Extra.sliceFrom (x + 1) arr)))
                                         )
 
-                InlineLeafArray a ->
-                    case Array.get x a.array of
+                InlineChildren a ->
+                    let
+                        arr =
+                            arrayFromInlineArray a
+                    in
+                    case Array.get x arr of
                         Nothing ->
                             Nothing
 
@@ -960,14 +1011,14 @@ splitBlockAtPathAndOffset path offset node =
                                             splitTextLeaf offset tl
                                     in
                                     Just
-                                        ( { node | childNodes = inlineLeafArray (Array.set x (TextLeaf before) (Array.Extra.sliceUntil (x + 1) a.array)) }
-                                        , { node | childNodes = inlineLeafArray (Array.set 0 (TextLeaf after) (Array.Extra.sliceFrom x a.array)) }
+                                        ( node |> withChildNodes (inlineLeafArray (Array.set x (TextLeaf before) (Array.Extra.sliceUntil (x + 1) arr)))
+                                        , node |> withChildNodes (inlineLeafArray (Array.set 0 (TextLeaf after) (Array.Extra.sliceFrom x arr)))
                                         )
 
                                 InlineLeaf _ ->
                                     Just
-                                        ( { node | childNodes = inlineLeafArray (Array.Extra.sliceUntil x a.array) }
-                                        , { node | childNodes = inlineLeafArray (Array.Extra.sliceFrom x a.array) }
+                                        ( node |> withChildNodes (inlineLeafArray (Array.Extra.sliceUntil x arr))
+                                        , node |> withChildNodes (inlineLeafArray (Array.Extra.sliceFrom x arr))
                                         )
 
                 Leaf ->
@@ -1020,19 +1071,19 @@ findClosestBlockPath path node =
 
 joinBlocks : EditorBlockNode -> EditorBlockNode -> Maybe EditorBlockNode
 joinBlocks b1 b2 =
-    case b1.childNodes of
-        BlockArray a1 ->
-            case b2.childNodes of
-                BlockArray a2 ->
-                    Just { b1 | childNodes = BlockArray (Array.append a1 a2) }
+    case childNodes b1 of
+        BlockChildren a1 ->
+            case childNodes b2 of
+                BlockChildren a2 ->
+                    Just <| (b1 |> withChildNodes (blockArray (Array.append (arrayFromBlockArray a1) (arrayFromBlockArray a2))))
 
                 _ ->
                     Nothing
 
-        InlineLeafArray a1 ->
-            case b2.childNodes of
-                InlineLeafArray a2 ->
-                    Just { b1 | childNodes = inlineLeafArray (Array.append a1.array a2.array) }
+        InlineChildren a1 ->
+            case childNodes b2 of
+                InlineChildren a2 ->
+                    Just <| (b1 |> withChildNodes (inlineLeafArray (Array.append (arrayFromInlineArray a1) (arrayFromInlineArray a2))))
 
                 _ ->
                     Nothing
@@ -1041,8 +1092,8 @@ joinBlocks b1 b2 =
             Nothing
 
 
-insert : NodePath -> EditorFragment -> EditorBlockNode -> Result String EditorBlockNode
-insert path fragment root =
+insertAfter : NodePath -> EditorFragment -> EditorBlockNode -> Result String EditorBlockNode
+insertAfter path fragment root =
     case nodeAt path root of
         Nothing ->
             Err "There is no node at this path, so I cannot insert after it"
@@ -1058,7 +1109,7 @@ insert path fragment root =
                             in
                             replaceWithFragment path newFragment root
 
-                        BlockNodeFragment a ->
+                        BlockNodeFragment _ ->
                             Err "I cannot insert a block node fragment into an inline leaf fragment"
 
                 BlockNodeWrapper bn ->
@@ -1070,5 +1121,5 @@ insert path fragment root =
                             in
                             replaceWithFragment path newFragment root
 
-                        InlineLeafFragment a ->
+                        InlineLeafFragment _ ->
                             Err "I cannot insert an inline leaf fragment fragment into an block node fragment"

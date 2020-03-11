@@ -1,22 +1,10 @@
 module SimpleSpec exposing (..)
 
 import Array exposing (Array)
-import RichTextEditor.Model
-    exposing
-        ( ContentType(..)
-        , EditorFragment(..)
-        , EditorInlineLeaf(..)
-        , ElementParameters
-        , HtmlNode(..)
-        , Mark
-        , Spec
-        , blockNodeContentType
-        , elementParameters
-        , inlineLeafContentType
-        , markDefinition
-        , nodeDefinition
-        , textBlockContentType
-        )
+import RichTextEditor.Model.HtmlNode exposing (HtmlNode(..))
+import RichTextEditor.Model.Mark exposing (Mark)
+import RichTextEditor.Model.Node exposing (ElementParameters, elementParameters)
+import RichTextEditor.Model.Spec exposing (Spec, blockNodeContentType, emptySpec, inlineLeafContentType, markDefinition, nodeDefinition, textBlockContentType, withMarkDefinitions, withNodeDefinitions)
 import RichTextEditor.Spec exposing (defaultElementToHtml, defaultHtmlToElement, defaultHtmlToMark)
 import Set
 
@@ -100,34 +88,34 @@ italicToHtmlNode _ children =
 
 simpleSpec : Spec
 simpleSpec =
-    { nodes =
-        [ nodeDefinition
-            "code_block"
-            "block"
-            (blockNodeContentType [])
-            codeBlockToHtmlNode
-            htmlNodeToCodeBlock
-        , nodeDefinition
-            "crazy_block"
-            "block"
-            (blockNodeContentType [])
-            crazyBlockToHtmlNode
-            htmlNodeToCrazyBlock
-        , nodeDefinition
-            "paragraph"
-            "block"
-            (textBlockContentType [])
-            (defaultElementToHtml "p")
-            (defaultHtmlToElement "p" "paragraph")
-        , nodeDefinition
-            "image"
-            "inline"
-            inlineLeafContentType
-            (defaultElementToHtml "img")
-            (defaultHtmlToElement "img" "image")
-        ]
-    , marks =
-        [ markDefinition "bold" boldToHtmlNode (defaultHtmlToMark "b" "bold")
-        , markDefinition "italic" italicToHtmlNode (defaultHtmlToMark "i" "italic")
-        ]
-    }
+    emptySpec
+        |> withNodeDefinitions
+            [ nodeDefinition
+                "code_block"
+                "block"
+                (blockNodeContentType [])
+                codeBlockToHtmlNode
+                htmlNodeToCodeBlock
+            , nodeDefinition
+                "crazy_block"
+                "block"
+                (blockNodeContentType [])
+                crazyBlockToHtmlNode
+                htmlNodeToCrazyBlock
+            , nodeDefinition
+                "paragraph"
+                "block"
+                (textBlockContentType [])
+                (defaultElementToHtml "p")
+                (defaultHtmlToElement "p" "paragraph")
+            , nodeDefinition
+                "image"
+                "inline"
+                inlineLeafContentType
+                (defaultElementToHtml "img")
+                (defaultHtmlToElement "img" "image")
+            ]
+        |> withMarkDefinitions
+            [ markDefinition "bold" boldToHtmlNode (defaultHtmlToMark "b" "bold")
+            , markDefinition "italic" italicToHtmlNode (defaultHtmlToMark "i" "italic")
+            ]

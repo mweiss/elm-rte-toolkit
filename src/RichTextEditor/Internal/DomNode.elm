@@ -1,4 +1,4 @@
-module RichTextEditor.DomNode exposing
+module RichTextEditor.Internal.DomNode exposing
     ( decodeDomNode
     , domElementNodeType
     , domTextNodeType
@@ -11,7 +11,7 @@ import Array.Extra
 import Json.Decode as D
 import Json.Decode.Extra as DE
 import RichTextEditor.Model.Constants exposing (zeroWidthSpace)
-import RichTextEditor.Model.DomNode exposing (DomNode, DomNodeContents)
+import RichTextEditor.Model.DomNode exposing (DomNode(..), DomNodeContents)
 import RichTextEditor.Model.Event exposing (TextChange)
 import RichTextEditor.Model.HtmlNode exposing (HtmlNode(..))
 import RichTextEditor.Model.Node exposing (NodePath)

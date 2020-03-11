@@ -5,37 +5,14 @@ import Dict exposing (Dict)
 import Html.Parser exposing (Node(..))
 import List.Extra
 import Result exposing (Result)
-import RichTextEditor.Marks exposing (ToggleAction(..), toggle)
-import RichTextEditor.Model
-    exposing
-        ( ChildNodes(..)
-        , ContentType(..)
-        , EditorAttribute(..)
-        , EditorBlockNode
-        , EditorFragment(..)
-        , EditorInlineLeaf(..)
-        , EditorNode(..)
-        , EditorState
-        , ElementParameters
-        , HtmlNode(..)
-        , Mark
-        , MarkDefinition
-        , MarkOrder
-        , NodeDefinition
-        , Spec
-        , blockLeafContentType
-        , blockNodeContentType
-        , inlineLeafArray
-        , markDefinition
-        , nodeDefinition
-        , zeroWidthSpace
-        )
+import RichTextEditor.Model.Attribute exposing (Attribute(..))
+import RichTextEditor.Model.Constants exposing (zeroWidthSpace)
+import RichTextEditor.Model.HtmlNode exposing (HtmlNode(..))
+import RichTextEditor.Model.Mark as Mark exposing (Mark, MarkOrder(..), ToggleAction(..), mark, toggle)
+import RichTextEditor.Model.Node exposing (ChildNodes(..), EditorBlockNode, EditorFragment(..), EditorInlineLeaf(..), ElementParameters, arrayFromBlockArray, arrayFromInlineArray, attributesFromElementParameters, blockArray, childNodes, editorBlockNode, elementParameters, elementParametersFromBlockNode, elementParametersFromInlineLeafParameters, emptyTextLeafParameters, inlineLeafArray, inlineLeafParameters, nameFromElementParameters, textLeafParametersWithMarks, withText)
+import RichTextEditor.Model.Spec exposing (ContentType(..), MarkDefinition, NodeDefinition, Spec, blockLeafContentType, blockNodeContentType, contentTypeFromNodeDefinition, fromHtmlNodeFromMarkDefinition, fromHtmlNodeFromNodeDefinition, groupFromNodeDefinition, markDefinition, markDefinitions, nameFromMarkDefinition, nameFromNodeDefinition, nodeDefinition, nodeDefinitions)
+import RichTextEditor.Model.State as State exposing (State)
 import Set exposing (Set)
-
-
-emptySpec : Spec
-emptySpec =
-    { nodes = [], marks = [] }
 
 
 childNodesPlaceholder =
@@ -55,7 +32,7 @@ defaultElementToHtml tagName elementParameters children =
                     _ ->
                         Nothing
             )
-            elementParameters.attributes
+            (attributesFromElementParameters elementParameters)
         )
         children
 
@@ -65,7 +42,7 @@ defaultHtmlToElement htmlTag elementName node =
     case node of
         ElementNode name _ children ->
             if name == htmlTag then
-                Just ( { name = elementName, attributes = [], annotations = Set.empty }, children )
+                Just ( elementParameters elementName [] Set.empty, children )
 
             else
                 Nothing
@@ -79,7 +56,7 @@ defaultHtmlToMark htmlTag markName node =
     case node of
         ElementNode name _ children ->
             if name == htmlTag then
-                Just ( { name = markName, attributes = [] }, children )
+                Just ( mark markName [], children )
 
             else
                 Nothing
@@ -90,7 +67,7 @@ defaultHtmlToMark htmlTag markName node =
 
 defaultMarkToHtml : Mark -> Array HtmlNode -> HtmlNode
 defaultMarkToHtml mark children =
-    ElementNode mark.name
+    ElementNode (Mark.name mark)
         (List.filterMap
             (\attr ->
                 case attr of
@@ -100,14 +77,14 @@ defaultMarkToHtml mark children =
                     _ ->
                         Nothing
             )
-            mark.attributes
+            (Mark.attributes mark)
         )
         children
 
 
 findNodeDefinitionFromSpec : String -> Spec -> Maybe NodeDefinition
 findNodeDefinitionFromSpec name spec =
-    List.Extra.find (\n -> n.name == name) spec.nodes
+    List.Extra.find (\n -> nameFromNodeDefinition n == name) (nodeDefinitions spec)
 
 
 findNodeDefinitionFromSpecWithDefault : String -> Spec -> NodeDefinition
@@ -125,7 +102,7 @@ findNodeDefinitionFromSpecWithDefault name spec =
 
 findMarkDefinitionFromSpec : String -> Spec -> Maybe MarkDefinition
 findMarkDefinitionFromSpec name spec =
-    List.Extra.find (\n -> n.name == name) spec.marks
+    List.Extra.find (\n -> nameFromMarkDefinition n == name) (markDefinitions spec)
 
 
 findMarkDefinitionFromSpecWithDefault : String -> Spec -> MarkDefinition
@@ -139,11 +116,11 @@ findMarkDefinitionFromSpecWithDefault name spec =
         (findMarkDefinitionFromSpec name spec)
 
 
-validate : Spec -> EditorState -> Result String EditorState
+validate : Spec -> State -> Result String State
 validate spec editorState =
     let
         root =
-            editorState.root
+            State.root editorState
     in
     case validateEditorBlockNode spec Nothing root of
         [] ->
@@ -176,12 +153,16 @@ validateInlineLeaf spec allowedGroups leaf =
             []
 
         InlineLeaf il ->
-            case findNodeDefinitionFromSpec il.parameters.name spec of
+            let
+                name =
+                    nameFromElementParameters (elementParametersFromInlineLeafParameters il)
+            in
+            case findNodeDefinitionFromSpec name spec of
                 Nothing ->
-                    [ "Cannot find node with definition '" ++ il.parameters.name ++ "'" ]
+                    [ "Cannot find node with definition '" ++ name ++ "'" ]
 
                 Just definition ->
-                    validateAllowedGroups allowedGroups definition.group
+                    validateAllowedGroups allowedGroups (groupFromNodeDefinition definition)
 
 
 validateAllowedGroups : Maybe (Set String) -> String -> List String
@@ -205,47 +186,58 @@ validateAllowedGroups allowedGroups group =
 
 validateEditorBlockNode : Spec -> Maybe (Set String) -> EditorBlockNode -> List String
 validateEditorBlockNode spec allowedGroups node =
-    case findNodeDefinitionFromSpec node.parameters.name spec of
+    let
+        parameters =
+            elementParametersFromBlockNode node
+
+        name =
+            nameFromElementParameters parameters
+    in
+    case findNodeDefinitionFromSpec name spec of
         Nothing ->
-            [ "Cannot find node with definition '" ++ node.parameters.name ++ "'" ]
+            [ "Cannot find node with definition '" ++ name ++ "'" ]
 
         Just definition ->
             let
                 allowedGroupsErrors =
-                    validateAllowedGroups allowedGroups definition.group
+                    validateAllowedGroups allowedGroups (groupFromNodeDefinition definition)
             in
             if not <| List.isEmpty allowedGroupsErrors then
                 allowedGroupsErrors
 
             else
-                case node.childNodes of
-                    BlockArray ba ->
-                        case definition.contentType of
+                let
+                    contentType =
+                        contentTypeFromNodeDefinition definition
+                in
+                case childNodes node of
+                    BlockChildren ba ->
+                        case contentType of
                             BlockNodeType groups ->
                                 List.concatMap
                                     (validateEditorBlockNode spec groups)
-                                    (Array.toList ba)
+                                    (Array.toList (arrayFromBlockArray ba))
 
                             _ ->
                                 [ "I was expecting textblock content type, but instead I got "
-                                    ++ toStringContentType definition.contentType
+                                    ++ toStringContentType contentType
                                 ]
 
-                    InlineLeafArray la ->
-                        case definition.contentType of
+                    InlineChildren la ->
+                        case contentType of
                             TextBlockNodeType groups ->
-                                List.concatMap (validateInlineLeaf spec groups) (Array.toList la.array)
+                                List.concatMap (validateInlineLeaf spec groups) (Array.toList (arrayFromInlineArray la))
 
                             _ ->
-                                [ "I was expecting textblock content type, but instead I got " ++ toStringContentType definition.contentType ]
+                                [ "I was expecting textblock content type, but instead I got " ++ toStringContentType contentType ]
 
                     Leaf ->
-                        if definition.contentType == blockLeafContentType then
+                        if contentType == blockLeafContentType then
                             []
 
                         else
                             [ "I was expecting leaf blockleaf content type, but instead I got "
-                                ++ toStringContentType definition.contentType
+                                ++ toStringContentType contentType
                             ]
 
 
@@ -289,25 +281,24 @@ htmlNodeToEditorFragment spec marks node =
             Ok <|
                 InlineLeafFragment <|
                     Array.fromList
-                        [ TextLeaf
-                            { text =
-                                String.replace zeroWidthSpace "" s
-                            , marks = marks
-                            , annotations = Set.empty
-                            }
+                        [ TextLeaf <|
+                            (emptyTextLeafParameters
+                                |> withText (String.replace zeroWidthSpace "" s)
+                                |> textLeafParametersWithMarks marks
+                            )
                         ]
 
         _ ->
             let
-                nodeDefinitions =
-                    spec.nodes
+                definitions =
+                    nodeDefinitions spec
 
                 maybeElementAndChildren =
                     List.foldl
                         (\definition result ->
                             case result of
                                 Nothing ->
-                                    case definition.fromHtmlNode node of
+                                    case fromHtmlNodeFromNodeDefinition definition node of
                                         Nothing ->
                                             Nothing
 
@@ -318,24 +309,33 @@ htmlNodeToEditorFragment spec marks node =
                                     result
                         )
                         Nothing
-                        nodeDefinitions
+                        definitions
             in
             case maybeElementAndChildren of
                 Just ( definition, ( element, children ) ) ->
-                    if definition.contentType == InlineLeafNodeType then
-                        Ok <| InlineLeafFragment <| Array.fromList [ InlineLeaf { marks = marks, parameters = element } ]
+                    let
+                        contentType =
+                            contentTypeFromNodeDefinition definition
+                    in
+                    if contentType == InlineLeafNodeType then
+                        Ok <|
+                            InlineLeafFragment <|
+                                Array.fromList
+                                    [ InlineLeaf <|
+                                        inlineLeafParameters element marks
+                                    ]
 
                     else
                         let
                             childArr =
                                 Array.map (htmlNodeToEditorFragment spec []) children
                         in
-                        case arrayToChildNodes definition.contentType childArr of
+                        case arrayToChildNodes contentType childArr of
                             Err s ->
                                 Err s
 
                             Ok childNodes ->
-                                Ok <| BlockNodeFragment <| Array.fromList [ { parameters = element, childNodes = childNodes } ]
+                                Ok <| BlockNodeFragment <| Array.fromList [ editorBlockNode element childNodes ]
 
                 Nothing ->
                     case htmlNodeToMark spec node of
@@ -359,7 +359,7 @@ htmlNodeToMark spec node =
         (\definition result ->
             case result of
                 Nothing ->
-                    case definition.fromHtmlNode node of
+                    case fromHtmlNodeFromMarkDefinition definition node of
                         Nothing ->
                             Nothing
 
@@ -370,7 +370,7 @@ htmlNodeToMark spec node =
                     result
         )
         Nothing
-        spec.marks
+        (markDefinitions spec)
 
 
 reduceEditorFragmentArray : Array EditorFragment -> Array EditorFragment
@@ -431,7 +431,7 @@ arrayToChildNodes contentType results =
                     BlockNodeFragment bnf ->
                         case contentType of
                             BlockNodeType _ ->
-                                Ok <| BlockArray bnf
+                                Ok <| blockArray bnf
 
                             _ ->
                                 Err "I received a block node fragment, but the node I parsed doesn't accept this child type"
@@ -509,4 +509,4 @@ nodeListToHtmlNodeArray nodeList =
 
 markOrderFromSpec : Spec -> MarkOrder
 markOrderFromSpec spec =
-    Dict.fromList (List.indexedMap (\i m -> ( m.name, i )) spec.marks)
+    MarkOrder <| Dict.fromList (List.indexedMap (\i m -> ( nameFromMarkDefinition m, i )) (markDefinitions spec))

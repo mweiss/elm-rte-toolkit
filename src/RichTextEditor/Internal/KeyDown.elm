@@ -1,4 +1,4 @@
-module RichTextEditor.KeyDown exposing (..)
+module RichTextEditor.Internal.KeyDown exposing (..)
 
 import Json.Decode as D
 import RichTextEditor.Internal.Editor exposing (applyNamedCommandList)

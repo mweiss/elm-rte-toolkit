@@ -1,14 +1,9 @@
 module RichTextEditor.Selection exposing
     ( annotateSelection
-    , caretSelection
     , clearSelectionAnnotations
     , domToEditor
     , editorToDom
-    , isCollapsed
-    , normalizeSelection
-    , rangeSelection
     , selectionFromAnnotations
-    , singleNodeRangeSelection
     )
 
 import RichTextEditor.Annotation
@@ -17,21 +12,10 @@ import RichTextEditor.Annotation
         , clearAnnotations
         , findPathsWithAnnotation
         )
-import RichTextEditor.Model
-    exposing
-        ( Annotation
-        , ChildNodes(..)
-        , EditorBlockNode
-        , EditorInlineLeaf(..)
-        , EditorNode(..)
-        , ElementParameters
-        , HtmlNode(..)
-        , Mark
-        , NodePath
-        , Selection
-        , Spec
-        , selectionAnnotation
-        )
+import RichTextEditor.Model.Annotation exposing (selectionAnnotation)
+import RichTextEditor.Model.Node exposing (EditorBlockNode, NodePath)
+import RichTextEditor.Model.Selection exposing (Selection, anchorNode, anchorOffset, focusNode, focusOffset, rangeSelection)
+import RichTextEditor.Model.Spec exposing (Spec)
 import RichTextEditor.NodePath as Path
 
 
@@ -47,22 +31,22 @@ editorToDom =
 
 transformSelection : (Spec -> EditorBlockNode -> NodePath -> Maybe NodePath) -> Spec -> EditorBlockNode -> Selection -> Maybe Selection
 transformSelection transformation spec node selection =
-    case transformation spec node selection.anchorNode of
+    case transformation spec node (anchorNode selection) of
         Nothing ->
             Nothing
 
-        Just anchorNode ->
-            case transformation spec node selection.focusNode of
+        Just an ->
+            case transformation spec node (focusNode selection) of
                 Nothing ->
                     Nothing
 
-                Just focusNode ->
-                    Just <| rangeSelection anchorNode selection.anchorOffset focusNode selection.focusOffset
+                Just fn ->
+                    Just <| rangeSelection an (anchorOffset selection) fn (focusOffset selection)
 
 
 annotateSelection : Selection -> EditorBlockNode -> EditorBlockNode
 annotateSelection selection node =
-    addSelectionAnnotationAtPath selection.focusNode <| addSelectionAnnotationAtPath selection.anchorNode node
+    addSelectionAnnotationAtPath (focusNode selection) <| addSelectionAnnotationAtPath (anchorNode selection) node
 
 
 addSelectionAnnotationAtPath : NodePath -> EditorBlockNode -> EditorBlockNode

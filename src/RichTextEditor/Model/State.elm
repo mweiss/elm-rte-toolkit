@@ -1,4 +1,4 @@
-module RichTextEditor.Model.State exposing (State, root, selection, withRoot, withSelection)
+module RichTextEditor.Model.State exposing (State, root, selection, state, withRoot, withSelection)
 
 {-| An EditorState is a tuple of an editor fragment and a selection. EditorState allows you to keep
 track of and manipulate the contents of the editor.
@@ -18,29 +18,34 @@ type alias Contents =
     }
 
 
+state : EditorBlockNode -> Maybe Selection -> State
+state r s =
+    State { root = r, selection = s }
+
+
 selection : State -> Maybe Selection
-selection state =
-    case state of
+selection st =
+    case st of
         State s ->
             s.selection
 
 
 root : State -> EditorBlockNode
-root state =
-    case state of
+root st =
+    case st of
         State s ->
             s.root
 
 
 withSelection : Maybe Selection -> State -> State
-withSelection sel state =
-    case state of
+withSelection sel st =
+    case st of
         State s ->
             State { s | selection = sel }
 
 
 withRoot : EditorBlockNode -> State -> State
-withRoot node state =
-    case state of
+withRoot node st =
+    case st of
         State s ->
             State { s | root = node }

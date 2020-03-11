@@ -2,20 +2,12 @@ module RichTextEditor.EditorState exposing (..)
 
 import Array exposing (Array)
 import List.Extra
-import RichTextEditor.Model
-    exposing
-        ( ChildNodes(..)
-        , EditorBlockNode
-        , EditorInlineLeaf(..)
-        , EditorNode(..)
-        , EditorState
-        , Mark
-        , NodePath
-        , inlineLeafArray
-        , selectionAnnotation
-        )
+import RichTextEditor.Model.Annotation exposing (selectionAnnotation)
+import RichTextEditor.Model.Node exposing (ChildNodes(..), EditorBlockNode, EditorInlineLeaf(..), EditorNode(..), InlineLeafArray, NodePath, annotationsFromTextLeafParameters, arrayFromInlineArray, childNodes, inlineLeafArray, marksFromTextLeafParameters, text, withChildNodes, withText)
+import RichTextEditor.Model.Selection exposing (anchorNode, anchorOffset, focusNode, focusOffset, rangeSelection)
+import RichTextEditor.Model.State as State exposing (State, withRoot, withSelection)
 import RichTextEditor.Node exposing (findTextBlockNodeAncestor, map)
-import RichTextEditor.Selection exposing (annotateSelection, clearSelectionAnnotations, rangeSelection)
+import RichTextEditor.Selection exposing (annotateSelection, clearSelectionAnnotations)
 import Set
 
 
@@ -33,10 +25,10 @@ removeExtraEmptyTextLeaves inlineLeaves =
                 TextLeaf xL ->
                     case y of
                         TextLeaf yL ->
-                            if String.isEmpty xL.text && (not <| Set.member selectionAnnotation xL.annotations) then
+                            if String.isEmpty (text xL) && (not <| Set.member selectionAnnotation (annotationsFromTextLeafParameters xL)) then
                                 removeExtraEmptyTextLeaves (y :: xs)
 
-                            else if String.isEmpty yL.text && (not <| Set.member selectionAnnotation yL.annotations) then
+                            else if String.isEmpty (text yL) && (not <| Set.member selectionAnnotation (annotationsFromTextLeafParameters yL)) then
                                 removeExtraEmptyTextLeaves (x :: xs)
 
                             else
@@ -63,8 +55,8 @@ mergeSimilarInlineLeaves inlineLeaves =
                 TextLeaf xL ->
                     case y of
                         TextLeaf yL ->
-                            if xL.marks == yL.marks then
-                                mergeSimilarInlineLeaves (TextLeaf { xL | text = xL.text ++ yL.text } :: xs)
+                            if marksFromTextLeafParameters xL == marksFromTextLeafParameters yL then
+                                mergeSimilarInlineLeaves (TextLeaf (xL |> withText (text xL ++ text yL)) :: xs)
 
                             else
                                 x :: mergeSimilarInlineLeaves (y :: xs)
@@ -83,15 +75,16 @@ reduceNode node =
             (\x ->
                 case x of
                     BlockNodeWrapper bn ->
-                        case bn.childNodes of
-                            InlineLeafArray a ->
-                                BlockNodeWrapper
-                                    { bn
-                                        | childNodes =
-                                            inlineLeafArray <|
+                        case childNodes bn of
+                            InlineChildren a ->
+                                BlockNodeWrapper <|
+                                    (bn
+                                        |> withChildNodes
+                                            (inlineLeafArray <|
                                                 Array.fromList
-                                                    (mergeSimilarInlineLeaves (removeExtraEmptyTextLeaves (Array.toList a.array)))
-                                    }
+                                                    (mergeSimilarInlineLeaves (removeExtraEmptyTextLeaves (Array.toList (arrayFromInlineArray a))))
+                                            )
+                                    )
 
                             _ ->
                                 x
@@ -108,33 +101,35 @@ reduceNode node =
             node
 
 
-reduceEditorState : EditorState -> EditorState
+reduceEditorState : State -> State
 reduceEditorState editorState =
     let
         markedRoot =
             case State.selection editorState of
                 Nothing ->
-                    editorState.root
+                    State.root editorState
 
                 Just selection ->
-                    annotateSelection selection editorState.root
+                    annotateSelection selection (State.root editorState)
 
         reducedRoot =
             clearSelectionAnnotations <| reduceNode markedRoot
     in
     case State.selection editorState of
         Nothing ->
-            { editorState | root = reducedRoot }
+            editorState |> withRoot reducedRoot
 
         Just selection ->
             let
                 ( aP, aO ) =
-                    translatePath editorState.root reducedRoot selection.anchorNode selection.anchorOffset
+                    translatePath (State.root editorState) reducedRoot (anchorNode selection) (anchorOffset selection)
 
                 ( fP, fO ) =
-                    translatePath editorState.root reducedRoot selection.focusNode selection.focusOffset
+                    translatePath (State.root editorState) reducedRoot (focusNode selection) (focusOffset selection)
             in
-            { editorState | root = reducedRoot, selection = Just <| rangeSelection aP aO fP fO }
+            editorState
+                |> withRoot reducedRoot
+                |> withSelection (Just <| rangeSelection aP aO fP fO)
 
 
 translatePath : EditorBlockNode -> EditorBlockNode -> NodePath -> Int -> ( NodePath, Int )
@@ -153,21 +148,21 @@ translatePath old new path offset =
                         ( path, offset )
 
                     else
-                        case oldN.childNodes of
-                            InlineLeafArray oldA ->
+                        case childNodes oldN of
+                            InlineChildren oldA ->
                                 case List.Extra.last path of
                                     Nothing ->
                                         ( path, offset )
 
                                     Just lastIndex ->
-                                        case newN.childNodes of
-                                            InlineLeafArray newA ->
+                                        case childNodes newN of
+                                            InlineChildren newA ->
                                                 let
                                                     pOff =
-                                                        parentOffset oldA.array lastIndex offset
+                                                        parentOffset (arrayFromInlineArray oldA) lastIndex offset
 
                                                     ( cI, cO ) =
-                                                        childOffset newA.array pOff
+                                                        childOffset (arrayFromInlineArray newA) pOff
 
                                                     newPath =
                                                         List.take (List.length path - 1) path ++ [ cI ]
@@ -191,7 +186,7 @@ parentOffset leaves index offset =
                         TextLeaf tl ->
                             ( i + 1
                             , if i < index then
-                                accOffset + String.length tl.text
+                                accOffset + String.length (text tl)
 
                               else
                                 accOffset
@@ -227,11 +222,11 @@ childOffset leaves offset =
                     else
                         case l of
                             TextLeaf tl ->
-                                if accOffset <= String.length tl.text then
+                                if accOffset <= String.length (text tl) then
                                     ( i, accOffset, True )
 
                                 else
-                                    ( i + 1, accOffset - String.length tl.text, False )
+                                    ( i + 1, accOffset - String.length (text tl), False )
 
                             InlineLeaf _ ->
                                 ( i + 1, accOffset - 1, False )

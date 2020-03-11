@@ -2,7 +2,8 @@ module TestSpec exposing (..)
 
 import Array exposing (Array)
 import Expect
-import RichTextEditor.Model exposing (ChildNodes(..), ContentType(..), EditorFragment(..), EditorInlineLeaf(..), ElementParameters, HtmlNode(..), Mark, Spec, inlineLeafArray)
+import RichTextEditor.Model.Mark exposing (mark)
+import RichTextEditor.Model.Node exposing (EditorFragment(..), EditorInlineLeaf(..), blockArray, editorBlockNode, elementParameters, emptyTextLeafParameters, inlineLeafArray, textLeafParametersWithMarks, textLeafWithText, withText)
 import RichTextEditor.Spec exposing (htmlToElementArray)
 import Set
 import SimpleSpec exposing (simpleSpec)
@@ -17,18 +18,14 @@ expectedOneParagraph =
     Array.fromList <|
         [ BlockNodeFragment <|
             Array.fromList
-                [ { parameters =
-                        { name = "paragraph"
-                        , attributes = []
-                        , annotations = Set.empty
-                        }
-                  , childNodes =
-                        inlineLeafArray
-                            (Array.fromList
-                                [ TextLeaf { text = "test", marks = [], annotations = Set.empty }
-                                ]
-                            )
-                  }
+                [ editorBlockNode
+                    (elementParameters "paragraph" [] Set.empty)
+                    (inlineLeafArray
+                        (Array.fromList
+                            [ textLeafWithText "test"
+                            ]
+                        )
+                    )
                 ]
         ]
 
@@ -39,30 +36,22 @@ twoParagraphs =
 
 twoParagraphsBlockFragment =
     Array.fromList
-        [ { parameters =
-                { name = "paragraph"
-                , attributes = []
-                , annotations = Set.empty
-                }
-          , childNodes =
-                inlineLeafArray
-                    (Array.fromList
-                        [ TextLeaf { text = "test1", marks = [], annotations = Set.empty }
-                        ]
-                    )
-          }
-        , { parameters =
-                { name = "paragraph"
-                , attributes = []
-                , annotations = Set.empty
-                }
-          , childNodes =
-                inlineLeafArray
-                    (Array.fromList
-                        [ TextLeaf { text = "test2", marks = [], annotations = Set.empty }
-                        ]
-                    )
-          }
+        [ editorBlockNode
+            (elementParameters "paragraph" [] Set.empty)
+            (inlineLeafArray
+                (Array.fromList
+                    [ textLeafWithText "test1"
+                    ]
+                )
+            )
+        , editorBlockNode
+            (elementParameters "paragraph" [] Set.empty)
+            (inlineLeafArray
+                (Array.fromList
+                    [ textLeafWithText "test2"
+                    ]
+                )
+            )
         ]
 
 
@@ -77,7 +66,7 @@ justText =
 
 justTextInlineFragment =
     Array.fromList
-        [ TextLeaf { text = "test", marks = [], annotations = Set.empty }
+        [ textLeafWithText "test"
         ]
 
 
@@ -94,14 +83,9 @@ expectedCodeWithParagraphs =
     Array.fromList
         [ BlockNodeFragment <|
             Array.fromList
-                [ { parameters =
-                        { name = "code_block"
-                        , attributes = []
-                        , annotations = Set.empty
-                        }
-                  , childNodes =
-                        BlockArray <| twoParagraphsBlockFragment
-                  }
+                [ editorBlockNode
+                    (elementParameters "code_block" [] Set.empty)
+                    (blockArray twoParagraphsBlockFragment)
                 ]
         ]
 
@@ -111,29 +95,25 @@ oneParagraphWithBold =
 
 
 boldMark =
-    Mark "bold" []
+    mark "bold" []
 
 
 italicMark =
-    Mark "italic" []
+    mark "italic" []
 
 
 expectedOneParagraphWithBold =
     Array.fromList <|
         [ BlockNodeFragment <|
             Array.fromList
-                [ { parameters =
-                        { name = "paragraph"
-                        , attributes = []
-                        , annotations = Set.empty
-                        }
-                  , childNodes =
-                        inlineLeafArray
-                            (Array.fromList
-                                [ TextLeaf { text = "test", marks = [ boldMark ], annotations = Set.empty }
-                                ]
-                            )
-                  }
+                [ editorBlockNode
+                    (elementParameters "paragraph" [] Set.empty)
+                    (inlineLeafArray
+                        (Array.fromList
+                            [ TextLeaf (emptyTextLeafParameters |> withText "test" |> textLeafParametersWithMarks [ boldMark ])
+                            ]
+                        )
+                    )
                 ]
         ]
 
@@ -146,20 +126,16 @@ expectedOneParagraphWithBoldAndItalic =
     Array.fromList <|
         [ BlockNodeFragment <|
             Array.fromList
-                [ { parameters =
-                        { name = "paragraph"
-                        , attributes = []
-                        , annotations = Set.empty
-                        }
-                  , childNodes =
-                        inlineLeafArray
-                            (Array.fromList
-                                [ TextLeaf { text = "tes", marks = [ boldMark ], annotations = Set.empty }
-                                , TextLeaf { text = "t", marks = [ boldMark, italicMark ], annotations = Set.empty }
-                                , TextLeaf { text = "1", marks = [ italicMark ], annotations = Set.empty }
-                                ]
-                            )
-                  }
+                [ editorBlockNode
+                    (elementParameters "paragraph" [] Set.empty)
+                    (inlineLeafArray
+                        (Array.fromList
+                            [ TextLeaf (emptyTextLeafParameters |> withText "tes" |> textLeafParametersWithMarks [ boldMark ])
+                            , TextLeaf (emptyTextLeafParameters |> withText "t" |> textLeafParametersWithMarks [ boldMark, italicMark ])
+                            , TextLeaf (emptyTextLeafParameters |> withText "1" |> textLeafParametersWithMarks [ italicMark ])
+                            ]
+                        )
+                    )
                 ]
         ]
 

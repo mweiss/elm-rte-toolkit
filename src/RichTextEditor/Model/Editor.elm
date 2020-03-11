@@ -5,16 +5,28 @@ module RichTextEditor.Model.Editor exposing
     , ElementDecoratorFunction
     , InternalEditorMsg(..)
     , MarkDecoratorFunction
+    , bufferedEditorState
     , commandMap
+    , completeRerenderCount
     , decoder
+    , decorations
+    , editor
     , elementDecorators
+    , emptyDecorations
     , forceCompleteRerender
     , forceRerender
     , forceReselection
     , history
+    , isComposing
     , markDecorators
+    , renderCount
+    , selectionCount
     , spec
     , state
+    , withBufferedEditorState
+    , withCommandMap
+    , withComposing
+    , withDecorations
     , withElementDecorators
     , withHistory
     , withMarkDecorators
@@ -46,9 +58,9 @@ A typical use case might be:
 
 import Dict exposing (Dict)
 import Html
-import RichTextEditor.Model.Command exposing (CommandMap)
+import RichTextEditor.Model.Command exposing (CommandMap, emptyCommandMap)
 import RichTextEditor.Model.Event exposing (EditorChange, InputEvent, KeyboardEvent, PasteEvent)
-import RichTextEditor.Model.History exposing (History)
+import RichTextEditor.Model.History exposing (History, emptyHistory, fromContents)
 import RichTextEditor.Model.Mark exposing (Mark)
 import RichTextEditor.Model.Node exposing (ElementParameters, NodePath)
 import RichTextEditor.Model.Selection exposing (Selection)
@@ -95,72 +107,142 @@ type alias EditorContents msg =
     }
 
 
+decorations : Editor msg -> Decorations msg
+decorations e =
+    case e of
+        Editor c ->
+            c.decorations
+
+
+completeRerenderCount : Editor msg -> Int
+completeRerenderCount e =
+    case e of
+        Editor c ->
+            c.completeRerenderCount
+
+
+selectionCount : Editor msg -> Int
+selectionCount e =
+    case e of
+        Editor c ->
+            c.selectionCount
+
+
+renderCount : Editor msg -> Int
+renderCount e =
+    case e of
+        Editor c ->
+            c.renderCount
+
+
+bufferedEditorState : Editor msg -> Maybe State
+bufferedEditorState e =
+    case e of
+        Editor c ->
+            c.bufferedEditorState
+
+
+isComposing : Editor msg -> Bool
+isComposing e =
+    case e of
+        Editor c ->
+            c.isComposing
+
+
+withComposing : Bool -> Editor msg -> Editor msg
+withComposing composing e =
+    case e of
+        Editor c ->
+            Editor { c | isComposing = composing }
+
+
+withBufferedEditorState : Maybe State -> Editor msg -> Editor msg
+withBufferedEditorState s e =
+    case e of
+        Editor c ->
+            Editor { c | bufferedEditorState = s }
+
+
 state : Editor msg -> State
-state editor =
-    case editor of
+state e =
+    case e of
         Editor c ->
             c.state
 
 
 withState : State -> Editor msg -> Editor msg
-withState s editor =
-    case editor of
+withState s e =
+    case e of
         Editor c ->
             Editor { c | state = s }
 
 
 decoder : Editor msg -> DecoderFunc msg
-decoder editor =
-    case editor of
+decoder e =
+    case e of
         Editor c ->
             c.decoder
 
 
 commandMap : Editor msg -> CommandMap
-commandMap editor =
-    case editor of
+commandMap e =
+    case e of
         Editor c ->
             c.commandMap
 
 
 spec : Editor msg -> Spec
-spec editor =
-    case editor of
+spec e =
+    case e of
         Editor c ->
             c.spec
 
 
 history : Editor msg -> History
-history editor =
-    case editor of
+history e =
+    case e of
         Editor c ->
             c.history
 
 
 withHistory : History -> Editor msg -> Editor msg
-withHistory h editor =
-    case editor of
+withHistory h e =
+    case e of
         Editor c ->
             Editor { c | history = h }
 
 
+withDecorations : Decorations msg -> Editor msg -> Editor msg
+withDecorations d e =
+    case e of
+        Editor c ->
+            Editor { c | decorations = d }
+
+
+withCommandMap : CommandMap -> Editor msg -> Editor msg
+withCommandMap m e =
+    case e of
+        Editor c ->
+            Editor { c | commandMap = m }
+
+
 forceRerender : Editor msg -> Editor msg
-forceRerender editor =
-    case editor of
+forceRerender e =
+    case e of
         Editor c ->
             Editor { c | renderCount = c.renderCount + 1 }
 
 
 forceReselection : Editor msg -> Editor msg
-forceReselection editor =
-    case editor of
+forceReselection e =
+    case e of
         Editor c ->
             Editor { c | selectionCount = c.selectionCount + 1 }
 
 
 forceCompleteRerender : Editor msg -> Editor msg
-forceCompleteRerender editor =
-    case editor of
+forceCompleteRerender e =
+    case e of
         Editor c ->
             Editor { c | completeRerenderCount = c.completeRerenderCount + 1 }
 
@@ -181,29 +263,29 @@ emptyDecorations =
 
 
 markDecorators : Decorations msg -> Dict String (List (MarkDecoratorFunction msg))
-markDecorators decorations =
-    case decorations of
+markDecorators d =
+    case d of
         Decorations c ->
             c.marks
 
 
 elementDecorators : Decorations msg -> Dict String (List (ElementDecoratorFunction msg))
-elementDecorators decorations =
-    case decorations of
+elementDecorators d =
+    case d of
         Decorations c ->
             c.elements
 
 
 withMarkDecorators : Dict String (List (MarkDecoratorFunction msg)) -> Decorations msg -> Decorations msg
-withMarkDecorators marks decorations =
-    case decorations of
+withMarkDecorators marks d =
+    case d of
         Decorations c ->
             Decorations { c | marks = marks }
 
 
 withElementDecorators : Dict String (List (ElementDecoratorFunction msg)) -> Decorations msg -> Decorations msg
-withElementDecorators elements decorations =
-    case decorations of
+withElementDecorators elements d =
+    case d of
         Decorations c ->
             Decorations { c | elements = elements }
 
@@ -214,3 +296,25 @@ type alias ElementDecoratorFunction msg =
 
 type alias MarkDecoratorFunction msg =
     DecoderFunc msg -> NodePath -> Mark -> NodePath -> List (Html.Attribute msg)
+
+
+defaultDequeSize : Int
+defaultDequeSize =
+    1024
+
+
+editor : Spec -> State -> DecoderFunc msg -> Editor msg
+editor iSpec iState iDecoder =
+    Editor
+        { renderCount = 0
+        , bufferedEditorState = Nothing
+        , completeRerenderCount = 0
+        , selectionCount = 0
+        , isComposing = False
+        , decoder = iDecoder
+        , decorations = emptyDecorations
+        , commandMap = emptyCommandMap
+        , spec = iSpec
+        , state = iState
+        , history = emptyHistory defaultDequeSize
+        }

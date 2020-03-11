@@ -9,6 +9,7 @@ module RichTextEditor.Model.Node exposing
     , InlineLeafArray
     , InlineLeafParameters
     , InlineLeafTree(..)
+    , MarkNodeContents
     , NodePath
     , TextLeafParameters
     , annotationsFromBlockNode
@@ -28,12 +29,15 @@ module RichTextEditor.Model.Node exposing
     , elementParametersWithAnnotations
     , elementParametersWithAttributes
     , elementParametersWithName
+    , emptyTextLeafParameters
     , inlineLeafArray
     , inlineLeafParameters
     , inlineLeafParametersWithElementParameters
     , inlineLeafParametersWithMarks
     , marksFromInlineLeaf
+    , marksFromInlineLeafParameters
     , marksFromTextLeafParameters
+    , marksToMarkNodeList
     , nameFromElementParameters
     , reverseLookupFromInlineArray
     , text
@@ -431,3 +435,8 @@ marksToMarkNodeListRec indexedMarkLists =
                 (\( _, ( m1, _ ) ) ( _, ( m2, _ ) ) -> m1 == m2)
             <|
                 List.map (\( i, a ) -> ( i, ( List.head a, List.drop 1 a ) )) indexedMarkLists
+
+
+parent : NodePath -> NodePath
+parent path =
+    List.take (List.length path - 1) path

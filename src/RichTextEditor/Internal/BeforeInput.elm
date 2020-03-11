@@ -1,4 +1,4 @@
-module RichTextEditor.BeforeInput exposing (..)
+module RichTextEditor.Internal.BeforeInput exposing (..)
 
 import Json.Decode as D
 import RichTextEditor.Internal.Editor exposing (applyNamedCommandList)

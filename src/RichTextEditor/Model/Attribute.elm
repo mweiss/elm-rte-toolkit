@@ -1,5 +1,5 @@
 module RichTextEditor.Model.Attribute exposing
-    ( Attribute
+    ( Attribute(..)
     , bool
     , findBoolAttribute
     , findFloatAttribute

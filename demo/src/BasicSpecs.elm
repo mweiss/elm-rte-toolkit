@@ -1,7 +1,12 @@
 module BasicSpecs exposing (..)
 
 import Array exposing (Array)
-import RichTextEditor.Model exposing (ContentType(..), EditorAttribute(..), ElementParameters, ElementToHtml, HtmlNode(..), HtmlToElement, HtmlToMark, Mark, MarkDefinition, MarkToHtml, NodeDefinition, Spec, blockLeafContentType, blockNodeContentType, elementParameters, findIntegerAttribute, findStringAttribute, inlineLeafContentType, mark, markDefinition, nodeDefinition, selectableAnnotation, textBlockContentType)
+import RichTextEditor.Model.Annotation exposing (selectableAnnotation)
+import RichTextEditor.Model.Attribute exposing (Attribute(..), findIntegerAttribute, findStringAttribute)
+import RichTextEditor.Model.HtmlNode exposing (HtmlNode(..))
+import RichTextEditor.Model.Mark as Mark exposing (mark)
+import RichTextEditor.Model.Node exposing (attributesFromElementParameters, elementParameters)
+import RichTextEditor.Model.Spec exposing (ElementToHtml, HtmlToElement, HtmlToMark, MarkDefinition, MarkToHtml, NodeDefinition, Spec, blockLeafContentType, blockNodeContentType, emptySpec, inlineLeafContentType, markDefinition, nodeDefinition, textBlockContentType, withMarkDefinitions, withNodeDefinitions)
 import RichTextEditor.Spec exposing (defaultElementToHtml, defaultHtmlToElement, defaultHtmlToMark)
 import Set
 
@@ -104,7 +109,7 @@ headingToHtml : ElementToHtml
 headingToHtml parameters children =
     let
         level =
-            Maybe.withDefault 1 <| findIntegerAttribute "level" parameters.attributes
+            Maybe.withDefault 1 <| findIntegerAttribute "level" (attributesFromElementParameters parameters)
     in
     ElementNode ("h" ++ String.fromInt level) [] children
 
@@ -204,9 +209,9 @@ imageToHtmlNode parameters _ =
     let
         attributes =
             filterAttributesToHtml
-                [ ( "src", Just <| Maybe.withDefault "" (findStringAttribute "src" parameters.attributes) )
-                , ( "alt", findStringAttribute "alt" parameters.attributes )
-                , ( "title", findStringAttribute "title" parameters.attributes )
+                [ ( "src", Just <| Maybe.withDefault "" (findStringAttribute "src" (attributesFromElementParameters parameters)) )
+                , ( "alt", findStringAttribute "alt" (attributesFromElementParameters parameters) )
+                , ( "title", findStringAttribute "title" (attributesFromElementParameters parameters) )
                 ]
     in
     ElementNode "img"
@@ -365,8 +370,8 @@ linkToHtmlNode mark children =
     let
         attributes =
             filterAttributesToHtml
-                [ ( "href", Just <| Maybe.withDefault "" (findStringAttribute "href" mark.attributes) )
-                , ( "title", findStringAttribute "title" mark.attributes )
+                [ ( "href", Just <| Maybe.withDefault "" (findStringAttribute "href" (Mark.attributes mark)) )
+                , ( "title", findStringAttribute "title" (Mark.attributes mark) )
                 ]
     in
     ElementNode "a"
@@ -460,23 +465,23 @@ htmlNodeToCode =
 
 simpleSpec : Spec
 simpleSpec =
-    { nodes =
-        [ doc
-        , paragraph
-        , blockquote
-        , horizontalRule
-        , heading
-        , codeBlock
-        , image
-        , hardBreak
-        , unorderedList
-        , orderedList
-        , listItem
-        ]
-    , marks =
-        [ link
-        , bold
-        , italic
-        , code
-        ]
-    }
+    emptySpec
+        |> withNodeDefinitions
+            [ doc
+            , paragraph
+            , blockquote
+            , horizontalRule
+            , heading
+            , codeBlock
+            , image
+            , hardBreak
+            , unorderedList
+            , orderedList
+            , listItem
+            ]
+        |> withMarkDefinitions
+            [ link
+            , bold
+            , italic
+            , code
+            ]

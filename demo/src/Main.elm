@@ -3,15 +3,22 @@ module Main exposing (..)
 import Array
 import BasicEditorControls exposing (EditorMsg(..), InsertImageModal, InsertLinkModal)
 import BasicSpecs exposing (simpleSpec)
-import BoundedDeque
 import Browser
 import Html exposing (Html, div)
 import Html.Attributes
-import RichTextEditor.Commands exposing (enterKey, inputEvent, insertBlockNode, key, lift, liftEmpty, returnKey, set, splitBlockHeaderToNewParagraph, toggleBlock, toggleMarkOnInlineNodes, wrap)
-import RichTextEditor.Decorations exposing (addElementDecoration, emptyDecorations, selectableDecoration)
-import RichTextEditor.Editor exposing (applyCommand, internalUpdate)
+import RichTextEditor.Commands exposing (insertBlockNode, lift, liftEmpty, splitBlockHeaderToNewParagraph, toggleBlock, toggleMarkOnInlineNodes, wrap)
+import RichTextEditor.Decorations exposing (addElementDecoration, selectableDecoration)
+import RichTextEditor.Editor exposing (internalUpdate)
+import RichTextEditor.Internal.Editor exposing (applyCommand)
 import RichTextEditor.List exposing (ListType, defaultListDefinition)
-import RichTextEditor.Model exposing (ChildNodes(..), Editor, EditorAttribute(..), EditorBlockNode, EditorInlineLeaf(..), InternalEditorMsg(..), Mark, elementParameters, inlineLeafArray, selectableAnnotation, transformCommand)
+import RichTextEditor.Model.Annotation exposing (selectableAnnotation)
+import RichTextEditor.Model.Attribute exposing (Attribute(..))
+import RichTextEditor.Model.Command as Commands exposing (inputEvent, key, set, transformCommand)
+import RichTextEditor.Model.Editor exposing (Editor, editor, emptyDecorations, spec, state, withCommandMap, withDecorations)
+import RichTextEditor.Model.Keys exposing (enterKey, returnKey)
+import RichTextEditor.Model.Mark exposing (mark)
+import RichTextEditor.Model.Node exposing (ChildNodes(..), EditorBlockNode, EditorInlineLeaf(..), blockArray, editorBlockNode, elementParameters, inlineLeafArray, inlineLeafParameters, textLeafWithText)
+import RichTextEditor.Model.State as State exposing (State)
 import RichTextEditor.Spec exposing (markOrderFromSpec)
 import Set
 
@@ -29,39 +36,39 @@ type alias Model =
 
 inlineImageNode : EditorInlineLeaf
 inlineImageNode =
-    InlineLeaf
-        { marks = []
-        , parameters =
-            elementParameters "image" [ StringAttribute "src" "logo.svg" ] <|
+    InlineLeaf <|
+        inlineLeafParameters
+            (elementParameters "image" [ StringAttribute "src" "logo.svg" ] <|
                 Set.fromList [ selectableAnnotation ]
-        }
+            )
+            []
 
 
 paragraphWithImage =
-    { parameters = elementParameters "paragraph" [] Set.empty
-    , childNodes =
-        inlineLeafArray
+    editorBlockNode
+        (elementParameters "paragraph" [] Set.empty)
+        (inlineLeafArray
             (Array.fromList
-                [ TextLeaf { text = "", marks = [], annotations = Set.empty }
+                [ textLeafWithText ""
                 , inlineImageNode
-                , TextLeaf { text = "", marks = [], annotations = Set.empty }
+                , textLeafWithText ""
                 ]
             )
-    }
+        )
 
 
 doubleInitNode : EditorBlockNode
 doubleInitNode =
-    { parameters = elementParameters "doc" [] Set.empty
-    , childNodes = BlockArray (Array.fromList [ initialEditorNode, paragraphWithImage, initialEditorNode ])
-    }
+    editorBlockNode
+        (elementParameters "doc" [] Set.empty)
+        (blockArray (Array.fromList [ initialEditorNode, paragraphWithImage, initialEditorNode ]))
 
 
 initialEditorNode : EditorBlockNode
 initialEditorNode =
-    { parameters = elementParameters "paragraph" [] Set.empty
-    , childNodes = inlineLeafArray (Array.fromList [ TextLeaf { text = "This is some sample text", marks = [], annotations = Set.empty } ])
-    }
+    editorBlockNode
+        (elementParameters "paragraph" [] Set.empty)
+        (inlineLeafArray (Array.fromList [ textLeafWithText "This is some sample text" ]))
 
 
 listCommandBindings =
@@ -69,7 +76,7 @@ listCommandBindings =
 
 
 commandBindings =
-    RichTextEditor.Commands.combine
+    Commands.combine
         listCommandBindings
         (RichTextEditor.Commands.defaultCommandBindings
             |> set [ inputEvent "insertParagraph", key [ enterKey ], key [ returnKey ] ]
@@ -92,28 +99,16 @@ decorations =
             emptyDecorations
 
 
-dequeSize : Int
-dequeSize =
-    1024
+initialState : State
+initialState =
+    State.state doubleInitNode Nothing
 
 
 initEditor : Editor EditorMsg
 initEditor =
-    { renderCount = 0
-    , bufferedEditorState = Nothing
-    , completeRerenderCount = 0
-    , selectionCount = 0
-    , isComposing = False
-    , decoder = InternalMsg
-    , decorations = decorations
-    , commandMap = commandBindings
-    , spec = simpleSpec
-    , editorState =
-        { root = doubleInitNode
-        , selection = Nothing
-        }
-    , history = { undoDeque = BoundedDeque.empty dequeSize, redoStack = [] }
-    }
+    editor simpleSpec initialState InternalMsg
+        |> withDecorations decorations
+        |> withCommandMap commandBindings
 
 
 initInsertLinkModal : InsertLinkModal
@@ -154,7 +149,7 @@ handleShowInsertLinkModal model =
         | insertLinkModal =
             { insertLinkModal
                 | visible = True
-                , editorState = Just model.editor.editorState
+                , editorState = Just (state model.editor)
             }
     }
 
@@ -218,7 +213,7 @@ handleToggleStyle style model =
                     "bold"
 
         markOrder =
-            markOrderFromSpec model.editor.spec
+            markOrderFromSpec (spec model.editor)
     in
     { model
         | editor =
@@ -226,7 +221,7 @@ handleToggleStyle style model =
                 (applyCommand
                     ( "toggleStyle"
                     , transformCommand <|
-                        toggleMarkOnInlineNodes markOrder (Mark markName [])
+                        toggleMarkOnInlineNodes markOrder (mark markName [])
                     )
                     model.editor
                 )
@@ -371,13 +366,14 @@ handleInsertHorizontalRule model =
                     ( "insertHR"
                     , transformCommand <|
                         insertBlockNode
-                            { parameters =
-                                elementParameters
+                            (editorBlockNode
+                                (elementParameters
                                     "horizontal_rule"
                                     []
                                     (Set.fromList [ selectableAnnotation ])
-                            , childNodes = Leaf
-                            }
+                                )
+                                Leaf
+                            )
                     )
                     model.editor
                 )
@@ -394,7 +390,7 @@ handleShowInsertImageModal model =
         | insertImageModal =
             { insertImageModal
                 | visible = True
-                , editorState = Just model.editor.editorState
+                , editorState = Just (state model.editor)
             }
     }
 

@@ -5,12 +5,13 @@ import Html.Attributes exposing (class)
 import Html.Events exposing (preventDefaultOn)
 import Json.Decode exposing (succeed)
 import RichTextEditor.List exposing (ListType(..))
-import RichTextEditor.Model exposing (EditorState, InternalEditorMsg)
+import RichTextEditor.Model.Editor exposing (InternalEditorMsg)
+import RichTextEditor.Model.State exposing (State)
 
 
 type alias InsertLinkModal =
     { visible : Bool
-    , editorState : Maybe EditorState
+    , editorState : Maybe State
     , href : String
     , title : String
     }
@@ -18,7 +19,7 @@ type alias InsertLinkModal =
 
 type alias InsertImageModal =
     { visible : Bool
-    , editorState : Maybe EditorState
+    , editorState : Maybe State
     , src : String
     , alt : String
     }

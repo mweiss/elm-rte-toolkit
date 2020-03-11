@@ -24,3 +24,8 @@ contents history =
 fromContents : Contents -> History
 fromContents c =
     History c
+
+
+emptyHistory : Int -> History
+emptyHistory size =
+    History { undoDeque = BoundedDeque.empty size, redoStack = [] }

@@ -5,34 +5,15 @@ import List.Extra
 import RichTextEditor.Annotation exposing (clearAnnotations)
 import RichTextEditor.Commands
     exposing
-        ( altKey
-        , backspaceKey
-        , deleteKey
-        , emptyCommandBinding
-        , enterKey
-        , inputEvent
-        , isEmptyTextBlock
-        , key
+        ( isEmptyTextBlock
         , liftAnnotation
         , liftConcatMapFunc
-        , returnKey
-        , set
         )
-import RichTextEditor.Model
-    exposing
-        ( ChildNodes(..)
-        , CommandMap
-        , EditorBlockNode
-        , EditorFragment(..)
-        , EditorInlineLeaf(..)
-        , EditorNode(..)
-        , ElementParameters
-        , NodePath
-        , Selection
-        , Transform
-        , elementParameters
-        , transformCommand
-        )
+import RichTextEditor.Model.Command exposing (CommandMap, Transform, emptyCommandMap, inputEvent, key, set, transformCommand)
+import RichTextEditor.Model.Keys exposing (altKey, backspaceKey, deleteKey, enterKey, returnKey)
+import RichTextEditor.Model.Node exposing (BlockArray, ChildNodes(..), EditorBlockNode, EditorFragment(..), EditorInlineLeaf(..), EditorNode(..), ElementParameters, NodePath, arrayFromBlockArray, blockArray, childNodes, editorBlockNode, elementParameters, elementParametersFromBlockNode, nameFromElementParameters, text)
+import RichTextEditor.Model.Selection exposing (Selection, anchorNode, anchorOffset, focusNode, focusOffset, isCollapsed, normalizeSelection)
+import RichTextEditor.Model.State as State exposing (root, withRoot, withSelection)
 import RichTextEditor.Node
     exposing
         ( concatMap
@@ -48,8 +29,6 @@ import RichTextEditor.Selection
     exposing
         ( annotateSelection
         , clearSelectionAnnotations
-        , isCollapsed
-        , normalizeSelection
         , selectionFromAnnotations
         )
 import Set
@@ -60,7 +39,11 @@ type ListType
     | Unordered
 
 
-type alias ListDefinition =
+type ListDefinition
+    = ListDefinition ListDefinitionContents
+
+
+type alias ListDefinitionContents =
     { ordered : ElementParameters, unordered : ElementParameters, item : ElementParameters }
 
 
@@ -73,7 +56,7 @@ commandBindings definition =
         deleteCommand =
             joinForward definition
     in
-    emptyCommandBinding
+    emptyCommandMap
         |> set [ inputEvent "insertParagraph", key [ enterKey ], key [ returnKey ] ]
             [ ( "liftEmptyListItem", transformCommand <| liftEmpty definition )
             , ( "splitListItem", transformCommand <| split definition )
@@ -90,39 +73,63 @@ commandBindings definition =
 
 defaultListDefinition : ListDefinition
 defaultListDefinition =
-    { ordered = elementParameters "ordered_list" [] Set.empty
-    , unordered = elementParameters "unordered_list" [] Set.empty
-    , item = elementParameters "list_item" [] Set.empty
-    }
+    ListDefinition
+        { ordered = elementParameters "ordered_list" [] Set.empty
+        , unordered = elementParameters "unordered_list" [] Set.empty
+        , item = elementParameters "list_item" [] Set.empty
+        }
+
+
+item : ListDefinition -> ElementParameters
+item definition =
+    case definition of
+        ListDefinition c ->
+            c.item
+
+
+ordered : ListDefinition -> ElementParameters
+ordered definition =
+    case definition of
+        ListDefinition c ->
+            c.ordered
+
+
+unordered : ListDefinition -> ElementParameters
+unordered definition =
+    case definition of
+        ListDefinition c ->
+            c.unordered
 
 
 addListItem : ListDefinition -> EditorBlockNode -> EditorBlockNode
 addListItem definition node =
-    { parameters = definition.item
-    , childNodes = BlockArray <| Array.fromList [ node ]
-    }
+    editorBlockNode
+        (item definition)
+        (blockArray <|
+            Array.fromList [ node ]
+        )
 
 
 wrap : ListDefinition -> ListType -> Transform
 wrap definition type_ editorState =
     RichTextEditor.Commands.wrap (addListItem definition)
         (if type_ == Ordered then
-            definition.ordered
+            ordered definition
 
          else
-            definition.unordered
+            unordered definition
         )
         editorState
 
 
 findListItemAncestor : ElementParameters -> NodePath -> EditorBlockNode -> Maybe ( NodePath, EditorBlockNode )
 findListItemAncestor parameters =
-    findAncestor (\n -> n.parameters.name == parameters.name)
+    findAncestor (\n -> nameFromElementParameters (elementParametersFromBlockNode n) == nameFromElementParameters parameters)
 
 
 split : ListDefinition -> Transform
 split definition =
-    RichTextEditor.Commands.splitBlock (findListItemAncestor definition.item)
+    RichTextEditor.Commands.splitBlock (findListItemAncestor (item definition))
 
 
 isListNode : ListDefinition -> EditorNode -> Bool
@@ -132,10 +139,14 @@ isListNode definition node =
             False
 
         BlockNodeWrapper bn ->
-            bn.parameters.name
-                == definition.ordered.name
-                || bn.parameters.name
-                == definition.unordered.name
+            let
+                bnName =
+                    nameFromElementParameters (elementParametersFromBlockNode bn)
+            in
+            bnName
+                == nameFromElementParameters (ordered definition)
+                || bnName
+                == nameFromElementParameters (unordered definition)
 
 
 addLiftAnnotationAtPathAndChildren : NodePath -> EditorBlockNode -> Result String EditorBlockNode
@@ -152,8 +163,8 @@ addLiftAnnotationAtPathAndChildren path root =
                 Just node ->
                     case node of
                         BlockNodeWrapper bn ->
-                            case bn.childNodes of
-                                BlockArray ba ->
+                            case childNodes bn of
+                                BlockChildren ba ->
                                     List.foldl
                                         (\i result ->
                                             case result of
@@ -164,7 +175,7 @@ addLiftAnnotationAtPathAndChildren path root =
                                                     RichTextEditor.Annotation.addAnnotationAtPath liftAnnotation (path ++ [ i ]) n
                                         )
                                         (Ok newRoot)
-                                        (List.range 0 (Array.length ba - 1))
+                                        (List.range 0 (Array.length (arrayFromBlockArray ba) - 1))
 
                                 _ ->
                                     Err "I was expecting a block array to add a lift mark to"
@@ -175,12 +186,12 @@ addLiftAnnotationAtPathAndChildren path root =
 
 addLiftMarkToListItems : ListDefinition -> Selection -> EditorBlockNode -> Result String EditorBlockNode
 addLiftMarkToListItems definition selection root =
-    case findListItemAncestor definition.item selection.anchorNode root of
+    case findListItemAncestor (item definition) (anchorNode selection) root of
         Nothing ->
             Err "There is no list item ancestor at anchor path"
 
         Just ( start, _ ) ->
-            case findListItemAncestor definition.item selection.focusNode root of
+            case findListItemAncestor (item definition) (focusNode selection) root of
                 Nothing ->
                     Err "There is no list item ancestor at focus path"
 
@@ -236,7 +247,7 @@ lift definition editorState =
                 normalizedSelection =
                     normalizeSelection selection
             in
-            case addLiftMarkToListItems definition normalizedSelection <| annotateSelection normalizedSelection editorState.root of
+            case addLiftMarkToListItems definition normalizedSelection <| annotateSelection normalizedSelection (State.root editorState) of
                 Err s ->
                     Err s
 
@@ -250,10 +261,10 @@ lift definition editorState =
                             selectionFromAnnotations liftedRoot (anchorOffset normalizedSelection) (focusOffset normalizedSelection)
                     in
                     Ok
-                        { editorState
-                            | selection = newSelection
-                            , root = clearAnnotations liftAnnotation <| clearSelectionAnnotations liftedRoot
-                        }
+                        (editorState
+                            |> withSelection newSelection
+                            |> withRoot (clearAnnotations liftAnnotation <| clearSelectionAnnotations liftedRoot)
+                        )
 
 
 liftEmpty : ListDefinition -> Transform
@@ -263,18 +274,18 @@ liftEmpty definition editorState =
             Err "Nothing is selected"
 
         Just selection ->
-            if (not <| isCollapsed selection) || selection.anchorOffset /= 0 then
+            if (not <| isCollapsed selection) || anchorOffset selection /= 0 then
                 Err "I can only lift collapsed selections at the beginning of a text node"
 
             else
-                case findListItemAncestor definition.item selection.anchorNode editorState.root of
+                case findListItemAncestor (item definition) (anchorNode selection) (State.root editorState) of
                     Nothing ->
                         Err "No list item ancestor to lift"
 
                     Just ( _, node ) ->
-                        case node.childNodes of
-                            BlockArray a ->
-                                case Array.get 0 a of
+                        case childNodes node of
+                            BlockChildren a ->
+                                case Array.get 0 (arrayFromBlockArray a) of
                                     Nothing ->
                                         Err "Cannot lift a list item with no children"
 
@@ -294,18 +305,18 @@ isBeginningOfListItem definition selection root =
     if not <| isCollapsed selection then
         False
 
-    else if selection.anchorOffset /= 0 then
+    else if anchorOffset selection /= 0 then
         False
 
     else
-        case findListItemAncestor definition.item selection.anchorNode root of
+        case findListItemAncestor (item definition) (anchorNode selection) root of
             Nothing ->
                 False
 
             Just ( p, _ ) ->
                 let
                     relativePath =
-                        List.drop (List.length p) selection.anchorNode
+                        List.drop (List.length p) (anchorNode selection)
                 in
                 List.all (\i -> i == 0) relativePath
 
@@ -317,7 +328,7 @@ joinBackward definition editorState =
             Err "Nothing is selected"
 
         Just selection ->
-            if not <| isBeginningOfListItem definition selection editorState.root then
+            if not <| isBeginningOfListItem definition selection (State.root editorState) then
                 Err "I can only join a list item backward if the selection is the beginning of a list item"
 
             else
@@ -326,9 +337,9 @@ joinBackward definition editorState =
                         normalizeSelection selection
 
                     markedRoot =
-                        annotateSelection normalizedSelection editorState.root
+                        annotateSelection normalizedSelection (State.root editorState)
                 in
-                case findListItemAncestor definition.item selection.anchorNode markedRoot of
+                case findListItemAncestor (item definition) (anchorNode selection) markedRoot of
                     Nothing ->
                         Err "There is no list item selected"
 
@@ -369,10 +380,15 @@ joinBackward definition editorState =
 
                                                         Ok newRoot ->
                                                             Ok
-                                                                { editorState
-                                                                    | selection = selectionFromAnnotations newRoot selection.anchorOffset selection.focusOffset
-                                                                    , root = clearSelectionAnnotations newRoot
-                                                                }
+                                                                (editorState
+                                                                    |> withSelection
+                                                                        (selectionFromAnnotations
+                                                                            newRoot
+                                                                            (anchorOffset selection)
+                                                                            (focusOffset selection)
+                                                                        )
+                                                                    |> withRoot (clearSelectionAnnotations newRoot)
+                                                                )
 
 
 isEndOfListItem : ListDefinition -> Selection -> EditorBlockNode -> Bool
@@ -381,7 +397,7 @@ isEndOfListItem definition selection root =
         False
 
     else
-        case findListItemAncestor definition.item selection.anchorNode root of
+        case findListItemAncestor (item definition) (anchorNode selection) root of
             Nothing ->
                 False
 
@@ -390,7 +406,7 @@ isEndOfListItem definition selection root =
                     ( lastPath, lastNode ) =
                         findLastPath node
                 in
-                if selection.anchorNode /= path ++ lastPath then
+                if anchorNode selection /= path ++ lastPath then
                     False
 
                 else
@@ -398,7 +414,7 @@ isEndOfListItem definition selection root =
                         InlineLeafWrapper il ->
                             case il of
                                 TextLeaf tl ->
-                                    String.length tl.text == selection.anchorOffset
+                                    String.length (text tl) == anchorOffset selection
 
                                 _ ->
                                     True
@@ -414,7 +430,7 @@ joinForward definition editorState =
             Err "Nothing is selected"
 
         Just selection ->
-            if not <| isEndOfListItem definition selection editorState.root then
+            if not <| isEndOfListItem definition selection (State.root editorState) then
                 Err "I can only join a list item forward if the selection is at the end of a list item"
 
             else
@@ -423,9 +439,9 @@ joinForward definition editorState =
                         normalizeSelection selection
 
                     markedRoot =
-                        annotateSelection normalizedSelection editorState.root
+                        annotateSelection normalizedSelection (State.root editorState)
                 in
-                case findListItemAncestor definition.item selection.anchorNode markedRoot of
+                case findListItemAncestor (item definition) (anchorNode selection) markedRoot of
                     Nothing ->
                         Err "There is no list item selected"
 
@@ -461,7 +477,7 @@ joinForward definition editorState =
 
                                                     Ok newRoot ->
                                                         Ok
-                                                            { editorState
-                                                                | selection = selectionFromAnnotations newRoot selection.anchorOffset selection.focusOffset
-                                                                , root = clearSelectionAnnotations newRoot
-                                                            }
+                                                            (editorState
+                                                                |> withSelection (selectionFromAnnotations newRoot (anchorOffset selection) (focusOffset selection))
+                                                                |> withRoot (clearSelectionAnnotations newRoot)
+                                                            )

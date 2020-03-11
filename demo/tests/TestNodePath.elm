@@ -2,7 +2,9 @@ module TestNodePath exposing (..)
 
 import Array exposing (Array)
 import Expect
-import RichTextEditor.Model exposing (ChildNodes(..), EditorBlockNode, EditorInlineLeaf(..), ElementParameters, HtmlNode(..), Mark, Spec, inlineLeafArray)
+import RichTextEditor.Model.Mark exposing (mark)
+import RichTextEditor.Model.Node exposing (EditorInlineLeaf(..), editorBlockNode, elementParameters, emptyTextLeafParameters, inlineLeafArray, textLeafParametersWithMarks, textLeafWithText, withText)
+import RichTextEditor.Model.Spec exposing (emptySpec)
 import RichTextEditor.NodePath
     exposing
         ( commonAncestor
@@ -13,67 +15,60 @@ import RichTextEditor.NodePath
         , parent
         , toString
         )
-import RichTextEditor.Spec exposing (emptySpec)
 import Set
 import SimpleSpec exposing (simpleSpec)
 import Test exposing (..)
 
 
 paragraphParams =
-    { name = "p", attributes = [], annotations = Set.empty }
+    elementParameters "p" [] Set.empty
 
 
 codeBlockParams =
-    { name = "code_block", attributes = [], annotations = Set.empty }
+    elementParameters "code_block" [] Set.empty
 
 
 crazyBlockParams =
-    { name = "crazy_block", attributes = [], annotations = Set.empty }
+    elementParameters "crazy_block" [] Set.empty
 
 
 boldMark =
-    { name = "bold", attributes = [] }
+    mark "bold" []
 
 
 paragraphNode =
-    { parameters = paragraphParams
-    , childNodes = inlineLeafArray <| Array.fromList [ TextLeaf { text = "sample", marks = [], annotations = Set.empty } ]
-    }
+    editorBlockNode
+        paragraphParams
+        (inlineLeafArray <| Array.fromList [ textLeafWithText "sample" ])
 
 
 boldParagraphNode =
-    { parameters = paragraphParams
-    , childNodes =
-        inlineLeafArray <|
+    editorBlockNode
+        paragraphParams
+        (inlineLeafArray <|
             Array.fromList
                 [ TextLeaf
-                    { text = "sample"
-                    , marks =
-                        [ boldMark ]
-                    , annotations = Set.empty
-                    }
+                    (emptyTextLeafParameters
+                        |> withText "sample"
+                        |> textLeafParametersWithMarks [ boldMark ]
+                    )
                 ]
-    }
+        )
 
 
 crazyBlockNode =
-    { parameters = crazyBlockParams
-    , childNodes =
-        inlineLeafArray <|
+    editorBlockNode
+        crazyBlockParams
+        (inlineLeafArray <|
             Array.fromList
-                [ TextLeaf
-                    { text = "sample"
-                    , marks = []
-                    , annotations = Set.empty
-                    }
-                ]
-    }
+                [ textLeafWithText "sample" ]
+        )
 
 
 codeBlockNode =
-    { parameters = codeBlockParams
-    , childNodes = inlineLeafArray <| Array.fromList [ TextLeaf { text = "sample", marks = [], annotations = Set.empty } ]
-    }
+    editorBlockNode
+        codeBlockParams
+        (inlineLeafArray <| Array.fromList [ textLeafWithText "sample" ])
 
 
 testDomToEditor : Test

@@ -1,10 +1,10 @@
-module RichTextEditor.HtmlNode exposing (..)
+module RichTextEditor.Internal.HtmlNode exposing (..)
 
 import Array exposing (Array)
 import RichTextEditor.Model.HtmlNode exposing (HtmlNode(..))
 import RichTextEditor.Model.Mark exposing (Mark, name)
 import RichTextEditor.Model.Node exposing (ChildNodes(..), EditorBlockNode, EditorInlineLeaf(..), ElementParameters, InlineLeafTree(..), arrayFromBlockArray, arrayFromInlineArray, childNodes, elementParametersFromBlockNode, elementParametersFromInlineLeafParameters, nameFromElementParameters, text, treeFromInlineArray)
-import RichTextEditor.Model.Spec exposing (Spec)
+import RichTextEditor.Model.Spec exposing (Spec, toHtmlNodeFromMarkDefinition, toHtmlNodeFromNodeDefinition)
 import RichTextEditor.Spec
     exposing
         ( findMarkDefinitionFromSpecWithDefault
@@ -20,7 +20,7 @@ markToHtmlNode spec mark children =
         markDefinition =
             findMarkDefinitionFromSpecWithDefault (name mark) spec
     in
-    markDefinition.toHtmlNode mark children
+    toHtmlNodeFromMarkDefinition markDefinition mark children
 
 
 {-| Renders element parameters to their HtmlNode representation.
@@ -31,7 +31,7 @@ elementToHtmlNode spec parameters children =
         nodeDefinition =
             findNodeDefinitionFromSpecWithDefault (nameFromElementParameters parameters) spec
     in
-    nodeDefinition.toHtmlNode parameters children
+    toHtmlNodeFromNodeDefinition nodeDefinition parameters children
 
 
 {-| Renders element block nodes to their HtmlNode representation.

@@ -79,7 +79,7 @@ toggle func annotation node =
                         InlineLeaf <| inlineLeafParametersWithElementParameters newParameters l
 
                     TextLeaf tl ->
-                        TextLeaf <| tl |> textLeafParametersWithAnnotations (func annotation <| annotationsFromTextLeafParameters tl)
+                        TextLeaf <| (tl |> textLeafParametersWithAnnotations (func annotation <| annotationsFromTextLeafParameters tl))
 
 
 clearAnnotations : Annotation -> EditorBlockNode -> EditorBlockNode

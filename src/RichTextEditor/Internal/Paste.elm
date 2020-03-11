@@ -1,4 +1,4 @@
-module RichTextEditor.Paste exposing (..)
+module RichTextEditor.Internal.Paste exposing (..)
 
 import Array exposing (Array)
 import List.Extra
@@ -42,7 +42,7 @@ import RichTextEditor.Model.State as State exposing (withRoot, withSelection)
 import RichTextEditor.Node
     exposing
         ( findTextBlockNodeAncestor
-        , insert
+        , insertAfter
         , nodeAt
         , replaceWithFragment
         , splitTextLeaf
@@ -161,7 +161,7 @@ pasteInlineArray inlineFragment editorState =
                         Err "I can only paste an inline array into a text block node"
 
                     Just ( path, node ) ->
-                        case node.childNodes of
+                        case childNodes node of
                             BlockChildren _ ->
                                 Err "I cannot add an inline array to a block array"
 
@@ -201,10 +201,11 @@ pasteInlineArray inlineFragment editorState =
                                                                 Err s
 
                                                             Ok newRoot ->
-                                                                Ok <|
-                                                                    editorState
+                                                                Ok
+                                                                    (editorState
                                                                         |> withSelection (Just newSelection)
                                                                         |> withRoot newRoot
+                                                                    )
 
                                                     InlineLeaf _ ->
                                                         let
@@ -219,10 +220,11 @@ pasteInlineArray inlineFragment editorState =
                                                                 Err s
 
                                                             Ok newRoot ->
-                                                                Ok <|
-                                                                    editorState
+                                                                Ok
+                                                                    (editorState
                                                                         |> withSelection (Just newSelection)
                                                                         |> withRoot newRoot
+                                                                    )
 
 
 pasteBlockArray : Array EditorBlockNode -> Transform
@@ -274,10 +276,11 @@ pasteBlockArray blockFragment editorState =
                                                             newSelection =
                                                                 caretSelection (parentPath ++ [ index + Array.length blockFragment - 1 ]) 0
                                                         in
-                                                        Ok <|
-                                                            editorState
+                                                        Ok
+                                                            (editorState
                                                                 |> withSelection (Just newSelection)
                                                                 |> withRoot newRoot
+                                                            )
 
                                     InlineChildren _ ->
                                         case splitTextBlock editorState of
@@ -285,16 +288,16 @@ pasteBlockArray blockFragment editorState =
                                                 Err s
 
                                             Ok splitEditorState ->
-                                                case splitEditorState.selection of
+                                                case State.selection splitEditorState of
                                                     Nothing ->
                                                         Err "Invalid editor state selection after split action."
 
                                                     Just splitSelection ->
                                                         let
                                                             annotatedSelectionRoot =
-                                                                annotateSelection splitSelection splitEditorState.root
+                                                                annotateSelection splitSelection (State.root splitEditorState)
                                                         in
-                                                        case insert parentPath (BlockNodeFragment blockFragment) annotatedSelectionRoot of
+                                                        case insertAfter parentPath (BlockNodeFragment blockFragment) annotatedSelectionRoot of
                                                             Err s ->
                                                                 Err s
 
@@ -327,4 +330,4 @@ pasteBlockArray blockFragment editorState =
                                                                             joinBeginningState
                                                                             (joinBackward (joinBeginningState |> withSelection annotatedSelection))
                                                                 in
-                                                                Ok <| joinEndState |> withRoot (clearSelectionAnnotations (State.root joinEndState))
+                                                                Ok (joinEndState |> withRoot (clearSelectionAnnotations (State.root joinEndState)))
