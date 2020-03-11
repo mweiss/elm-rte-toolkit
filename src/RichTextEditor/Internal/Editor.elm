@@ -126,10 +126,6 @@ applyNamedCommandList list editor =
                 Err s ->
                     case applyCommand cmd editor of
                         Err s2 ->
-                            let
-                                debug =
-                                    Debug.log "command failed: " ( cmd, s2 )
-                            in
                             Err s
 
                         Ok o ->

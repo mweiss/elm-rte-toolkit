@@ -300,7 +300,7 @@ type alias MarkDecoratorFunction msg =
 
 defaultDequeSize : Int
 defaultDequeSize =
-    1024
+    64
 
 
 editor : Spec -> State -> DecoderFunc msg -> Editor msg
