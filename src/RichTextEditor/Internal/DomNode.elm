@@ -14,7 +14,7 @@ import RichTextEditor.Model.Constants exposing (zeroWidthSpace)
 import RichTextEditor.Model.DomNode exposing (DomNode(..), DomNodeContents)
 import RichTextEditor.Model.Event exposing (TextChange)
 import RichTextEditor.Model.HtmlNode exposing (HtmlNode(..))
-import RichTextEditor.Model.Node exposing (NodePath)
+import RichTextEditor.Model.Node exposing (Path)
 
 
 {-| The DOM text node nodeType value as specified by the w3c spec [w3c spec][w3c-custom-types-text-node]
@@ -68,7 +68,7 @@ findTextChanges htmlNode domNode =
     findTextChangesRec htmlNode domNode []
 
 
-findTextChangesRec : HtmlNode -> DomNode -> NodePath -> Result String (List TextChange)
+findTextChangesRec : HtmlNode -> DomNode -> Path -> Result String (List TextChange)
 findTextChangesRec htmlNode domNode backwardsNodePath =
     case domNode of
         DomNode domNodeContents ->

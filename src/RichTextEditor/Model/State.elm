@@ -4,7 +4,7 @@ module RichTextEditor.Model.State exposing (State, root, selection, state, withR
 track of and manipulate the contents of the editor.
 -}
 
-import RichTextEditor.Model.Node exposing (EditorBlockNode)
+import RichTextEditor.Model.Node exposing (BlockNode)
 import RichTextEditor.Model.Selection exposing (Selection)
 
 
@@ -13,12 +13,12 @@ type State
 
 
 type alias Contents =
-    { root : EditorBlockNode
+    { root : BlockNode
     , selection : Maybe Selection
     }
 
 
-state : EditorBlockNode -> Maybe Selection -> State
+state : BlockNode -> Maybe Selection -> State
 state r s =
     State { root = r, selection = s }
 
@@ -30,7 +30,7 @@ selection st =
             s.selection
 
 
-root : State -> EditorBlockNode
+root : State -> BlockNode
 root st =
     case st of
         State s ->
@@ -44,7 +44,7 @@ withSelection sel st =
             State { s | selection = sel }
 
 
-withRoot : EditorBlockNode -> State -> State
+withRoot : BlockNode -> State -> State
 withRoot node st =
     case st of
         State s ->

@@ -17,15 +17,15 @@ import RichTextEditor.Model.Editor exposing (Editor, spec)
 import RichTextEditor.Model.Event exposing (PasteEvent)
 import RichTextEditor.Model.Node
     exposing
-        ( ChildNodes(..)
-        , EditorBlockNode
-        , EditorFragment(..)
+        ( BlockNode
+        , ChildNodes(..)
         , EditorInlineLeaf(..)
-        , EditorNode(..)
-        , arrayFromInlineArray
+        , Fragment(..)
+        , Node(..)
+        , blockNode
         , childNodes
-        , editorBlockNode
         , elementParametersFromBlockNode
+        , fromInlineArray
         , inlineLeafArray
         , textLeafWithText
         )
@@ -96,7 +96,7 @@ pasteText text editorState =
                                 newLines =
                                     List.map
                                         (\line ->
-                                            editorBlockNode (elementParametersFromBlockNode tbNode)
+                                            blockNode (elementParametersFromBlockNode tbNode)
                                                 (inlineLeafArray <|
                                                     Array.fromList
                                                         [ textLeafWithText line
@@ -135,7 +135,7 @@ pasteHtml spec html editorState =
                     fragmentArray
 
 
-pasteFragment : EditorFragment -> Transform
+pasteFragment : Fragment -> Transform
 pasteFragment fragment editorState =
     case fragment of
         InlineLeafFragment a ->
@@ -174,7 +174,7 @@ pasteInlineArray inlineFragment editorState =
                                         Err "Invalid state, somehow the anchor node is the root node"
 
                                     Just index ->
-                                        case Array.get index (arrayFromInlineArray a) of
+                                        case Array.get index (fromInlineArray a) of
                                             Nothing ->
                                                 Err "Invalid anchor node path"
 
@@ -227,7 +227,7 @@ pasteInlineArray inlineFragment editorState =
                                                                     )
 
 
-pasteBlockArray : Array EditorBlockNode -> Transform
+pasteBlockArray : Array BlockNode -> Transform
 pasteBlockArray blockFragment editorState =
     -- split, add nodes, select beginning, join backwards, select end, join forward
     case State.selection editorState of

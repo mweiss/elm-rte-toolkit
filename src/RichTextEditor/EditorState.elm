@@ -3,7 +3,7 @@ module RichTextEditor.EditorState exposing (..)
 import Array exposing (Array)
 import List.Extra
 import RichTextEditor.Model.Annotation exposing (selectionAnnotation)
-import RichTextEditor.Model.Node exposing (ChildNodes(..), EditorBlockNode, EditorInlineLeaf(..), EditorNode(..), InlineLeafArray, NodePath, annotationsFromTextLeafParameters, arrayFromInlineArray, childNodes, inlineLeafArray, marksFromTextLeafParameters, text, withChildNodes, withText)
+import RichTextEditor.Model.Node exposing (BlockNode, ChildNodes(..), EditorInlineLeaf(..), InlineLeafArray, Node(..), Path, annotationsFromTextLeafParameters, childNodes, fromInlineArray, inlineLeafArray, marksFromTextLeafParameters, text, withChildNodes, withText)
 import RichTextEditor.Model.Selection exposing (anchorNode, anchorOffset, focusNode, focusOffset, rangeSelection)
 import RichTextEditor.Model.State as State exposing (State, withRoot, withSelection)
 import RichTextEditor.Node exposing (findTextBlockNodeAncestor, map)
@@ -68,7 +68,7 @@ mergeSimilarInlineLeaves inlineLeaves =
                     x :: mergeSimilarInlineLeaves (y :: xs)
 
 
-reduceNode : EditorBlockNode -> EditorBlockNode
+reduceNode : BlockNode -> BlockNode
 reduceNode node =
     case
         map
@@ -82,7 +82,7 @@ reduceNode node =
                                         |> withChildNodes
                                             (inlineLeafArray <|
                                                 Array.fromList
-                                                    (mergeSimilarInlineLeaves (removeExtraEmptyTextLeaves (Array.toList (arrayFromInlineArray a))))
+                                                    (mergeSimilarInlineLeaves (removeExtraEmptyTextLeaves (Array.toList (fromInlineArray a))))
                                             )
                                     )
 
@@ -132,7 +132,7 @@ reduceEditorState editorState =
                 |> withSelection (Just <| rangeSelection aP aO fP fO)
 
 
-translatePath : EditorBlockNode -> EditorBlockNode -> NodePath -> Int -> ( NodePath, Int )
+translatePath : BlockNode -> BlockNode -> Path -> Int -> ( Path, Int )
 translatePath old new path offset =
     case findTextBlockNodeAncestor path old of
         Nothing ->
@@ -159,10 +159,10 @@ translatePath old new path offset =
                                             InlineChildren newA ->
                                                 let
                                                     pOff =
-                                                        parentOffset (arrayFromInlineArray oldA) lastIndex offset
+                                                        parentOffset (fromInlineArray oldA) lastIndex offset
 
                                                     ( cI, cO ) =
-                                                        childOffset (arrayFromInlineArray newA) pOff
+                                                        childOffset (fromInlineArray newA) pOff
 
                                                     newPath =
                                                         List.take (List.length path - 1) path ++ [ cI ]

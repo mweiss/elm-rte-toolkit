@@ -3,7 +3,7 @@ module TestSpec exposing (..)
 import Array exposing (Array)
 import Expect
 import RichTextEditor.Model.Mark exposing (mark)
-import RichTextEditor.Model.Node exposing (EditorFragment(..), EditorInlineLeaf(..), blockArray, editorBlockNode, elementParameters, emptyTextLeafParameters, inlineLeafArray, textLeafParametersWithMarks, textLeafWithText, withText)
+import RichTextEditor.Model.Node exposing (EditorInlineLeaf(..), Fragment(..), blockArray, blockNode, elementParameters, emptyTextLeafParameters, inlineLeafArray, textLeafParametersWithMarks, textLeafWithText, withText)
 import RichTextEditor.Spec exposing (htmlToElementArray)
 import Set
 import SimpleSpec exposing (simpleSpec)
@@ -18,7 +18,7 @@ expectedOneParagraph =
     Array.fromList <|
         [ BlockNodeFragment <|
             Array.fromList
-                [ editorBlockNode
+                [ blockNode
                     (elementParameters "paragraph" [] Set.empty)
                     (inlineLeafArray
                         (Array.fromList
@@ -36,7 +36,7 @@ twoParagraphs =
 
 twoParagraphsBlockFragment =
     Array.fromList
-        [ editorBlockNode
+        [ blockNode
             (elementParameters "paragraph" [] Set.empty)
             (inlineLeafArray
                 (Array.fromList
@@ -44,7 +44,7 @@ twoParagraphsBlockFragment =
                     ]
                 )
             )
-        , editorBlockNode
+        , blockNode
             (elementParameters "paragraph" [] Set.empty)
             (inlineLeafArray
                 (Array.fromList
@@ -83,7 +83,7 @@ expectedCodeWithParagraphs =
     Array.fromList
         [ BlockNodeFragment <|
             Array.fromList
-                [ editorBlockNode
+                [ blockNode
                     (elementParameters "code_block" [] Set.empty)
                     (blockArray twoParagraphsBlockFragment)
                 ]
@@ -106,7 +106,7 @@ expectedOneParagraphWithBold =
     Array.fromList <|
         [ BlockNodeFragment <|
             Array.fromList
-                [ editorBlockNode
+                [ blockNode
                     (elementParameters "paragraph" [] Set.empty)
                     (inlineLeafArray
                         (Array.fromList
@@ -126,7 +126,7 @@ expectedOneParagraphWithBoldAndItalic =
     Array.fromList <|
         [ BlockNodeFragment <|
             Array.fromList
-                [ editorBlockNode
+                [ blockNode
                     (elementParameters "paragraph" [] Set.empty)
                     (inlineLeafArray
                         (Array.fromList

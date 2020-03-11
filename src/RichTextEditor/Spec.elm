@@ -9,7 +9,7 @@ import RichTextEditor.Model.Attribute exposing (Attribute(..))
 import RichTextEditor.Model.Constants exposing (zeroWidthSpace)
 import RichTextEditor.Model.HtmlNode exposing (HtmlNode(..))
 import RichTextEditor.Model.Mark as Mark exposing (Mark, MarkOrder(..), ToggleAction(..), mark, toggle)
-import RichTextEditor.Model.Node exposing (ChildNodes(..), EditorBlockNode, EditorFragment(..), EditorInlineLeaf(..), ElementParameters, arrayFromBlockArray, arrayFromInlineArray, attributesFromElementParameters, blockArray, childNodes, editorBlockNode, elementParameters, elementParametersFromBlockNode, elementParametersFromInlineLeafParameters, emptyTextLeafParameters, inlineLeafArray, inlineLeafParameters, nameFromElementParameters, textLeafParametersWithMarks, withText)
+import RichTextEditor.Model.Node exposing (BlockNode, ChildNodes(..), EditorInlineLeaf(..), ElementParameters, Fragment(..), attributesFromElementParameters, blockArray, blockNode, childNodes, elementParameters, elementParametersFromBlockNode, elementParametersFromInlineLeafParameters, emptyTextLeafParameters, fromBlockArray, fromInlineArray, inlineLeafArray, inlineLeafParameters, nameFromElementParameters, textLeafParametersWithMarks, withText)
 import RichTextEditor.Model.Spec exposing (ContentType(..), MarkDefinition, NodeDefinition, Spec, blockLeafContentType, blockNodeContentType, contentTypeFromNodeDefinition, fromHtmlNodeFromMarkDefinition, fromHtmlNodeFromNodeDefinition, groupFromNodeDefinition, markDefinition, markDefinitions, nameFromMarkDefinition, nameFromNodeDefinition, nodeDefinition, nodeDefinitions)
 import RichTextEditor.Model.State as State exposing (State)
 import Set exposing (Set)
@@ -184,7 +184,7 @@ validateAllowedGroups allowedGroups group =
                 ]
 
 
-validateEditorBlockNode : Spec -> Maybe (Set String) -> EditorBlockNode -> List String
+validateEditorBlockNode : Spec -> Maybe (Set String) -> BlockNode -> List String
 validateEditorBlockNode spec allowedGroups node =
     let
         parameters =
@@ -216,7 +216,7 @@ validateEditorBlockNode spec allowedGroups node =
                             BlockNodeType groups ->
                                 List.concatMap
                                     (validateEditorBlockNode spec groups)
-                                    (Array.toList (arrayFromBlockArray ba))
+                                    (Array.toList (fromBlockArray ba))
 
                             _ ->
                                 [ "I was expecting textblock content type, but instead I got "
@@ -226,7 +226,7 @@ validateEditorBlockNode spec allowedGroups node =
                     InlineChildren la ->
                         case contentType of
                             TextBlockNodeType groups ->
-                                List.concatMap (validateInlineLeaf spec groups) (Array.toList (arrayFromInlineArray la))
+                                List.concatMap (validateInlineLeaf spec groups) (Array.toList (fromInlineArray la))
 
                             _ ->
                                 [ "I was expecting textblock content type, but instead I got " ++ toStringContentType contentType ]
@@ -256,7 +256,7 @@ resultFilterMap f xs =
     Array.foldl (maybePush f) Array.empty xs
 
 
-htmlToElementArray : Spec -> String -> Result String (Array EditorFragment)
+htmlToElementArray : Spec -> String -> Result String (Array Fragment)
 htmlToElementArray spec html =
     case stringToHtmlNodeArray html of
         Err s ->
@@ -274,7 +274,7 @@ htmlToElementArray spec html =
                 Ok <| reduceEditorFragmentArray newArray
 
 
-htmlNodeToEditorFragment : Spec -> List Mark -> HtmlNode -> Result String EditorFragment
+htmlNodeToEditorFragment : Spec -> List Mark -> HtmlNode -> Result String Fragment
 htmlNodeToEditorFragment spec marks node =
     case node of
         TextNode s ->
@@ -335,7 +335,7 @@ htmlNodeToEditorFragment spec marks node =
                                 Err s
 
                             Ok childNodes ->
-                                Ok <| BlockNodeFragment <| Array.fromList [ editorBlockNode element childNodes ]
+                                Ok <| BlockNodeFragment <| Array.fromList [ blockNode element childNodes ]
 
                 Nothing ->
                     case htmlNodeToMark spec node of
@@ -373,7 +373,7 @@ htmlNodeToMark spec node =
         (markDefinitions spec)
 
 
-reduceEditorFragmentArray : Array EditorFragment -> Array EditorFragment
+reduceEditorFragmentArray : Array Fragment -> Array Fragment
 reduceEditorFragmentArray fragmentArray =
     Array.foldl
         (\fragment arr ->
@@ -403,7 +403,7 @@ reduceEditorFragmentArray fragmentArray =
         fragmentArray
 
 
-arrayToChildNodes : ContentType -> Array (Result String EditorFragment) -> Result String ChildNodes
+arrayToChildNodes : ContentType -> Array (Result String Fragment) -> Result String ChildNodes
 arrayToChildNodes contentType results =
     if Array.isEmpty results then
         case contentType of
@@ -437,7 +437,7 @@ arrayToChildNodes contentType results =
                                 Err "I received a block node fragment, but the node I parsed doesn't accept this child type"
 
 
-arrayToFragment : Array (Result String EditorFragment) -> Result String EditorFragment
+arrayToFragment : Array (Result String Fragment) -> Result String Fragment
 arrayToFragment results =
     let
         aResult =

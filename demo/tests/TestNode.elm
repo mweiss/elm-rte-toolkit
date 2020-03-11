@@ -3,7 +3,7 @@ module TestNode exposing (..)
 import Array
 import Expect
 import RichTextEditor.Model.Annotation exposing (Annotation, selectableAnnotation)
-import RichTextEditor.Model.Node exposing (ChildNodes(..), EditorBlockNode, EditorFragment(..), EditorInlineLeaf(..), EditorNode(..), NodePath, blockArray, blockNodeWithParameters, editorBlockNode, elementParameters, elementParametersFromBlockNode, elementParametersFromInlineLeafParameters, elementParametersWithAnnotations, emptyTextLeafParameters, inlineLeafArray, inlineLeafParameters, inlineLeafParametersWithElementParameters, nameFromElementParameters, text, textLeafParametersWithAnnotations, textLeafWithText, withText)
+import RichTextEditor.Model.Node exposing (BlockNode, ChildNodes(..), EditorInlineLeaf(..), Fragment(..), Node(..), Path, blockArray, blockNode, blockNodeWithParameters, elementParameters, elementParametersFromBlockNode, elementParametersFromInlineLeafParameters, elementParametersWithAnnotations, emptyTextLeafParameters, inlineLeafArray, inlineLeafParameters, inlineLeafParametersWithElementParameters, nameFromElementParameters, text, textLeafParametersWithAnnotations, textLeafWithText, withText)
 import RichTextEditor.Node
     exposing
         ( allRange
@@ -37,16 +37,16 @@ import Set
 import Test exposing (Test, describe, test)
 
 
-rootNode : EditorBlockNode
+rootNode : BlockNode
 rootNode =
-    editorBlockNode
+    blockNode
         (elementParameters "div" [] Set.empty)
         (blockArray <| Array.fromList [ pNode ])
 
 
-pNode : EditorBlockNode
+pNode : BlockNode
 pNode =
-    editorBlockNode
+    blockNode
         (elementParameters "p" [] Set.empty)
         (inlineLeafArray <|
             Array.fromList [ textNode1, textNode2 ]
@@ -86,12 +86,12 @@ testNodeAt =
         ]
 
 
-nodePathList : NodePath -> EditorNode -> List NodePath -> List NodePath
+nodePathList : Path -> Node -> List Path -> List Path
 nodePathList path _ list =
     path :: list
 
 
-nodeNameOrTextValue : NodePath -> EditorNode -> List String -> List String
+nodeNameOrTextValue : Path -> Node -> List String -> List String
 nodeNameOrTextValue _ node list =
     (case node of
         BlockNodeWrapper bn ->
@@ -150,13 +150,13 @@ testIsSelectable =
         [ test "Test that a text node is selectable" <|
             \_ -> Expect.equal True <| isSelectable (InlineLeafWrapper (textLeafWithText ""))
         , test "Test that a element node with a selectable mark is selectable" <|
-            \_ -> Expect.equal True <| isSelectable (BlockNodeWrapper (editorBlockNode (elementParameters "div" [] (Set.fromList [ selectableAnnotation ])) Leaf))
+            \_ -> Expect.equal True <| isSelectable (BlockNodeWrapper (blockNode (elementParameters "div" [] (Set.fromList [ selectableAnnotation ])) Leaf))
         , test "Test that a element node without a selectable mark is not selectable" <|
-            \_ -> Expect.equal False <| isSelectable (BlockNodeWrapper (editorBlockNode (elementParameters "div" [] Set.empty) Leaf))
+            \_ -> Expect.equal False <| isSelectable (BlockNodeWrapper (blockNode (elementParameters "div" [] Set.empty) Leaf))
         ]
 
 
-setAnnotations : Annotation -> EditorNode -> EditorNode
+setAnnotations : Annotation -> Node -> Node
 setAnnotations mark node =
     let
         annotations =
@@ -187,12 +187,12 @@ dummyAnnotation =
     "__dummy__"
 
 
-addDummyAnnotation : EditorNode -> EditorNode
+addDummyAnnotation : Node -> Node
 addDummyAnnotation node =
     setAnnotations dummyAnnotation node
 
 
-addPathAnnotation : NodePath -> EditorNode -> EditorNode
+addPathAnnotation : Path -> Node -> Node
 addPathAnnotation path node =
     let
         pathAnnotation =
@@ -202,7 +202,7 @@ addPathAnnotation path node =
 
 
 rootNodeWithPathAnnotation =
-    editorBlockNode
+    blockNode
         (elementParameters "div" [] (Set.fromList [ "" ]))
         (blockArray <|
             Array.fromList [ pHtmlNodeWithPathAnnotation ]
@@ -210,7 +210,7 @@ rootNodeWithPathAnnotation =
 
 
 pHtmlNodeWithPathAnnotation =
-    editorBlockNode
+    blockNode
         (elementParameters "p" [] (Set.fromList [ "0" ]))
         (inlineLeafArray <|
             Array.fromList [ textNode1WithPathAnnotation, textNode2WithPathAnnotation ]
@@ -244,7 +244,7 @@ testIndexedMap =
 
 
 rootNodeWithSameAnnotation =
-    editorBlockNode
+    blockNode
         (elementParameters "div" [] (Set.fromList [ dummyAnnotation ]))
         (blockArray <|
             Array.fromList [ pHtmlNodeWithSameAnnotation ]
@@ -252,7 +252,7 @@ rootNodeWithSameAnnotation =
 
 
 pHtmlNodeWithSameAnnotation =
-    editorBlockNode
+    blockNode
         (elementParameters "p" [] (Set.fromList [ dummyAnnotation ]))
         (inlineLeafArray <|
             Array.fromList [ textNode1WithSameAnnotation, textNode2WithSameAnnotation ]
@@ -312,12 +312,12 @@ testFindAncestor =
         ]
 
 
-findNodeAtPath : NodePath -> NodePath -> EditorNode -> Bool
+findNodeAtPath : Path -> Path -> Node -> Bool
 findNodeAtPath path1 path2 _ =
     path1 == path2
 
 
-findNodeWithName : String -> NodePath -> EditorNode -> Bool
+findNodeWithName : String -> Path -> Node -> Bool
 findNodeWithName name _ node =
     case node of
         BlockNodeWrapper bn ->
@@ -449,7 +449,7 @@ testPrevious =
 
 
 removedRootNode =
-    editorBlockNode
+    blockNode
         (elementParameters "div" [] Set.empty)
         (blockArray <|
             Array.fromList [ removedPHtmlNode ]
@@ -457,7 +457,7 @@ removedRootNode =
 
 
 removedPHtmlNode =
-    editorBlockNode
+    blockNode
         (elementParameters "p" [] Set.empty)
         (inlineLeafArray <|
             Array.fromList [ textNode2 ]
@@ -465,19 +465,19 @@ removedPHtmlNode =
 
 
 removedRootAll =
-    editorBlockNode
+    blockNode
         (elementParameters "div" [] Set.empty)
         (blockArray Array.empty)
 
 
 removedPHtmlNodeAll =
-    editorBlockNode
+    blockNode
         (elementParameters "p" [] Set.empty)
         (inlineLeafArray Array.empty)
 
 
 removedRootNodeRemovedPNodeAll =
-    editorBlockNode
+    blockNode
         (elementParameters "div" [] Set.empty)
         (blockArray <|
             Array.fromList [ removedPHtmlNodeAll ]
@@ -513,13 +513,13 @@ testRemoveInRange =
 
 
 replaceRootPNode =
-    editorBlockNode
+    blockNode
         (elementParameters "div" [] Set.empty)
         (blockArray <| Array.fromList [ replacePNode ])
 
 
 replacePNode =
-    editorBlockNode
+    blockNode
         (elementParameters "p" [] Set.empty)
         (inlineLeafArray <|
             Array.fromList [ textNode2, textNode2 ]
@@ -573,7 +573,7 @@ testAnyRange =
 
 
 doubleRoot =
-    editorBlockNode
+    blockNode
         (elementParameters "div" [] Set.empty)
         (blockArray <|
             Array.fromList [ doublePNode, doublePNode ]
@@ -581,7 +581,7 @@ doubleRoot =
 
 
 doublePNode =
-    editorBlockNode
+    blockNode
         (elementParameters "p" [] Set.empty)
         (inlineLeafArray <|
             Array.fromList [ textNode1, textNode1, textNode2, textNode2 ]
@@ -600,7 +600,7 @@ testConcatMap =
 
 
 nodeBeforeTextLeafSplit =
-    editorBlockNode
+    blockNode
         (elementParameters "div" [] Set.empty)
         (inlineLeafArray <|
             Array.fromList [ textLeafWithText "sam" ]
@@ -608,7 +608,7 @@ nodeBeforeTextLeafSplit =
 
 
 nodeAfterTextLeafSplit =
-    editorBlockNode
+    blockNode
         (elementParameters "div" [] Set.empty)
         (inlineLeafArray <|
             Array.fromList [ textLeafWithText "ple1" ]
@@ -616,7 +616,7 @@ nodeAfterTextLeafSplit =
 
 
 nodeWithTextLeafToSplit =
-    editorBlockNode
+    blockNode
         (elementParameters "div" [] Set.empty)
         (inlineLeafArray <|
             Array.fromList [ textNode1 ]
@@ -628,7 +628,7 @@ inlineImg =
 
 
 nodeAfterInlineLeafSplit =
-    editorBlockNode
+    blockNode
         (elementParameters "div" [] Set.empty)
         (inlineLeafArray <|
             Array.fromList [ inlineImg ]
@@ -636,13 +636,13 @@ nodeAfterInlineLeafSplit =
 
 
 nodeBeforeInlineLeafSplit =
-    editorBlockNode
+    blockNode
         (elementParameters "div" [] Set.empty)
         (inlineLeafArray Array.empty)
 
 
 nodeWithInlineLeafToSplit =
-    editorBlockNode
+    blockNode
         (elementParameters "div" [] Set.empty)
         (inlineLeafArray <| Array.fromList [ inlineImg ])
 

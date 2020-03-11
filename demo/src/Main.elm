@@ -17,7 +17,7 @@ import RichTextEditor.Model.Command as Commands exposing (inputEvent, key, set, 
 import RichTextEditor.Model.Editor exposing (Editor, editor, emptyDecorations, spec, state, withCommandMap, withDecorations)
 import RichTextEditor.Model.Keys exposing (enterKey, returnKey)
 import RichTextEditor.Model.Mark exposing (mark)
-import RichTextEditor.Model.Node exposing (ChildNodes(..), EditorBlockNode, EditorInlineLeaf(..), blockArray, editorBlockNode, elementParameters, inlineLeafArray, inlineLeafParameters, textLeafWithText)
+import RichTextEditor.Model.Node exposing (BlockNode, ChildNodes(..), EditorInlineLeaf(..), blockArray, blockNode, elementParameters, inlineLeafArray, inlineLeafParameters, textLeafWithText)
 import RichTextEditor.Model.State as State exposing (State)
 import RichTextEditor.Spec exposing (markOrderFromSpec)
 import Set
@@ -45,7 +45,7 @@ inlineImageNode =
 
 
 paragraphWithImage =
-    editorBlockNode
+    blockNode
         (elementParameters "paragraph" [] Set.empty)
         (inlineLeafArray
             (Array.fromList
@@ -57,16 +57,16 @@ paragraphWithImage =
         )
 
 
-doubleInitNode : EditorBlockNode
+doubleInitNode : BlockNode
 doubleInitNode =
-    editorBlockNode
+    blockNode
         (elementParameters "doc" [] Set.empty)
         (blockArray (Array.fromList [ initialEditorNode, paragraphWithImage, initialEditorNode ]))
 
 
-initialEditorNode : EditorBlockNode
+initialEditorNode : BlockNode
 initialEditorNode =
-    editorBlockNode
+    blockNode
         (elementParameters "paragraph" [] Set.empty)
         (inlineLeafArray (Array.fromList [ textLeafWithText "This is some sample text" ]))
 
@@ -366,7 +366,7 @@ handleInsertHorizontalRule model =
                     ( "insertHR"
                     , transformCommand <|
                         insertBlockNode
-                            (editorBlockNode
+                            (blockNode
                                 (elementParameters
                                     "horizontal_rule"
                                     []

@@ -9,14 +9,14 @@ import RichTextEditor.Model.Editor exposing (DecoderFunc, Decorations, ElementDe
 import RichTextEditor.Model.Node
     exposing
         ( ElementParameters
-        , NodePath
+        , Path
         , annotationsFromElementParameters
         )
 import RichTextEditor.Model.Selection exposing (caretSelection)
 import Set
 
 
-selectableDecoration : DecoderFunc msg -> NodePath -> ElementParameters -> NodePath -> List (Html.Attribute msg)
+selectableDecoration : DecoderFunc msg -> Path -> ElementParameters -> Path -> List (Html.Attribute msg)
 selectableDecoration decoder editorNodePath elementParameters _ =
     (if Set.member selectionAnnotation (annotationsFromElementParameters elementParameters) then
         [ Html.Attributes.class "rte-selected" ]

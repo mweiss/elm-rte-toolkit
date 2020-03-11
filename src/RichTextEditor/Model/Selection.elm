@@ -4,7 +4,7 @@ module RichTextEditor.Model.Selection exposing (..)
 the anchorNode and focusNode are translations of the node paths relative to the editor.
 -}
 
-import RichTextEditor.Model.Node exposing (NodePath)
+import RichTextEditor.Model.Node exposing (Path)
 
 
 type Selection
@@ -13,13 +13,13 @@ type Selection
 
 type alias Contents =
     { anchorOffset : Int
-    , anchorNode : NodePath
+    , anchorNode : Path
     , focusOffset : Int
-    , focusNode : NodePath
+    , focusNode : Path
     }
 
 
-anchorNode : Selection -> NodePath
+anchorNode : Selection -> Path
 anchorNode selection =
     case selection of
         Selection c ->
@@ -33,7 +33,7 @@ anchorOffset selection =
             c.anchorOffset
 
 
-focusNode : Selection -> NodePath
+focusNode : Selection -> Path
 focusNode selection =
     case selection of
         Selection c ->
@@ -49,7 +49,7 @@ focusOffset selection =
 
 {-| This is a helper method for constructing a caret selection.
 -}
-caretSelection : NodePath -> Int -> Selection
+caretSelection : Path -> Int -> Selection
 caretSelection nodePath offset =
     singleNodeRangeSelection nodePath offset offset
 
@@ -65,7 +65,7 @@ isCollapsed selection =
 
 {-| This is a helper method for creating a range selection
 -}
-rangeSelection : NodePath -> Int -> NodePath -> Int -> Selection
+rangeSelection : Path -> Int -> Path -> Int -> Selection
 rangeSelection aNode aOffset fNode fOffset =
     Selection
         { anchorOffset = aOffset
@@ -77,7 +77,7 @@ rangeSelection aNode aOffset fNode fOffset =
 
 {-| This is a helper method for creating a selection over a single node
 -}
-singleNodeRangeSelection : NodePath -> Int -> Int -> Selection
+singleNodeRangeSelection : Path -> Int -> Int -> Selection
 singleNodeRangeSelection node aOffset fOffset =
     rangeSelection node aOffset node fOffset
 

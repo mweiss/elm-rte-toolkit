@@ -11,7 +11,7 @@ import RichTextEditor.Commands
         )
 import RichTextEditor.Model.Command exposing (CommandMap, Transform, emptyCommandMap, inputEvent, key, set, transformCommand)
 import RichTextEditor.Model.Keys exposing (altKey, backspaceKey, deleteKey, enterKey, returnKey)
-import RichTextEditor.Model.Node exposing (BlockArray, ChildNodes(..), EditorBlockNode, EditorFragment(..), EditorInlineLeaf(..), EditorNode(..), ElementParameters, NodePath, arrayFromBlockArray, blockArray, childNodes, editorBlockNode, elementParameters, elementParametersFromBlockNode, nameFromElementParameters, text)
+import RichTextEditor.Model.Node exposing (BlockArray, BlockNode, ChildNodes(..), EditorInlineLeaf(..), ElementParameters, Fragment(..), Node(..), Path, blockArray, blockNode, childNodes, elementParameters, elementParametersFromBlockNode, fromBlockArray, nameFromElementParameters, text)
 import RichTextEditor.Model.Selection exposing (Selection, anchorNode, anchorOffset, focusNode, focusOffset, isCollapsed, normalizeSelection)
 import RichTextEditor.Model.State as State exposing (root, withRoot, withSelection)
 import RichTextEditor.Node
@@ -101,9 +101,9 @@ unordered definition =
             c.unordered
 
 
-addListItem : ListDefinition -> EditorBlockNode -> EditorBlockNode
+addListItem : ListDefinition -> BlockNode -> BlockNode
 addListItem definition node =
-    editorBlockNode
+    blockNode
         (item definition)
         (blockArray <|
             Array.fromList [ node ]
@@ -122,7 +122,7 @@ wrap definition type_ editorState =
         editorState
 
 
-findListItemAncestor : ElementParameters -> NodePath -> EditorBlockNode -> Maybe ( NodePath, EditorBlockNode )
+findListItemAncestor : ElementParameters -> Path -> BlockNode -> Maybe ( Path, BlockNode )
 findListItemAncestor parameters =
     findAncestor (\n -> nameFromElementParameters (elementParametersFromBlockNode n) == nameFromElementParameters parameters)
 
@@ -132,7 +132,7 @@ split definition =
     RichTextEditor.Commands.splitBlock (findListItemAncestor (item definition))
 
 
-isListNode : ListDefinition -> EditorNode -> Bool
+isListNode : ListDefinition -> Node -> Bool
 isListNode definition node =
     case node of
         InlineLeafWrapper _ ->
@@ -149,7 +149,7 @@ isListNode definition node =
                 == nameFromElementParameters (unordered definition)
 
 
-addLiftAnnotationAtPathAndChildren : NodePath -> EditorBlockNode -> Result String EditorBlockNode
+addLiftAnnotationAtPathAndChildren : Path -> BlockNode -> Result String BlockNode
 addLiftAnnotationAtPathAndChildren path root =
     case RichTextEditor.Annotation.addAnnotationAtPath liftAnnotation path root of
         Err s ->
@@ -175,7 +175,7 @@ addLiftAnnotationAtPathAndChildren path root =
                                                     RichTextEditor.Annotation.addAnnotationAtPath liftAnnotation (path ++ [ i ]) n
                                         )
                                         (Ok newRoot)
-                                        (List.range 0 (Array.length (arrayFromBlockArray ba) - 1))
+                                        (List.range 0 (Array.length (fromBlockArray ba) - 1))
 
                                 _ ->
                                     Err "I was expecting a block array to add a lift mark to"
@@ -184,7 +184,7 @@ addLiftAnnotationAtPathAndChildren path root =
                             Err "I was expecting a block node to add a lift mark to"
 
 
-addLiftMarkToListItems : ListDefinition -> Selection -> EditorBlockNode -> Result String EditorBlockNode
+addLiftMarkToListItems : ListDefinition -> Selection -> BlockNode -> Result String BlockNode
 addLiftMarkToListItems definition selection root =
     case findListItemAncestor (item definition) (anchorNode selection) root of
         Nothing ->
@@ -285,7 +285,7 @@ liftEmpty definition editorState =
                     Just ( _, node ) ->
                         case childNodes node of
                             BlockChildren a ->
-                                case Array.get 0 (arrayFromBlockArray a) of
+                                case Array.get 0 (fromBlockArray a) of
                                     Nothing ->
                                         Err "Cannot lift a list item with no children"
 
@@ -300,7 +300,7 @@ liftEmpty definition editorState =
                                 Err "I was expecting a list item to have block child nodes"
 
 
-isBeginningOfListItem : ListDefinition -> Selection -> EditorBlockNode -> Bool
+isBeginningOfListItem : ListDefinition -> Selection -> BlockNode -> Bool
 isBeginningOfListItem definition selection root =
     if not <| isCollapsed selection then
         False
@@ -391,7 +391,7 @@ joinBackward definition editorState =
                                                                 )
 
 
-isEndOfListItem : ListDefinition -> Selection -> EditorBlockNode -> Bool
+isEndOfListItem : ListDefinition -> Selection -> BlockNode -> Bool
 isEndOfListItem definition selection root =
     if not <| isCollapsed selection then
         False

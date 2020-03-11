@@ -22,7 +22,7 @@ import RichTextEditor.Model.Editor exposing (DecoderFunc, Editor, InternalEditor
 import RichTextEditor.Model.Event exposing (EditorChange, PasteEvent, TextChange)
 import RichTextEditor.Model.HtmlNode exposing (HtmlNode(..))
 import RichTextEditor.Model.Mark as Mark exposing (Mark)
-import RichTextEditor.Model.Node exposing (ChildNodes(..), EditorBlockNode, EditorInlineLeaf(..), EditorNode(..), ElementParameters, InlineLeafTree(..), NodePath, arrayFromBlockArray, arrayFromInlineArray, blockArray, childNodes, elementParametersFromBlockNode, elementParametersFromInlineLeafParameters, inlineLeafArray, nameFromElementParameters, text, treeFromInlineArray, withChildNodes, withText)
+import RichTextEditor.Model.Node exposing (BlockNode, ChildNodes(..), EditorInlineLeaf(..), ElementParameters, InlineLeafTree(..), Node(..), Path, blockArray, childNodes, elementParametersFromBlockNode, elementParametersFromInlineLeafParameters, fromBlockArray, fromInlineArray, inlineLeafArray, nameFromElementParameters, text, treeFromInlineArray, withChildNodes, withText)
 import RichTextEditor.Model.Selection exposing (Selection, anchorNode, anchorOffset, focusNode, focusOffset, isCollapsed, rangeSelection)
 import RichTextEditor.Model.Spec exposing (Spec, markDefinitions, nameFromMarkDefinition, toHtmlNodeFromMarkDefinition, toHtmlNodeFromNodeDefinition)
 import RichTextEditor.Model.State as State exposing (State, withRoot, withSelection)
@@ -92,7 +92,7 @@ handleCut editor =
             forceRerender e
 
 
-textChangesDomToEditor : Spec -> EditorBlockNode -> List TextChange -> Maybe (List TextChange)
+textChangesDomToEditor : Spec -> BlockNode -> List TextChange -> Maybe (List TextChange)
 textChangesDomToEditor spec editorNode changes =
     List.foldl
         (\( p, text ) maybeAgg ->
@@ -112,7 +112,7 @@ textChangesDomToEditor spec editorNode changes =
         changes
 
 
-deriveTextChanges : Spec -> EditorBlockNode -> DomNode -> Result String (List TextChange)
+deriveTextChanges : Spec -> BlockNode -> DomNode -> Result String (List TextChange)
 deriveTextChanges spec editorNode domNode =
     let
         htmlNode =
@@ -167,7 +167,7 @@ sanitizeMutations changes =
         changes
 
 
-differentText : EditorBlockNode -> TextChange -> Bool
+differentText : BlockNode -> TextChange -> Bool
 differentText root ( path, t ) =
     case nodeAt path root of
         Nothing ->
@@ -332,7 +332,7 @@ onEditorSelectionChange msgFunc =
     Html.Events.on "editorselectionchange" (D.map msgFunc editorSelectionChangeDecoder)
 
 
-replaceText : EditorBlockNode -> List TextChange -> Maybe EditorBlockNode
+replaceText : BlockNode -> List TextChange -> Maybe BlockNode
 replaceText editorNode changes =
     List.foldl
         (\change maybeNode ->
@@ -347,7 +347,7 @@ replaceText editorNode changes =
         changes
 
 
-applyTextChange : EditorBlockNode -> TextChange -> Maybe EditorBlockNode
+applyTextChange : BlockNode -> TextChange -> Maybe BlockNode
 applyTextChange editorNode ( path, text ) =
     case path of
         [] ->
@@ -358,7 +358,7 @@ applyTextChange editorNode ( path, text ) =
                 BlockChildren array ->
                     let
                         a =
-                            arrayFromBlockArray array
+                            fromBlockArray array
                     in
                     case Array.get x a of
                         Nothing ->
@@ -378,7 +378,7 @@ applyTextChange editorNode ( path, text ) =
                 InlineChildren array ->
                     let
                         a =
-                            arrayFromInlineArray array
+                            fromInlineArray array
                     in
                     if not <| List.isEmpty xs then
                         Nothing
@@ -482,7 +482,7 @@ shouldHideCaret editorState =
                                         False
 
 
-markCaretSelectionOnEditorNodes : State -> EditorBlockNode
+markCaretSelectionOnEditorNodes : State -> BlockNode
 markCaretSelectionOnEditorNodes editorState =
     case State.selection editorState of
         Nothing ->
@@ -552,7 +552,7 @@ renderEditor editor =
         ]
 
 
-renderHtmlNode : HtmlNode -> List (NodePath -> List (Html.Attribute msg)) -> Array (Html msg) -> NodePath -> Html msg
+renderHtmlNode : HtmlNode -> List (Path -> List (Html.Attribute msg)) -> Array (Html msg) -> Path -> Html msg
 renderHtmlNode node decorators vdomChildren backwardsRelativePath =
     case node of
         ElementNode name attributes children ->
@@ -577,7 +577,7 @@ renderHtmlNode node decorators vdomChildren backwardsRelativePath =
             Html.text v
 
 
-renderMarkFromSpec : Editor msg -> NodePath -> Mark -> Array (Html msg) -> Html msg
+renderMarkFromSpec : Editor msg -> Path -> Mark -> Array (Html msg) -> Html msg
 renderMarkFromSpec editor backwardsNodePath mark children =
     let
         markDecorators =
@@ -598,7 +598,7 @@ renderMarkFromSpec editor backwardsNodePath mark children =
             renderHtmlNode node decorators children []
 
 
-renderElementFromSpec : Editor msg -> ElementParameters -> NodePath -> Array (Html msg) -> Html msg
+renderElementFromSpec : Editor msg -> ElementParameters -> Path -> Array (Html msg) -> Html msg
 renderElementFromSpec editor elementParameters backwardsNodePath children =
     let
         definition =
@@ -621,7 +621,7 @@ renderElementFromSpec editor elementParameters backwardsNodePath children =
     nodeHtml
 
 
-renderInlineLeafTree : Editor msg -> NodePath -> Array EditorInlineLeaf -> InlineLeafTree -> Html msg
+renderInlineLeafTree : Editor msg -> Path -> Array EditorInlineLeaf -> InlineLeafTree -> Html msg
 renderInlineLeafTree editor backwardsPath inlineLeafArray inlineLeafTree =
     case inlineLeafTree of
         LeafNode i ->
@@ -638,17 +638,17 @@ renderInlineLeafTree editor backwardsPath inlineLeafArray inlineLeafTree =
                 Array.map (renderInlineLeafTree editor backwardsPath inlineLeafArray) n.children
 
 
-renderEditorBlockNode : Editor msg -> NodePath -> EditorBlockNode -> Html msg
+renderEditorBlockNode : Editor msg -> Path -> BlockNode -> Html msg
 renderEditorBlockNode editor backwardsPath node =
     renderElementFromSpec editor
         (elementParametersFromBlockNode node)
         backwardsPath
         (case childNodes node of
             BlockChildren l ->
-                Array.indexedMap (\i n -> renderEditorBlockNode editor (i :: backwardsPath) n) (arrayFromBlockArray l)
+                Array.indexedMap (\i n -> renderEditorBlockNode editor (i :: backwardsPath) n) (fromBlockArray l)
 
             InlineChildren l ->
-                Array.map (\n -> renderInlineLeafTree editor backwardsPath (arrayFromInlineArray l) n) (treeFromInlineArray l)
+                Array.map (\n -> renderInlineLeafTree editor backwardsPath (fromInlineArray l) n) (treeFromInlineArray l)
 
             Leaf ->
                 Array.empty
@@ -666,7 +666,7 @@ renderText text =
         )
 
 
-renderInlineLeaf : Editor msg -> NodePath -> EditorInlineLeaf -> Html msg
+renderInlineLeaf : Editor msg -> Path -> EditorInlineLeaf -> Html msg
 renderInlineLeaf editor backwardsPath leaf =
     case leaf of
         InlineLeaf l ->

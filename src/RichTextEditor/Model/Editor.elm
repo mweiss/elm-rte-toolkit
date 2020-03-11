@@ -62,7 +62,7 @@ import RichTextEditor.Model.Command exposing (CommandMap, emptyCommandMap)
 import RichTextEditor.Model.Event exposing (EditorChange, InputEvent, KeyboardEvent, PasteEvent)
 import RichTextEditor.Model.History exposing (History, emptyHistory, fromContents)
 import RichTextEditor.Model.Mark exposing (Mark)
-import RichTextEditor.Model.Node exposing (ElementParameters, NodePath)
+import RichTextEditor.Model.Node exposing (ElementParameters, Path)
 import RichTextEditor.Model.Selection exposing (Selection)
 import RichTextEditor.Model.Spec exposing (Spec)
 import RichTextEditor.Model.State exposing (State)
@@ -291,11 +291,11 @@ withElementDecorators elements d =
 
 
 type alias ElementDecoratorFunction msg =
-    DecoderFunc msg -> NodePath -> ElementParameters -> NodePath -> List (Html.Attribute msg)
+    DecoderFunc msg -> Path -> ElementParameters -> Path -> List (Html.Attribute msg)
 
 
 type alias MarkDecoratorFunction msg =
-    DecoderFunc msg -> NodePath -> Mark -> NodePath -> List (Html.Attribute msg)
+    DecoderFunc msg -> Path -> Mark -> Path -> List (Html.Attribute msg)
 
 
 defaultDequeSize : Int

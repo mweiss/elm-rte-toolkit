@@ -1,28 +1,26 @@
 module RichTextEditor.Model.Node exposing
     ( BlockArray
+    , BlockNode
     , ChildNodes(..)
-    , EditorBlockNode
-    , EditorFragment(..)
     , EditorInlineLeaf(..)
-    , EditorNode(..)
     , ElementParameters
+    , Fragment(..)
     , InlineLeafArray
     , InlineLeafParameters
     , InlineLeafTree(..)
     , MarkNodeContents
-    , NodePath
+    , Node(..)
+    , Path
     , TextLeafParameters
     , annotationsFromBlockNode
     , annotationsFromElementParameters
     , annotationsFromTextLeafParameters
-    , arrayFromBlockArray
-    , arrayFromInlineArray
     , attributesFromElementParameters
     , blockArray
+    , blockNode
     , blockNodeWithChildNodes
     , blockNodeWithParameters
     , childNodes
-    , editorBlockNode
     , elementParameters
     , elementParametersFromBlockNode
     , elementParametersFromInlineLeafParameters
@@ -30,6 +28,8 @@ module RichTextEditor.Model.Node exposing
     , elementParametersWithAttributes
     , elementParametersWithName
     , emptyTextLeafParameters
+    , fromBlockArray
+    , fromInlineArray
     , inlineLeafArray
     , inlineLeafParameters
     , inlineLeafParametersWithElementParameters
@@ -61,17 +61,17 @@ import RichTextEditor.Model.Mark exposing (Mark)
 import Set exposing (Set)
 
 
-type alias NodePath =
+type alias Path =
     List Int
 
 
-type EditorNode
-    = BlockNodeWrapper EditorBlockNode
+type Node
+    = BlockNodeWrapper BlockNode
     | InlineLeafWrapper EditorInlineLeaf
 
 
-type EditorFragment
-    = BlockNodeFragment (Array EditorBlockNode)
+type Fragment
+    = BlockNodeFragment (Array BlockNode)
     | InlineLeafFragment (Array EditorInlineLeaf)
 
 
@@ -91,18 +91,18 @@ elementParameters name attributes annotations =
     ElementParameters { name = name, attributes = attributes, annotations = annotations }
 
 
-blockNodeWithParameters : ElementParameters -> EditorBlockNode -> EditorBlockNode
+blockNodeWithParameters : ElementParameters -> BlockNode -> BlockNode
 blockNodeWithParameters parameters node =
     case node of
-        EditorBlockNode c ->
-            EditorBlockNode { c | parameters = parameters }
+        BlockNode c ->
+            BlockNode { c | parameters = parameters }
 
 
-blockNodeWithChildNodes : ChildNodes -> EditorBlockNode -> EditorBlockNode
+blockNodeWithChildNodes : ChildNodes -> BlockNode -> BlockNode
 blockNodeWithChildNodes cn node =
     case node of
-        EditorBlockNode c ->
-            EditorBlockNode { c | childNodes = cn }
+        BlockNode c ->
+            BlockNode { c | childNodes = cn }
 
 
 nameFromElementParameters : ElementParameters -> String
@@ -119,7 +119,7 @@ attributesFromElementParameters parameters =
             c.attributes
 
 
-annotationsFromBlockNode : EditorBlockNode -> Set Annotation
+annotationsFromBlockNode : BlockNode -> Set Annotation
 annotationsFromBlockNode node =
     annotationsFromElementParameters <| elementParametersFromBlockNode node
 
@@ -155,39 +155,39 @@ elementParametersWithAttributes attributes parameters =
 {-| An editor block node represents a block element in your document. An editor block node can either
 have other block nodes as children, have all inline leaf nodes as children, or be a leaf node.
 -}
-type EditorBlockNode
-    = EditorBlockNode EditorBlockNodeContents
+type BlockNode
+    = BlockNode BlockNodeContents
 
 
-type alias EditorBlockNodeContents =
+type alias BlockNodeContents =
     { parameters : ElementParameters
     , childNodes : ChildNodes
     }
 
 
-editorBlockNode : ElementParameters -> ChildNodes -> EditorBlockNode
-editorBlockNode parameters cn =
-    EditorBlockNode { parameters = parameters, childNodes = cn }
+blockNode : ElementParameters -> ChildNodes -> BlockNode
+blockNode parameters cn =
+    BlockNode { parameters = parameters, childNodes = cn }
 
 
-withChildNodes : ChildNodes -> EditorBlockNode -> EditorBlockNode
+withChildNodes : ChildNodes -> BlockNode -> BlockNode
 withChildNodes cn node =
     case node of
-        EditorBlockNode n ->
-            EditorBlockNode { n | childNodes = cn }
+        BlockNode n ->
+            BlockNode { n | childNodes = cn }
 
 
-elementParametersFromBlockNode : EditorBlockNode -> ElementParameters
+elementParametersFromBlockNode : BlockNode -> ElementParameters
 elementParametersFromBlockNode node =
     case node of
-        EditorBlockNode n ->
+        BlockNode n ->
             n.parameters
 
 
-childNodes : EditorBlockNode -> ChildNodes
+childNodes : BlockNode -> ChildNodes
 childNodes node =
     case node of
-        EditorBlockNode n ->
+        BlockNode n ->
             n.childNodes
 
 
@@ -201,16 +201,16 @@ type ChildNodes
 
 
 type BlockArray
-    = BlockArray (Array EditorBlockNode)
+    = BlockArray (Array BlockNode)
 
 
-blockArray : Array EditorBlockNode -> ChildNodes
+blockArray : Array BlockNode -> ChildNodes
 blockArray arr =
     BlockChildren <| BlockArray arr
 
 
-arrayFromBlockArray : BlockArray -> Array EditorBlockNode
-arrayFromBlockArray arr =
+fromBlockArray : BlockArray -> Array BlockNode
+fromBlockArray arr =
     case arr of
         BlockArray a ->
             a
@@ -224,8 +224,8 @@ type InlineLeafArray
     = InlineLeafArray InlineLeafArrayContents
 
 
-arrayFromInlineArray : InlineLeafArray -> Array EditorInlineLeaf
-arrayFromInlineArray arr =
+fromInlineArray : InlineLeafArray -> Array EditorInlineLeaf
+fromInlineArray arr =
     case arr of
         InlineLeafArray a ->
             a.array
@@ -238,7 +238,7 @@ treeFromInlineArray arr =
             a.tree
 
 
-reverseLookupFromInlineArray : InlineLeafArray -> Array NodePath
+reverseLookupFromInlineArray : InlineLeafArray -> Array Path
 reverseLookupFromInlineArray arr =
     case arr of
         InlineLeafArray a ->
@@ -246,7 +246,7 @@ reverseLookupFromInlineArray arr =
 
 
 type alias InlineLeafArrayContents =
-    { array : Array EditorInlineLeaf, tree : Array InlineLeafTree, reverseLookup : Array NodePath }
+    { array : Array EditorInlineLeaf, tree : Array InlineLeafTree, reverseLookup : Array Path }
 
 
 type InlineLeafTree
@@ -385,7 +385,7 @@ inlineLeafArray arr =
             }
 
 
-inlineLeafTreeToPaths : NodePath -> Array InlineLeafTree -> List NodePath
+inlineLeafTreeToPaths : Path -> Array InlineLeafTree -> List Path
 inlineLeafTreeToPaths backwardsPath tree =
     List.concatMap
         (\( i, n ) ->
@@ -435,8 +435,3 @@ marksToMarkNodeListRec indexedMarkLists =
                 (\( _, ( m1, _ ) ) ( _, ( m2, _ ) ) -> m1 == m2)
             <|
                 List.map (\( i, a ) -> ( i, ( List.head a, List.drop 1 a ) )) indexedMarkLists
-
-
-parent : NodePath -> NodePath
-parent path =
-    List.take (List.length path - 1) path

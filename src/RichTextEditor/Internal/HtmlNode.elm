@@ -3,7 +3,7 @@ module RichTextEditor.Internal.HtmlNode exposing (..)
 import Array exposing (Array)
 import RichTextEditor.Model.HtmlNode exposing (HtmlNode(..))
 import RichTextEditor.Model.Mark exposing (Mark, name)
-import RichTextEditor.Model.Node exposing (ChildNodes(..), EditorBlockNode, EditorInlineLeaf(..), ElementParameters, InlineLeafTree(..), arrayFromBlockArray, arrayFromInlineArray, childNodes, elementParametersFromBlockNode, elementParametersFromInlineLeafParameters, nameFromElementParameters, text, treeFromInlineArray)
+import RichTextEditor.Model.Node exposing (BlockNode, ChildNodes(..), EditorInlineLeaf(..), ElementParameters, InlineLeafTree(..), childNodes, elementParametersFromBlockNode, elementParametersFromInlineLeafParameters, fromBlockArray, fromInlineArray, nameFromElementParameters, text, treeFromInlineArray)
 import RichTextEditor.Model.Spec exposing (Spec, toHtmlNodeFromMarkDefinition, toHtmlNodeFromNodeDefinition)
 import RichTextEditor.Spec
     exposing
@@ -36,7 +36,7 @@ elementToHtmlNode spec parameters children =
 
 {-| Renders element block nodes to their HtmlNode representation.
 -}
-editorBlockNodeToHtmlNode : Spec -> EditorBlockNode -> HtmlNode
+editorBlockNodeToHtmlNode : Spec -> BlockNode -> HtmlNode
 editorBlockNodeToHtmlNode spec node =
     elementToHtmlNode spec (elementParametersFromBlockNode node) (childNodesToHtmlNode spec (childNodes node))
 
@@ -47,10 +47,10 @@ childNodesToHtmlNode : Spec -> ChildNodes -> Array HtmlNode
 childNodesToHtmlNode spec childNodes =
     case childNodes of
         BlockChildren blockArray ->
-            Array.map (editorBlockNodeToHtmlNode spec) (arrayFromBlockArray blockArray)
+            Array.map (editorBlockNodeToHtmlNode spec) (fromBlockArray blockArray)
 
         InlineChildren inlineLeafArray ->
-            Array.map (editorInlineLeafTreeToHtmlNode spec (arrayFromInlineArray inlineLeafArray)) (treeFromInlineArray inlineLeafArray)
+            Array.map (editorInlineLeafTreeToHtmlNode spec (fromInlineArray inlineLeafArray)) (treeFromInlineArray inlineLeafArray)
 
         Leaf ->
             Array.empty

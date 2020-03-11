@@ -1,7 +1,7 @@
 module RichTextEditor.Model.Event exposing (..)
 
 import Json.Encode as E
-import RichTextEditor.Model.Node exposing (NodePath)
+import RichTextEditor.Model.Node exposing (Path)
 import RichTextEditor.Model.Selection exposing (Selection)
 
 
@@ -48,4 +48,4 @@ type alias PasteEvent =
 
 -}
 type alias TextChange =
-    ( NodePath, String )
+    ( Path, String )

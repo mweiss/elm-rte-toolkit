@@ -23,16 +23,16 @@ import RichTextEditor.Model.HtmlNode exposing (HtmlNode(..))
 import RichTextEditor.Model.Mark as Mark exposing (Mark)
 import RichTextEditor.Model.Node
     exposing
-        ( ChildNodes(..)
-        , EditorBlockNode
+        ( BlockNode
+        , ChildNodes(..)
         , EditorInlineLeaf
         , ElementParameters
         , InlineLeafTree(..)
-        , NodePath
-        , arrayFromBlockArray
-        , arrayFromInlineArray
+        , Path
         , childNodes
         , elementParametersFromBlockNode
+        , fromBlockArray
+        , fromInlineArray
         , nameFromElementParameters
         , reverseLookupFromInlineArray
         , treeFromInlineArray
@@ -46,7 +46,7 @@ import RichTextEditor.Spec
         )
 
 
-domToEditorInlineLeafTree : Spec -> InlineLeafTree -> NodePath -> Maybe NodePath
+domToEditorInlineLeafTree : Spec -> InlineLeafTree -> Path -> Maybe Path
 domToEditorInlineLeafTree spec tree path =
     case tree of
         LeafNode i ->
@@ -81,7 +81,7 @@ domToEditorInlineLeafTree spec tree path =
 {-| Translates a DOM node path to an editor node path. Returns Nothing if the
 path is invalid.
 -}
-domToEditor : Spec -> EditorBlockNode -> NodePath -> Maybe NodePath
+domToEditor : Spec -> BlockNode -> Path -> Maybe Path
 domToEditor spec node path =
     if List.isEmpty path then
         Just []
@@ -109,7 +109,7 @@ domToEditor spec node path =
                     Just i ->
                         case childNodes node of
                             BlockChildren l ->
-                                case Array.get i (arrayFromBlockArray l) of
+                                case Array.get i (fromBlockArray l) of
                                     Nothing ->
                                         Nothing
 
@@ -138,7 +138,7 @@ domToEditor spec node path =
 {-| Translates an editor node path to a DOM node path. Returns Nothing if the
 path is invalid.
 -}
-editorToDom : Spec -> EditorBlockNode -> NodePath -> Maybe NodePath
+editorToDom : Spec -> BlockNode -> Path -> Maybe Path
 editorToDom spec node path =
     case path of
         [] ->
@@ -152,7 +152,7 @@ editorToDom spec node path =
                 Just childPath ->
                     case childNodes node of
                         BlockChildren l ->
-                            case Array.get x (arrayFromBlockArray l) of
+                            case Array.get x (fromBlockArray l) of
                                 Nothing ->
                                     Nothing
 
@@ -173,7 +173,7 @@ editorToDom spec node path =
                                     case
                                         pathToChildContentsFromInlineTreePath
                                             spec
-                                            (arrayFromInlineArray l)
+                                            (fromInlineArray l)
                                             (treeFromInlineArray l)
                                             inlineTreePath
                                     of
@@ -187,7 +187,7 @@ editorToDom spec node path =
                             Nothing
 
 
-increment : NodePath -> NodePath
+increment : Path -> Path
 increment np =
     case List.Extra.last np of
         Nothing ->
@@ -197,7 +197,7 @@ increment np =
             List.take (List.length np - 1) np ++ [ i + 1 ]
 
 
-decrement : NodePath -> NodePath
+decrement : Path -> Path
 decrement np =
     case List.Extra.last np of
         Nothing ->
@@ -214,7 +214,7 @@ decrement np =
 -}
 
 
-removePathUpToChildContents : HtmlNode -> NodePath -> Maybe NodePath
+removePathUpToChildContents : HtmlNode -> Path -> Maybe Path
 removePathUpToChildContents node path =
     case node of
         ElementNode _ _ children ->
@@ -242,7 +242,7 @@ removePathUpToChildContents node path =
 {- Helper method to return a node path to the which should contain the child contents. -}
 
 
-pathToChildContents : HtmlNode -> Maybe NodePath
+pathToChildContents : HtmlNode -> Maybe Path
 pathToChildContents node =
     case node of
         ElementNode _ _ children ->
@@ -275,7 +275,7 @@ pathToChildContents node =
 {- Helper method that returns the path to the child contents from a list of marks -}
 
 
-pathToChildContentsFromMark : Spec -> Mark -> Maybe NodePath
+pathToChildContentsFromMark : Spec -> Mark -> Maybe Path
 pathToChildContentsFromMark spec mark =
     let
         markDefinition =
@@ -292,7 +292,7 @@ pathToChildContentsFromMark spec mark =
 {- Helper method to determine the path to the child contents from an element editor node -}
 
 
-pathToChildContentsFromElementParameters : Spec -> ElementParameters -> Maybe NodePath
+pathToChildContentsFromElementParameters : Spec -> ElementParameters -> Maybe Path
 pathToChildContentsFromElementParameters spec parameters =
     let
         nodeDefinition =
@@ -304,7 +304,7 @@ pathToChildContentsFromElementParameters spec parameters =
     pathToChildContents nodeStructure
 
 
-pathToChildContentsFromInlineTreePath : Spec -> Array EditorInlineLeaf -> Array InlineLeafTree -> NodePath -> Maybe NodePath
+pathToChildContentsFromInlineTreePath : Spec -> Array EditorInlineLeaf -> Array InlineLeafTree -> Path -> Maybe Path
 pathToChildContentsFromInlineTreePath spec array treeArray path =
     case path of
         [] ->
@@ -339,17 +339,17 @@ pathToChildContentsFromInlineTreePath spec array treeArray path =
                                             Just <| x :: p ++ rest
 
 
-toString : NodePath -> String
+toString : Path -> String
 toString nodePath =
     String.join ":" <| List.map String.fromInt nodePath
 
 
-parent : NodePath -> NodePath
+parent : Path -> Path
 parent path =
     List.take (List.length path - 1) path
 
 
-commonAncestor : NodePath -> NodePath -> NodePath
+commonAncestor : Path -> Path -> Path
 commonAncestor xPath yPath =
     case xPath of
         [] ->

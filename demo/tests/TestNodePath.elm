@@ -3,7 +3,7 @@ module TestNodePath exposing (..)
 import Array exposing (Array)
 import Expect
 import RichTextEditor.Model.Mark exposing (mark)
-import RichTextEditor.Model.Node exposing (EditorInlineLeaf(..), editorBlockNode, elementParameters, emptyTextLeafParameters, inlineLeafArray, textLeafParametersWithMarks, textLeafWithText, withText)
+import RichTextEditor.Model.Node exposing (EditorInlineLeaf(..), blockNode, elementParameters, emptyTextLeafParameters, inlineLeafArray, textLeafParametersWithMarks, textLeafWithText, withText)
 import RichTextEditor.Model.Spec exposing (emptySpec)
 import RichTextEditor.NodePath
     exposing
@@ -37,13 +37,13 @@ boldMark =
 
 
 paragraphNode =
-    editorBlockNode
+    blockNode
         paragraphParams
         (inlineLeafArray <| Array.fromList [ textLeafWithText "sample" ])
 
 
 boldParagraphNode =
-    editorBlockNode
+    blockNode
         paragraphParams
         (inlineLeafArray <|
             Array.fromList
@@ -57,7 +57,7 @@ boldParagraphNode =
 
 
 crazyBlockNode =
-    editorBlockNode
+    blockNode
         crazyBlockParams
         (inlineLeafArray <|
             Array.fromList
@@ -66,7 +66,7 @@ crazyBlockNode =
 
 
 codeBlockNode =
-    editorBlockNode
+    blockNode
         codeBlockParams
         (inlineLeafArray <| Array.fromList [ textLeafWithText "sample" ])
 

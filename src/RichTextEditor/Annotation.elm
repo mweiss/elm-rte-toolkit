@@ -1,12 +1,12 @@
 module RichTextEditor.Annotation exposing (..)
 
 import RichTextEditor.Model.Annotation exposing (Annotation)
-import RichTextEditor.Model.Node exposing (EditorBlockNode, EditorInlineLeaf(..), EditorNode(..), ElementParameters, NodePath, annotationsFromElementParameters, annotationsFromTextLeafParameters, blockNodeWithParameters, elementParametersFromBlockNode, elementParametersFromInlineLeafParameters, elementParametersWithAnnotations, inlineLeafParametersWithElementParameters, textLeafParametersWithAnnotations)
+import RichTextEditor.Model.Node exposing (BlockNode, EditorInlineLeaf(..), ElementParameters, Node(..), Path, annotationsFromElementParameters, annotationsFromTextLeafParameters, blockNodeWithParameters, elementParametersFromBlockNode, elementParametersFromInlineLeafParameters, elementParametersWithAnnotations, inlineLeafParametersWithElementParameters, textLeafParametersWithAnnotations)
 import RichTextEditor.Node exposing (indexedFoldl, map, nodeAt, replace)
 import Set exposing (Set)
 
 
-addAnnotationAtPath : Annotation -> NodePath -> EditorBlockNode -> Result String EditorBlockNode
+addAnnotationAtPath : Annotation -> Path -> BlockNode -> Result String BlockNode
 addAnnotationAtPath annotation path node =
     case nodeAt path node of
         Nothing ->
@@ -16,7 +16,7 @@ addAnnotationAtPath annotation path node =
             replace path (add annotation n) node
 
 
-removeAnnotationAtPath : Annotation -> NodePath -> EditorBlockNode -> Result String EditorBlockNode
+removeAnnotationAtPath : Annotation -> Path -> BlockNode -> Result String BlockNode
 removeAnnotationAtPath annotation path node =
     case nodeAt path node of
         Nothing ->
@@ -36,12 +36,12 @@ addAnnotationToSet =
     Set.insert
 
 
-remove : Annotation -> EditorNode -> EditorNode
+remove : Annotation -> Node -> Node
 remove =
     toggle removeAnnotationToSet
 
 
-add : Annotation -> EditorNode -> EditorNode
+add : Annotation -> Node -> Node
 add =
     toggle addAnnotationToSet
 
@@ -55,7 +55,7 @@ toggleElementParameters func annotation parameters =
     elementParametersWithAnnotations (func annotation annotations) parameters
 
 
-toggle : (Annotation -> Set Annotation -> Set Annotation) -> Annotation -> EditorNode -> EditorNode
+toggle : (Annotation -> Set Annotation -> Set Annotation) -> Annotation -> Node -> Node
 toggle func annotation node =
     case node of
         BlockNodeWrapper bn ->
@@ -82,7 +82,7 @@ toggle func annotation node =
                         TextLeaf <| (tl |> textLeafParametersWithAnnotations (func annotation <| annotationsFromTextLeafParameters tl))
 
 
-clearAnnotations : Annotation -> EditorBlockNode -> EditorBlockNode
+clearAnnotations : Annotation -> BlockNode -> BlockNode
 clearAnnotations annotation root =
     case map (remove annotation) (BlockNodeWrapper root) of
         BlockNodeWrapper bn ->
@@ -92,7 +92,7 @@ clearAnnotations annotation root =
             root
 
 
-getAnnotationsFromNode : EditorNode -> Set Annotation
+getAnnotationsFromNode : Node -> Set Annotation
 getAnnotationsFromNode node =
     case node of
         BlockNodeWrapper blockNode ->
@@ -107,7 +107,7 @@ getAnnotationsFromNode node =
                     annotationsFromTextLeafParameters p
 
 
-findPathsWithAnnotation : Annotation -> EditorBlockNode -> List NodePath
+findPathsWithAnnotation : Annotation -> BlockNode -> List Path
 findPathsWithAnnotation annotation node =
     indexedFoldl
         (\path n agg ->
