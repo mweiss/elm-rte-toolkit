@@ -4,7 +4,7 @@ import RichTextEditor.Model.Mark as Mark exposing (Mark, MarkOrder, ToggleAction
 import RichTextEditor.Model.Node
     exposing
         ( BlockNode
-        , EditorInlineLeaf(..)
+        , InlineLeaf(..)
         , Node(..)
         , Path
         , inlineLeafParametersWithMarks
@@ -43,11 +43,11 @@ addMark =
 toggleMark : ToggleAction -> MarkOrder -> Mark -> Node -> Node
 toggleMark action markOrder mark node =
     case node of
-        BlockNodeWrapper _ ->
+        Block _ ->
             node
 
-        InlineLeafWrapper il ->
-            InlineLeafWrapper <|
+        Inline il ->
+            Inline <|
                 case il of
                     TextLeaf leaf ->
                         TextLeaf <|

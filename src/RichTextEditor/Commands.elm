@@ -44,15 +44,15 @@ import RichTextEditor.Model.Node
         ( BlockArray
         , BlockNode
         , ChildNodes(..)
-        , EditorInlineLeaf(..)
         , ElementParameters
         , Fragment(..)
+        , InlineLeaf(..)
         , Node(..)
         , Path
         , annotationsFromBlockNode
         , blockArray
         , blockNode
-        , blockNodeWithParameters
+        , blockNodeWithElementParameters
         , childNodes
         , elementParameters
         , elementParametersFromBlockNode
@@ -220,10 +220,10 @@ insertTextAtSelection s editorState =
 
                     Just node ->
                         case node of
-                            BlockNodeWrapper _ ->
+                            Block _ ->
                                 Err "I was expected a text leaf, but instead I found a block node"
 
-                            InlineLeafWrapper il ->
+                            Inline il ->
                                 case il of
                                     InlineLeaf _ ->
                                         Err "I was expecting a text leaf, but instead found a block node"
@@ -239,7 +239,7 @@ insertTextAtSelection s editorState =
                                         case
                                             replace
                                                 (anchorNode selection)
-                                                (InlineLeafWrapper newTextLeaf)
+                                                (Inline newTextLeaf)
                                                 (State.root editorState)
                                         of
                                             Err e ->
@@ -414,7 +414,7 @@ joinForward editorState =
                                             removed =
                                                 removeNodeAndEmptyParents p2 (State.root editorState)
                                         in
-                                        case replace p1 (BlockNodeWrapper newBlock) removed of
+                                        case replace p1 (Block newBlock) removed of
                                             Err e ->
                                                 Err e
 
@@ -428,7 +428,7 @@ joinForward editorState =
 isTextBlock : Path -> Node -> Bool
 isTextBlock _ node =
     case node of
-        BlockNodeWrapper bn ->
+        Block bn ->
             case childNodes bn of
                 InlineChildren _ ->
                     True
@@ -457,7 +457,7 @@ findTextBlock findFunc path node =
 
         Just ( p, n ) ->
             case n of
-                BlockNodeWrapper bn ->
+                Block bn ->
                     Just ( p, bn )
 
                 _ ->
@@ -574,7 +574,7 @@ insertLineBreak =
         (InlineLeaf (inlineLeafParameters (elementParameters "hard_break" [] Set.empty) []))
 
 
-insertInlineElement : EditorInlineLeaf -> Transform
+insertInlineElement : InlineLeaf -> Transform
 insertInlineElement leaf editorState =
     case State.selection editorState of
         Nothing ->
@@ -591,13 +591,13 @@ insertInlineElement leaf editorState =
 
                     Just node ->
                         case node of
-                            InlineLeafWrapper il ->
+                            Inline il ->
                                 case il of
                                     InlineLeaf _ ->
                                         case
                                             replace
                                                 (anchorNode selection)
-                                                (InlineLeafWrapper leaf)
+                                                (Inline leaf)
                                                 (State.root editorState)
                                         of
                                             Err e ->
@@ -729,14 +729,14 @@ isLeafNode path root =
 
         Just node ->
             case node of
-                BlockNodeWrapper bn ->
+                Block bn ->
                     if childNodes bn == Leaf then
                         True
 
                     else
                         False
 
-                InlineLeafWrapper l ->
+                Inline l ->
                     case l of
                         InlineLeaf _ ->
                             True
@@ -750,10 +750,10 @@ removeTextAtRange nodePath start maybeEnd root =
     case nodeAt nodePath root of
         Just node ->
             case node of
-                BlockNodeWrapper _ ->
+                Block _ ->
                     Err "I was expecting a text node, but instead I got a block node"
 
-                InlineLeafWrapper leaf ->
+                Inline leaf ->
                     case leaf of
                         InlineLeaf _ ->
                             Err "I was expecting a text leaf, but instead I got an inline leaf"
@@ -777,7 +777,7 @@ removeTextAtRange nodePath start maybeEnd root =
                                                         )
                                                 )
                             in
-                            replace nodePath (InlineLeafWrapper textNode) root
+                            replace nodePath (Inline textNode) root
 
         Nothing ->
             Err <| "There is no node at node path " ++ toString nodePath
@@ -809,7 +809,7 @@ removeSelectedLeafElement editorState =
                                 let
                                     offset =
                                         case n of
-                                            InlineLeafWrapper il ->
+                                            Inline il ->
                                                 case il of
                                                     TextLeaf t ->
                                                         String.length (text t)
@@ -873,10 +873,10 @@ backspaceText editorState =
 
                     Just node ->
                         case node of
-                            BlockNodeWrapper _ ->
+                            Block _ ->
                                 Err "I cannot backspace a block node"
 
-                            InlineLeafWrapper il ->
+                            Inline il ->
                                 case il of
                                     InlineLeaf _ ->
                                         Err "I cannot backspace text of an inline leaf"
@@ -885,7 +885,7 @@ backspaceText editorState =
                                         if anchorOffset selection == 1 then
                                             case
                                                 replace (anchorNode selection)
-                                                    (InlineLeafWrapper
+                                                    (Inline
                                                         (TextLeaf
                                                             (tl
                                                                 |> withText (String.dropLeft 1 (text tl))
@@ -915,7 +915,7 @@ backspaceText editorState =
 
                                                 Just ( previousPath, previousNode ) ->
                                                     case previousNode of
-                                                        InlineLeafWrapper previousInlineLeafWrapper ->
+                                                        Inline previousInlineLeafWrapper ->
                                                             case previousInlineLeafWrapper of
                                                                 TextLeaf previousTextLeaf ->
                                                                     let
@@ -933,14 +933,14 @@ backspaceText editorState =
                                                                 InlineLeaf _ ->
                                                                     Err "Cannot backspace the text of an inline leaf"
 
-                                                        BlockNodeWrapper _ ->
+                                                        Block _ ->
                                                             Err "Cannot backspace the text of a block node"
 
 
 isBlockOrInlineNodeWithMark : String -> Node -> Bool
 isBlockOrInlineNodeWithMark markName node =
     case node of
-        InlineLeafWrapper il ->
+        Inline il ->
             hasMarkWithName markName (marksFromInlineLeaf il)
 
         _ ->
@@ -968,10 +968,10 @@ toggleMarkSingleInlineNode markOrder mark action editorState =
 
                     Just node ->
                         case node of
-                            BlockNodeWrapper _ ->
+                            Block _ ->
                                 Err "Cannot toggle a block node"
 
-                            InlineLeafWrapper il ->
+                            Inline il ->
                                 let
                                     newMarks =
                                         toggle action markOrder mark (marksFromInlineLeaf il)
@@ -1114,15 +1114,15 @@ toggleMarkOnInlineNodes markOrder mark editorState =
 
                                                     else
                                                         case node of
-                                                            BlockNodeWrapper _ ->
+                                                            Block _ ->
                                                                 node
 
-                                                            InlineLeafWrapper _ ->
+                                                            Inline _ ->
                                                                 toggleMark toggleAction markOrder mark node
                                                 )
-                                                (BlockNodeWrapper (State.root editorState))
+                                                (Block (State.root editorState))
                                         of
-                                            BlockNodeWrapper bn ->
+                                            Block bn ->
                                                 bn
 
                                             _ ->
@@ -1153,7 +1153,7 @@ toggleMarkOnInlineNodes markOrder mark editorState =
 
                             Just node ->
                                 case node of
-                                    InlineLeafWrapper il ->
+                                    Inline il ->
                                         let
                                             focusOffset =
                                                 case il of
@@ -1232,7 +1232,7 @@ toggleBlock allowedBlocks onParams offParams editorState =
                     allRange
                         (\node ->
                             case node of
-                                BlockNodeWrapper bn ->
+                                Block bn ->
                                     elementParametersFromBlockNode bn == onParams
 
                                 _ ->
@@ -1258,23 +1258,23 @@ toggleBlock allowedBlocks onParams offParams editorState =
 
                                 else
                                     case node of
-                                        BlockNodeWrapper bn ->
+                                        Block bn ->
                                             let
                                                 p =
                                                     elementParametersFromBlockNode bn
                                             in
                                             if List.member (nameFromElementParameters p) allowedBlocks then
-                                                BlockNodeWrapper (bn |> blockNodeWithParameters newParams)
+                                                Block (bn |> blockNodeWithElementParameters newParams)
 
                                             else
                                                 node
 
-                                        InlineLeafWrapper _ ->
+                                        Inline _ ->
                                             node
                             )
-                            (BlockNodeWrapper (State.root editorState))
+                            (Block (State.root editorState))
                     of
-                        BlockNodeWrapper bn ->
+                        Block bn ->
                             bn
 
                         _ ->
@@ -1315,16 +1315,16 @@ wrap contentsMapFunc elementParameters editorState =
                         let
                             newChildren =
                                 case node of
-                                    BlockNodeWrapper bn ->
+                                    Block bn ->
                                         blockArray (Array.map contentsMapFunc (Array.fromList [ bn ]))
 
-                                    InlineLeafWrapper il ->
+                                    Inline il ->
                                         inlineLeafArray (Array.fromList [ il ])
 
                             newNode =
                                 blockNode elementParameters newChildren
                         in
-                        case replace ancestor (BlockNodeWrapper newNode) markedRoot of
+                        case replace ancestor (Block newNode) markedRoot of
                             Err err ->
                                 Err err
 
@@ -1357,7 +1357,7 @@ wrap contentsMapFunc elementParameters editorState =
 
                                     Just node ->
                                         case node of
-                                            BlockNodeWrapper bn ->
+                                            Block bn ->
                                                 case childNodes bn of
                                                     BlockChildren a ->
                                                         let
@@ -1390,7 +1390,7 @@ wrap contentsMapFunc elementParameters editorState =
                                                             newNode =
                                                                 bn |> withChildNodes newBlockArray
                                                         in
-                                                        case replace ancestor (BlockNodeWrapper newNode) markedRoot of
+                                                        case replace ancestor (Block newNode) markedRoot of
                                                             Err s ->
                                                                 Err s
 
@@ -1412,7 +1412,7 @@ wrap contentsMapFunc elementParameters editorState =
                                                     Leaf ->
                                                         Err "Cannot wrap leaf elements"
 
-                                            InlineLeafWrapper _ ->
+                                            Inline _ ->
                                                 Err "Invalid ancestor path... somehow we have an inline leaf"
 
 
@@ -1426,7 +1426,7 @@ selectAll editorState =
                         let
                             newOffset =
                                 case node of
-                                    InlineLeafWrapper il ->
+                                    Inline il ->
                                         case il of
                                             TextLeaf tl ->
                                                 String.length (text tl)
@@ -1434,7 +1434,7 @@ selectAll editorState =
                                             InlineLeaf _ ->
                                                 0
 
-                                    BlockNodeWrapper _ ->
+                                    Block _ ->
                                         0
                         in
                         case firstAndLast of
@@ -1448,7 +1448,7 @@ selectAll editorState =
                         ( firstAndLast, offset )
                 )
                 ( Nothing, 0 )
-                (BlockNodeWrapper (State.root editorState))
+                (Block (State.root editorState))
     in
     case fl of
         Nothing ->
@@ -1487,7 +1487,7 @@ addLiftMarkToBlocksInSelection selection root =
 
                 else
                     case node of
-                        BlockNodeWrapper bn ->
+                        Block bn ->
                             let
                                 addMarker =
                                     case childNodes bn of
@@ -1501,7 +1501,7 @@ addLiftMarkToBlocksInSelection selection root =
                                             False
                             in
                             if addMarker then
-                                RichTextEditor.Annotation.add liftAnnotation <| BlockNodeWrapper bn
+                                RichTextEditor.Annotation.add liftAnnotation <| Block bn
 
                             else
                                 node
@@ -1509,9 +1509,9 @@ addLiftMarkToBlocksInSelection selection root =
                         _ ->
                             node
             )
-            (BlockNodeWrapper root)
+            (Block root)
     of
-        BlockNodeWrapper bn ->
+        Block bn ->
             bn
 
         _ ->
@@ -1521,7 +1521,7 @@ addLiftMarkToBlocksInSelection selection root =
 liftConcatMapFunc : Node -> List Node
 liftConcatMapFunc node =
     case node of
-        BlockNodeWrapper bn ->
+        Block bn ->
             case childNodes bn of
                 Leaf ->
                     [ node ]
@@ -1543,7 +1543,7 @@ liftConcatMapFunc node =
                                 )
                                 (Array.toList (fromBlockArray a))
                     in
-                    List.map BlockNodeWrapper <|
+                    List.map Block <|
                         List.concatMap
                             (\( n, l ) ->
                                 if Set.member liftAnnotation (annotationsFromBlockNode n) then
@@ -1554,7 +1554,7 @@ liftConcatMapFunc node =
                             )
                             groupedBlockNodes
 
-        InlineLeafWrapper _ ->
+        Inline _ ->
             [ node ]
 
 
@@ -1625,7 +1625,7 @@ liftEmpty editorState =
 isEmptyTextBlock : Node -> Bool
 isEmptyTextBlock node =
     case node of
-        BlockNodeWrapper bn ->
+        Block bn ->
             case childNodes bn of
                 InlineChildren a ->
                     let
@@ -1650,7 +1650,7 @@ isEmptyTextBlock node =
                 _ ->
                     False
 
-        InlineLeafWrapper _ ->
+        Inline _ ->
             False
 
 
@@ -1682,7 +1682,7 @@ splitBlockHeaderToNewParagraph headerElements paragraphElement editorState =
 
                             Just node ->
                                 case node of
-                                    BlockNodeWrapper bn ->
+                                    Block bn ->
                                         let
                                             parameters =
                                                 elementParametersFromBlockNode bn
@@ -1695,9 +1695,9 @@ splitBlockHeaderToNewParagraph headerElements paragraphElement editorState =
                                         then
                                             case
                                                 replace p
-                                                    (BlockNodeWrapper
+                                                    (Block
                                                         (bn
-                                                            |> blockNodeWithParameters
+                                                            |> blockNodeWithElementParameters
                                                                 (elementParametersWithName
                                                                     paragraphElement
                                                                     parameters
@@ -1737,7 +1737,7 @@ insertBlockNode node editorState =
                     Just aNode ->
                         case aNode of
                             -- if a block node is selected, then insert after the selected block
-                            BlockNodeWrapper bn ->
+                            Block bn ->
                                 case
                                     replaceWithFragment
                                         (anchorNode selection)
@@ -1750,7 +1750,7 @@ insertBlockNode node editorState =
                                     Ok newRoot ->
                                         let
                                             newSelection =
-                                                if isSelectable (BlockNodeWrapper node) then
+                                                if isSelectable (Block node) then
                                                     caretSelection (increment (anchorNode selection)) 0
 
                                                 else
@@ -1763,7 +1763,7 @@ insertBlockNode node editorState =
                                             )
 
                             -- if an inline node is selected, then split the block and insert before
-                            InlineLeafWrapper _ ->
+                            Inline _ ->
                                 case splitTextBlock editorState of
                                     Err s ->
                                         Err s
@@ -1796,10 +1796,10 @@ insertBlockNodeBeforeSelection node editorState =
 
                     Just anchorNode ->
                         case anchorNode of
-                            BlockNodeWrapper bn ->
+                            Block bn ->
                                 let
                                     newFragment =
-                                        if isEmptyTextBlock <| BlockNodeWrapper bn then
+                                        if isEmptyTextBlock <| Block bn then
                                             [ node ]
 
                                         else
@@ -1817,7 +1817,7 @@ insertBlockNodeBeforeSelection node editorState =
                                     Ok newRoot ->
                                         let
                                             newSelection =
-                                                if isSelectable (BlockNodeWrapper node) then
+                                                if isSelectable (Block node) then
                                                     Just <| caretSelection closestBlockPath 0
 
                                                 else
@@ -1833,7 +1833,7 @@ insertBlockNodeBeforeSelection node editorState =
                                             )
 
                             -- if an inline node is selected, then split the block and insert before
-                            InlineLeafWrapper _ ->
+                            Inline _ ->
                                 Err "Invalid state! I was expecting a block node."
 
 
@@ -1861,7 +1861,7 @@ backspaceInlineElement editorState =
 
                     Just node ->
                         case node of
-                            InlineLeafWrapper il ->
+                            Inline il ->
                                 case il of
                                     InlineLeaf _ ->
                                         case
@@ -1883,7 +1883,7 @@ backspaceInlineElement editorState =
                                     TextLeaf _ ->
                                         Err "There is no previous inline leaf element, found a text leaf"
 
-                            BlockNodeWrapper _ ->
+                            Block _ ->
                                 Err "There is no previous inline leaf element, found a block node"
 
 
@@ -1911,7 +1911,7 @@ backspaceBlockNode editorState =
 
                     Just ( path, node ) ->
                         case node of
-                            BlockNodeWrapper bn ->
+                            Block bn ->
                                 case childNodes bn of
                                     Leaf ->
                                         case replaceWithFragment path (BlockNodeFragment Array.empty) markedRoot of
@@ -1933,11 +1933,11 @@ backspaceBlockNode editorState =
                                     _ ->
                                         Err "The previous element is not a block leaf"
 
-                            InlineLeafWrapper _ ->
+                            Inline _ ->
                                 Err "The previous element is not a block node"
 
 
-groupSameTypeInlineLeaf : EditorInlineLeaf -> EditorInlineLeaf -> Bool
+groupSameTypeInlineLeaf : InlineLeaf -> InlineLeaf -> Bool
 groupSameTypeInlineLeaf a b =
     case a of
         InlineLeaf _ ->
@@ -1957,7 +1957,7 @@ groupSameTypeInlineLeaf a b =
                     False
 
 
-textFromGroup : List EditorInlineLeaf -> String
+textFromGroup : List InlineLeaf -> String
 textFromGroup leaves =
     String.join "" <|
         List.map
@@ -1972,7 +1972,7 @@ textFromGroup leaves =
             leaves
 
 
-lengthsFromGroup : List EditorInlineLeaf -> List Int
+lengthsFromGroup : List InlineLeaf -> List Int
 lengthsFromGroup leaves =
     List.map
         (\il ->
@@ -2123,10 +2123,10 @@ deleteText editorState =
 
                     Just node ->
                         case node of
-                            BlockNodeWrapper _ ->
+                            Block _ ->
                                 Err "I cannot delete text if the selection a block node"
 
-                            InlineLeafWrapper il ->
+                            Inline il ->
                                 case il of
                                     InlineLeaf _ ->
                                         Err "I cannot delete text if the selection an inline leaf"
@@ -2143,7 +2143,7 @@ deleteText editorState =
                                             case
                                                 replace
                                                     (anchorNode selection)
-                                                    (InlineLeafWrapper
+                                                    (Inline
                                                         (TextLeaf
                                                             (tl |> withText (String.dropRight 1 (text tl)))
                                                         )
@@ -2163,10 +2163,10 @@ deleteText editorState =
 
                                                 Just ( nextPath, nextNode ) ->
                                                     case nextNode of
-                                                        BlockNodeWrapper _ ->
+                                                        Block _ ->
                                                             Err "Cannot delete the text of a block node"
 
-                                                        InlineLeafWrapper nextInlineLeafWrapper ->
+                                                        Inline nextInlineLeafWrapper ->
                                                             case nextInlineLeafWrapper of
                                                                 TextLeaf _ ->
                                                                     let
@@ -2199,10 +2199,10 @@ deleteInlineElement editorState =
 
                     Just node ->
                         case node of
-                            BlockNodeWrapper _ ->
+                            Block _ ->
                                 Err "I cannot delete text if the selection a block node"
 
-                            InlineLeafWrapper il ->
+                            Inline il ->
                                 let
                                     length =
                                         case il of
@@ -2226,7 +2226,7 @@ deleteInlineElement editorState =
 
                                         Just incrementedNode ->
                                             case incrementedNode of
-                                                InlineLeafWrapper nil ->
+                                                Inline nil ->
                                                     case nil of
                                                         InlineLeaf _ ->
                                                             case
@@ -2244,7 +2244,7 @@ deleteInlineElement editorState =
                                                         TextLeaf _ ->
                                                             Err "There is no next inline leaf element, found a text leaf"
 
-                                                BlockNodeWrapper _ ->
+                                                Block _ ->
                                                     Err "There is no next inline leaf, found a block node"
 
 
@@ -2265,7 +2265,7 @@ deleteBlockNode editorState =
 
                     Just ( path, node ) ->
                         case node of
-                            BlockNodeWrapper bn ->
+                            Block bn ->
                                 case childNodes bn of
                                     Leaf ->
                                         case
@@ -2283,7 +2283,7 @@ deleteBlockNode editorState =
                                     _ ->
                                         Err "The next node is not a block leaf"
 
-                            InlineLeafWrapper _ ->
+                            Inline _ ->
                                 Err "The next node is not a block leaf, it's an inline leaf"
 
 

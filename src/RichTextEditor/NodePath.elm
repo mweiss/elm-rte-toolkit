@@ -25,8 +25,8 @@ import RichTextEditor.Model.Node
     exposing
         ( BlockNode
         , ChildNodes(..)
-        , EditorInlineLeaf
         , ElementParameters
+        , InlineLeaf
         , InlineLeafTree(..)
         , Path
         , childNodes
@@ -304,7 +304,7 @@ pathToChildContentsFromElementParameters spec parameters =
     pathToChildContents nodeStructure
 
 
-pathToChildContentsFromInlineTreePath : Spec -> Array EditorInlineLeaf -> Array InlineLeafTree -> Path -> Maybe Path
+pathToChildContentsFromInlineTreePath : Spec -> Array InlineLeaf -> Array InlineLeafTree -> Path -> Maybe Path
 pathToChildContentsFromInlineTreePath spec array treeArray path =
     case path of
         [] ->

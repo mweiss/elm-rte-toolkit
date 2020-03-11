@@ -22,7 +22,7 @@ import RichTextEditor.Model.Editor exposing (DecoderFunc, Editor, InternalEditor
 import RichTextEditor.Model.Event exposing (EditorChange, PasteEvent, TextChange)
 import RichTextEditor.Model.HtmlNode exposing (HtmlNode(..))
 import RichTextEditor.Model.Mark as Mark exposing (Mark)
-import RichTextEditor.Model.Node exposing (BlockNode, ChildNodes(..), EditorInlineLeaf(..), ElementParameters, InlineLeafTree(..), Node(..), Path, blockArray, childNodes, elementParametersFromBlockNode, elementParametersFromInlineLeafParameters, fromBlockArray, fromInlineArray, inlineLeafArray, nameFromElementParameters, text, treeFromInlineArray, withChildNodes, withText)
+import RichTextEditor.Model.Node exposing (BlockNode, ChildNodes(..), ElementParameters, InlineLeaf(..), InlineLeafTree(..), Node(..), Path, blockArray, childNodes, elementParametersFromBlockNode, elementParametersFromInlineLeafParameters, fromBlockArray, fromInlineArray, inlineLeafArray, nameFromElementParameters, text, treeFromInlineArray, withChildNodes, withText)
 import RichTextEditor.Model.Selection exposing (Selection, anchorNode, anchorOffset, focusNode, focusOffset, isCollapsed, rangeSelection)
 import RichTextEditor.Model.Spec exposing (Spec, markDefinitions, nameFromMarkDefinition, toHtmlNodeFromMarkDefinition, toHtmlNodeFromNodeDefinition)
 import RichTextEditor.Model.State as State exposing (State, withRoot, withSelection)
@@ -176,7 +176,7 @@ differentText root ( path, t ) =
         -- We'll mark invalid paths as different since it will resolve later when we try to replace the node
         Just node ->
             case node of
-                InlineLeafWrapper il ->
+                Inline il ->
                     case il of
                         TextLeaf tl ->
                             text tl /= t
@@ -470,10 +470,10 @@ shouldHideCaret editorState =
 
                     Just node ->
                         case node of
-                            BlockNodeWrapper _ ->
+                            Block _ ->
                                 True
 
-                            InlineLeafWrapper leaf ->
+                            Inline leaf ->
                                 case leaf of
                                     InlineLeaf _ ->
                                         True
@@ -621,7 +621,7 @@ renderElementFromSpec editor elementParameters backwardsNodePath children =
     nodeHtml
 
 
-renderInlineLeafTree : Editor msg -> Path -> Array EditorInlineLeaf -> InlineLeafTree -> Html msg
+renderInlineLeafTree : Editor msg -> Path -> Array InlineLeaf -> InlineLeafTree -> Html msg
 renderInlineLeafTree editor backwardsPath inlineLeafArray inlineLeafTree =
     case inlineLeafTree of
         LeafNode i ->
@@ -666,7 +666,7 @@ renderText text =
         )
 
 
-renderInlineLeaf : Editor msg -> Path -> EditorInlineLeaf -> Html msg
+renderInlineLeaf : Editor msg -> Path -> InlineLeaf -> Html msg
 renderInlineLeaf editor backwardsPath leaf =
     case leaf of
         InlineLeaf l ->

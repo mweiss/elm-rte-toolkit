@@ -9,7 +9,7 @@ import RichTextEditor.Model.Attribute exposing (Attribute(..))
 import RichTextEditor.Model.Constants exposing (zeroWidthSpace)
 import RichTextEditor.Model.HtmlNode exposing (HtmlNode(..))
 import RichTextEditor.Model.Mark as Mark exposing (Mark, MarkOrder(..), ToggleAction(..), mark, toggle)
-import RichTextEditor.Model.Node exposing (BlockNode, ChildNodes(..), EditorInlineLeaf(..), ElementParameters, Fragment(..), attributesFromElementParameters, blockArray, blockNode, childNodes, elementParameters, elementParametersFromBlockNode, elementParametersFromInlineLeafParameters, emptyTextLeafParameters, fromBlockArray, fromInlineArray, inlineLeafArray, inlineLeafParameters, nameFromElementParameters, textLeafParametersWithMarks, withText)
+import RichTextEditor.Model.Node exposing (BlockNode, ChildNodes(..), ElementParameters, Fragment(..), InlineLeaf(..), attributesFromElementParameters, blockArray, blockNode, childNodes, elementParameters, elementParametersFromBlockNode, elementParametersFromInlineLeafParameters, emptyTextLeafParameters, fromBlockArray, fromInlineArray, inlineLeafArray, inlineLeafParameters, nameFromElementParameters, textLeafParametersWithMarks, withText)
 import RichTextEditor.Model.Spec exposing (ContentType(..), MarkDefinition, NodeDefinition, Spec, blockLeafContentType, blockNodeContentType, contentTypeFromNodeDefinition, fromHtmlNodeFromMarkDefinition, fromHtmlNodeFromNodeDefinition, groupFromNodeDefinition, markDefinition, markDefinitions, nameFromMarkDefinition, nameFromNodeDefinition, nodeDefinition, nodeDefinitions)
 import RichTextEditor.Model.State as State exposing (State)
 import Set exposing (Set)
@@ -146,7 +146,7 @@ toStringContentType contentType =
             "BlockLeafNodeType"
 
 
-validateInlineLeaf : Spec -> Maybe (Set String) -> EditorInlineLeaf -> List String
+validateInlineLeaf : Spec -> Maybe (Set String) -> InlineLeaf -> List String
 validateInlineLeaf spec allowedGroups leaf =
     case leaf of
         TextLeaf _ ->

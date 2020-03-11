@@ -3,7 +3,7 @@ module TestSpec exposing (..)
 import Array exposing (Array)
 import Expect
 import RichTextEditor.Model.Mark exposing (mark)
-import RichTextEditor.Model.Node exposing (EditorInlineLeaf(..), Fragment(..), blockArray, blockNode, elementParameters, emptyTextLeafParameters, inlineLeafArray, textLeafParametersWithMarks, textLeafWithText, withText)
+import RichTextEditor.Model.Node exposing (Fragment(..), InlineLeaf(..), blockArray, blockNode, elementParameters, emptyTextLeafParameters, inlineLeafArray, textLeafParametersWithMarks, textLeafWithText, withText)
 import RichTextEditor.Spec exposing (htmlToElementArray)
 import Set
 import SimpleSpec exposing (simpleSpec)

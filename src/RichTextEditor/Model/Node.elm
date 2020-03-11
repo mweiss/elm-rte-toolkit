@@ -2,9 +2,9 @@ module RichTextEditor.Model.Node exposing
     ( BlockArray
     , BlockNode
     , ChildNodes(..)
-    , EditorInlineLeaf(..)
     , ElementParameters
     , Fragment(..)
+    , InlineLeaf(..)
     , InlineLeafArray
     , InlineLeafParameters
     , InlineLeafTree(..)
@@ -18,8 +18,7 @@ module RichTextEditor.Model.Node exposing
     , attributesFromElementParameters
     , blockArray
     , blockNode
-    , blockNodeWithChildNodes
-    , blockNodeWithParameters
+    , blockNodeWithElementParameters
     , childNodes
     , elementParameters
     , elementParametersFromBlockNode
@@ -66,13 +65,13 @@ type alias Path =
 
 
 type Node
-    = BlockNodeWrapper BlockNode
-    | InlineLeafWrapper EditorInlineLeaf
+    = Block BlockNode
+    | Inline InlineLeaf
 
 
 type Fragment
     = BlockNodeFragment (Array BlockNode)
-    | InlineLeafFragment (Array EditorInlineLeaf)
+    | InlineLeafFragment (Array InlineLeaf)
 
 
 type ElementParameters
@@ -91,18 +90,11 @@ elementParameters name attributes annotations =
     ElementParameters { name = name, attributes = attributes, annotations = annotations }
 
 
-blockNodeWithParameters : ElementParameters -> BlockNode -> BlockNode
-blockNodeWithParameters parameters node =
+blockNodeWithElementParameters : ElementParameters -> BlockNode -> BlockNode
+blockNodeWithElementParameters parameters node =
     case node of
         BlockNode c ->
             BlockNode { c | parameters = parameters }
-
-
-blockNodeWithChildNodes : ChildNodes -> BlockNode -> BlockNode
-blockNodeWithChildNodes cn node =
-    case node of
-        BlockNode c ->
-            BlockNode { c | childNodes = cn }
 
 
 nameFromElementParameters : ElementParameters -> String
@@ -224,7 +216,7 @@ type InlineLeafArray
     = InlineLeafArray InlineLeafArrayContents
 
 
-fromInlineArray : InlineLeafArray -> Array EditorInlineLeaf
+fromInlineArray : InlineLeafArray -> Array InlineLeaf
 fromInlineArray arr =
     case arr of
         InlineLeafArray a ->
@@ -246,7 +238,7 @@ reverseLookupFromInlineArray arr =
 
 
 type alias InlineLeafArrayContents =
-    { array : Array EditorInlineLeaf, tree : Array InlineLeafTree, reverseLookup : Array Path }
+    { array : Array InlineLeaf, tree : Array InlineLeafTree, reverseLookup : Array Path }
 
 
 type InlineLeafTree
@@ -300,7 +292,7 @@ inlineLeafParametersWithMarks marks iparams =
 {-| An inline leaf node represents an inline element in your document. It can either be an inline
 leaf node, like an image or line break, or a text node.
 -}
-type EditorInlineLeaf
+type InlineLeaf
     = InlineLeaf InlineLeafParameters
     | TextLeaf TextLeafParameters
 
@@ -338,7 +330,7 @@ textLeafParametersWithMarks marks parameters =
             TextLeafParameters { c | marks = marks }
 
 
-textLeafWithText : String -> EditorInlineLeaf
+textLeafWithText : String -> InlineLeaf
 textLeafWithText s =
     TextLeaf (TextLeafParameters { text = s, marks = [], annotations = Set.empty })
 
@@ -371,7 +363,7 @@ type alias TextLeafParametersContents =
     }
 
 
-inlineLeafArray : Array EditorInlineLeaf -> ChildNodes
+inlineLeafArray : Array InlineLeaf -> ChildNodes
 inlineLeafArray arr =
     let
         tree =
@@ -399,7 +391,7 @@ inlineLeafTreeToPaths backwardsPath tree =
         (List.indexedMap Tuple.pair (Array.toList tree))
 
 
-marksFromInlineLeaf : EditorInlineLeaf -> List Mark
+marksFromInlineLeaf : InlineLeaf -> List Mark
 marksFromInlineLeaf leaf =
     case leaf of
         TextLeaf l ->
@@ -421,7 +413,7 @@ marksToMarkNodeListRec indexedMarkLists =
             (\( ( i, ( m, rest ) ), groupRest ) ->
                 case m of
                     Nothing ->
-                        LeafNode i :: List.map (\( j, _ ) -> LeafNode <| j) groupRest
+                        LeafNode i :: List.map (\( j, _ ) -> LeafNode j) groupRest
 
                     Just mk ->
                         [ MarkNode

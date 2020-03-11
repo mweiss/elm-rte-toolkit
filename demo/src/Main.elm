@@ -17,7 +17,7 @@ import RichTextEditor.Model.Command as Commands exposing (inputEvent, key, set, 
 import RichTextEditor.Model.Editor exposing (Editor, editor, emptyDecorations, spec, state, withCommandMap, withDecorations)
 import RichTextEditor.Model.Keys exposing (enterKey, returnKey)
 import RichTextEditor.Model.Mark exposing (mark)
-import RichTextEditor.Model.Node exposing (BlockNode, ChildNodes(..), EditorInlineLeaf(..), blockArray, blockNode, elementParameters, inlineLeafArray, inlineLeafParameters, textLeafWithText)
+import RichTextEditor.Model.Node exposing (BlockNode, ChildNodes(..), InlineLeaf(..), blockArray, blockNode, elementParameters, inlineLeafArray, inlineLeafParameters, textLeafWithText)
 import RichTextEditor.Model.State as State exposing (State)
 import RichTextEditor.Spec exposing (markOrderFromSpec)
 import Set
@@ -34,7 +34,7 @@ type alias Model =
     }
 
 
-inlineImageNode : EditorInlineLeaf
+inlineImageNode : InlineLeaf
 inlineImageNode =
     InlineLeaf <|
         inlineLeafParameters

@@ -19,8 +19,8 @@ import RichTextEditor.Model.Node
     exposing
         ( BlockNode
         , ChildNodes(..)
-        , EditorInlineLeaf(..)
         , Fragment(..)
+        , InlineLeaf(..)
         , Node(..)
         , blockNode
         , childNodes
@@ -145,7 +145,7 @@ pasteFragment fragment editorState =
             pasteBlockArray a editorState
 
 
-pasteInlineArray : Array EditorInlineLeaf -> Transform
+pasteInlineArray : Array InlineLeaf -> Transform
 pasteInlineArray inlineFragment editorState =
     case State.selection editorState of
         Nothing ->
@@ -249,10 +249,10 @@ pasteBlockArray blockFragment editorState =
 
                     Just parentNode ->
                         case parentNode of
-                            InlineLeafWrapper _ ->
+                            Inline _ ->
                                 Err "Invalid parent node"
 
-                            BlockNodeWrapper bn ->
+                            Block bn ->
                                 case childNodes bn of
                                     Leaf ->
                                         Err "Invalid parent node, somehow the parent node was a leaf"

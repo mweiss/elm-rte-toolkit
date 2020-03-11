@@ -3,7 +3,7 @@ module RichTextEditor.Internal.HtmlNode exposing (..)
 import Array exposing (Array)
 import RichTextEditor.Model.HtmlNode exposing (HtmlNode(..))
 import RichTextEditor.Model.Mark exposing (Mark, name)
-import RichTextEditor.Model.Node exposing (BlockNode, ChildNodes(..), EditorInlineLeaf(..), ElementParameters, InlineLeafTree(..), childNodes, elementParametersFromBlockNode, elementParametersFromInlineLeafParameters, fromBlockArray, fromInlineArray, nameFromElementParameters, text, treeFromInlineArray)
+import RichTextEditor.Model.Node exposing (BlockNode, ChildNodes(..), ElementParameters, InlineLeaf(..), InlineLeafTree(..), childNodes, elementParametersFromBlockNode, elementParametersFromInlineLeafParameters, fromBlockArray, fromInlineArray, nameFromElementParameters, text, treeFromInlineArray)
 import RichTextEditor.Model.Spec exposing (Spec, toHtmlNodeFromMarkDefinition, toHtmlNodeFromNodeDefinition)
 import RichTextEditor.Spec
     exposing
@@ -68,7 +68,7 @@ errorNode =
     ElementNode "div" [ ( "class", "rte-error" ) ] Array.empty
 
 
-editorInlineLeafTreeToHtmlNode : Spec -> Array EditorInlineLeaf -> InlineLeafTree -> HtmlNode
+editorInlineLeafTreeToHtmlNode : Spec -> Array InlineLeaf -> InlineLeafTree -> HtmlNode
 editorInlineLeafTreeToHtmlNode spec array tree =
     case tree of
         LeafNode i ->
@@ -85,7 +85,7 @@ editorInlineLeafTreeToHtmlNode spec array tree =
 
 {-| Renders inline leaf nodes to their HtmlNode representation.
 -}
-editorInlineLeafToHtmlNode : Spec -> EditorInlineLeaf -> HtmlNode
+editorInlineLeafToHtmlNode : Spec -> InlineLeaf -> HtmlNode
 editorInlineLeafToHtmlNode spec node =
     case node of
         TextLeaf contents ->

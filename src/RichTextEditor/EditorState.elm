@@ -3,7 +3,7 @@ module RichTextEditor.EditorState exposing (..)
 import Array exposing (Array)
 import List.Extra
 import RichTextEditor.Model.Annotation exposing (selectionAnnotation)
-import RichTextEditor.Model.Node exposing (BlockNode, ChildNodes(..), EditorInlineLeaf(..), InlineLeafArray, Node(..), Path, annotationsFromTextLeafParameters, childNodes, fromInlineArray, inlineLeafArray, marksFromTextLeafParameters, text, withChildNodes, withText)
+import RichTextEditor.Model.Node exposing (BlockNode, ChildNodes(..), InlineLeaf(..), InlineLeafArray, Node(..), Path, annotationsFromTextLeafParameters, childNodes, fromInlineArray, inlineLeafArray, marksFromTextLeafParameters, text, withChildNodes, withText)
 import RichTextEditor.Model.Selection exposing (anchorNode, anchorOffset, focusNode, focusOffset, rangeSelection)
 import RichTextEditor.Model.State as State exposing (State, withRoot, withSelection)
 import RichTextEditor.Node exposing (findTextBlockNodeAncestor, map)
@@ -11,7 +11,7 @@ import RichTextEditor.Selection exposing (annotateSelection, clearSelectionAnnot
 import Set
 
 
-removeExtraEmptyTextLeaves : List EditorInlineLeaf -> List EditorInlineLeaf
+removeExtraEmptyTextLeaves : List InlineLeaf -> List InlineLeaf
 removeExtraEmptyTextLeaves inlineLeaves =
     case inlineLeaves of
         [] ->
@@ -41,7 +41,7 @@ removeExtraEmptyTextLeaves inlineLeaves =
                     x :: removeExtraEmptyTextLeaves (y :: xs)
 
 
-mergeSimilarInlineLeaves : List EditorInlineLeaf -> List EditorInlineLeaf
+mergeSimilarInlineLeaves : List InlineLeaf -> List InlineLeaf
 mergeSimilarInlineLeaves inlineLeaves =
     case inlineLeaves of
         [] ->
@@ -74,10 +74,10 @@ reduceNode node =
         map
             (\x ->
                 case x of
-                    BlockNodeWrapper bn ->
+                    Block bn ->
                         case childNodes bn of
                             InlineChildren a ->
-                                BlockNodeWrapper <|
+                                Block <|
                                     (bn
                                         |> withChildNodes
                                             (inlineLeafArray <|
@@ -92,9 +92,9 @@ reduceNode node =
                     _ ->
                         x
             )
-            (BlockNodeWrapper node)
+            (Block node)
     of
-        BlockNodeWrapper newNode ->
+        Block newNode ->
             newNode
 
         _ ->
@@ -176,7 +176,7 @@ translatePath old new path offset =
                                 ( path, offset )
 
 
-parentOffset : Array EditorInlineLeaf -> Int -> Int -> Int
+parentOffset : Array InlineLeaf -> Int -> Int -> Int
 parentOffset leaves index offset =
     let
         ( _, newOffset ) =
@@ -207,7 +207,7 @@ parentOffset leaves index offset =
     newOffset
 
 
-childOffset : Array EditorInlineLeaf -> Int -> ( Int, Int )
+childOffset : Array InlineLeaf -> Int -> ( Int, Int )
 childOffset leaves offset =
     let
         ( newIndex, newOffset, _ ) =

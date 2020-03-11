@@ -11,7 +11,7 @@ import RichTextEditor.Commands
         )
 import RichTextEditor.Model.Command exposing (CommandMap, Transform, emptyCommandMap, inputEvent, key, set, transformCommand)
 import RichTextEditor.Model.Keys exposing (altKey, backspaceKey, deleteKey, enterKey, returnKey)
-import RichTextEditor.Model.Node exposing (BlockArray, BlockNode, ChildNodes(..), EditorInlineLeaf(..), ElementParameters, Fragment(..), Node(..), Path, blockArray, blockNode, childNodes, elementParameters, elementParametersFromBlockNode, fromBlockArray, nameFromElementParameters, text)
+import RichTextEditor.Model.Node exposing (BlockArray, BlockNode, ChildNodes(..), ElementParameters, Fragment(..), InlineLeaf(..), Node(..), Path, blockArray, blockNode, childNodes, elementParameters, elementParametersFromBlockNode, fromBlockArray, nameFromElementParameters, text)
 import RichTextEditor.Model.Selection exposing (Selection, anchorNode, anchorOffset, focusNode, focusOffset, isCollapsed, normalizeSelection)
 import RichTextEditor.Model.State as State exposing (root, withRoot, withSelection)
 import RichTextEditor.Node
@@ -135,10 +135,10 @@ split definition =
 isListNode : ListDefinition -> Node -> Bool
 isListNode definition node =
     case node of
-        InlineLeafWrapper _ ->
+        Inline _ ->
             False
 
-        BlockNodeWrapper bn ->
+        Block bn ->
             let
                 bnName =
                     nameFromElementParameters (elementParametersFromBlockNode bn)
@@ -162,7 +162,7 @@ addLiftAnnotationAtPathAndChildren path root =
 
                 Just node ->
                     case node of
-                        BlockNodeWrapper bn ->
+                        Block bn ->
                             case childNodes bn of
                                 BlockChildren ba ->
                                     List.foldl
@@ -290,7 +290,7 @@ liftEmpty definition editorState =
                                         Err "Cannot lift a list item with no children"
 
                                     Just firstNode ->
-                                        if not <| isEmptyTextBlock (BlockNodeWrapper firstNode) then
+                                        if not <| isEmptyTextBlock (Block firstNode) then
                                             Err "I cannot lift a node that is not an empty text block"
 
                                         else
@@ -359,10 +359,10 @@ joinBackward definition editorState =
 
                                 Just prevLiNode ->
                                     case prevLiNode of
-                                        InlineLeafWrapper _ ->
+                                        Inline _ ->
                                             Err "There is no list item at path"
 
-                                        BlockNodeWrapper prevBn ->
+                                        Block prevBn ->
                                             case joinBlocks prevBn liNode of
                                                 Nothing ->
                                                     Err "Could not join list items"
@@ -370,7 +370,7 @@ joinBackward definition editorState =
                                                 Just joinedLi ->
                                                     let
                                                         joinedNodes =
-                                                            replace prevLiPath (BlockNodeWrapper joinedLi) markedRoot
+                                                            replace prevLiPath (Block joinedLi) markedRoot
                                                                 |> Result.andThen
                                                                     (replaceWithFragment liPath (BlockNodeFragment Array.empty))
                                                     in
@@ -411,7 +411,7 @@ isEndOfListItem definition selection root =
 
                 else
                     case lastNode of
-                        InlineLeafWrapper il ->
+                        Inline il ->
                             case il of
                                 TextLeaf tl ->
                                     String.length (text tl) == anchorOffset selection
@@ -456,10 +456,10 @@ joinForward definition editorState =
 
                             Just nextLi ->
                                 case nextLi of
-                                    InlineLeafWrapper _ ->
+                                    Inline _ ->
                                         Err "There is no list item at path"
 
-                                    BlockNodeWrapper nextBn ->
+                                    Block nextBn ->
                                         case joinBlocks liNode nextBn of
                                             Nothing ->
                                                 Err "I could not join these list items"
@@ -467,7 +467,7 @@ joinForward definition editorState =
                                             Just joinedLi ->
                                                 let
                                                     joinedNodes =
-                                                        replace liPath (BlockNodeWrapper joinedLi) markedRoot
+                                                        replace liPath (Block joinedLi) markedRoot
                                                             |> Result.andThen
                                                                 (replaceWithFragment nextLiPath (BlockNodeFragment Array.empty))
                                                 in

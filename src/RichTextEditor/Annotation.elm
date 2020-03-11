@@ -1,7 +1,7 @@
 module RichTextEditor.Annotation exposing (..)
 
 import RichTextEditor.Model.Annotation exposing (Annotation)
-import RichTextEditor.Model.Node exposing (BlockNode, EditorInlineLeaf(..), ElementParameters, Node(..), Path, annotationsFromElementParameters, annotationsFromTextLeafParameters, blockNodeWithParameters, elementParametersFromBlockNode, elementParametersFromInlineLeafParameters, elementParametersWithAnnotations, inlineLeafParametersWithElementParameters, textLeafParametersWithAnnotations)
+import RichTextEditor.Model.Node exposing (BlockNode, ElementParameters, InlineLeaf(..), Node(..), Path, annotationsFromElementParameters, annotationsFromTextLeafParameters, blockNodeWithElementParameters, elementParametersFromBlockNode, elementParametersFromInlineLeafParameters, elementParametersWithAnnotations, inlineLeafParametersWithElementParameters, textLeafParametersWithAnnotations)
 import RichTextEditor.Node exposing (indexedFoldl, map, nodeAt, replace)
 import Set exposing (Set)
 
@@ -58,18 +58,18 @@ toggleElementParameters func annotation parameters =
 toggle : (Annotation -> Set Annotation -> Set Annotation) -> Annotation -> Node -> Node
 toggle func annotation node =
     case node of
-        BlockNodeWrapper bn ->
+        Block bn ->
             let
                 newParameters =
                     toggleElementParameters func annotation (elementParametersFromBlockNode bn)
 
                 newBlockNode =
-                    bn |> blockNodeWithParameters newParameters
+                    bn |> blockNodeWithElementParameters newParameters
             in
-            BlockNodeWrapper newBlockNode
+            Block newBlockNode
 
-        InlineLeafWrapper il ->
-            InlineLeafWrapper <|
+        Inline il ->
+            Inline <|
                 case il of
                     InlineLeaf l ->
                         let
@@ -84,8 +84,8 @@ toggle func annotation node =
 
 clearAnnotations : Annotation -> BlockNode -> BlockNode
 clearAnnotations annotation root =
-    case map (remove annotation) (BlockNodeWrapper root) of
-        BlockNodeWrapper bn ->
+    case map (remove annotation) (Block root) of
+        Block bn ->
             bn
 
         _ ->
@@ -95,10 +95,10 @@ clearAnnotations annotation root =
 getAnnotationsFromNode : Node -> Set Annotation
 getAnnotationsFromNode node =
     case node of
-        BlockNodeWrapper blockNode ->
+        Block blockNode ->
             annotationsFromElementParameters <| elementParametersFromBlockNode blockNode
 
-        InlineLeafWrapper inlineLeaf ->
+        Inline inlineLeaf ->
             case inlineLeaf of
                 InlineLeaf p ->
                     annotationsFromElementParameters <| elementParametersFromInlineLeafParameters p
@@ -118,4 +118,4 @@ findPathsWithAnnotation annotation node =
                 agg
         )
         []
-        (BlockNodeWrapper node)
+        (Block node)

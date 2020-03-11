@@ -3,7 +3,7 @@ module TestNodePath exposing (..)
 import Array exposing (Array)
 import Expect
 import RichTextEditor.Model.Mark exposing (mark)
-import RichTextEditor.Model.Node exposing (EditorInlineLeaf(..), blockNode, elementParameters, emptyTextLeafParameters, inlineLeafArray, textLeafParametersWithMarks, textLeafWithText, withText)
+import RichTextEditor.Model.Node exposing (InlineLeaf(..), blockNode, elementParameters, emptyTextLeafParameters, inlineLeafArray, textLeafParametersWithMarks, textLeafWithText, withText)
 import RichTextEditor.Model.Spec exposing (emptySpec)
 import RichTextEditor.NodePath
     exposing

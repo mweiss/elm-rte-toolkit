@@ -3,7 +3,7 @@ module TestNode exposing (..)
 import Array
 import Expect
 import RichTextEditor.Model.Annotation exposing (Annotation, selectableAnnotation)
-import RichTextEditor.Model.Node exposing (BlockNode, ChildNodes(..), EditorInlineLeaf(..), Fragment(..), Node(..), Path, blockArray, blockNode, blockNodeWithParameters, elementParameters, elementParametersFromBlockNode, elementParametersFromInlineLeafParameters, elementParametersWithAnnotations, emptyTextLeafParameters, inlineLeafArray, inlineLeafParameters, inlineLeafParametersWithElementParameters, nameFromElementParameters, text, textLeafParametersWithAnnotations, textLeafWithText, withText)
+import RichTextEditor.Model.Node exposing (BlockNode, ChildNodes(..), Fragment(..), InlineLeaf(..), Node(..), Path, blockArray, blockNode, blockNodeWithElementParameters, elementParameters, elementParametersFromBlockNode, elementParametersFromInlineLeafParameters, elementParametersWithAnnotations, emptyTextLeafParameters, inlineLeafArray, inlineLeafParameters, inlineLeafParametersWithElementParameters, nameFromElementParameters, text, textLeafParametersWithAnnotations, textLeafWithText, withText)
 import RichTextEditor.Node
     exposing
         ( allRange
@@ -53,7 +53,7 @@ pNode =
         )
 
 
-textNode1 : EditorInlineLeaf
+textNode1 : InlineLeaf
 textNode1 =
     textLeafWithText "sample1"
 
@@ -67,16 +67,16 @@ testNodeAt =
     describe "Tests the function which finds a node given a node path and a block node"
         [ test "Test that we can find the root node" <|
             \_ ->
-                Expect.equal (Just (BlockNodeWrapper rootNode)) (nodeAt [] rootNode)
+                Expect.equal (Just (Block rootNode)) (nodeAt [] rootNode)
         , test "Test that we can find the p node" <|
             \_ ->
-                Expect.equal (Just (BlockNodeWrapper pNode)) (nodeAt [ 0 ] rootNode)
+                Expect.equal (Just (Block pNode)) (nodeAt [ 0 ] rootNode)
         , test "Test that we can find the first text node" <|
             \_ ->
-                Expect.equal (Just (InlineLeafWrapper textNode1)) (nodeAt [ 0, 0 ] rootNode)
+                Expect.equal (Just (Inline textNode1)) (nodeAt [ 0, 0 ] rootNode)
         , test "Test that we can find the second text node" <|
             \_ ->
-                Expect.equal (Just (InlineLeafWrapper textNode2)) (nodeAt [ 0, 1 ] rootNode)
+                Expect.equal (Just (Inline textNode2)) (nodeAt [ 0, 1 ] rootNode)
         , test "Test that invalid paths return no result" <|
             \_ ->
                 Expect.equal Nothing (nodeAt [ 0, 2 ] rootNode)
@@ -94,10 +94,10 @@ nodePathList path _ list =
 nodeNameOrTextValue : Path -> Node -> List String -> List String
 nodeNameOrTextValue _ node list =
     (case node of
-        BlockNodeWrapper bn ->
+        Block bn ->
             nameFromElementParameters (elementParametersFromBlockNode bn)
 
-        InlineLeafWrapper il ->
+        Inline il ->
             case il of
                 TextLeaf tl ->
                     text tl
@@ -112,9 +112,9 @@ testIndexedFoldr : Test
 testIndexedFoldr =
     describe "Tests that indexFoldr works as expected"
         [ test "Test that the node paths are passed in as expected" <|
-            \_ -> Expect.equal [ [], [ 0 ], [ 0, 0 ], [ 0, 1 ] ] (indexedFoldr nodePathList [] (BlockNodeWrapper rootNode))
+            \_ -> Expect.equal [ [], [ 0 ], [ 0, 0 ], [ 0, 1 ] ] (indexedFoldr nodePathList [] (Block rootNode))
         , test "Test that the nodes are passed in as expected" <|
-            \_ -> Expect.equal [ "div", "p", "sample1", "sample2" ] (indexedFoldr nodeNameOrTextValue [] (BlockNodeWrapper rootNode))
+            \_ -> Expect.equal [ "div", "p", "sample1", "sample2" ] (indexedFoldr nodeNameOrTextValue [] (Block rootNode))
         ]
 
 
@@ -122,7 +122,7 @@ testFoldr : Test
 testFoldr =
     describe "Tests that foldr works as expected"
         [ test "Test that the nodes are passed in as expected" <|
-            \_ -> Expect.equal [ "div", "p", "sample1", "sample2" ] (foldr (\x -> nodeNameOrTextValue [] x) [] (BlockNodeWrapper rootNode))
+            \_ -> Expect.equal [ "div", "p", "sample1", "sample2" ] (foldr (\x -> nodeNameOrTextValue [] x) [] (Block rootNode))
         ]
 
 
@@ -130,9 +130,9 @@ testIndexedFoldl : Test
 testIndexedFoldl =
     describe "Tests that indexedFoldl works as expected"
         [ test "Test that the node paths are passed in as expected" <|
-            \_ -> Expect.equal [ [ 0, 1 ], [ 0, 0 ], [ 0 ], [] ] (indexedFoldl nodePathList [] (BlockNodeWrapper rootNode))
+            \_ -> Expect.equal [ [ 0, 1 ], [ 0, 0 ], [ 0 ], [] ] (indexedFoldl nodePathList [] (Block rootNode))
         , test "Test that the nodes are passed in as expected" <|
-            \_ -> Expect.equal [ "sample2", "sample1", "p", "div" ] (indexedFoldl nodeNameOrTextValue [] (BlockNodeWrapper rootNode))
+            \_ -> Expect.equal [ "sample2", "sample1", "p", "div" ] (indexedFoldl nodeNameOrTextValue [] (Block rootNode))
         ]
 
 
@@ -140,7 +140,7 @@ testFoldl : Test
 testFoldl =
     describe "Tests that foldl works as expected"
         [ test "Test that the nodes are passed in as expected" <|
-            \_ -> Expect.equal [ "sample2", "sample1", "p", "div" ] (foldl (\x -> nodeNameOrTextValue [] x) [] (BlockNodeWrapper rootNode))
+            \_ -> Expect.equal [ "sample2", "sample1", "p", "div" ] (foldl (\x -> nodeNameOrTextValue [] x) [] (Block rootNode))
         ]
 
 
@@ -148,11 +148,11 @@ testIsSelectable : Test
 testIsSelectable =
     describe "Tests that a node is selectable"
         [ test "Test that a text node is selectable" <|
-            \_ -> Expect.equal True <| isSelectable (InlineLeafWrapper (textLeafWithText ""))
+            \_ -> Expect.equal True <| isSelectable (Inline (textLeafWithText ""))
         , test "Test that a element node with a selectable mark is selectable" <|
-            \_ -> Expect.equal True <| isSelectable (BlockNodeWrapper (blockNode (elementParameters "div" [] (Set.fromList [ selectableAnnotation ])) Leaf))
+            \_ -> Expect.equal True <| isSelectable (Block (blockNode (elementParameters "div" [] (Set.fromList [ selectableAnnotation ])) Leaf))
         , test "Test that a element node without a selectable mark is not selectable" <|
-            \_ -> Expect.equal False <| isSelectable (BlockNodeWrapper (blockNode (elementParameters "div" [] Set.empty) Leaf))
+            \_ -> Expect.equal False <| isSelectable (Block (blockNode (elementParameters "div" [] Set.empty) Leaf))
         ]
 
 
@@ -163,24 +163,24 @@ setAnnotations mark node =
             Set.fromList [ mark ]
     in
     case node of
-        BlockNodeWrapper bn ->
+        Block bn ->
             let
                 params =
                     elementParametersFromBlockNode bn
             in
-            BlockNodeWrapper (bn |> blockNodeWithParameters (params |> elementParametersWithAnnotations annotations))
+            Block (bn |> blockNodeWithElementParameters (params |> elementParametersWithAnnotations annotations))
 
-        InlineLeafWrapper il ->
+        Inline il ->
             case il of
                 TextLeaf tl ->
-                    InlineLeafWrapper (TextLeaf (tl |> textLeafParametersWithAnnotations annotations))
+                    Inline (TextLeaf (tl |> textLeafParametersWithAnnotations annotations))
 
                 InlineLeaf l ->
                     let
                         params =
                             elementParametersFromInlineLeafParameters l
                     in
-                    InlineLeafWrapper (InlineLeaf (l |> inlineLeafParametersWithElementParameters (params |> elementParametersWithAnnotations annotations)))
+                    Inline (InlineLeaf (l |> inlineLeafParametersWithElementParameters (params |> elementParametersWithAnnotations annotations)))
 
 
 dummyAnnotation =
@@ -238,8 +238,8 @@ testIndexedMap =
     describe "Tests that indexedMap works as expected"
         [ test "Test that node paths are passed in correctly" <|
             \_ ->
-                Expect.equal (BlockNodeWrapper rootNodeWithPathAnnotation)
-                    (indexedMap addPathAnnotation (BlockNodeWrapper rootNode))
+                Expect.equal (Block rootNodeWithPathAnnotation)
+                    (indexedMap addPathAnnotation (Block rootNode))
         ]
 
 
@@ -280,8 +280,8 @@ testMap =
     describe "Tests that map works as expected"
         [ test "Test that nodes are correctly modified" <|
             \_ ->
-                Expect.equal (BlockNodeWrapper rootNodeWithSameAnnotation)
-                    (map addDummyAnnotation (BlockNodeWrapper rootNode))
+                Expect.equal (Block rootNodeWithSameAnnotation)
+                    (map addDummyAnnotation (Block rootNode))
         ]
 
 
@@ -320,10 +320,10 @@ findNodeAtPath path1 path2 _ =
 findNodeWithName : String -> Path -> Node -> Bool
 findNodeWithName name _ node =
     case node of
-        BlockNodeWrapper bn ->
+        Block bn ->
             nameFromElementParameters (elementParametersFromBlockNode bn) == name
 
-        InlineLeafWrapper il ->
+        Inline il ->
             case il of
                 InlineLeaf l ->
                     nameFromElementParameters (elementParametersFromInlineLeafParameters l) == name
@@ -337,11 +337,11 @@ testFindBackwardFrom =
     describe "Tests that findBackwardFrom works as expected"
         [ test "Tests that the path is correctly passed in" <|
             \_ ->
-                Expect.equal (Just ( [ 0, 0 ], InlineLeafWrapper textNode1 ))
+                Expect.equal (Just ( [ 0, 0 ], Inline textNode1 ))
                     (findBackwardFrom (findNodeAtPath [ 0, 0 ]) [ 0, 1 ] rootNode)
         , test "Tests that the function includes the passed in path" <|
             \_ ->
-                Expect.equal (Just ( [ 0, 0 ], InlineLeafWrapper textNode1 ))
+                Expect.equal (Just ( [ 0, 0 ], Inline textNode1 ))
                     (findBackwardFrom (findNodeAtPath [ 0, 0 ]) [ 0, 0 ] rootNode)
         , test "Tests that the function returns Nothing if nothing is found" <|
             \_ ->
@@ -349,7 +349,7 @@ testFindBackwardFrom =
                     (findBackwardFrom (findNodeAtPath [ 1, 0 ]) [ 0, 1 ] rootNode)
         , test "Tests that the function passes in the node parameter correctly" <|
             \_ ->
-                Expect.equal (Just ( [], BlockNodeWrapper rootNode ))
+                Expect.equal (Just ( [], Block rootNode ))
                     (findBackwardFrom (findNodeWithName "div") [ 0, 1 ] rootNode)
         ]
 
@@ -359,7 +359,7 @@ testFindBackwardFromExclusive =
     describe "Tests that findBackwardFromExclusive works as expected"
         [ test "Tests that the path is correctly passed in" <|
             \_ ->
-                Expect.equal (Just ( [ 0, 0 ], InlineLeafWrapper textNode1 ))
+                Expect.equal (Just ( [ 0, 0 ], Inline textNode1 ))
                     (findBackwardFromExclusive (findNodeAtPath [ 0, 0 ]) [ 0, 1 ] rootNode)
         , test "Tests that the function excludes the passed in path" <|
             \_ ->
@@ -371,7 +371,7 @@ testFindBackwardFromExclusive =
                     (findBackwardFromExclusive (findNodeAtPath [ 1, 0 ]) [ 0, 1 ] rootNode)
         , test "Tests that the function passes in the node parameter correctly" <|
             \_ ->
-                Expect.equal (Just ( [], BlockNodeWrapper rootNode ))
+                Expect.equal (Just ( [], Block rootNode ))
                     (findBackwardFromExclusive (findNodeWithName "div") [ 0, 1 ] rootNode)
         ]
 
@@ -381,11 +381,11 @@ testFindForwardFrom =
     describe "Tests that findNodeForwardFrom works as expected"
         [ test "Tests that the path is correctly passed in" <|
             \_ ->
-                Expect.equal (Just ( [ 0, 0 ], InlineLeafWrapper textNode1 ))
+                Expect.equal (Just ( [ 0, 0 ], Inline textNode1 ))
                     (findForwardFrom (findNodeAtPath [ 0, 0 ]) [ 0 ] rootNode)
         , test "Tests that the function includes the passed in path" <|
             \_ ->
-                Expect.equal (Just ( [ 0, 0 ], InlineLeafWrapper textNode1 ))
+                Expect.equal (Just ( [ 0, 0 ], Inline textNode1 ))
                     (findForwardFrom (findNodeAtPath [ 0, 0 ]) [ 0, 0 ] rootNode)
         , test "Tests that the function returns Nothing if nothing is found" <|
             \_ ->
@@ -393,7 +393,7 @@ testFindForwardFrom =
                     (findForwardFrom (findNodeAtPath [ 1, 0 ]) [ 0, 1 ] rootNode)
         , test "Tests that the function passes in the node parameter correctly" <|
             \_ ->
-                Expect.equal (Just ( [], BlockNodeWrapper rootNode ))
+                Expect.equal (Just ( [], Block rootNode ))
                     (findForwardFrom (findNodeWithName "div") [] rootNode)
         ]
 
@@ -403,7 +403,7 @@ testFindForwardFromExclusive =
     describe "Tests that findNodeForwardFromExclusive works as expected"
         [ test "Tests that the path is correctly passed in" <|
             \_ ->
-                Expect.equal (Just ( [ 0, 0 ], InlineLeafWrapper textNode1 ))
+                Expect.equal (Just ( [ 0, 0 ], Inline textNode1 ))
                     (findForwardFromExclusive (findNodeAtPath [ 0, 0 ]) [ 0 ] rootNode)
         , test "Tests that the function excludes the passed in path" <|
             \_ ->
@@ -415,7 +415,7 @@ testFindForwardFromExclusive =
                     (findForwardFromExclusive (findNodeAtPath [ 1, 0 ]) [ 0, 1 ] rootNode)
         , test "Tests that the function passes in the node parameter correctly" <|
             \_ ->
-                Expect.equal (Just ( [ 0 ], BlockNodeWrapper pNode ))
+                Expect.equal (Just ( [ 0 ], Block pNode ))
                     (findForwardFromExclusive (findNodeWithName "p") [] rootNode)
         ]
 
@@ -425,7 +425,7 @@ testNext =
     describe "Tests that next works as expected"
         [ test "Tests that we receive the next element from root" <|
             \_ ->
-                Expect.equal (Just ( [ 0 ], BlockNodeWrapper pNode ))
+                Expect.equal (Just ( [ 0 ], Block pNode ))
                     (next [] rootNode)
         , test "Tests that we receive nothing after the last node" <|
             \_ ->
@@ -439,7 +439,7 @@ testPrevious =
     describe "Tests that previous works as expected"
         [ test "Tests that we receive the previous element from root" <|
             \_ ->
-                Expect.equal (Just ( [], BlockNodeWrapper rootNode ))
+                Expect.equal (Just ( [], Block rootNode ))
                     (previous [ 0 ] rootNode)
         , test "Tests that we receive nothing before the root node" <|
             \_ ->
@@ -532,7 +532,7 @@ testReplace =
         [ test "Tests that we replace the element we want" <|
             \_ ->
                 Expect.equal (Ok replaceRootPNode)
-                    (replace [ 0, 0 ] (InlineLeafWrapper textNode2) rootNode)
+                    (replace [ 0, 0 ] (Inline textNode2) rootNode)
         ]
 
 
@@ -552,9 +552,9 @@ testAllRange =
         [ test "Tests that an empty range returns true" <|
             \_ -> Expect.equal True <| allRange (\_ -> False) [ 0, 1 ] [ 0, 0 ] rootNode
         , test "Tests that a single node range works as expected" <|
-            \_ -> Expect.equal True <| allRange (\node -> node == BlockNodeWrapper pNode) [ 0 ] [ 0 ] rootNode
+            \_ -> Expect.equal True <| allRange (\node -> node == Block pNode) [ 0 ] [ 0 ] rootNode
         , test "Tests that a node range with one false returns False" <|
-            \_ -> Expect.equal False <| allRange (\node -> node == BlockNodeWrapper pNode) [ 0 ] [ 0, 0 ] rootNode
+            \_ -> Expect.equal False <| allRange (\node -> node == Block pNode) [ 0 ] [ 0, 0 ] rootNode
         ]
 
 
@@ -564,9 +564,9 @@ testAnyRange =
         [ test "Tests that an empty range returns false" <|
             \_ -> Expect.equal False <| anyRange (\_ -> False) [ 0, 1 ] [ 0, 0 ] rootNode
         , test "Tests that a single node range works as expected" <|
-            \_ -> Expect.equal True <| anyRange (\node -> node == BlockNodeWrapper pNode) [ 0 ] [ 0 ] rootNode
+            \_ -> Expect.equal True <| anyRange (\node -> node == Block pNode) [ 0 ] [ 0 ] rootNode
         , test "Tests that a node range with one true value returns True" <|
-            \_ -> Expect.equal True <| anyRange (\node -> node == BlockNodeWrapper pNode) [ 0 ] [ 0, 0 ] rootNode
+            \_ -> Expect.equal True <| anyRange (\node -> node == Block pNode) [ 0 ] [ 0, 0 ] rootNode
         , test "Tests that a node range with no true values returns False" <|
             \_ -> Expect.equal False <| anyRange (\_ -> False) [ 0 ] [ 0, 1 ] rootNode
         ]
