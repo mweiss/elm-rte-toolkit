@@ -1,10 +1,18 @@
-module RichTextEditor.Model.State exposing (State, root, selection, state, withRoot, withSelection)
+module RichTextEditor.Model.State exposing
+    ( State
+    , isSame
+    , root
+    , selection
+    , state
+    , withRoot
+    , withSelection
+    )
 
 {-| An EditorState is a tuple of an editor fragment and a selection. EditorState allows you to keep
 track of and manipulate the contents of the editor.
 -}
 
-import RichTextEditor.Model.Node exposing (BlockNode)
+import RichTextEditor.Model.Node exposing (BlockNode, isSameBlockNode)
 import RichTextEditor.Model.Selection exposing (Selection)
 
 
@@ -49,3 +57,8 @@ withRoot node st =
     case st of
         State s ->
             State { s | root = node }
+
+
+isSame : State -> State -> Bool
+isSame s1 s2 =
+    isSameBlockNode (root s1) (root s2) && selection s1 == selection s2

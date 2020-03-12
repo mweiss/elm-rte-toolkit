@@ -1,4 +1,4 @@
-module RichTextEditor.Model.Mark exposing (Mark, MarkOrder(..), ToggleAction(..), attributes, mark, name, sort, toggle)
+module RichTextEditor.Model.Mark exposing (Mark, MarkOrder(..), ToggleAction(..), attributes, definition, mark, name, sort, toggle)
 
 {-| A mark is a piece of information that can be attached to a node. It can be used to as extra
 information when rendering a node (like color, font, and link information).
@@ -6,33 +6,31 @@ information when rendering a node (like color, font, and link information).
 
 import Dict exposing (Dict)
 import RichTextEditor.Model.Attribute exposing (Attribute)
+import RichTextEditor.Model.Spec as Spec exposing (MarkDefinition, attributesFromMark, nameFromMarkDefinition)
 
 
-type Mark
-    = Mark Contents
+type alias Mark =
+    Spec.Mark
 
 
-type alias Contents =
-    { name : String, attributes : List Attribute }
+mark : MarkDefinition -> List Attribute -> Mark
+mark =
+    Spec.mark
 
 
-mark : String -> List Attribute -> Mark
-mark n a =
-    Mark { name = n, attributes = a }
+attributes : Mark -> List Attribute
+attributes =
+    attributesFromMark
+
+
+definition : Mark -> MarkDefinition
+definition =
+    Spec.definitionFromMark
 
 
 name : Mark -> String
 name m =
-    case m of
-        Mark c ->
-            c.name
-
-
-attributes : Mark -> List Attribute
-attributes m =
-    case m of
-        Mark c ->
-            c.attributes
+    nameFromMarkDefinition (definition m)
 
 
 type MarkOrder
@@ -53,7 +51,11 @@ sort order marks =
     case order of
         MarkOrder o ->
             List.sortBy
-                (\m -> ( Maybe.withDefault 0 <| Dict.get (name m) o, name m ))
+                (\m ->
+                    ( Maybe.withDefault 0 <| Dict.get (name m) o
+                    , name m
+                    )
+                )
                 marks
 
 

@@ -30,24 +30,28 @@ import RichTextEditor.Model.Node
         , InlineLeafTree(..)
         , Path
         , childNodes
+        , definitionFromElementParameters
         , elementParametersFromBlockNode
         , fromBlockArray
         , fromInlineArray
-        , nameFromElementParameters
         , reverseLookupFromInlineArray
         , treeFromInlineArray
         )
-import RichTextEditor.Model.Spec exposing (Spec, toHtmlNodeFromMarkDefinition, toHtmlNodeFromNodeDefinition)
+import RichTextEditor.Model.Spec
+    exposing
+        ( Spec
+        , definitionFromMark
+        , toHtmlNodeFromMarkDefinition
+        , toHtmlNodeFromNodeDefinition
+        )
 import RichTextEditor.Spec
     exposing
         ( childNodesPlaceholder
-        , findMarkDefinitionFromSpecWithDefault
-        , findNodeDefinitionFromSpecWithDefault
         )
 
 
-domToEditorInlineLeafTree : Spec -> InlineLeafTree -> Path -> Maybe Path
-domToEditorInlineLeafTree spec tree path =
+domToEditorInlineLeafTree : InlineLeafTree -> Path -> Maybe Path
+domToEditorInlineLeafTree tree path =
     case tree of
         LeafNode i ->
             Just [ i ]
@@ -55,7 +59,7 @@ domToEditorInlineLeafTree spec tree path =
         MarkNode n ->
             let
                 markDefinition =
-                    findMarkDefinitionFromSpecWithDefault (Mark.name n.mark) spec
+                    definitionFromMark n.mark
 
                 structure =
                     toHtmlNodeFromMarkDefinition markDefinition n.mark childNodesPlaceholder
@@ -75,14 +79,14 @@ domToEditorInlineLeafTree spec tree path =
                                     Nothing
 
                                 Just l ->
-                                    domToEditorInlineLeafTree spec l (List.drop 1 rest)
+                                    domToEditorInlineLeafTree l (List.drop 1 rest)
 
 
 {-| Translates a DOM node path to an editor node path. Returns Nothing if the
 path is invalid.
 -}
-domToEditor : Spec -> BlockNode -> Path -> Maybe Path
-domToEditor spec node path =
+domToEditor : BlockNode -> Path -> Maybe Path
+domToEditor node path =
     if List.isEmpty path then
         Just []
 
@@ -92,7 +96,7 @@ domToEditor spec node path =
                 elementParametersFromBlockNode node
 
             nodeDefinition =
-                findNodeDefinitionFromSpecWithDefault (nameFromElementParameters parameters) spec
+                definitionFromElementParameters parameters
 
             structure =
                 toHtmlNodeFromNodeDefinition nodeDefinition parameters childNodesPlaceholder
@@ -114,7 +118,7 @@ domToEditor spec node path =
                                         Nothing
 
                                     Just childNode ->
-                                        case domToEditor spec childNode (List.drop 1 rest) of
+                                        case domToEditor childNode (List.drop 1 rest) of
                                             Nothing ->
                                                 Nothing
 
@@ -128,7 +132,7 @@ domToEditor spec node path =
 
                                     Just tree ->
                                         --  TODO:  we assume the content of the leaf node is valid, but maybe we should validate its content?
-                                        domToEditorInlineLeafTree spec tree (List.drop 1 rest)
+                                        domToEditorInlineLeafTree tree (List.drop 1 rest)
 
                             Leaf ->
                                 -- If we still have path left, it means the path is invalid, so we return Nothing
@@ -138,14 +142,14 @@ domToEditor spec node path =
 {-| Translates an editor node path to a DOM node path. Returns Nothing if the
 path is invalid.
 -}
-editorToDom : Spec -> BlockNode -> Path -> Maybe Path
-editorToDom spec node path =
+editorToDom : BlockNode -> Path -> Maybe Path
+editorToDom node path =
     case path of
         [] ->
             Just []
 
         x :: xs ->
-            case pathToChildContentsFromElementParameters spec (elementParametersFromBlockNode node) of
+            case pathToChildContentsFromElementParameters (elementParametersFromBlockNode node) of
                 Nothing ->
                     Nothing
 
@@ -157,7 +161,7 @@ editorToDom spec node path =
                                     Nothing
 
                                 Just childNode ->
-                                    case editorToDom spec childNode xs of
+                                    case editorToDom childNode xs of
                                         Nothing ->
                                             Nothing
 
@@ -172,7 +176,6 @@ editorToDom spec node path =
                                 Just inlineTreePath ->
                                     case
                                         pathToChildContentsFromInlineTreePath
-                                            spec
                                             (fromInlineArray l)
                                             (treeFromInlineArray l)
                                             inlineTreePath
@@ -275,11 +278,11 @@ pathToChildContents node =
 {- Helper method that returns the path to the child contents from a list of marks -}
 
 
-pathToChildContentsFromMark : Spec -> Mark -> Maybe Path
-pathToChildContentsFromMark spec mark =
+pathToChildContentsFromMark : Mark -> Maybe Path
+pathToChildContentsFromMark mark =
     let
         markDefinition =
-            findMarkDefinitionFromSpecWithDefault (Mark.name mark) spec
+            Mark.definition mark
     in
     let
         markStructure =
@@ -292,11 +295,11 @@ pathToChildContentsFromMark spec mark =
 {- Helper method to determine the path to the child contents from an element editor node -}
 
 
-pathToChildContentsFromElementParameters : Spec -> ElementParameters -> Maybe Path
-pathToChildContentsFromElementParameters spec parameters =
+pathToChildContentsFromElementParameters : ElementParameters -> Maybe Path
+pathToChildContentsFromElementParameters parameters =
     let
         nodeDefinition =
-            findNodeDefinitionFromSpecWithDefault (nameFromElementParameters parameters) spec
+            definitionFromElementParameters parameters
 
         nodeStructure =
             toHtmlNodeFromNodeDefinition nodeDefinition parameters childNodesPlaceholder
@@ -304,8 +307,8 @@ pathToChildContentsFromElementParameters spec parameters =
     pathToChildContents nodeStructure
 
 
-pathToChildContentsFromInlineTreePath : Spec -> Array InlineLeaf -> Array InlineLeafTree -> Path -> Maybe Path
-pathToChildContentsFromInlineTreePath spec array treeArray path =
+pathToChildContentsFromInlineTreePath : Array InlineLeaf -> Array InlineLeafTree -> Path -> Maybe Path
+pathToChildContentsFromInlineTreePath array treeArray path =
     case path of
         [] ->
             Nothing
@@ -326,12 +329,12 @@ pathToChildContentsFromInlineTreePath spec array treeArray path =
                                     Just [ x ]
 
                         MarkNode n ->
-                            case pathToChildContentsFromMark spec n.mark of
+                            case pathToChildContentsFromMark n.mark of
                                 Nothing ->
                                     Nothing
 
                                 Just p ->
-                                    case pathToChildContentsFromInlineTreePath spec array n.children xs of
+                                    case pathToChildContentsFromInlineTreePath array n.children xs of
                                         Nothing ->
                                             Nothing
 

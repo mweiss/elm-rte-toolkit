@@ -2,7 +2,6 @@ module Main exposing (..)
 
 import Array
 import BasicEditorControls exposing (EditorMsg(..), InsertImageModal, InsertLinkModal)
-import BasicSpecs exposing (simpleSpec)
 import Browser
 import Html exposing (Html, div)
 import Html.Attributes
@@ -11,6 +10,7 @@ import RichTextEditor.Decorations exposing (addElementDecoration, selectableDeco
 import RichTextEditor.Editor exposing (internalUpdate)
 import RichTextEditor.Internal.Editor exposing (applyCommand)
 import RichTextEditor.List exposing (ListType, defaultListDefinition)
+import RichTextEditor.MarkdownSpec as MarkdownSpec exposing (blockquote, bold, codeBlock, doc, heading, horizontalRule, image, italic, paragraph)
 import RichTextEditor.Model.Annotation exposing (selectableAnnotation)
 import RichTextEditor.Model.Attribute exposing (Attribute(..))
 import RichTextEditor.Model.Command as Commands exposing (inputEvent, key, set, transformCommand)
@@ -38,7 +38,7 @@ inlineImageNode : InlineLeaf
 inlineImageNode =
     InlineLeaf <|
         inlineLeafParameters
-            (elementParameters "image" [ StringAttribute "src" "logo.svg" ] <|
+            (elementParameters image [ StringAttribute "src" "logo.svg" ] <|
                 Set.fromList [ selectableAnnotation ]
             )
             []
@@ -46,7 +46,7 @@ inlineImageNode =
 
 paragraphWithImage =
     blockNode
-        (elementParameters "paragraph" [] Set.empty)
+        (elementParameters paragraph [] Set.empty)
         (inlineLeafArray
             (Array.fromList
                 [ textLeafWithText ""
@@ -60,14 +60,14 @@ paragraphWithImage =
 doubleInitNode : BlockNode
 doubleInitNode =
     blockNode
-        (elementParameters "doc" [] Set.empty)
+        (elementParameters doc [] Set.empty)
         (blockArray (Array.fromList [ initialEditorNode, paragraphWithImage, initialEditorNode ]))
 
 
 initialEditorNode : BlockNode
 initialEditorNode =
     blockNode
-        (elementParameters "paragraph" [] Set.empty)
+        (elementParameters paragraph [] Set.empty)
         (inlineLeafArray (Array.fromList [ textLeafWithText "This is some sample text" ]))
 
 
@@ -83,7 +83,9 @@ commandBindings =
                 [ ( "liftEmpty", transformCommand <| liftEmpty )
                 , ( "splitBlockHeaderToNewParagraph"
                   , transformCommand <|
-                        splitBlockHeaderToNewParagraph [ "header" ] "p"
+                        splitBlockHeaderToNewParagraph
+                            [ "heading" ]
+                            (elementParameters paragraph [] Set.empty)
                   )
                 ]
         )
@@ -106,7 +108,7 @@ initialState =
 
 initEditor : Editor EditorMsg
 initEditor =
-    editor simpleSpec initialState InternalMsg
+    editor MarkdownSpec.spec initialState InternalMsg
         |> withDecorations decorations
         |> withCommandMap commandBindings
 
@@ -201,16 +203,16 @@ handleInsertImage model =
 handleToggleStyle : String -> Model -> Model
 handleToggleStyle style model =
     let
-        markName =
+        markDef =
             case style of
                 "Bold" ->
-                    "bold"
+                    bold
 
                 "Italic" ->
-                    "italic"
+                    italic
 
                 _ ->
-                    "bold"
+                    bold
 
         markOrder =
             markOrderFromSpec (spec model.editor)
@@ -221,7 +223,7 @@ handleToggleStyle style model =
                 (applyCommand
                     ( "toggleStyle"
                     , transformCommand <|
-                        toggleMarkOnInlineNodes markOrder (mark markName [])
+                        toggleMarkOnInlineNodes markOrder (mark markDef [])
                     )
                     model.editor
                 )
@@ -312,13 +314,13 @@ handleToggleBlock block model =
         onParams =
             if block == "Code block" then
                 elementParameters
-                    "code_block"
+                    codeBlock
                     []
                     Set.empty
 
             else
                 elementParameters
-                    "heading"
+                    heading
                     [ IntegerAttribute
                         "level"
                         (Maybe.withDefault 1 <| String.toInt (String.right 1 block))
@@ -326,7 +328,7 @@ handleToggleBlock block model =
                     Set.empty
 
         offParams =
-            elementParameters "paragraph" [] Set.empty
+            elementParameters paragraph [] Set.empty
     in
     { model
         | editor =
@@ -350,7 +352,7 @@ handleWrapBlockNode model =
                     , transformCommand <|
                         wrap
                             (\n -> n)
-                            (elementParameters "blockquote" [] Set.empty)
+                            (elementParameters blockquote [] Set.empty)
                     )
                     model.editor
                 )
@@ -368,7 +370,7 @@ handleInsertHorizontalRule model =
                         insertBlockNode
                             (blockNode
                                 (elementParameters
-                                    "horizontal_rule"
+                                    horizontalRule
                                     []
                                     (Set.fromList [ selectableAnnotation ])
                                 )

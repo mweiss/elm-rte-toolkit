@@ -20,12 +20,15 @@ module RichTextEditor.Model.Node exposing
     , blockNode
     , blockNodeWithElementParameters
     , childNodes
+    , comparableElementParameters
+    , comparableMarksFromTextLeafParameters
+    , definitionFromElementParameters
     , elementParameters
     , elementParametersFromBlockNode
     , elementParametersFromInlineLeafParameters
     , elementParametersWithAnnotations
     , elementParametersWithAttributes
-    , elementParametersWithName
+    , elementParametersWithDefinition
     , emptyTextLeafParameters
     , fromBlockArray
     , fromInlineArray
@@ -33,6 +36,9 @@ module RichTextEditor.Model.Node exposing
     , inlineLeafParameters
     , inlineLeafParametersWithElementParameters
     , inlineLeafParametersWithMarks
+    , isSameBlockNode
+    , isSameChildNodes
+    , isSameInlineLeaf
     , marksFromInlineLeaf
     , marksFromInlineLeafParameters
     , marksFromTextLeafParameters
@@ -53,10 +59,12 @@ the main type used to identify where a node is in the editor.
 -}
 
 import Array exposing (Array)
+import Array.Extra as Array
 import List.Extra
 import RichTextEditor.Model.Annotation exposing (Annotation)
 import RichTextEditor.Model.Attribute exposing (Attribute)
-import RichTextEditor.Model.Mark exposing (Mark)
+import RichTextEditor.Model.Mark exposing (Mark, attributes, name)
+import RichTextEditor.Model.Spec as Spec exposing (NodeDefinition)
 import Set exposing (Set)
 
 
@@ -74,20 +82,48 @@ type Fragment
     | InlineLeafFragment (Array InlineLeaf)
 
 
-type ElementParameters
-    = ElementParameters ElementParametersContents
+type alias ElementParameters =
+    Spec.ElementParameters
 
 
-type alias ElementParametersContents =
-    { name : String
-    , attributes : List Attribute
-    , annotations : Set Annotation
-    }
+annotationsFromElementParameters : ElementParameters -> Set Annotation
+annotationsFromElementParameters =
+    Spec.annotationsFromElementParameters
 
 
-elementParameters : String -> List Attribute -> Set Annotation -> ElementParameters
-elementParameters name attributes annotations =
-    ElementParameters { name = name, attributes = attributes, annotations = annotations }
+attributesFromElementParameters : ElementParameters -> List Attribute
+attributesFromElementParameters =
+    Spec.attributesFromElementParameters
+
+
+definitionFromElementParameters : ElementParameters -> NodeDefinition
+definitionFromElementParameters =
+    Spec.definitionFromElementParameters
+
+
+nameFromElementParameters : ElementParameters -> String
+nameFromElementParameters ele =
+    Spec.nameFromNodeDefinition (definitionFromElementParameters ele)
+
+
+elementParameters : NodeDefinition -> List Attribute -> Set Annotation -> ElementParameters
+elementParameters =
+    Spec.elementParameters
+
+
+elementParametersWithAnnotations : Set Annotation -> ElementParameters -> ElementParameters
+elementParametersWithAnnotations =
+    Spec.elementParametersWithAnnotations
+
+
+elementParametersWithAttributes : List Attribute -> ElementParameters -> ElementParameters
+elementParametersWithAttributes =
+    Spec.elementParametersWithAttributes
+
+
+elementParametersWithDefinition : NodeDefinition -> ElementParameters -> ElementParameters
+elementParametersWithDefinition =
+    Spec.elementParametersWithDefinition
 
 
 blockNodeWithElementParameters : ElementParameters -> BlockNode -> BlockNode
@@ -97,51 +133,9 @@ blockNodeWithElementParameters parameters node =
             BlockNode { c | parameters = parameters }
 
 
-nameFromElementParameters : ElementParameters -> String
-nameFromElementParameters parameters =
-    case parameters of
-        ElementParameters c ->
-            c.name
-
-
-attributesFromElementParameters : ElementParameters -> List Attribute
-attributesFromElementParameters parameters =
-    case parameters of
-        ElementParameters c ->
-            c.attributes
-
-
 annotationsFromBlockNode : BlockNode -> Set Annotation
 annotationsFromBlockNode node =
     annotationsFromElementParameters <| elementParametersFromBlockNode node
-
-
-annotationsFromElementParameters : ElementParameters -> Set Annotation
-annotationsFromElementParameters parameters =
-    case parameters of
-        ElementParameters c ->
-            c.annotations
-
-
-elementParametersWithAnnotations : Set Annotation -> ElementParameters -> ElementParameters
-elementParametersWithAnnotations annotations parameters =
-    case parameters of
-        ElementParameters c ->
-            ElementParameters <| { c | annotations = annotations }
-
-
-elementParametersWithName : String -> ElementParameters -> ElementParameters
-elementParametersWithName s parameters =
-    case parameters of
-        ElementParameters c ->
-            ElementParameters <| { c | name = s }
-
-
-elementParametersWithAttributes : List Attribute -> ElementParameters -> ElementParameters
-elementParametersWithAttributes attributes parameters =
-    case parameters of
-        ElementParameters c ->
-            ElementParameters <| { c | attributes = attributes }
 
 
 {-| An editor block node represents a block element in your document. An editor block node can either
@@ -174,6 +168,14 @@ elementParametersFromBlockNode node =
     case node of
         BlockNode n ->
             n.parameters
+
+
+comparableElementParameters : ElementParameters -> ( String, List Attribute, Set String )
+comparableElementParameters p =
+    ( nameFromElementParameters p
+    , attributesFromElementParameters p
+    , annotationsFromElementParameters p
+    )
 
 
 childNodes : BlockNode -> ChildNodes
@@ -342,6 +344,16 @@ marksFromTextLeafParameters parameters =
             c.marks
 
 
+comparableMarksFromTextLeafParameters : TextLeafParameters -> List ( String, List Attribute )
+comparableMarksFromTextLeafParameters parameters =
+    List.map (\m -> ( name m, attributes m )) (marksFromTextLeafParameters parameters)
+
+
+comparableMarksFromInlineLeafParameters : InlineLeafParameters -> List ( String, List Attribute )
+comparableMarksFromInlineLeafParameters parameters =
+    List.map (\m -> ( name m, attributes m )) (marksFromInlineLeafParameters parameters)
+
+
 annotationsFromTextLeafParameters : TextLeafParameters -> Set Annotation
 annotationsFromTextLeafParameters parameters =
     case parameters of
@@ -427,3 +439,87 @@ marksToMarkNodeListRec indexedMarkLists =
                 (\( _, ( m1, _ ) ) ( _, ( m2, _ ) ) -> m1 == m2)
             <|
                 List.map (\( i, a ) -> ( i, ( List.head a, List.drop 1 a ) )) indexedMarkLists
+
+
+isSameInlineLeaf : InlineLeaf -> InlineLeaf -> Bool
+isSameInlineLeaf i1 i2 =
+    case i1 of
+        InlineLeaf il1 ->
+            case i2 of
+                InlineLeaf il2 ->
+                    comparableMarksFromInlineLeafParameters il1
+                        == comparableMarksFromInlineLeafParameters il2
+                        && comparableElementParameters (elementParametersFromInlineLeafParameters il1)
+                        == comparableElementParameters (elementParametersFromInlineLeafParameters il2)
+
+                _ ->
+                    False
+
+        TextLeaf tl1 ->
+            case i2 of
+                TextLeaf tl2 ->
+                    comparableMarksFromTextLeafParameters tl1
+                        == comparableMarksFromTextLeafParameters tl2
+                        && text tl1
+                        == text tl2
+
+                _ ->
+                    False
+
+
+isSameChildNodes : ChildNodes -> ChildNodes -> Bool
+isSameChildNodes cn1 cn2 =
+    case cn1 of
+        BlockChildren c1 ->
+            case cn2 of
+                BlockChildren c2 ->
+                    List.all (\( b1, b2 ) -> isSameBlockNode b1 b2)
+                        (Array.toList
+                            (Array.map2
+                                Tuple.pair
+                                (fromBlockArray c1)
+                                (fromBlockArray c2)
+                            )
+                        )
+
+                _ ->
+                    False
+
+        InlineChildren c1 ->
+            case cn2 of
+                InlineChildren c2 ->
+                    List.all (\( i1, i2 ) -> isSameInlineLeaf i1 i2)
+                        (Array.toList
+                            (Array.map2
+                                Tuple.pair
+                                (fromInlineArray c1)
+                                (fromInlineArray c2)
+                            )
+                        )
+
+                _ ->
+                    False
+
+        Leaf ->
+            case cn2 of
+                Leaf ->
+                    True
+
+                _ ->
+                    False
+
+
+isSameBlockNode : BlockNode -> BlockNode -> Bool
+isSameBlockNode bn1 bn2 =
+    let
+        e1 =
+            comparableElementParameters <| elementParametersFromBlockNode bn1
+
+        e2 =
+            comparableElementParameters <| elementParametersFromBlockNode bn2
+    in
+    if e1 /= e2 then
+        False
+
+    else
+        isSameChildNodes (childNodes bn1) (childNodes bn2)

@@ -3,14 +3,56 @@ module RichTextEditor.Spec exposing (..)
 import Array exposing (Array)
 import Dict exposing (Dict)
 import Html.Parser exposing (Node(..))
-import List.Extra
 import Result exposing (Result)
 import RichTextEditor.Model.Attribute exposing (Attribute(..))
 import RichTextEditor.Model.Constants exposing (zeroWidthSpace)
 import RichTextEditor.Model.HtmlNode exposing (HtmlNode(..))
-import RichTextEditor.Model.Mark as Mark exposing (Mark, MarkOrder(..), ToggleAction(..), mark, toggle)
-import RichTextEditor.Model.Node exposing (BlockNode, ChildNodes(..), ElementParameters, Fragment(..), InlineLeaf(..), attributesFromElementParameters, blockArray, blockNode, childNodes, elementParameters, elementParametersFromBlockNode, elementParametersFromInlineLeafParameters, emptyTextLeafParameters, fromBlockArray, fromInlineArray, inlineLeafArray, inlineLeafParameters, nameFromElementParameters, textLeafParametersWithMarks, withText)
-import RichTextEditor.Model.Spec exposing (ContentType(..), MarkDefinition, NodeDefinition, Spec, blockLeafContentType, blockNodeContentType, contentTypeFromNodeDefinition, fromHtmlNodeFromMarkDefinition, fromHtmlNodeFromNodeDefinition, groupFromNodeDefinition, markDefinition, markDefinitions, nameFromMarkDefinition, nameFromNodeDefinition, nodeDefinition, nodeDefinitions)
+import RichTextEditor.Model.Mark as Mark
+    exposing
+        ( Mark
+        , MarkOrder(..)
+        , ToggleAction(..)
+        , mark
+        , toggle
+        )
+import RichTextEditor.Model.Node
+    exposing
+        ( BlockNode
+        , ChildNodes(..)
+        , ElementParameters
+        , Fragment(..)
+        , InlineLeaf(..)
+        , attributesFromElementParameters
+        , blockArray
+        , blockNode
+        , childNodes
+        , definitionFromElementParameters
+        , elementParameters
+        , elementParametersFromBlockNode
+        , elementParametersFromInlineLeafParameters
+        , emptyTextLeafParameters
+        , fromBlockArray
+        , fromInlineArray
+        , inlineLeafArray
+        , inlineLeafParameters
+        , textLeafParametersWithMarks
+        , withText
+        )
+import RichTextEditor.Model.Spec
+    exposing
+        ( ContentType(..)
+        , MarkDefinition
+        , NodeDefinition
+        , Spec
+        , blockLeafContentType
+        , contentTypeFromNodeDefinition
+        , fromHtmlNodeFromMarkDefinition
+        , fromHtmlNodeFromNodeDefinition
+        , groupFromNodeDefinition
+        , markDefinitions
+        , nameFromMarkDefinition
+        , nodeDefinitions
+        )
 import RichTextEditor.Model.State as State exposing (State)
 import Set exposing (Set)
 
@@ -37,12 +79,12 @@ defaultElementToHtml tagName elementParameters children =
         children
 
 
-defaultHtmlToElement : String -> String -> HtmlNode -> Maybe ( ElementParameters, Array HtmlNode )
-defaultHtmlToElement htmlTag elementName node =
+defaultHtmlToElement : String -> NodeDefinition -> HtmlNode -> Maybe ( ElementParameters, Array HtmlNode )
+defaultHtmlToElement htmlTag def node =
     case node of
         ElementNode name _ children ->
             if name == htmlTag then
-                Just ( elementParameters elementName [] Set.empty, children )
+                Just ( elementParameters def [] Set.empty, children )
 
             else
                 Nothing
@@ -51,12 +93,12 @@ defaultHtmlToElement htmlTag elementName node =
             Nothing
 
 
-defaultHtmlToMark : String -> String -> HtmlNode -> Maybe ( Mark, Array HtmlNode )
-defaultHtmlToMark htmlTag markName node =
+defaultHtmlToMark : String -> MarkDefinition -> HtmlNode -> Maybe ( Mark, Array HtmlNode )
+defaultHtmlToMark htmlTag def node =
     case node of
         ElementNode name _ children ->
             if name == htmlTag then
-                Just ( mark markName [], children )
+                Just ( mark def [], children )
 
             else
                 Nothing
@@ -82,47 +124,13 @@ defaultMarkToHtml mark children =
         children
 
 
-findNodeDefinitionFromSpec : String -> Spec -> Maybe NodeDefinition
-findNodeDefinitionFromSpec name spec =
-    List.Extra.find (\n -> nameFromNodeDefinition n == name) (nodeDefinitions spec)
-
-
-findNodeDefinitionFromSpecWithDefault : String -> Spec -> NodeDefinition
-findNodeDefinitionFromSpecWithDefault name spec =
-    Maybe.withDefault
-        (nodeDefinition
-            name
-            "block"
-            (blockNodeContentType [])
-            (defaultElementToHtml name)
-            (defaultHtmlToElement name name)
-        )
-        (findNodeDefinitionFromSpec name spec)
-
-
-findMarkDefinitionFromSpec : String -> Spec -> Maybe MarkDefinition
-findMarkDefinitionFromSpec name spec =
-    List.Extra.find (\n -> nameFromMarkDefinition n == name) (markDefinitions spec)
-
-
-findMarkDefinitionFromSpecWithDefault : String -> Spec -> MarkDefinition
-findMarkDefinitionFromSpecWithDefault name spec =
-    Maybe.withDefault
-        (markDefinition
-            name
-            defaultMarkToHtml
-            (defaultHtmlToMark name name)
-        )
-        (findMarkDefinitionFromSpec name spec)
-
-
-validate : Spec -> State -> Result String State
-validate spec editorState =
+validate : State -> Result String State
+validate editorState =
     let
         root =
             State.root editorState
     in
-    case validateEditorBlockNode spec Nothing root of
+    case validateEditorBlockNode Nothing root of
         [] ->
             Ok editorState
 
@@ -146,23 +154,18 @@ toStringContentType contentType =
             "BlockLeafNodeType"
 
 
-validateInlineLeaf : Spec -> Maybe (Set String) -> InlineLeaf -> List String
-validateInlineLeaf spec allowedGroups leaf =
+validateInlineLeaf : Maybe (Set String) -> InlineLeaf -> List String
+validateInlineLeaf allowedGroups leaf =
     case leaf of
         TextLeaf _ ->
             []
 
         InlineLeaf il ->
             let
-                name =
-                    nameFromElementParameters (elementParametersFromInlineLeafParameters il)
+                definition =
+                    definitionFromElementParameters (elementParametersFromInlineLeafParameters il)
             in
-            case findNodeDefinitionFromSpec name spec of
-                Nothing ->
-                    [ "Cannot find node with definition '" ++ name ++ "'" ]
-
-                Just definition ->
-                    validateAllowedGroups allowedGroups (groupFromNodeDefinition definition)
+            validateAllowedGroups allowedGroups (groupFromNodeDefinition definition)
 
 
 validateAllowedGroups : Maybe (Set String) -> String -> List String
@@ -184,61 +187,56 @@ validateAllowedGroups allowedGroups group =
                 ]
 
 
-validateEditorBlockNode : Spec -> Maybe (Set String) -> BlockNode -> List String
-validateEditorBlockNode spec allowedGroups node =
+validateEditorBlockNode : Maybe (Set String) -> BlockNode -> List String
+validateEditorBlockNode allowedGroups node =
     let
         parameters =
             elementParametersFromBlockNode node
 
-        name =
-            nameFromElementParameters parameters
+        definition =
+            definitionFromElementParameters parameters
     in
-    case findNodeDefinitionFromSpec name spec of
-        Nothing ->
-            [ "Cannot find node with definition '" ++ name ++ "'" ]
+    let
+        allowedGroupsErrors =
+            validateAllowedGroups allowedGroups (groupFromNodeDefinition definition)
+    in
+    if not <| List.isEmpty allowedGroupsErrors then
+        allowedGroupsErrors
 
-        Just definition ->
-            let
-                allowedGroupsErrors =
-                    validateAllowedGroups allowedGroups (groupFromNodeDefinition definition)
-            in
-            if not <| List.isEmpty allowedGroupsErrors then
-                allowedGroupsErrors
+    else
+        let
+            contentType =
+                contentTypeFromNodeDefinition definition
+        in
+        case childNodes node of
+            BlockChildren ba ->
+                case contentType of
+                    BlockNodeType groups ->
+                        List.concatMap
+                            (validateEditorBlockNode groups)
+                            (Array.toList (fromBlockArray ba))
 
-            else
-                let
-                    contentType =
-                        contentTypeFromNodeDefinition definition
-                in
-                case childNodes node of
-                    BlockChildren ba ->
-                        case contentType of
-                            BlockNodeType groups ->
-                                List.concatMap
-                                    (validateEditorBlockNode spec groups)
-                                    (Array.toList (fromBlockArray ba))
+                    _ ->
+                        [ "I was expecting textblock content type, but instead I got "
+                            ++ toStringContentType contentType
+                        ]
 
-                            _ ->
-                                [ "I was expecting textblock content type, but instead I got "
-                                    ++ toStringContentType contentType
-                                ]
+            InlineChildren la ->
+                case contentType of
+                    TextBlockNodeType groups ->
+                        List.concatMap (validateInlineLeaf groups) (Array.toList (fromInlineArray la))
 
-                    InlineChildren la ->
-                        case contentType of
-                            TextBlockNodeType groups ->
-                                List.concatMap (validateInlineLeaf spec groups) (Array.toList (fromInlineArray la))
+                    _ ->
+                        [ "I was expecting textblock content type, but instead I got " ++ toStringContentType contentType ]
 
-                            _ ->
-                                [ "I was expecting textblock content type, but instead I got " ++ toStringContentType contentType ]
+            Leaf ->
+                if contentType == blockLeafContentType then
+                    []
 
-                    Leaf ->
-                        if contentType == blockLeafContentType then
-                            []
-
-                        else
-                            [ "I was expecting leaf blockleaf content type, but instead I got "
-                                ++ toStringContentType contentType
-                            ]
+                else
+                    [ "I was expecting leaf blockleaf content type, but instead I got "
+                        ++ toStringContentType contentType
+                    ]
 
 
 resultFilterMap : (a -> Result c b) -> Array a -> Array b
@@ -298,7 +296,7 @@ htmlNodeToEditorFragment spec marks node =
                         (\definition result ->
                             case result of
                                 Nothing ->
-                                    case fromHtmlNodeFromNodeDefinition definition node of
+                                    case fromHtmlNodeFromNodeDefinition definition definition node of
                                         Nothing ->
                                             Nothing
 
@@ -359,7 +357,7 @@ htmlNodeToMark spec node =
         (\definition result ->
             case result of
                 Nothing ->
-                    case fromHtmlNodeFromMarkDefinition definition node of
+                    case fromHtmlNodeFromMarkDefinition definition definition node of
                         Nothing ->
                             Nothing
 

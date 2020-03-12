@@ -6,6 +6,7 @@ import List.Extra
 import Regex
 import RichTextEditor.Annotation exposing (clearAnnotations)
 import RichTextEditor.Internal.DeleteWord as DeleteWord
+import RichTextEditor.MarkdownSpec exposing (hardBreak)
 import RichTextEditor.Marks
     exposing
         ( hasMarkWithName
@@ -39,36 +40,7 @@ import RichTextEditor.Model.Keys
         , shiftKey
         )
 import RichTextEditor.Model.Mark as Mark exposing (Mark, MarkOrder, ToggleAction(..), toggle)
-import RichTextEditor.Model.Node
-    exposing
-        ( BlockArray
-        , BlockNode
-        , ChildNodes(..)
-        , ElementParameters
-        , Fragment(..)
-        , InlineLeaf(..)
-        , Node(..)
-        , Path
-        , annotationsFromBlockNode
-        , blockArray
-        , blockNode
-        , blockNodeWithElementParameters
-        , childNodes
-        , elementParameters
-        , elementParametersFromBlockNode
-        , elementParametersWithName
-        , fromBlockArray
-        , fromInlineArray
-        , inlineLeafArray
-        , inlineLeafParameters
-        , inlineLeafParametersWithMarks
-        , marksFromInlineLeaf
-        , nameFromElementParameters
-        , text
-        , textLeafParametersWithMarks
-        , withChildNodes
-        , withText
-        )
+import RichTextEditor.Model.Node exposing (BlockArray, BlockNode, ChildNodes(..), ElementParameters, Fragment(..), InlineLeaf(..), Node(..), Path, annotationsFromBlockNode, blockArray, blockNode, blockNodeWithElementParameters, childNodes, comparableElementParameters, elementParameters, elementParametersFromBlockNode, fromBlockArray, fromInlineArray, inlineLeafArray, inlineLeafParameters, inlineLeafParametersWithMarks, marksFromInlineLeaf, nameFromElementParameters, text, textLeafParametersWithMarks, withChildNodes, withText)
 import RichTextEditor.Model.Selection
     exposing
         ( Selection
@@ -561,17 +533,27 @@ removeRangeSelection editorState =
                                                 |> withRoot removedNodes
                                                 |> withSelection (Just newSelection)
                                     in
-                                    if anchorTextBlock == Nothing || anchorTextBlock == focusTextBlock then
-                                        Ok newEditorState
+                                    case anchorTextBlock of
+                                        Nothing ->
+                                            Ok newEditorState
 
-                                    else
-                                        Ok <| Result.withDefault newEditorState (joinForward newEditorState)
+                                        Just ( ap, _ ) ->
+                                            case focusTextBlock of
+                                                Nothing ->
+                                                    Ok newEditorState
+
+                                                Just ( fp, _ ) ->
+                                                    if ap == fp then
+                                                        Ok newEditorState
+
+                                                    else
+                                                        Ok <| Result.withDefault newEditorState (joinForward newEditorState)
 
 
 insertLineBreak : Transform
 insertLineBreak =
     insertInlineElement
-        (InlineLeaf (inlineLeafParameters (elementParameters "hard_break" [] Set.empty) []))
+        (InlineLeaf (inlineLeafParameters (elementParameters hardBreak [] Set.empty) []))
 
 
 insertInlineElement : InlineLeaf -> Transform
@@ -730,11 +712,12 @@ isLeafNode path root =
         Just node ->
             case node of
                 Block bn ->
-                    if childNodes bn == Leaf then
-                        True
+                    case childNodes bn of
+                        Leaf ->
+                            True
 
-                    else
-                        False
+                        _ ->
+                            False
 
                 Inline l ->
                     case l of
@@ -1233,7 +1216,8 @@ toggleBlock allowedBlocks onParams offParams editorState =
                         (\node ->
                             case node of
                                 Block bn ->
-                                    elementParametersFromBlockNode bn == onParams
+                                    comparableElementParameters (elementParametersFromBlockNode bn)
+                                        == comparableElementParameters onParams
 
                                 _ ->
                                     True
@@ -1297,16 +1281,16 @@ wrap contentsMapFunc elementParameters editorState =
                 markedRoot =
                     annotateSelection normalizedSelection (State.root editorState)
 
-                anchorBlock =
+                anchorBlockPath =
                     findClosestBlockPath (anchorNode normalizedSelection) markedRoot
 
-                focusBlock =
+                focusBlockPath =
                     findClosestBlockPath (focusNode normalizedSelection) markedRoot
 
                 ancestor =
-                    commonAncestor anchorBlock focusBlock
+                    commonAncestor anchorBlockPath focusBlockPath
             in
-            if ancestor == anchorBlock || ancestor == focusBlock then
+            if ancestor == anchorBlockPath || ancestor == focusBlockPath then
                 case nodeAt ancestor markedRoot of
                     Nothing ->
                         Err "I cannot find a node at selection"
@@ -1654,7 +1638,7 @@ isEmptyTextBlock node =
             False
 
 
-splitBlockHeaderToNewParagraph : List String -> String -> Transform
+splitBlockHeaderToNewParagraph : List String -> ElementParameters -> Transform
 splitBlockHeaderToNewParagraph headerElements paragraphElement editorState =
     case splitTextBlock editorState of
         Err s ->
@@ -1698,10 +1682,7 @@ splitBlockHeaderToNewParagraph headerElements paragraphElement editorState =
                                                     (Block
                                                         (bn
                                                             |> blockNodeWithElementParameters
-                                                                (elementParametersWithName
-                                                                    paragraphElement
-                                                                    parameters
-                                                                )
+                                                                paragraphElement
                                                         )
                                                     )
                                                     (State.root splitEditorState)

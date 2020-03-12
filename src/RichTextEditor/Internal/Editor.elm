@@ -2,10 +2,25 @@ module RichTextEditor.Internal.Editor exposing (..)
 
 import BoundedDeque exposing (BoundedDeque)
 import RichTextEditor.EditorState exposing (reduceEditorState)
-import RichTextEditor.Model.Command exposing (Command(..), InternalAction(..), NamedCommand, NamedCommandList)
-import RichTextEditor.Model.Editor exposing (Editor, forceReselection, history, spec, state, withHistory, withState)
+import RichTextEditor.Model.Command
+    exposing
+        ( Command(..)
+        , InternalAction(..)
+        , NamedCommand
+        , NamedCommandList
+        )
+import RichTextEditor.Model.Editor
+    exposing
+        ( Editor
+        , forceReselection
+        , history
+        , spec
+        , state
+        , withHistory
+        , withState
+        )
 import RichTextEditor.Model.History exposing (contents, fromContents)
-import RichTextEditor.Model.State exposing (State)
+import RichTextEditor.Model.State exposing (State, isSame)
 import RichTextEditor.Spec exposing (validate)
 
 
@@ -30,7 +45,7 @@ findNextState editorState undoDeque =
             ( Nothing, rest )
 
         Just ( _, state ) ->
-            if state /= editorState then
+            if not <| isSame state editorState then
                 ( Just state, rest )
 
             else
@@ -106,7 +121,7 @@ applyCommand ( name, command ) editor =
             applyInternalCommand action editor
 
         TransformCommand transform ->
-            case transform (state editor) |> Result.andThen (validate (spec editor)) of
+            case transform (state editor) |> Result.andThen validate of
                 Err s ->
                     Err s
 
@@ -123,10 +138,10 @@ applyNamedCommandList list editor =
     List.foldl
         (\cmd result ->
             case result of
-                Err s ->
+                Err _ ->
                     case applyCommand cmd editor of
                         Err s2 ->
-                            Err s
+                            Err s2
 
                         Ok o ->
                             Ok o

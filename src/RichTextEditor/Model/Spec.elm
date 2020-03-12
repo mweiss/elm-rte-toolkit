@@ -1,20 +1,32 @@
 module RichTextEditor.Model.Spec exposing
     ( ContentType(..)
+    , ElementParameters
     , ElementToHtml
     , HtmlToElement
     , HtmlToMark
+    , Mark
     , MarkDefinition
     , MarkToHtml
     , NodeDefinition
     , Spec
+    , annotationsFromElementParameters
+    , attributesFromElementParameters
+    , attributesFromMark
     , blockLeafContentType
     , blockNodeContentType
     , contentTypeFromNodeDefinition
+    , definitionFromElementParameters
+    , definitionFromMark
+    , elementParameters
+    , elementParametersWithAnnotations
+    , elementParametersWithAttributes
+    , elementParametersWithDefinition
     , emptySpec
     , fromHtmlNodeFromMarkDefinition
     , fromHtmlNodeFromNodeDefinition
     , groupFromNodeDefinition
     , inlineLeafContentType
+    , mark
     , markDefinition
     , markDefinitions
     , nameFromMarkDefinition
@@ -29,10 +41,95 @@ module RichTextEditor.Model.Spec exposing
     )
 
 import Array exposing (Array)
+import RichTextEditor.Model.Annotation exposing (Annotation)
+import RichTextEditor.Model.Attribute exposing (Attribute)
 import RichTextEditor.Model.HtmlNode exposing (HtmlNode)
-import RichTextEditor.Model.Mark exposing (Mark)
-import RichTextEditor.Model.Node exposing (ElementParameters)
 import Set exposing (Set)
+
+
+type alias ElementParametersContents =
+    { definition : NodeDefinition
+    , attributes : List Attribute
+    , annotations : Set Annotation
+    }
+
+
+type ElementParameters
+    = ElementParameters ElementParametersContents
+
+
+elementParameters : NodeDefinition -> List Attribute -> Set Annotation -> ElementParameters
+elementParameters def attrs annotations =
+    ElementParameters { definition = def, attributes = attrs, annotations = annotations }
+
+
+definitionFromElementParameters : ElementParameters -> NodeDefinition
+definitionFromElementParameters parameters =
+    case parameters of
+        ElementParameters c ->
+            c.definition
+
+
+attributesFromElementParameters : ElementParameters -> List Attribute
+attributesFromElementParameters parameters =
+    case parameters of
+        ElementParameters c ->
+            c.attributes
+
+
+annotationsFromElementParameters : ElementParameters -> Set Annotation
+annotationsFromElementParameters parameters =
+    case parameters of
+        ElementParameters c ->
+            c.annotations
+
+
+elementParametersWithAnnotations : Set Annotation -> ElementParameters -> ElementParameters
+elementParametersWithAnnotations annotations parameters =
+    case parameters of
+        ElementParameters c ->
+            ElementParameters <| { c | annotations = annotations }
+
+
+elementParametersWithDefinition : NodeDefinition -> ElementParameters -> ElementParameters
+elementParametersWithDefinition d parameters =
+    case parameters of
+        ElementParameters c ->
+            ElementParameters <| { c | definition = d }
+
+
+elementParametersWithAttributes : List Attribute -> ElementParameters -> ElementParameters
+elementParametersWithAttributes attrs parameters =
+    case parameters of
+        ElementParameters c ->
+            ElementParameters <| { c | attributes = attrs }
+
+
+type Mark
+    = Mark Contents
+
+
+type alias Contents =
+    { definition : MarkDefinition, attributes : List Attribute }
+
+
+mark : MarkDefinition -> List Attribute -> Mark
+mark n a =
+    Mark { definition = n, attributes = a }
+
+
+definitionFromMark : Mark -> MarkDefinition
+definitionFromMark m =
+    case m of
+        Mark c ->
+            c.definition
+
+
+attributesFromMark : Mark -> List Attribute
+attributesFromMark m =
+    case m of
+        Mark c ->
+            c.attributes
 
 
 type MarkDefinition
@@ -51,7 +148,7 @@ type alias MarkToHtml =
 
 
 type alias HtmlToMark =
-    HtmlNode -> Maybe ( Mark, Array HtmlNode )
+    MarkDefinition -> HtmlNode -> Maybe ( Mark, Array HtmlNode )
 
 
 type alias ElementToHtml =
@@ -59,7 +156,7 @@ type alias ElementToHtml =
 
 
 type alias HtmlToElement =
-    HtmlNode -> Maybe ( ElementParameters, Array HtmlNode )
+    NodeDefinition -> HtmlNode -> Maybe ( ElementParameters, Array HtmlNode )
 
 
 type NodeDefinition

@@ -5,7 +5,18 @@ import Html
 import Html.Attributes
 import Html.Events
 import RichTextEditor.Model.Annotation exposing (selectionAnnotation)
-import RichTextEditor.Model.Editor exposing (DecoderFunc, Decorations, ElementDecoratorFunction, InternalEditorMsg(..), MarkDecoratorFunction, elementDecorators, markDecorators, withElementDecorators, withMarkDecorators)
+import RichTextEditor.Model.Editor
+    exposing
+        ( DecoderFunc
+        , Decorations
+        , ElementDecoratorFunction
+        , InternalEditorMsg(..)
+        , MarkDecoratorFunction
+        , elementDecorators
+        , markDecorators
+        , withElementDecorators
+        , withMarkDecorators
+        )
 import RichTextEditor.Model.Node
     exposing
         ( ElementParameters

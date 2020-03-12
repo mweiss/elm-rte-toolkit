@@ -9,6 +9,7 @@ import RichTextEditor.Commands
         , liftAnnotation
         , liftConcatMapFunc
         )
+import RichTextEditor.MarkdownSpec exposing (listItem, orderedList, unorderedList)
 import RichTextEditor.Model.Command exposing (CommandMap, Transform, emptyCommandMap, inputEvent, key, set, transformCommand)
 import RichTextEditor.Model.Keys exposing (altKey, backspaceKey, deleteKey, enterKey, returnKey)
 import RichTextEditor.Model.Node exposing (BlockArray, BlockNode, ChildNodes(..), ElementParameters, Fragment(..), InlineLeaf(..), Node(..), Path, blockArray, blockNode, childNodes, elementParameters, elementParametersFromBlockNode, fromBlockArray, nameFromElementParameters, text)
@@ -74,9 +75,9 @@ commandBindings definition =
 defaultListDefinition : ListDefinition
 defaultListDefinition =
     ListDefinition
-        { ordered = elementParameters "ordered_list" [] Set.empty
-        , unordered = elementParameters "unordered_list" [] Set.empty
-        , item = elementParameters "list_item" [] Set.empty
+        { ordered = elementParameters orderedList [] Set.empty
+        , unordered = elementParameters unorderedList [] Set.empty
+        , item = elementParameters listItem [] Set.empty
         }
 
 

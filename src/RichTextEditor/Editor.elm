@@ -10,7 +10,12 @@ import List.Extra
 import RichTextEditor.Commands exposing (removeRangeSelection)
 import RichTextEditor.Decorations exposing (getElementDecorators, getMarkDecorators)
 import RichTextEditor.Internal.BeforeInput as BeforeInput
-import RichTextEditor.Internal.DomNode exposing (decodeDomNode, extractRootEditorBlockNode, findTextChanges)
+import RichTextEditor.Internal.DomNode
+    exposing
+        ( decodeDomNode
+        , extractRootEditorBlockNode
+        , findTextChanges
+        )
 import RichTextEditor.Internal.Editor exposing (applyNamedCommandList, updateEditorState)
 import RichTextEditor.Internal.HtmlNode exposing (editorBlockNodeToHtmlNode)
 import RichTextEditor.Internal.KeyDown as KeyDown
@@ -18,18 +23,76 @@ import RichTextEditor.Internal.Paste as Paste
 import RichTextEditor.Model.Command exposing (transformCommand)
 import RichTextEditor.Model.Constants exposing (zeroWidthSpace)
 import RichTextEditor.Model.DomNode exposing (DomNode(..))
-import RichTextEditor.Model.Editor exposing (DecoderFunc, Editor, InternalEditorMsg(..), bufferedEditorState, completeRerenderCount, decoder, decorations, forceCompleteRerender, forceRerender, forceReselection, isComposing, renderCount, selectionCount, spec, state, withBufferedEditorState, withComposing, withState)
+import RichTextEditor.Model.Editor
+    exposing
+        ( DecoderFunc
+        , Editor
+        , InternalEditorMsg(..)
+        , bufferedEditorState
+        , completeRerenderCount
+        , decoder
+        , decorations
+        , forceCompleteRerender
+        , forceRerender
+        , forceReselection
+        , isComposing
+        , renderCount
+        , selectionCount
+        , spec
+        , state
+        , withBufferedEditorState
+        , withComposing
+        , withState
+        )
 import RichTextEditor.Model.Event exposing (EditorChange, PasteEvent, TextChange)
 import RichTextEditor.Model.HtmlNode exposing (HtmlNode(..))
 import RichTextEditor.Model.Mark as Mark exposing (Mark)
-import RichTextEditor.Model.Node exposing (BlockNode, ChildNodes(..), ElementParameters, InlineLeaf(..), InlineLeafTree(..), Node(..), Path, blockArray, childNodes, elementParametersFromBlockNode, elementParametersFromInlineLeafParameters, fromBlockArray, fromInlineArray, inlineLeafArray, nameFromElementParameters, text, treeFromInlineArray, withChildNodes, withText)
-import RichTextEditor.Model.Selection exposing (Selection, anchorNode, anchorOffset, focusNode, focusOffset, isCollapsed, rangeSelection)
-import RichTextEditor.Model.Spec exposing (Spec, markDefinitions, nameFromMarkDefinition, toHtmlNodeFromMarkDefinition, toHtmlNodeFromNodeDefinition)
+import RichTextEditor.Model.Node
+    exposing
+        ( BlockNode
+        , ChildNodes(..)
+        , ElementParameters
+        , InlineLeaf(..)
+        , InlineLeafTree(..)
+        , Node(..)
+        , Path
+        , blockArray
+        , childNodes
+        , definitionFromElementParameters
+        , elementParametersFromBlockNode
+        , elementParametersFromInlineLeafParameters
+        , fromBlockArray
+        , fromInlineArray
+        , inlineLeafArray
+        , nameFromElementParameters
+        , text
+        , treeFromInlineArray
+        , withChildNodes
+        , withText
+        )
+import RichTextEditor.Model.Selection
+    exposing
+        ( Selection
+        , anchorNode
+        , anchorOffset
+        , focusNode
+        , focusOffset
+        , isCollapsed
+        , rangeSelection
+        )
+import RichTextEditor.Model.Spec
+    exposing
+        ( Spec
+        , markDefinitions
+        , nameFromMarkDefinition
+        , toHtmlNodeFromMarkDefinition
+        , toHtmlNodeFromNodeDefinition
+        )
 import RichTextEditor.Model.State as State exposing (State, withRoot, withSelection)
 import RichTextEditor.Node exposing (nodeAt)
 import RichTextEditor.NodePath as NodePath exposing (toString)
 import RichTextEditor.Selection exposing (annotateSelection, domToEditor, editorToDom)
-import RichTextEditor.Spec exposing (childNodesPlaceholder, findNodeDefinitionFromSpecWithDefault)
+import RichTextEditor.Spec exposing (childNodesPlaceholder)
 
 
 updateSelection : Maybe Selection -> Bool -> Editor msg -> Editor msg
@@ -46,7 +109,7 @@ updateSelection maybeSelection isDomPath editor =
             let
                 translatedSelection =
                     if isDomPath then
-                        domToEditor (spec editor) (State.root editorState) selection
+                        domToEditor (State.root editorState) selection
 
                     else
                         Just selection
@@ -92,8 +155,8 @@ handleCut editor =
             forceRerender e
 
 
-textChangesDomToEditor : Spec -> BlockNode -> List TextChange -> Maybe (List TextChange)
-textChangesDomToEditor spec editorNode changes =
+textChangesDomToEditor : BlockNode -> List TextChange -> Maybe (List TextChange)
+textChangesDomToEditor editorNode changes =
     List.foldl
         (\( p, text ) maybeAgg ->
             case maybeAgg of
@@ -101,7 +164,7 @@ textChangesDomToEditor spec editorNode changes =
                     Nothing
 
                 Just agg ->
-                    case NodePath.domToEditor spec editorNode p of
+                    case NodePath.domToEditor editorNode p of
                         Nothing ->
                             Nothing
 
@@ -112,11 +175,11 @@ textChangesDomToEditor spec editorNode changes =
         changes
 
 
-deriveTextChanges : Spec -> BlockNode -> DomNode -> Result String (List TextChange)
-deriveTextChanges spec editorNode domNode =
+deriveTextChanges : BlockNode -> DomNode -> Result String (List TextChange)
+deriveTextChanges editorNode domNode =
     let
         htmlNode =
-            editorBlockNodeToHtmlNode spec editorNode
+            editorBlockNodeToHtmlNode editorNode
     in
     findTextChanges htmlNode domNode
 
@@ -191,7 +254,7 @@ differentText root ( path, t ) =
 
 updateChangeEventTextChanges : List TextChange -> Maybe Selection -> Editor msg -> Editor msg
 updateChangeEventTextChanges textChanges selection editor =
-    case textChangesDomToEditor (spec editor) (State.root (state editor)) textChanges of
+    case textChangesDomToEditor (State.root (state editor)) textChanges of
         Nothing ->
             applyForceFunctionOnEditor forceRerender editor
 
@@ -215,7 +278,7 @@ updateChangeEventTextChanges textChanges selection editor =
                         let
                             newEditorState =
                                 editorState
-                                    |> withSelection (selection |> Maybe.andThen (domToEditor (spec editor) (State.root editorState)))
+                                    |> withSelection (selection |> Maybe.andThen (domToEditor (State.root editorState)))
                                     |> withRoot replacedEditorNodes
                         in
                         if isComposing editor then
@@ -241,7 +304,7 @@ updateChangeEventFullScan domRoot selection editor =
                 applyForceFunctionOnEditor forceCompleteRerender editor
 
             else
-                case deriveTextChanges (spec editor) (State.root (state editor)) editorRootDomNode of
+                case deriveTextChanges (State.root (state editor)) editorRootDomNode of
                     Ok changes ->
                         updateChangeEventTextChanges changes selection editor
 
@@ -503,7 +566,7 @@ editorToDomSelection editor =
             Nothing
 
         Just selection ->
-            editorToDom (spec editor) (State.root (state editor)) selection
+            editorToDom (State.root (state editor)) selection
 
 
 renderEditor : Editor msg -> Html msg
@@ -602,9 +665,7 @@ renderElementFromSpec : Editor msg -> ElementParameters -> Path -> Array (Html m
 renderElementFromSpec editor elementParameters backwardsNodePath children =
     let
         definition =
-            findNodeDefinitionFromSpecWithDefault
-                (nameFromElementParameters elementParameters)
-                (spec editor)
+            definitionFromElementParameters elementParameters
 
         node =
             toHtmlNodeFromNodeDefinition definition elementParameters childNodesPlaceholder

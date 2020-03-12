@@ -14,29 +14,36 @@ import RichTextEditor.Annotation
         )
 import RichTextEditor.Model.Annotation exposing (selectionAnnotation)
 import RichTextEditor.Model.Node exposing (BlockNode, Path)
-import RichTextEditor.Model.Selection exposing (Selection, anchorNode, anchorOffset, focusNode, focusOffset, rangeSelection)
-import RichTextEditor.Model.Spec exposing (Spec)
+import RichTextEditor.Model.Selection
+    exposing
+        ( Selection
+        , anchorNode
+        , anchorOffset
+        , focusNode
+        , focusOffset
+        , rangeSelection
+        )
 import RichTextEditor.NodePath as Path
 
 
-domToEditor : Spec -> BlockNode -> Selection -> Maybe Selection
+domToEditor : BlockNode -> Selection -> Maybe Selection
 domToEditor =
     transformSelection Path.domToEditor
 
 
-editorToDom : Spec -> BlockNode -> Selection -> Maybe Selection
+editorToDom : BlockNode -> Selection -> Maybe Selection
 editorToDom =
     transformSelection Path.editorToDom
 
 
-transformSelection : (Spec -> BlockNode -> Path -> Maybe Path) -> Spec -> BlockNode -> Selection -> Maybe Selection
-transformSelection transformation spec node selection =
-    case transformation spec node (anchorNode selection) of
+transformSelection : (BlockNode -> Path -> Maybe Path) -> BlockNode -> Selection -> Maybe Selection
+transformSelection transformation node selection =
+    case transformation node (anchorNode selection) of
         Nothing ->
             Nothing
 
         Just an ->
-            case transformation spec node (focusNode selection) of
+            case transformation node (focusNode selection) of
                 Nothing ->
                     Nothing
 

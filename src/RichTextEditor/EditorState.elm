@@ -3,8 +3,15 @@ module RichTextEditor.EditorState exposing (..)
 import Array exposing (Array)
 import List.Extra
 import RichTextEditor.Model.Annotation exposing (selectionAnnotation)
-import RichTextEditor.Model.Node exposing (BlockNode, ChildNodes(..), InlineLeaf(..), InlineLeafArray, Node(..), Path, annotationsFromTextLeafParameters, childNodes, fromInlineArray, inlineLeafArray, marksFromTextLeafParameters, text, withChildNodes, withText)
-import RichTextEditor.Model.Selection exposing (anchorNode, anchorOffset, focusNode, focusOffset, rangeSelection)
+import RichTextEditor.Model.Node exposing (BlockNode, ChildNodes(..), InlineLeaf(..), InlineLeafArray, Node(..), Path, annotationsFromTextLeafParameters, childNodes, comparableMarksFromTextLeafParameters, fromInlineArray, inlineLeafArray, isSameBlockNode, text, withChildNodes, withText)
+import RichTextEditor.Model.Selection
+    exposing
+        ( anchorNode
+        , anchorOffset
+        , focusNode
+        , focusOffset
+        , rangeSelection
+        )
 import RichTextEditor.Model.State as State exposing (State, withRoot, withSelection)
 import RichTextEditor.Node exposing (findTextBlockNodeAncestor, map)
 import RichTextEditor.Selection exposing (annotateSelection, clearSelectionAnnotations)
@@ -55,7 +62,7 @@ mergeSimilarInlineLeaves inlineLeaves =
                 TextLeaf xL ->
                     case y of
                         TextLeaf yL ->
-                            if marksFromTextLeafParameters xL == marksFromTextLeafParameters yL then
+                            if comparableMarksFromTextLeafParameters xL == comparableMarksFromTextLeafParameters yL then
                                 mergeSimilarInlineLeaves (TextLeaf (xL |> withText (text xL ++ text yL)) :: xs)
 
                             else
@@ -144,7 +151,7 @@ translatePath old new path offset =
                     ( path, offset )
 
                 Just ( _, newN ) ->
-                    if oldN == newN then
+                    if isSameBlockNode oldN newN then
                         ( path, offset )
 
                     else

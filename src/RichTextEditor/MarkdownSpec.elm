@@ -1,4 +1,4 @@
-module BasicSpecs exposing (..)
+module RichTextEditor.MarkdownSpec exposing (..)
 
 import Array exposing (Array)
 import RichTextEditor.Model.Annotation exposing (selectableAnnotation)
@@ -24,11 +24,11 @@ docToHtml _ children =
 
 
 htmlToDoc : HtmlToElement
-htmlToDoc node =
+htmlToDoc definition node =
     case node of
         ElementNode name attrs children ->
             if name == "div" && attrs == [ ( "data-rte-doc", "true" ) ] then
-                Just <| ( elementParameters "doc" [] Set.empty, children )
+                Just <| ( elementParameters definition [] Set.empty, children )
 
             else
                 Nothing
@@ -48,11 +48,11 @@ paragraphToHtml _ children =
 
 
 htmlToParagraph : HtmlToElement
-htmlToParagraph node =
+htmlToParagraph definition node =
     case node of
         ElementNode name _ children ->
             if name == "p" then
-                Just <| ( elementParameters "paragraph" [] Set.empty, children )
+                Just <| ( elementParameters definition [] Set.empty, children )
 
             else
                 Nothing
@@ -73,7 +73,7 @@ blockquoteToHtml =
 
 htmlToBlockquote : HtmlToElement
 htmlToBlockquote =
-    defaultHtmlToElement "blockquote" "blockquote"
+    defaultHtmlToElement "blockquote"
 
 
 horizontalRule : NodeDefinition
@@ -87,11 +87,11 @@ horizontalRuleToHtml =
 
 
 htmlToHorizontalRule : HtmlToElement
-htmlToHorizontalRule node =
+htmlToHorizontalRule def node =
     case node of
         ElementNode name _ _ ->
             if name == "hr" then
-                Just ( elementParameters "horizontal_rule" [] <| Set.fromList [ selectableAnnotation ], Array.empty )
+                Just ( elementParameters def [] <| Set.fromList [ selectableAnnotation ], Array.empty )
 
             else
                 Nothing
@@ -115,7 +115,7 @@ headingToHtml parameters children =
 
 
 htmlToHeading : HtmlToElement
-htmlToHeading node =
+htmlToHeading def node =
     case node of
         ElementNode name _ children ->
             let
@@ -148,7 +148,7 @@ htmlToHeading node =
 
                 Just level ->
                     Just <|
-                        ( elementParameters "heading"
+                        ( elementParameters def
                             [ IntegerAttribute "level" level ]
                             Set.empty
                         , children
@@ -176,7 +176,7 @@ codeBlockToHtmlNode _ children =
 
 
 htmlNodeToCodeBlock : HtmlToElement
-htmlNodeToCodeBlock node =
+htmlNodeToCodeBlock def node =
     case node of
         ElementNode name _ children ->
             if name == "pre" && Array.length children == 1 then
@@ -187,7 +187,7 @@ htmlNodeToCodeBlock node =
                     Just n ->
                         case n of
                             ElementNode _ _ childChildren ->
-                                Just ( elementParameters "code_block" [] Set.empty, childChildren )
+                                Just ( elementParameters def [] Set.empty, childChildren )
 
                             _ ->
                                 Nothing
@@ -220,7 +220,7 @@ imageToHtmlNode parameters _ =
 
 
 htmlNodeToImage : HtmlToElement
-htmlNodeToImage node =
+htmlNodeToImage def node =
     case node of
         ElementNode name attributes _ ->
             if name == "img" then
@@ -246,7 +246,7 @@ htmlNodeToImage node =
                 if findStringAttribute "src" elementNodeAttributes /= Nothing then
                     Just
                         ( elementParameters
-                            "image"
+                            def
                             elementNodeAttributes
                           <|
                             Set.fromList [ selectableAnnotation ]
@@ -275,7 +275,7 @@ hardBreakToHtml =
 
 htmlToHardBreak : HtmlToElement
 htmlToHardBreak =
-    defaultHtmlToElement "br" "hard_break"
+    defaultHtmlToElement "br"
 
 
 filterAttributesToHtml : List ( String, Maybe String ) -> List ( String, String )
@@ -313,7 +313,7 @@ orderedListToHtml _ children =
 
 htmlToOrderedList : HtmlToElement
 htmlToOrderedList =
-    defaultHtmlToElement "ol" "ordered_list"
+    defaultHtmlToElement "ol"
 
 
 unorderedList : NodeDefinition
@@ -333,7 +333,7 @@ unorderedListToHtml _ children =
 
 htmlToUnorderedList : HtmlToElement
 htmlToUnorderedList =
-    defaultHtmlToElement "ul" "unordered_list"
+    defaultHtmlToElement "ul"
 
 
 listItem : NodeDefinition
@@ -353,7 +353,7 @@ listItemToHtml _ children =
 
 htmlToListItem : HtmlToElement
 htmlToListItem =
-    defaultHtmlToElement "li" "list_item"
+    defaultHtmlToElement "li"
 
 
 
@@ -380,7 +380,7 @@ linkToHtmlNode mark children =
 
 
 htmlNodeToLink : HtmlToMark
-htmlNodeToLink node =
+htmlNodeToLink def node =
     case node of
         ElementNode name attributes children ->
             if name == "a" then
@@ -403,7 +403,7 @@ htmlNodeToLink node =
                 if findStringAttribute "href" elementNodeAttributes /= Nothing then
                     Just
                         ( mark
-                            "link"
+                            def
                             elementNodeAttributes
                         , children
                         )
@@ -430,7 +430,7 @@ boldToHtmlNode _ children =
 
 htmlNodeToBold : HtmlToMark
 htmlNodeToBold =
-    defaultHtmlToMark "b" "bold"
+    defaultHtmlToMark "b"
 
 
 italic : MarkDefinition
@@ -445,7 +445,7 @@ italicToHtmlNode _ children =
 
 htmlNodeToItalic : HtmlToMark
 htmlNodeToItalic =
-    defaultHtmlToMark "i" "italic"
+    defaultHtmlToMark "i"
 
 
 code : MarkDefinition
@@ -460,11 +460,11 @@ codeToHtmlNode _ children =
 
 htmlNodeToCode : HtmlToMark
 htmlNodeToCode =
-    defaultHtmlToMark "code" "code"
+    defaultHtmlToMark "code"
 
 
-simpleSpec : Spec
-simpleSpec =
+spec : Spec
+spec =
     emptySpec
         |> withNodeDefinitions
             [ doc
