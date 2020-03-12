@@ -494,7 +494,12 @@ nodeListToHtmlNodeArray nodeList =
             (\n ->
                 case n of
                     Element name attributes children ->
-                        [ ElementNode name attributes <| nodeListToHtmlNodeArray children ]
+                        -- We filter meta tags because chrome adds it to the pasted text/html
+                        if String.toLower name /= "meta" then
+                            [ ElementNode name attributes <| nodeListToHtmlNodeArray children ]
+
+                        else
+                            []
 
                     Text s ->
                         [ TextNode s ]

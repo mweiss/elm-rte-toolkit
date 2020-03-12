@@ -12,6 +12,7 @@
             "elm/html": "1.0.0",
             "elm/json": "1.1.2",
             "elm/regex": "1.0.0",
+            "elm/url": "1.0.0",
             "elm-community/array-extra": "2.1.0",
             "elm-community/json-extra": "4.2.0",
             "elm-community/list-extra": "8.2.2",
@@ -22,7 +23,6 @@
         "indirect": {
             "elm/parser": "1.1.0",
             "elm/time": "1.0.0",
-            "elm/url": "1.0.0",
             "elm/virtual-dom": "1.0.2",
             "rtfeldman/elm-hex": "1.0.0",
             "rtfeldman/elm-iso8601-date-strings": "1.1.3"

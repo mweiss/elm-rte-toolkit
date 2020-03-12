@@ -1,461 +1,224 @@
 module Main exposing (..)
 
-import Array
-import BasicEditorControls exposing (EditorMsg(..), InsertImageModal, InsertLinkModal)
-import Browser
-import Html exposing (Html, div)
-import Html.Attributes
-import RichTextEditor.Commands exposing (insertBlockNode, lift, liftEmpty, splitBlockHeaderToNewParagraph, toggleBlock, toggleMarkOnInlineNodes, wrap)
-import RichTextEditor.Decorations exposing (addElementDecoration, selectableDecoration)
-import RichTextEditor.Editor exposing (internalUpdate)
-import RichTextEditor.Internal.Editor exposing (applyCommand)
-import RichTextEditor.List exposing (ListType, defaultListDefinition)
-import RichTextEditor.MarkdownSpec as MarkdownSpec exposing (blockquote, bold, codeBlock, doc, heading, horizontalRule, image, italic, paragraph)
-import RichTextEditor.Model.Annotation exposing (selectableAnnotation)
-import RichTextEditor.Model.Attribute exposing (Attribute(..))
-import RichTextEditor.Model.Command as Commands exposing (inputEvent, key, set, transformCommand)
-import RichTextEditor.Model.Editor exposing (Editor, editor, emptyDecorations, spec, state, withCommandMap, withDecorations)
-import RichTextEditor.Model.Keys exposing (enterKey, returnKey)
-import RichTextEditor.Model.Mark exposing (mark)
-import RichTextEditor.Model.Node exposing (BlockNode, ChildNodes(..), InlineLeaf(..), blockArray, blockNode, elementParameters, inlineLeafArray, inlineLeafParameters, textLeafWithText)
-import RichTextEditor.Model.State as State exposing (State)
-import RichTextEditor.Spec exposing (markOrderFromSpec)
-import Set
+import Browser exposing (Document)
+import Browser.Navigation as Nav
+import Html exposing (..)
+import Json.Decode as Decode exposing (Value)
+import Page exposing (Page)
+import Page.Basic as Basic
+import Page.Full as Full
+import Page.Home as Home
+import Route exposing (Route)
+import Session exposing (Session(..))
+import Task
+import Url exposing (Url)
 
 
 
----- MODEL ----
+-- NOTE: Based on discussions around how asset management features
+-- like code splitting and lazy loading have been shaping up, it's possible
+-- that most of this file may become unnecessary in a future release of Elm.
+-- Avoid putting things in this module unless there is no alternative!
+-- See https://discourse.elm-lang.org/t/elm-spa-in-0-19/1800/2 for more.
 
 
-type alias Model =
-    { editor : Editor EditorMsg
-    , insertLinkModal : InsertLinkModal
-    , insertImageModal : InsertImageModal
-    }
+type Model
+    = Redirect Session
+    | NotFound Session
+    | Basic Basic.Model
+    | Full Full.Model
+    | Home Home.Model
 
 
-inlineImageNode : InlineLeaf
-inlineImageNode =
-    InlineLeaf <|
-        inlineLeafParameters
-            (elementParameters image [ StringAttribute "src" "logo.svg" ] <|
-                Set.fromList [ selectableAnnotation ]
-            )
-            []
-
-
-paragraphWithImage =
-    blockNode
-        (elementParameters paragraph [] Set.empty)
-        (inlineLeafArray
-            (Array.fromList
-                [ textLeafWithText ""
-                , inlineImageNode
-                , textLeafWithText ""
-                ]
-            )
-        )
-
-
-doubleInitNode : BlockNode
-doubleInitNode =
-    blockNode
-        (elementParameters doc [] Set.empty)
-        (blockArray (Array.fromList [ initialEditorNode, paragraphWithImage, initialEditorNode ]))
-
-
-initialEditorNode : BlockNode
-initialEditorNode =
-    blockNode
-        (elementParameters paragraph [] Set.empty)
-        (inlineLeafArray (Array.fromList [ textLeafWithText "This is some sample text" ]))
-
-
-listCommandBindings =
-    RichTextEditor.List.commandBindings RichTextEditor.List.defaultListDefinition
-
-
-commandBindings =
-    Commands.combine
-        listCommandBindings
-        (RichTextEditor.Commands.defaultCommandBindings
-            |> set [ inputEvent "insertParagraph", key [ enterKey ], key [ returnKey ] ]
-                [ ( "liftEmpty", transformCommand <| liftEmpty )
-                , ( "splitBlockHeaderToNewParagraph"
-                  , transformCommand <|
-                        splitBlockHeaderToNewParagraph
-                            [ "heading" ]
-                            (elementParameters paragraph [] Set.empty)
-                  )
-                ]
-        )
+type alias Flags =
+    {}
 
 
 
--- TODO: fix this!! add real mark decorations
+-- MODEL
 
 
-decorations =
-    addElementDecoration "image" selectableDecoration <|
-        addElementDecoration "horizontal_rule" selectableDecoration <|
-            emptyDecorations
-
-
-initialState : State
-initialState =
-    State.state doubleInitNode Nothing
-
-
-initEditor : Editor EditorMsg
-initEditor =
-    editor MarkdownSpec.spec initialState InternalMsg
-        |> withDecorations decorations
-        |> withCommandMap commandBindings
-
-
-initInsertLinkModal : InsertLinkModal
-initInsertLinkModal =
-    { visible = False, href = "", title = "", editorState = Nothing }
-
-
-initInsertImageModal : InsertImageModal
-initInsertImageModal =
-    { visible = False, src = "", alt = "", editorState = Nothing }
-
-
-init : ( Model, Cmd Msg )
-init =
-    ( { editor = initEditor
-      , insertImageModal = initInsertImageModal
-      , insertLinkModal = initInsertLinkModal
-      }
-    , Cmd.none
-    )
+init : f -> Url -> Nav.Key -> ( Model, Cmd Msg )
+init _ url navKey =
+    changeRouteTo (Route.fromUrl url)
+        (Redirect (Session navKey))
 
 
 
----- UPDATE ----
+-- VIEW
 
 
-type alias Msg =
-    EditorMsg
-
-
-handleShowInsertLinkModal : Model -> Model
-handleShowInsertLinkModal model =
+view : Model -> Document Msg
+view model =
     let
-        insertLinkModal =
-            model.insertLinkModal
-    in
-    { model
-        | insertLinkModal =
-            { insertLinkModal
-                | visible = True
-                , editorState = Just (state model.editor)
+        viewPage page toMsg config =
+            let
+                { title, body } =
+                    Page.view page config
+            in
+            { title = title
+            , body = List.map (Html.map toMsg) body
             }
-    }
-
-
-handleInsertLink : Model -> Model
-handleInsertLink model =
-    let
-        insertLinkModal =
-            model.insertLinkModal
     in
-    { model
-        | editor = model.editor
-        , insertLinkModal =
-            { insertLinkModal
-                | visible = False
-                , editorState = Nothing
-                , href = ""
-                , title = ""
-            }
-    }
+    case model of
+        Redirect session ->
+            Page.view Page.Home Home.dummyView
+
+        NotFound session ->
+            Page.view Page.Home Home.dummyView
+
+        Home home ->
+            viewPage Page.Home GotHomeMsg (Home.view home)
+
+        Basic basic ->
+            viewPage Page.Basic GotBasicMsg (Basic.view basic)
+
+        Full full ->
+            viewPage Page.Full GotFullMsg (Full.view full)
 
 
-handleInsertImage : Model -> Model
-handleInsertImage model =
+
+-- UPDATE
+
+
+type Msg
+    = ChangedUrl Url
+    | ClickedLink Browser.UrlRequest
+    | GotBasicMsg Basic.Msg
+    | GotFullMsg Full.Msg
+    | GotHomeMsg Home.Msg
+    | GotSession Session
+
+
+changeRouteTo : Maybe Route -> Model -> ( Model, Cmd Msg )
+changeRouteTo maybeRoute model =
     let
-        insertImageModal =
-            model.insertImageModal
-
-        newEditor =
-            case insertImageModal.editorState of
-                Nothing ->
-                    model.editor
-
-                Just editorState ->
-                    model.editor
+        session =
+            toSession model
     in
-    { model
-        | editor = newEditor
-        , insertImageModal =
-            { insertImageModal
-                | visible = False
-                , editorState = Nothing
-                , src = ""
-                , alt = ""
-            }
-    }
+    case maybeRoute of
+        Nothing ->
+            ( NotFound session, Cmd.none )
 
+        Just Route.Basic ->
+            Basic.init session |> updateWith Basic GotBasicMsg model
 
-handleToggleStyle : String -> Model -> Model
-handleToggleStyle style model =
-    let
-        markDef =
-            case style of
-                "Bold" ->
-                    bold
+        Just Route.Full ->
+            Full.init session |> updateWith Full GotFullMsg model
 
-                "Italic" ->
-                    italic
-
-                _ ->
-                    bold
-
-        markOrder =
-            markOrderFromSpec (spec model.editor)
-    in
-    { model
-        | editor =
-            Result.withDefault model.editor
-                (applyCommand
-                    ( "toggleStyle"
-                    , transformCommand <|
-                        toggleMarkOnInlineNodes markOrder (mark markDef [])
-                    )
-                    model.editor
-                )
-    }
-
-
-handleInsertCode : Model -> Model
-handleInsertCode model =
-    model
+        Just Route.Home ->
+            Home.init session
+                |> updateWith Home GotHomeMsg model
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-    case msg of
-        InternalMsg internalEditorMsg ->
-            ( { model | editor = internalUpdate internalEditorMsg model.editor }, Cmd.none )
+    case ( msg, model ) of
+        ( ClickedLink urlRequest, _ ) ->
+            case urlRequest of
+                Browser.Internal url ->
+                    case url.fragment of
+                        Nothing ->
+                            -- If we got a link that didn't include a fragment,
+                            -- it's from one of those (href "") attributes that
+                            -- we have to include to make the RealWorld CSS work.
+                            --
+                            -- In an application doing path routing instead of
+                            -- fragment-based routing, this entire
+                            -- `case url.fragment of` expression this comment
+                            -- is inside would be unnecessary.
+                            ( model, Cmd.none )
 
-        ToggleStyle style ->
-            ( handleToggleStyle style model, Cmd.none )
+                        Just _ ->
+                            ( model
+                            , Nav.pushUrl (Session.navKey (toSession model)) (Url.toString url)
+                            )
 
-        InsertCode ->
-            ( handleInsertCode model, Cmd.none )
+                Browser.External href ->
+                    ( model
+                    , Nav.load href
+                    )
 
-        ShowInsertLinkModal ->
-            ( handleShowInsertLinkModal model, Cmd.none )
+        ( ChangedUrl url, _ ) ->
+            changeRouteTo (Route.fromUrl url) model
 
-        InsertLink ->
-            ( handleInsertLink model, Cmd.none )
+        ( GotHomeMsg subMsg, Home home ) ->
+            Home.update subMsg home
+                |> updateWith Home GotHomeMsg model
 
-        UpdateLinkHref href ->
-            ( handleUpdateLinkHref href model, Cmd.none )
+        ( GotFullMsg subMsg, Full full ) ->
+            Full.update subMsg full
+                |> updateWith Full GotFullMsg model
 
-        UpdateLinkTitle title ->
-            ( handleUpdateLinkTitle title model, Cmd.none )
+        ( GotBasicMsg subMsg, Basic basic ) ->
+            Basic.update subMsg basic
+                |> updateWith Basic GotBasicMsg model
 
-        ShowInsertImageModal ->
-            ( handleShowInsertImageModal model, Cmd.none )
-
-        InsertImage ->
-            ( handleInsertImage model, Cmd.none )
-
-        UpdateImageSrc src ->
-            ( handleUpdateImageSrc src model, Cmd.none )
-
-        UpdateImageAlt alt ->
-            ( handleUpdateImageAlt alt model, Cmd.none )
-
-        WrapInBlockQuote ->
-            ( handleWrapBlockNode model, Cmd.none )
-
-        InsertHorizontalRule ->
-            ( handleInsertHorizontalRule model, Cmd.none )
-
-        LiftOutOfBlock ->
-            ( handleLiftBlock model, Cmd.none )
-
-        ToggleBlock block ->
-            ( handleToggleBlock block model, Cmd.none )
-
-        WrapInList listType ->
-            ( handleWrapInList listType model, Cmd.none )
-
-        _ ->
+        ( _, _ ) ->
+            -- Disregard messages that arrived for the wrong page.
             ( model, Cmd.none )
 
 
-handleLiftBlock : Model -> Model
-handleLiftBlock model =
-    { model
-        | editor =
-            Result.withDefault model.editor
-                (applyCommand ( "lift", transformCommand <| lift ) model.editor)
-    }
-
-
-handleWrapInList : ListType -> Model -> Model
-handleWrapInList listType model =
-    { model
-        | editor =
-            Result.withDefault model.editor
-                (applyCommand ( "wrapList", transformCommand <| RichTextEditor.List.wrap defaultListDefinition listType ) model.editor)
-    }
-
-
-handleToggleBlock : String -> Model -> Model
-handleToggleBlock block model =
-    let
-        onParams =
-            if block == "Code block" then
-                elementParameters
-                    codeBlock
-                    []
-                    Set.empty
-
-            else
-                elementParameters
-                    heading
-                    [ IntegerAttribute
-                        "level"
-                        (Maybe.withDefault 1 <| String.toInt (String.right 1 block))
-                    ]
-                    Set.empty
-
-        offParams =
-            elementParameters paragraph [] Set.empty
-    in
-    { model
-        | editor =
-            Result.withDefault model.editor
-                (applyCommand
-                    ( "toggleBlock"
-                    , transformCommand <| toggleBlock [ "heading", "code_block", "paragraph" ] onParams offParams
-                    )
-                    model.editor
-                )
-    }
-
-
-handleWrapBlockNode : Model -> Model
-handleWrapBlockNode model =
-    { model
-        | editor =
-            Result.withDefault model.editor
-                (applyCommand
-                    ( "wrapBlockquote"
-                    , transformCommand <|
-                        wrap
-                            (\n -> n)
-                            (elementParameters blockquote [] Set.empty)
-                    )
-                    model.editor
-                )
-    }
-
-
-handleInsertHorizontalRule : Model -> Model
-handleInsertHorizontalRule model =
-    { model
-        | editor =
-            Result.withDefault model.editor
-                (applyCommand
-                    ( "insertHR"
-                    , transformCommand <|
-                        insertBlockNode
-                            (blockNode
-                                (elementParameters
-                                    horizontalRule
-                                    []
-                                    (Set.fromList [ selectableAnnotation ])
-                                )
-                                Leaf
-                            )
-                    )
-                    model.editor
-                )
-    }
-
-
-handleShowInsertImageModal : Model -> Model
-handleShowInsertImageModal model =
-    let
-        insertImageModal =
-            model.insertImageModal
-    in
-    { model
-        | insertImageModal =
-            { insertImageModal
-                | visible = True
-                , editorState = Just (state model.editor)
-            }
-    }
-
-
-handleUpdateImageSrc : String -> Model -> Model
-handleUpdateImageSrc src model =
-    let
-        insertImageModal =
-            model.insertImageModal
-    in
-    { model | insertImageModal = { insertImageModal | src = src } }
-
-
-handleUpdateImageAlt : String -> Model -> Model
-handleUpdateImageAlt alt model =
-    let
-        insertImageModal =
-            model.insertImageModal
-    in
-    { model | insertImageModal = { insertImageModal | alt = alt } }
-
-
-handleUpdateLinkTitle : String -> Model -> Model
-handleUpdateLinkTitle title model =
-    let
-        insertLinkModal =
-            model.insertLinkModal
-    in
-    { model | insertLinkModal = { insertLinkModal | title = title } }
-
-
-handleUpdateLinkHref : String -> Model -> Model
-handleUpdateLinkHref href model =
-    let
-        insertLinkModal =
-            model.insertLinkModal
-    in
-    { model | insertLinkModal = { insertLinkModal | href = href } }
+updateWith : (subModel -> Model) -> (subMsg -> Msg) -> Model -> ( subModel, Cmd subMsg ) -> ( Model, Cmd Msg )
+updateWith toModel toMsg model ( subModel, subCmd ) =
+    ( toModel subModel
+    , Cmd.map toMsg subCmd
+    )
 
 
 
----- VIEW ----
+-- SUBSCRIPTIONS
 
 
-view : Model -> Html Msg
-view model =
-    div [ Html.Attributes.class "editor-container" ]
-        [ BasicEditorControls.editorControlPanel []
-        , RichTextEditor.Editor.renderEditor model.editor
-        , BasicEditorControls.renderInsertLinkModal model.insertLinkModal
-        , BasicEditorControls.renderInsertImageModal model.insertImageModal
-        ]
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    case model of
+        NotFound _ ->
+            Sub.none
+
+        Redirect _ ->
+            Session.changes GotSession (Session.navKey (toSession model))
+
+        Home home ->
+            Sub.map GotHomeMsg (Home.subscriptions home)
+
+        Basic home ->
+            Sub.map GotBasicMsg (Basic.subscriptions home)
+
+        Full home ->
+            Sub.map GotFullMsg (Full.subscriptions home)
 
 
 
----- PROGRAM ----
+-- MAIN
 
 
-main : Program () Model Msg
+main : Program Value Model Msg
 main =
-    Browser.element
-        { view = view
-        , init = \_ -> init
+    Browser.application
+        { init = init
+        , onUrlChange = ChangedUrl
+        , onUrlRequest = ClickedLink
+        , subscriptions = subscriptions
         , update = update
-        , subscriptions = always Sub.none
+        , view = view
         }
+
+
+toSession : Model -> Session
+toSession page =
+    case page of
+        Redirect session ->
+            session
+
+        NotFound session ->
+            session
+
+        Home home ->
+            Home.toSession home
+
+        Full full ->
+            Full.toSession full
+
+        Basic basic ->
+            Basic.toSession basic
