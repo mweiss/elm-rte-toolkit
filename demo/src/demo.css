@@ -1,0 +1,43 @@
+header {
+    position: relative;
+    padding: 62px 6px 0;
+}
+
+nav {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    font-weight: 600;
+}
+
+header a, footer a {
+    text-decoration: none;
+}
+
+header, article, footer nav {
+    max-width: 720px;
+    margin: 0 auto;
+}
+
+.nav-links {
+    flex-grow: 1;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    align-items: flex-end;
+}
+
+.nav-links > a {
+    margin-left: 17px;
+    padding-bottom: 3px;
+}
+
+a.logo {
+    padding-left: 38px;
+    letter-spacing: -1px;
+    background-size: 28px 28px;
+    background-position: top left;
+    background-repeat: no-repeat;
+    font-size: 24px;
+    line-height: 30px;
+}

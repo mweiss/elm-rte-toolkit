@@ -2,7 +2,6 @@ module FullEditor exposing (..)
 
 import Array
 import BasicEditorControls exposing (EditorMsg(..), InsertImageModal, InsertLinkModal)
-import Browser
 import Html exposing (Html, div)
 import Html.Attributes
 import RichTextEditor.Commands exposing (insertBlockNode, lift, liftEmpty, splitBlockHeaderToNewParagraph, toggleBlock, toggleMarkOnInlineNodes, wrap)
@@ -21,6 +20,10 @@ import RichTextEditor.Model.Node exposing (BlockNode, ChildNodes(..), InlineLeaf
 import RichTextEditor.Model.State as State exposing (State)
 import RichTextEditor.Spec exposing (markOrderFromSpec)
 import Set
+
+
+type alias EditorMsg =
+    BasicEditorControls.EditorMsg
 
 
 
@@ -123,14 +126,12 @@ initInsertImageModal =
     { visible = False, src = "", alt = "", editorState = Nothing }
 
 
-init : ( Model, Cmd Msg )
+init : Model
 init =
-    ( { editor = initEditor
-      , insertImageModal = initInsertImageModal
-      , insertLinkModal = initInsertLinkModal
-      }
-    , Cmd.none
-    )
+    { editor = initEditor
+    , insertImageModal = initInsertImageModal
+    , insertLinkModal = initInsertLinkModal
+    }
 
 
 
@@ -445,17 +446,3 @@ view model =
         , BasicEditorControls.renderInsertLinkModal model.insertLinkModal
         , BasicEditorControls.renderInsertImageModal model.insertImageModal
         ]
-
-
-
----- PROGRAM ----
-
-
-main : Program () Model Msg
-main =
-    Browser.element
-        { view = view
-        , init = \_ -> init
-        , update = update
-        , subscriptions = always Sub.none
-        }

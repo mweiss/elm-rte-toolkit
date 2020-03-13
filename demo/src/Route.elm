@@ -15,14 +15,16 @@ type Route
     = Basic
     | Full
     | Home
+    | Examples
 
 
 parser : Parser (Route -> a) a
 parser =
     oneOf
         [ Parser.map Home Parser.top
-        , Parser.map Basic (s "basic")
-        , Parser.map Full (s "full")
+        , Parser.map Examples (s "examples")
+        , Parser.map Basic (s "examples" </> s "basic")
+        , Parser.map Full (s "examples" </> s "full")
         , Parser.map Home (s "home")
         ]
 
@@ -66,7 +68,10 @@ routeToPieces page =
             []
 
         Basic ->
-            [ "basic" ]
+            [ "examples", "basic" ]
 
         Full ->
-            [ "full" ]
+            [ "examples", "full" ]
+
+        Examples ->
+            [ "examples" ]

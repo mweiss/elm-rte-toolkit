@@ -436,7 +436,24 @@ marksToMarkNodeListRec indexedMarkLists =
             )
         <|
             List.Extra.groupWhile
-                (\( _, ( m1, _ ) ) ( _, ( m2, _ ) ) -> m1 == m2)
+                (\( _, ( m1, _ ) ) ( _, ( m2, _ ) ) ->
+                    case m1 of
+                        Nothing ->
+                            case m2 of
+                                Nothing ->
+                                    True
+
+                                _ ->
+                                    False
+
+                        Just v1 ->
+                            case m2 of
+                                Just v2 ->
+                                    name v1 == name v2
+
+                                _ ->
+                                    False
+                )
             <|
                 List.map (\( i, a ) -> ( i, ( List.head a, List.drop 1 a ) )) indexedMarkLists
 

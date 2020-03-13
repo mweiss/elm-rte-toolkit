@@ -18,10 +18,12 @@
             "elm-community/list-extra": "8.2.2",
             "elm-community/string-extra": "4.0.1",
             "folkertdev/elm-deque": "3.0.1",
-            "hecrj/html-parser": "2.3.4"
+            "hecrj/html-parser": "2.3.4",
+            "lattyware/elm-fontawesome": "4.0.0"
         },
         "indirect": {
             "elm/parser": "1.1.0",
+            "elm/svg": "1.0.1",
             "elm/time": "1.0.0",
             "elm/virtual-dom": "1.0.2",
             "rtfeldman/elm-hex": "1.0.0",

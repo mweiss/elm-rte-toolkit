@@ -6,6 +6,7 @@ import Html exposing (..)
 import Json.Decode as Decode exposing (Value)
 import Page exposing (Page)
 import Page.Basic as Basic
+import Page.Examples as Examples
 import Page.Full as Full
 import Page.Home as Home
 import Route exposing (Route)
@@ -28,6 +29,7 @@ type Model
     | Basic Basic.Model
     | Full Full.Model
     | Home Home.Model
+    | Examples Examples.Model
 
 
 type alias Flags =
@@ -76,6 +78,9 @@ view model =
         Full full ->
             viewPage Page.Full GotFullMsg (Full.view full)
 
+        Examples examples ->
+            viewPage Page.Examples GotExamplesMsg (Examples.view examples)
+
 
 
 -- UPDATE
@@ -86,6 +91,7 @@ type Msg
     | ClickedLink Browser.UrlRequest
     | GotBasicMsg Basic.Msg
     | GotFullMsg Full.Msg
+    | GotExamplesMsg Examples.Msg
     | GotHomeMsg Home.Msg
     | GotSession Session
 
@@ -109,6 +115,10 @@ changeRouteTo maybeRoute model =
         Just Route.Home ->
             Home.init session
                 |> updateWith Home GotHomeMsg model
+
+        Just Route.Examples ->
+            Examples.init session
+                |> updateWith Examples GotExamplesMsg model
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -179,14 +189,17 @@ subscriptions model =
         Redirect _ ->
             Session.changes GotSession (Session.navKey (toSession model))
 
-        Home home ->
-            Sub.map GotHomeMsg (Home.subscriptions home)
+        Home m ->
+            Sub.map GotHomeMsg (Home.subscriptions m)
 
-        Basic home ->
-            Sub.map GotBasicMsg (Basic.subscriptions home)
+        Basic m ->
+            Sub.map GotBasicMsg (Basic.subscriptions m)
 
-        Full home ->
-            Sub.map GotFullMsg (Full.subscriptions home)
+        Full m ->
+            Sub.map GotFullMsg (Full.subscriptions m)
+
+        Examples m ->
+            Sub.map GotExamplesMsg (Examples.subscriptions m)
 
 
 
@@ -222,3 +235,6 @@ toSession page =
 
         Basic basic ->
             Basic.toSession basic
+
+        Examples examples ->
+            Examples.toSession examples

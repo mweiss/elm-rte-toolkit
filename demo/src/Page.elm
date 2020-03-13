@@ -1,7 +1,8 @@
 module Page exposing (Page(..), view, viewErrors)
 
 import Browser exposing (Document)
-import Html exposing (Html, a, button, div, footer, i, img, li, nav, p, span, text, ul)
+import FontAwesome.Styles
+import Html exposing (Html, a, article, button, div, footer, header, i, img, li, nav, p, span, text, ul)
 import Html.Attributes exposing (class, classList, href, style)
 import Html.Events exposing (onClick)
 import Route exposing (Route)
@@ -16,6 +17,7 @@ type Page
     = Basic
     | Full
     | Home
+    | Examples
 
 
 {-| Take a page's Html and frames it with a header and footer.
@@ -24,20 +26,30 @@ The caller provides the current user, so we can display in either
 isLoading is for determining whether we should show a loading spinner
 in the header. (This comes up during slow page transitions.)
 -}
-view : Page -> { title : String, content : Html msg } -> Document msg
+view : Page -> { title : String, content : List (Html msg) } -> Document msg
 view page { title, content } =
     { title = title
-    , body = viewHeader page :: content :: [ viewFooter ]
+    , body = fontAwesomeStyle :: viewHeader page :: viewContent content :: [ viewFooter ]
     }
+
+
+fontAwesomeStyle : Html msg
+fontAwesomeStyle =
+    FontAwesome.Styles.css
+
+
+viewContent : List (Html msg) -> Html msg
+viewContent content =
+    article [] content
 
 
 viewHeader : Page -> Html msg
 viewHeader page =
-    nav [ class "navbar navbar-light" ]
-        [ div [ class "container" ]
-            [ a [ class "navbar-brand", Route.href Route.Home ]
-                [ text "demo" ]
-            , ul [ class "nav navbar-nav pull-xs-right" ] <|
+    header []
+        [ nav []
+            [ a [ class "logo", Route.href Route.Home ]
+                [ text "Rich Text Editor Toolkit" ]
+            , div [ class "nav-links" ] <|
                 navbarLink page Route.Home [ text "Home" ]
                     :: viewMenu page
             ]
@@ -50,8 +62,8 @@ viewMenu page =
         linkTo =
             navbarLink page
     in
-    [ linkTo Route.Basic [ text "Basic" ]
-    , linkTo Route.Full [ text "Full" ]
+    [ linkTo Route.Examples [ text "Examples" ]
+    , navbarExternalLink "https://github.com/mweiss/elm-rte-toolkit" [ text "Github" ]
     ]
 
 
@@ -71,8 +83,12 @@ viewFooter =
 
 navbarLink : Page -> Route -> List (Html msg) -> Html msg
 navbarLink page route linkContent =
-    li [ classList [ ( "nav-item", True ), ( "active", isActive page route ) ] ]
-        [ a [ class "nav-link", Route.href route ] linkContent ]
+    a [ classList [ ( "nav-link", True ), ( "active", isActive page route ) ], Route.href route ] linkContent
+
+
+navbarExternalLink : String -> List (Html msg) -> Html msg
+navbarExternalLink href linkContent =
+    a [ class "nav-link", Html.Attributes.href href ] linkContent
 
 
 isActive : Page -> Route -> Bool

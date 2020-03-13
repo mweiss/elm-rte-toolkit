@@ -1,5 +1,11 @@
 module BasicEditorControls exposing (..)
 
+import FontAwesome.Attributes as Icon
+import FontAwesome.Brands as Icon
+import FontAwesome.Icon as Icon exposing (Icon)
+import FontAwesome.Layering as Icon
+import FontAwesome.Solid as Icon
+import FontAwesome.Styles as Icon
 import Html exposing (Attribute, Html, div, span, text)
 import Html.Attributes exposing (class)
 import Html.Events exposing (preventDefaultOn)
@@ -7,6 +13,12 @@ import Json.Decode exposing (succeed)
 import RichTextEditor.List exposing (ListType(..))
 import RichTextEditor.Model.Editor exposing (InternalEditorMsg)
 import RichTextEditor.Model.State exposing (State)
+
+
+type Status
+    = Active
+    | Enabled
+    | Disabled
 
 
 type alias InsertLinkModal =
@@ -95,17 +107,17 @@ onButtonPressInsertHR =
     preventDefaultOn "click" (succeed ( InsertHorizontalRule, True ))
 
 
-createButtonForStyle : List String -> String -> Html EditorMsg
-createButtonForStyle currentStyles action =
+createButtonForStyle : List String -> String -> Icon -> Html EditorMsg
+createButtonForStyle currentStyles action icon =
     let
         selected =
             isCurrentStyle action currentStyles
     in
-    createButton selected (onButtonPressToggleStyle action) action
+    createButton selected (onButtonPressToggleStyle action) icon
 
 
-createButton : Bool -> Html.Attribute EditorMsg -> String -> Html EditorMsg
-createButton selected actionAttribute action =
+createButton : Bool -> Html.Attribute EditorMsg -> Icon -> Html EditorMsg
+createButton selected actionAttribute icon =
     span
         ([ actionAttribute, class "rte-button" ]
             ++ (if selected then
@@ -115,27 +127,32 @@ createButton selected actionAttribute action =
                     []
                )
         )
-        [ text action ]
+        [ Icon.viewIcon icon ]
 
 
 inlineElementButtons : List (Html EditorMsg)
 inlineElementButtons =
-    [ createButton False onButtonPressInsertCode "Code", createButton False onButtonPressInsertLink "Link", createButton False onButtonPressInsertImage "Image" ]
+    [ createButton False onButtonPressInsertCode Icon.code, createButton False onButtonPressInsertLink Icon.link, createButton False onButtonPressInsertImage Icon.image ]
 
 
 blockElements : List (Html EditorMsg)
 blockElements =
-    [ createButton False (onButtonPressToggleList Ordered) "OL"
-    , createButton False (onButtonPressToggleList Unordered) "UL"
-    , createButton False onButtonPressInsertHR "HR"
-    , createButton False onButtonPressWrapBlockquote "Blockquote"
-    , createButton False onButtonPressLiftOutOfBlock "Lift"
+    [ createButton False (onButtonPressToggleList Ordered) Icon.listOl
+    , createButton False (onButtonPressToggleList Unordered) Icon.listUl
+    , createButton False onButtonPressInsertHR Icon.gripLines
+    , createButton False onButtonPressWrapBlockquote Icon.quoteRight
+    , createButton False onButtonPressLiftOutOfBlock Icon.outdent
     ]
 
 
 headerElements : List (Html EditorMsg)
 headerElements =
-    List.map (\block -> createButton False (onButtonPressToggleBlock block) block) [ "H1", "H2", "H3", "H4", "H5", "H6", "Code block" ]
+    List.map2
+        (\block icon ->
+            createButton False (onButtonPressToggleBlock block) icon
+        )
+        [ "H1", "Code block" ]
+        [ Icon.heading, Icon.codeBranch ]
 
 
 editorControlPanel : List String -> Html EditorMsg
@@ -149,9 +166,10 @@ editorControlPanel styles =
              ,
           -}
           div [ class "rte-controls" ]
-            (List.map
+            (List.map2
                 (createButtonForStyle styles)
-                [ "Bold", "Italic", "Strikethrough", "Underline" ]
+                [ "Bold", "Italic" ]
+                [ Icon.bold, Icon.italic ]
             )
         , div
             [ class "rte-controls" ]

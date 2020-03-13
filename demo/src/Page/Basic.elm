@@ -13,9 +13,9 @@ type Msg
     | GotSession Session
 
 
-view : Model -> { title : String, content : Html Msg }
+view : Model -> { title : String, content : List (Html Msg) }
 view model =
-    { title = "Basic", content = text "Basic" }
+    { title = "Basic", content = [ text "Basic" ] }
 
 
 init : Session -> ( Model, Cmd Msg )

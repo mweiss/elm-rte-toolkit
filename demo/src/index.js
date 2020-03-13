@@ -1,4 +1,5 @@
 import './main.css';
+import './demo.css';
 import './modal.css';
 
 import { Elm } from './Main.elm';
