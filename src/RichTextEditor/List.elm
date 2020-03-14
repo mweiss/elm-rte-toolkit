@@ -13,7 +13,7 @@ import RichTextEditor.MarkdownSpec exposing (listItem, orderedList, unorderedLis
 import RichTextEditor.Model.Command exposing (CommandMap, Transform, emptyCommandMap, inputEvent, key, set, transformCommand)
 import RichTextEditor.Model.Keys exposing (altKey, backspaceKey, deleteKey, enterKey, returnKey)
 import RichTextEditor.Model.Node exposing (BlockArray, BlockNode, ChildNodes(..), ElementParameters, Fragment(..), InlineLeaf(..), Node(..), Path, blockArray, blockNode, childNodes, elementParameters, elementParametersFromBlockNode, fromBlockArray, nameFromElementParameters, text)
-import RichTextEditor.Model.Selection exposing (Selection, anchorNode, anchorOffset, focusNode, focusOffset, isCollapsed, normalizeSelection)
+import RichTextEditor.Model.Selection exposing (Selection, anchorNode, anchorOffset, focusNode, focusOffset, isCollapsed, normalize)
 import RichTextEditor.Model.State as State exposing (root, withRoot, withSelection)
 import RichTextEditor.Node
     exposing
@@ -246,7 +246,7 @@ lift definition editorState =
         Just selection ->
             let
                 normalizedSelection =
-                    normalizeSelection selection
+                    normalize selection
             in
             case addLiftMarkToListItems definition normalizedSelection <| annotateSelection normalizedSelection (State.root editorState) of
                 Err s ->
@@ -335,7 +335,7 @@ joinBackward definition editorState =
             else
                 let
                     normalizedSelection =
-                        normalizeSelection selection
+                        normalize selection
 
                     markedRoot =
                         annotateSelection normalizedSelection (State.root editorState)
@@ -437,7 +437,7 @@ joinForward definition editorState =
             else
                 let
                     normalizedSelection =
-                        normalizeSelection selection
+                        normalize selection
 
                     markedRoot =
                         annotateSelection normalizedSelection (State.root editorState)

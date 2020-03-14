@@ -63,8 +63,13 @@ td, th {
   display: inline-block;
 }
 
-.rte-button-selected {
-  color: #5890ff
+.rte-button.rte-active {
+  color: #5890ff;
+}
+
+.rte-button.rte-disabled {
+  color: #ccc;
+  pointer-events: none;
 }
 
 .rte-controls {

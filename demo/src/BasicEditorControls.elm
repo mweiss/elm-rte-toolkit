@@ -1,18 +1,19 @@
 module BasicEditorControls exposing (..)
 
-import FontAwesome.Attributes as Icon
-import FontAwesome.Brands as Icon
 import FontAwesome.Icon as Icon exposing (Icon)
-import FontAwesome.Layering as Icon
-import FontAwesome.Solid as Icon
-import FontAwesome.Styles as Icon
-import Html exposing (Attribute, Html, div, span, text)
+import FontAwesome.Solid as Solid
+import Html exposing (Attribute, Html, div, span)
 import Html.Attributes exposing (class)
 import Html.Events exposing (preventDefaultOn)
 import Json.Decode exposing (succeed)
 import RichTextEditor.List exposing (ListType(..))
-import RichTextEditor.Model.Editor exposing (InternalEditorMsg)
-import RichTextEditor.Model.State exposing (State)
+import RichTextEditor.Model.Editor exposing (Editor, InternalEditorMsg, state)
+import RichTextEditor.Model.Mark as Mark
+import RichTextEditor.Model.Node exposing (Node(..), elementParametersFromBlockNode, marksFromInlineLeaf, nameFromElementParameters)
+import RichTextEditor.Model.Selection exposing (anchorNode, focusNode, normalize)
+import RichTextEditor.Model.State as State exposing (State)
+import RichTextEditor.Node as Node
+import Set exposing (Set)
 
 
 type Status
@@ -37,14 +38,19 @@ type alias InsertImageModal =
     }
 
 
+type Style
+    = Bold
+    | Italic
+    | Code
+
+
 type EditorMsg
     = InternalMsg InternalEditorMsg
-    | ToggleStyle String
+    | ToggleStyle Style
     | ShowInsertLinkModal
     | UpdateLinkHref String
     | UpdateLinkTitle String
     | InsertLink
-    | InsertCode
     | ToggleBlock String
     | WrapInList ListType
     | ShowInsertImageModal
@@ -53,18 +59,37 @@ type EditorMsg
     | UpdateImageAlt String
     | InsertHorizontalRule
     | WrapInBlockQuote
-    | JoinPreviousBlock
     | LiftOutOfBlock
 
 
-isCurrentStyle : String -> List String -> Bool
-isCurrentStyle action currentStyles =
-    List.member action currentStyles
+statusForStyle : Style -> ControlState -> Status
+statusForStyle style controlState =
+    if not controlState.hasInline then
+        Disabled
+
+    else if Set.member (styleToString style) controlState.marks then
+        Active
+
+    else
+        Enabled
 
 
-onButtonPressToggleStyle : String -> Attribute EditorMsg
-onButtonPressToggleStyle action =
-    preventDefaultOn "click" (succeed ( ToggleStyle action, True ))
+styleToString : Style -> String
+styleToString style =
+    case style of
+        Bold ->
+            "bold"
+
+        Italic ->
+            "italic"
+
+        Code ->
+            "code"
+
+
+onButtonPressToggleStyle : Style -> Attribute EditorMsg
+onButtonPressToggleStyle style =
+    preventDefaultOn "click" (succeed ( ToggleStyle style, True ))
 
 
 onButtonPressToggleList : ListType -> Attribute EditorMsg
@@ -94,7 +119,7 @@ onButtonPressInsertImage =
 
 onButtonPressInsertCode : Attribute EditorMsg
 onButtonPressInsertCode =
-    preventDefaultOn "click" (succeed ( InsertCode, True ))
+    preventDefaultOn "click" (succeed ( ToggleStyle Code, True ))
 
 
 onButtonPressLiftOutOfBlock : Attribute EditorMsg
@@ -107,78 +132,196 @@ onButtonPressInsertHR =
     preventDefaultOn "click" (succeed ( InsertHorizontalRule, True ))
 
 
-createButtonForStyle : List String -> String -> Icon -> Html EditorMsg
-createButtonForStyle currentStyles action icon =
+createButtonForStyle : ControlState -> Style -> Icon -> Html EditorMsg
+createButtonForStyle controlState style icon =
     let
-        selected =
-            isCurrentStyle action currentStyles
+        status =
+            statusForStyle style controlState
     in
-    createButton selected (onButtonPressToggleStyle action) icon
+    createButton status (onButtonPressToggleStyle style) icon
 
 
-createButton : Bool -> Html.Attribute EditorMsg -> Icon -> Html EditorMsg
-createButton selected actionAttribute icon =
+createButton : Status -> Html.Attribute EditorMsg -> Icon -> Html EditorMsg
+createButton status actionAttribute icon =
     span
         ([ actionAttribute, class "rte-button" ]
-            ++ (if selected then
-                    [ class "rte-button-selected" ]
+            ++ (case status of
+                    Active ->
+                        [ class "rte-active" ]
 
-                else
-                    []
+                    Disabled ->
+                        [ class "rte-disabled" ]
+
+                    Enabled ->
+                        [ class "rte-enabled" ]
                )
         )
         [ Icon.viewIcon icon ]
 
 
-inlineElementButtons : List (Html EditorMsg)
-inlineElementButtons =
-    [ createButton False onButtonPressInsertCode Icon.code, createButton False onButtonPressInsertLink Icon.link, createButton False onButtonPressInsertImage Icon.image ]
+inlineElementButtons : ControlState -> List (Html EditorMsg)
+inlineElementButtons controlState =
+    let
+        codeStatus =
+            if not controlState.hasInline then
+                Disabled
 
+            else if Set.member "code" controlState.marks then
+                Active
 
-blockElements : List (Html EditorMsg)
-blockElements =
-    [ createButton False (onButtonPressToggleList Ordered) Icon.listOl
-    , createButton False (onButtonPressToggleList Unordered) Icon.listUl
-    , createButton False onButtonPressInsertHR Icon.gripLines
-    , createButton False onButtonPressWrapBlockquote Icon.quoteRight
-    , createButton False onButtonPressLiftOutOfBlock Icon.outdent
+            else
+                Enabled
+
+        linkStatus =
+            if not controlState.hasInline then
+                Disabled
+
+            else if Set.member "link" controlState.marks then
+                Active
+
+            else
+                Enabled
+
+        imageStatus =
+            if not controlState.hasInline then
+                Disabled
+
+            else
+                Enabled
+    in
+    [ createButton codeStatus onButtonPressInsertCode Solid.code
+    , createButton linkStatus onButtonPressInsertLink Solid.link
+    , createButton imageStatus onButtonPressInsertImage Solid.image
     ]
 
 
-headerElements : List (Html EditorMsg)
-headerElements =
+blockElements : ControlState -> List (Html EditorMsg)
+blockElements controlStatus =
+    let
+        blockStatus =
+            if controlStatus.hasSelection then
+                Enabled
+
+            else
+                Disabled
+
+        liftStatus =
+            if controlStatus.canLift then
+                Enabled
+
+            else
+                Disabled
+    in
+    [ createButton blockStatus (onButtonPressToggleList Ordered) Solid.listOl
+    , createButton blockStatus (onButtonPressToggleList Unordered) Solid.listUl
+    , createButton blockStatus onButtonPressInsertHR Solid.minus
+    , createButton blockStatus onButtonPressWrapBlockquote Solid.quoteRight
+    , createButton liftStatus onButtonPressLiftOutOfBlock Solid.outdent
+    ]
+
+
+headerElements : ControlState -> List (Html EditorMsg)
+headerElements controlState =
     List.map2
         (\block icon ->
-            createButton False (onButtonPressToggleBlock block) icon
+            createButton
+                (if controlState.hasInline then
+                    Enabled
+
+                 else
+                    Disabled
+                )
+                (onButtonPressToggleBlock block)
+                icon
         )
         [ "H1", "Code block" ]
-        [ Icon.heading, Icon.codeBranch ]
+        [ Solid.heading, Solid.codeBranch ]
 
 
-editorControlPanel : List String -> Html EditorMsg
-editorControlPanel styles =
+type alias ControlState =
+    { hasInline : Bool
+    , hasSelection : Bool
+    , nodes : Set String
+    , marks : Set String
+    , canLift : Bool
+    }
+
+
+emptyControlState : ControlState
+emptyControlState =
+    { hasInline = False, hasSelection = False, nodes = Set.empty, marks = Set.empty, canLift = False }
+
+
+accumulateControlState : Node -> ControlState -> ControlState
+accumulateControlState node controlState =
+    case node of
+        Block n ->
+            { controlState
+                | nodes =
+                    Set.insert (nameFromElementParameters (elementParametersFromBlockNode n)) controlState.nodes
+            }
+
+        Inline inline ->
+            let
+                names =
+                    List.map Mark.name (marksFromInlineLeaf inline)
+            in
+            { controlState | hasInline = True, marks = Set.union (Set.fromList names) controlState.marks }
+
+
+deriveControlState : State -> ControlState
+deriveControlState state =
+    case State.selection state of
+        Nothing ->
+            emptyControlState
+
+        Just selection ->
+            let
+                normalizedSelection =
+                    normalize selection
+
+                controlState =
+                    Node.foldlRange (anchorNode normalizedSelection)
+                        (focusNode normalizedSelection)
+                        accumulateControlState
+                        { emptyControlState | hasSelection = True }
+                        (State.root state)
+            in
+            { controlState
+                | canLift =
+                    -- This is hacky, but we'll assume we can lift anything that's nested
+                    -- three or more nodes deep.
+                    List.length (anchorNode normalizedSelection)
+                        > 2
+                        || List.length (focusNode normalizedSelection)
+                        > 2
+                        || Set.member "blockquote" controlState.nodes
+                        || Set.member "li" controlState.nodes
+            }
+
+
+editorControlPanel : Editor EditorMsg -> Html EditorMsg
+editorControlPanel editor =
+    let
+        controlState =
+            deriveControlState (state editor)
+    in
     div [ class "rte-controls-container" ]
-        [ {- div [ class "rte-controls" ]
-                 (List.map
-                     (createButton document True)
-                     [ "H1", "H2", "H3", "H4", "H5", "H6", "Blockquote" ]
-                 )
-             ,
-          -}
-          div [ class "rte-controls" ]
+        [ div [ class "rte-controls" ]
             (List.map2
-                (createButtonForStyle styles)
-                [ "Bold", "Italic" ]
-                [ Icon.bold, Icon.italic ]
+                (createButtonForStyle controlState)
+                [ Bold, Italic ]
+                [ Solid.bold, Solid.italic ]
             )
         , div
             [ class "rte-controls" ]
-            (inlineElementButtons
-                ++ blockElements
+            (inlineElementButtons controlState
+                ++ blockElements controlState
             )
         , div
             [ class "rte-controls" ]
-            headerElements
+          <|
+            headerElements controlState
         ]
 
 

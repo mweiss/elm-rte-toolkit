@@ -32,6 +32,7 @@ module RichTextEditor.Model.Node exposing
     , emptyTextLeafParameters
     , fromBlockArray
     , fromInlineArray
+    , inlineLeaf
     , inlineLeafArray
     , inlineLeafParameters
     , inlineLeafParametersWithElementParameters
@@ -540,3 +541,8 @@ isSameBlockNode bn1 bn2 =
 
     else
         isSameChildNodes (childNodes bn1) (childNodes bn2)
+
+
+inlineLeaf : ElementParameters -> List Mark -> InlineLeaf
+inlineLeaf parameters mark =
+    InlineLeaf (inlineLeafParameters parameters mark)

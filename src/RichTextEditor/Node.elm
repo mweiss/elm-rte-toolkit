@@ -12,7 +12,9 @@ module RichTextEditor.Node exposing
     , findLastPath
     , findTextBlockNodeAncestor
     , foldl
+    , foldlRange
     , foldr
+    , foldrRange
     , indexedFoldl
     , indexedFoldr
     , indexedMap
@@ -532,6 +534,62 @@ indexedFoldlRec path func acc node =
 
         Inline _ ->
             func path node acc
+
+
+foldlRange : Path -> Path -> (Node -> b -> b) -> b -> BlockNode -> b
+foldlRange start end func acc root =
+    case nodeAt start root of
+        Nothing ->
+            acc
+
+        Just node ->
+            foldlRangeRec start end func acc root node
+
+
+foldlRangeRec : Path -> Path -> (Node -> b -> b) -> b -> BlockNode -> Node -> b
+foldlRangeRec start end func acc root node =
+    if start > end then
+        acc
+
+    else
+        let
+            result =
+                func node acc
+        in
+        case next start root of
+            Nothing ->
+                result
+
+            Just ( p, n ) ->
+                foldlRangeRec p end func result root n
+
+
+foldrRange : Path -> Path -> (Node -> b -> b) -> b -> BlockNode -> b
+foldrRange start end func acc root =
+    case nodeAt end root of
+        Nothing ->
+            acc
+
+        Just node ->
+            foldrRangeRec start end func acc root node
+
+
+foldrRangeRec : Path -> Path -> (Node -> b -> b) -> b -> BlockNode -> Node -> b
+foldrRangeRec start end func acc root node =
+    if start > end then
+        acc
+
+    else
+        let
+            result =
+                func node acc
+        in
+        case previous end root of
+            Nothing ->
+                result
+
+            Just ( p, n ) ->
+                foldrRangeRec start p func result root n
 
 
 

@@ -86,8 +86,8 @@ singleNodeRangeSelection node aOffset fOffset =
 API, a selection's anchor node is not always before a selection's focus node, but when reasoning about editor
 operations, we want the anchor to be before the focus.
 -}
-normalizeSelection : Selection -> Selection
-normalizeSelection selection =
+normalize : Selection -> Selection
+normalize selection =
     case selection of
         Selection c ->
             Selection <|

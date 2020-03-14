@@ -50,7 +50,7 @@ import RichTextEditor.Model.Selection
         , focusNode
         , focusOffset
         , isCollapsed
-        , normalizeSelection
+        , normalize
         , rangeSelection
         , singleNodeRangeSelection
         )
@@ -459,7 +459,7 @@ removeRangeSelection editorState =
             else
                 let
                     normalizedSelection =
-                        normalizeSelection selection
+                        normalize selection
                 in
                 if anchorNode normalizedSelection == focusNode normalizedSelection then
                     case
@@ -943,7 +943,7 @@ toggleMarkSingleInlineNode markOrder mark action editorState =
             else
                 let
                     normalizedSelection =
-                        normalizeSelection selection
+                        normalize selection
                 in
                 case nodeAt (anchorNode normalizedSelection) (State.root editorState) of
                     Nothing ->
@@ -1050,8 +1050,8 @@ toggleMarkSingleInlineNode markOrder mark action editorState =
                                             )
 
 
-toggleMarkOnInlineNodes : MarkOrder -> Mark -> Transform
-toggleMarkOnInlineNodes markOrder mark editorState =
+toggleMarkOnInlineNodes : MarkOrder -> Mark -> ToggleAction -> Transform
+toggleMarkOnInlineNodes markOrder mark action editorState =
     case State.selection editorState of
         Nothing ->
             Err "Nothing is selected"
@@ -1063,10 +1063,13 @@ toggleMarkOnInlineNodes markOrder mark editorState =
             else
                 let
                     normalizedSelection =
-                        normalizeSelection selection
+                        normalize selection
 
                     toggleAction =
-                        if
+                        if action /= Flip then
+                            action
+
+                        else if
                             allRange
                                 (isBlockOrInlineNodeWithMark (Mark.name mark))
                                 (anchorNode normalizedSelection)
@@ -1203,7 +1206,7 @@ toggleBlock allowedBlocks onParams offParams editorState =
         Just selection ->
             let
                 normalizedSelection =
-                    normalizeSelection selection
+                    normalize selection
 
                 anchorPath =
                     findClosestBlockPath (anchorNode normalizedSelection) (State.root editorState)
@@ -1276,7 +1279,7 @@ wrap contentsMapFunc elementParameters editorState =
         Just selection ->
             let
                 normalizedSelection =
-                    normalizeSelection selection
+                    normalize selection
 
                 markedRoot =
                     annotateSelection normalizedSelection (State.root editorState)
@@ -1551,7 +1554,7 @@ lift editorState =
         Just selection ->
             let
                 normalizedSelection =
-                    normalizeSelection selection
+                    normalize selection
 
                 markedRoot =
                     addLiftMarkToBlocksInSelection normalizedSelection <|

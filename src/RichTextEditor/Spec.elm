@@ -38,21 +38,7 @@ import RichTextEditor.Model.Node
         , textLeafParametersWithMarks
         , withText
         )
-import RichTextEditor.Model.Spec
-    exposing
-        ( ContentType(..)
-        , MarkDefinition
-        , NodeDefinition
-        , Spec
-        , blockLeafContentType
-        , contentTypeFromNodeDefinition
-        , fromHtmlNodeFromMarkDefinition
-        , fromHtmlNodeFromNodeDefinition
-        , groupFromNodeDefinition
-        , markDefinitions
-        , nameFromMarkDefinition
-        , nodeDefinitions
-        )
+import RichTextEditor.Model.Spec exposing (ContentType(..), MarkDefinition, NodeDefinition, Spec, blockLeafContentType, contentTypeFromNodeDefinition, fromHtmlNodeFromMarkDefinition, fromHtmlNodeFromNodeDefinition, groupFromNodeDefinition, markDefinitions, nameFromMarkDefinition, nameFromNodeDefinition, nodeDefinitions)
 import RichTextEditor.Model.State as State exposing (State)
 import Set exposing (Set)
 
@@ -130,7 +116,7 @@ validate editorState =
         root =
             State.root editorState
     in
-    case validateEditorBlockNode Nothing root of
+    case validateEditorBlockNode (Just <| Set.singleton "root") root of
         [] ->
             Ok editorState
 
@@ -165,17 +151,20 @@ validateInlineLeaf allowedGroups leaf =
                 definition =
                     definitionFromElementParameters (elementParametersFromInlineLeafParameters il)
             in
-            validateAllowedGroups allowedGroups (groupFromNodeDefinition definition)
+            validateAllowedGroups allowedGroups (groupFromNodeDefinition definition) (nameFromNodeDefinition definition)
 
 
-validateAllowedGroups : Maybe (Set String) -> String -> List String
-validateAllowedGroups allowedGroups group =
+validateAllowedGroups : Maybe (Set String) -> String -> String -> List String
+validateAllowedGroups allowedGroups group name =
     case allowedGroups of
         Nothing ->
             []
 
         Just groups ->
             if Set.member group groups then
+                []
+
+            else if Set.member name groups then
                 []
 
             else
@@ -198,7 +187,7 @@ validateEditorBlockNode allowedGroups node =
     in
     let
         allowedGroupsErrors =
-            validateAllowedGroups allowedGroups (groupFromNodeDefinition definition)
+            validateAllowedGroups allowedGroups (groupFromNodeDefinition definition) (nameFromNodeDefinition definition)
     in
     if not <| List.isEmpty allowedGroupsErrors then
         allowedGroupsErrors

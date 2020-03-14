@@ -1,23 +1,25 @@
 module FullEditor exposing (..)
 
 import Array
-import BasicEditorControls exposing (EditorMsg(..), InsertImageModal, InsertLinkModal)
+import BasicEditorControls exposing (EditorMsg(..), InsertImageModal, InsertLinkModal, Style(..))
 import Html exposing (Html, div)
 import Html.Attributes
-import RichTextEditor.Commands exposing (insertBlockNode, lift, liftEmpty, splitBlockHeaderToNewParagraph, toggleBlock, toggleMarkOnInlineNodes, wrap)
+import RichTextEditor.Commands as Commands exposing (insertBlockNode, lift, liftEmpty, splitBlockHeaderToNewParagraph, toggleBlock, toggleMarkOnInlineNodes, wrap)
 import RichTextEditor.Decorations exposing (addElementDecoration, selectableDecoration)
 import RichTextEditor.Editor exposing (internalUpdate)
-import RichTextEditor.Internal.Editor exposing (applyCommand)
+import RichTextEditor.Internal.Editor exposing (applyCommand, applyNamedCommandList)
 import RichTextEditor.List exposing (ListType, defaultListDefinition)
-import RichTextEditor.MarkdownSpec as MarkdownSpec exposing (blockquote, bold, codeBlock, doc, heading, horizontalRule, image, italic, paragraph)
+import RichTextEditor.MarkdownSpec as MarkdownSpec exposing (blockquote, bold, code, codeBlock, doc, heading, horizontalRule, image, italic, link, paragraph)
 import RichTextEditor.Model.Annotation exposing (selectableAnnotation)
 import RichTextEditor.Model.Attribute exposing (Attribute(..))
-import RichTextEditor.Model.Command as Commands exposing (inputEvent, key, set, transformCommand)
+import RichTextEditor.Model.Command as Command exposing (inputEvent, key, set, transformCommand)
 import RichTextEditor.Model.Editor exposing (Editor, editor, emptyDecorations, spec, state, withCommandMap, withDecorations)
 import RichTextEditor.Model.Keys exposing (enterKey, returnKey)
-import RichTextEditor.Model.Mark exposing (mark)
-import RichTextEditor.Model.Node exposing (BlockNode, ChildNodes(..), InlineLeaf(..), blockArray, blockNode, elementParameters, inlineLeafArray, inlineLeafParameters, textLeafWithText)
+import RichTextEditor.Model.Mark as Mark exposing (ToggleAction(..), mark)
+import RichTextEditor.Model.Node exposing (BlockNode, ChildNodes(..), InlineLeaf(..), Node(..), blockArray, blockNode, elementParameters, inlineLeaf, inlineLeafArray, inlineLeafParameters, marksFromInlineLeaf, textLeafWithText)
+import RichTextEditor.Model.Selection exposing (anchorNode, focusNode, normalize)
 import RichTextEditor.Model.State as State exposing (State)
+import RichTextEditor.Node exposing (anyRange, foldlRange)
 import RichTextEditor.Spec exposing (markOrderFromSpec)
 import Set
 
@@ -79,9 +81,9 @@ listCommandBindings =
 
 
 commandBindings =
-    Commands.combine
+    Command.combine
         listCommandBindings
-        (RichTextEditor.Commands.defaultCommandBindings
+        (Commands.defaultCommandBindings
             |> set [ inputEvent "insertParagraph", key [ enterKey ], key [ returnKey ] ]
                 [ ( "liftEmpty", transformCommand <| liftEmpty )
                 , ( "splitBlockHeaderToNewParagraph"
@@ -147,14 +149,60 @@ handleShowInsertLinkModal model =
     let
         insertLinkModal =
             model.insertLinkModal
+
+        editorState =
+            state model.editor
     in
-    { model
-        | insertLinkModal =
-            { insertLinkModal
-                | visible = True
-                , editorState = Just (state model.editor)
-            }
-    }
+    case State.selection editorState of
+        Nothing ->
+            model
+
+        Just selection ->
+            let
+                normalizedSelection =
+                    normalize selection
+
+                hasLink =
+                    anyRange
+                        (\n ->
+                            case n of
+                                Inline il ->
+                                    List.any (\m -> Mark.name m == "link") (marksFromInlineLeaf il)
+
+                                _ ->
+                                    False
+                        )
+                        (anchorNode normalizedSelection)
+                        (focusNode normalizedSelection)
+                        (State.root editorState)
+            in
+            if hasLink then
+                let
+                    markOrder =
+                        markOrderFromSpec (spec model.editor)
+
+                    linkMark =
+                        mark link [ StringAttribute "src" "" ]
+
+                    newEditor =
+                        Result.withDefault model.editor <|
+                            applyCommand
+                                ( "removeLink"
+                                , transformCommand <|
+                                    Commands.toggleMarkOnInlineNodes markOrder linkMark Remove
+                                )
+                                model.editor
+                in
+                { model | editor = newEditor }
+
+            else
+                { model
+                    | insertLinkModal =
+                        { insertLinkModal
+                            | visible = True
+                            , editorState = Just editorState
+                        }
+                }
 
 
 handleInsertLink : Model -> Model
@@ -162,9 +210,35 @@ handleInsertLink model =
     let
         insertLinkModal =
             model.insertLinkModal
+
+        newEditor =
+            case insertLinkModal.editorState of
+                Nothing ->
+                    model.editor
+
+                Just _ ->
+                    let
+                        attributes =
+                            [ StringAttribute "href" insertLinkModal.href
+                            , StringAttribute "title" insertLinkModal.title
+                            ]
+
+                        markOrder =
+                            markOrderFromSpec (spec model.editor)
+
+                        linkMark =
+                            mark link attributes
+                    in
+                    Result.withDefault model.editor <|
+                        applyCommand
+                            ( "insertLink"
+                            , transformCommand <|
+                                Commands.toggleMarkOnInlineNodes markOrder linkMark Add
+                            )
+                            model.editor
     in
     { model
-        | editor = model.editor
+        | editor = newEditor
         , insertLinkModal =
             { insertLinkModal
                 | visible = False
@@ -186,8 +260,25 @@ handleInsertImage model =
                 Nothing ->
                     model.editor
 
-                Just editorState ->
-                    model.editor
+                Just _ ->
+                    let
+                        params =
+                            elementParameters image
+                                [ StringAttribute "src" insertImageModal.src
+                                , StringAttribute "alt" insertImageModal.alt
+                                ]
+                                (Set.singleton selectableAnnotation)
+
+                        img =
+                            inlineLeaf params []
+                    in
+                    Result.withDefault model.editor <|
+                        applyCommand
+                            ( "insertImage"
+                            , transformCommand <|
+                                Commands.insertInlineElement img
+                            )
+                            model.editor
     in
     { model
         | editor = newEditor
@@ -201,19 +292,19 @@ handleInsertImage model =
     }
 
 
-handleToggleStyle : String -> Model -> Model
+handleToggleStyle : Style -> Model -> Model
 handleToggleStyle style model =
     let
         markDef =
             case style of
-                "Bold" ->
+                Bold ->
                     bold
 
-                "Italic" ->
+                Italic ->
                     italic
 
-                _ ->
-                    bold
+                Code ->
+                    code
 
         markOrder =
             markOrderFromSpec (spec model.editor)
@@ -224,7 +315,7 @@ handleToggleStyle style model =
                 (applyCommand
                     ( "toggleStyle"
                     , transformCommand <|
-                        toggleMarkOnInlineNodes markOrder (mark markDef [])
+                        toggleMarkOnInlineNodes markOrder (mark markDef []) Flip
                     )
                     model.editor
                 )
@@ -244,9 +335,6 @@ update msg model =
 
         ToggleStyle style ->
             ( handleToggleStyle style model, Cmd.none )
-
-        InsertCode ->
-            ( handleInsertCode model, Cmd.none )
 
         ShowInsertLinkModal ->
             ( handleShowInsertLinkModal model, Cmd.none )
@@ -287,16 +375,22 @@ update msg model =
         WrapInList listType ->
             ( handleWrapInList listType model, Cmd.none )
 
-        _ ->
-            ( model, Cmd.none )
-
 
 handleLiftBlock : Model -> Model
 handleLiftBlock model =
     { model
         | editor =
             Result.withDefault model.editor
-                (applyCommand ( "lift", transformCommand <| lift ) model.editor)
+                (applyNamedCommandList
+                    [ ( "liftList"
+                      , transformCommand <| RichTextEditor.List.lift defaultListDefinition
+                      )
+                    , ( "lift"
+                      , transformCommand <| lift
+                      )
+                    ]
+                    model.editor
+                )
     }
 
 
@@ -441,7 +535,7 @@ handleUpdateLinkHref href model =
 view : Model -> Html Msg
 view model =
     div [ Html.Attributes.class "editor-container" ]
-        [ BasicEditorControls.editorControlPanel []
+        [ BasicEditorControls.editorControlPanel model.editor
         , RichTextEditor.Editor.renderEditor model.editor
         , BasicEditorControls.renderInsertLinkModal model.insertLinkModal
         , BasicEditorControls.renderInsertImageModal model.insertImageModal

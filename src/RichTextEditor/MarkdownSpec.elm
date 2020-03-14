@@ -163,7 +163,7 @@ codeBlock =
     nodeDefinition
         "code_block"
         "block"
-        (textBlockContentType [ "text" ])
+        (textBlockContentType [ "text", "hard_break" ])
         codeBlockToHtmlNode
         htmlNodeToCodeBlock
 
