@@ -7,8 +7,8 @@ import Json.Decode as Decode exposing (Value)
 import Page exposing (Page)
 import Page.Basic as Basic
 import Page.Examples as Examples
-import Page.Full as Full
 import Page.Home as Home
+import Page.Markdown as Markdown
 import Route exposing (Route)
 import Session exposing (Session(..))
 import Task
@@ -27,7 +27,7 @@ type Model
     = Redirect Session
     | NotFound Session
     | Basic Basic.Model
-    | Full Full.Model
+    | Markdown Markdown.Model
     | Home Home.Model
     | Examples Examples.Model
 
@@ -75,8 +75,8 @@ view model =
         Basic basic ->
             viewPage Page.Basic GotBasicMsg (Basic.view basic)
 
-        Full full ->
-            viewPage Page.Full GotFullMsg (Full.view full)
+        Markdown md ->
+            viewPage Page.Markdown GotMarkdownMsg (Markdown.view md)
 
         Examples examples ->
             viewPage Page.Examples GotExamplesMsg (Examples.view examples)
@@ -90,7 +90,7 @@ type Msg
     = ChangedUrl Url
     | ClickedLink Browser.UrlRequest
     | GotBasicMsg Basic.Msg
-    | GotFullMsg Full.Msg
+    | GotMarkdownMsg Markdown.Msg
     | GotExamplesMsg Examples.Msg
     | GotHomeMsg Home.Msg
     | GotSession Session
@@ -109,8 +109,8 @@ changeRouteTo maybeRoute model =
         Just Route.Basic ->
             Basic.init session |> updateWith Basic GotBasicMsg model
 
-        Just Route.Full ->
-            Full.init session |> updateWith Full GotFullMsg model
+        Just Route.Markdown ->
+            Markdown.init session |> updateWith Markdown GotMarkdownMsg model
 
         Just Route.Home ->
             Home.init session
@@ -156,9 +156,9 @@ update msg model =
             Home.update subMsg home
                 |> updateWith Home GotHomeMsg model
 
-        ( GotFullMsg subMsg, Full full ) ->
-            Full.update subMsg full
-                |> updateWith Full GotFullMsg model
+        ( GotMarkdownMsg subMsg, Markdown md ) ->
+            Markdown.update subMsg md
+                |> updateWith Markdown GotMarkdownMsg model
 
         ( GotBasicMsg subMsg, Basic basic ) ->
             Basic.update subMsg basic
@@ -195,8 +195,8 @@ subscriptions model =
         Basic m ->
             Sub.map GotBasicMsg (Basic.subscriptions m)
 
-        Full m ->
-            Sub.map GotFullMsg (Full.subscriptions m)
+        Markdown m ->
+            Sub.map GotMarkdownMsg (Markdown.subscriptions m)
 
         Examples m ->
             Sub.map GotExamplesMsg (Examples.subscriptions m)
@@ -230,8 +230,8 @@ toSession page =
         Home home ->
             Home.toSession home
 
-        Full full ->
-            Full.toSession full
+        Markdown full ->
+            Markdown.toSession full
 
         Basic basic ->
             Basic.toSession basic

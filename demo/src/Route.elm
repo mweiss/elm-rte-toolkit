@@ -13,7 +13,7 @@ import Url.Parser as Parser exposing ((</>), Parser, oneOf, s, string)
 
 type Route
     = Basic
-    | Full
+    | Markdown
     | Home
     | Examples
 
@@ -24,7 +24,7 @@ parser =
         [ Parser.map Home Parser.top
         , Parser.map Examples (s "examples")
         , Parser.map Basic (s "examples" </> s "basic")
-        , Parser.map Full (s "examples" </> s "full")
+        , Parser.map Markdown (s "examples" </> s "markdown")
         , Parser.map Home (s "home")
         ]
 
@@ -70,8 +70,8 @@ routeToPieces page =
         Basic ->
             [ "examples", "basic" ]
 
-        Full ->
-            [ "examples", "full" ]
+        Markdown ->
+            [ "examples", "markdown" ]
 
         Examples ->
             [ "examples" ]

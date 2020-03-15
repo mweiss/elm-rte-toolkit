@@ -16,8 +16,12 @@ body {
   color: #293c4b;
 }
 
+article h1, article h2, article h3, article p {
+  text-align: left;
+}
 h1 {
   font-size: 30px;
+  margin: 24px 8px;
 }
 
 
@@ -53,44 +57,4 @@ td, th {
   max-width: 42em;
   margin: 20px auto;
   padding: 20px;
-}
-
-.rte-button {
-  color: #999;
-  cursor: pointer;
-  margin-right: 16px;
-  padding: 2px 0;
-  display: inline-block;
-}
-
-.rte-button.rte-active {
-  color: #5890ff;
-}
-
-.rte-button.rte-disabled {
-  color: #ccc;
-  pointer-events: none;
-}
-
-.rte-controls {
-  text-align: center;
-  font-size: 14px;
-  padding-bottom: 8px;
-  -webkit-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
-  user-select: none;
-}
-
-.rte-controls-container {
-  border-bottom: 1px solid #f2f2f2;
-}
-
-.editor-container {
-  padding: 16px;
-  border: 1px solid #f2f2f2;
-}
-
-.rte-selected {
-  outline: 2px solid #8cf;
 }

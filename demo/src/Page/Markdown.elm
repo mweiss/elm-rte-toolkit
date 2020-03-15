@@ -1,4 +1,4 @@
-module Page.Full exposing (..)
+module Page.Markdown exposing (..)
 
 import Html exposing (Html, text)
 import Session exposing (Session)
@@ -15,7 +15,7 @@ type Msg
 
 view : Model -> { title : String, content : List (Html Msg) }
 view model =
-    { title = "Full", content = [ text "Full" ] }
+    { title = "Markdown", content = [ text "Markdown" ] }
 
 
 init : Session -> ( Model, Cmd Msg )

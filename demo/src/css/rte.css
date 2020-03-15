@@ -1,0 +1,53 @@
+
+.rte-button {
+    color: #999;
+    cursor: pointer;
+    margin-right: 16px;
+    padding: 2px 0;
+    display: inline-block;
+}
+
+.rte-button.rte-active {
+    color: #5890ff;
+}
+
+.rte-button.rte-disabled {
+    color: #ccc;
+    pointer-events: none;
+}
+
+.rte-controls {
+    text-align: center;
+    font-size: 14px;
+    padding-bottom: 8px;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+.rte-controls-container {
+    border-bottom: 1px solid #f2f2f2;
+}
+
+.editor-container {
+    padding: 16px;
+    border: 1px solid #f2f2f2;
+}
+
+.rte-selected {
+    outline: 2px solid #8cf;
+}
+
+
+.rte-main a {
+    color: blue;
+}
+
+.rte-main a:hover {
+    color: darkblue;
+}
+
+.rte-main a:visited {
+    color: blueviolet;
+}

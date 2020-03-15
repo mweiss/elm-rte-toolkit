@@ -15,7 +15,7 @@ under Other.
 -}
 type Page
     = Basic
-    | Full
+    | Markdown
     | Home
     | Examples
 
@@ -71,10 +71,9 @@ viewFooter : Html msg
 viewFooter =
     footer []
         [ div [ class "container" ]
-            [ a [ class "logo-font", href "/" ] [ text "demo" ]
-            , span [ class "attribution" ]
-                [ text "Demo for elm rte toolkit"
-                , a [ href "https://github.com/mweiss/elm-rte-toolkit" ] [ text "elm rte toolkit" ]
+            [ span [ class "attribution" ]
+                [ text "This is a demo for the "
+                , a [ href "https://github.com/mweiss/elm-rte-toolkit" ] [ text " Elm Rich Text Editor Toolkit" ]
                 , text ". Code & design licensed under BSD License."
                 ]
             ]
@@ -100,7 +99,7 @@ isActive page route =
         ( Basic, Route.Basic ) ->
             True
 
-        ( Full, Route.Full ) ->
+        ( Markdown, Route.Markdown ) ->
             True
 
         _ ->

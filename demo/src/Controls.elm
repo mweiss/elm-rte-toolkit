@@ -1,4 +1,4 @@
-module BasicEditorControls exposing (..)
+module Controls exposing (..)
 
 import FontAwesome.Icon as Icon exposing (Icon)
 import FontAwesome.Solid as Solid

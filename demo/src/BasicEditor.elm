@@ -1,7 +1,7 @@
-module FullEditor exposing (..)
+module BasicEditor exposing (..)
 
 import Array
-import BasicEditorControls exposing (EditorMsg(..), InsertImageModal, InsertLinkModal, Style(..))
+import Controls exposing (EditorMsg(..), InsertImageModal, InsertLinkModal, Style(..))
 import Html exposing (Html, div)
 import Html.Attributes
 import RichTextEditor.Commands as Commands exposing (insertBlockNode, lift, liftEmpty, splitBlockHeaderToNewParagraph, toggleBlock, toggleMarkOnInlineNodes, wrap)
@@ -25,7 +25,7 @@ import Set
 
 
 type alias EditorMsg =
-    BasicEditorControls.EditorMsg
+    Controls.EditorMsg
 
 
 
@@ -76,6 +76,11 @@ initialEditorNode =
         (inlineLeafArray (Array.fromList [ textLeafWithText "This is some sample text" ]))
 
 
+initialState : State
+initialState =
+    State.state doubleInitNode Nothing
+
+
 listCommandBindings =
     RichTextEditor.List.commandBindings RichTextEditor.List.defaultListDefinition
 
@@ -96,24 +101,15 @@ commandBindings =
         )
 
 
-
--- TODO: fix this!! add real mark decorations
-
-
 decorations =
     addElementDecoration "image" selectableDecoration <|
         addElementDecoration "horizontal_rule" selectableDecoration <|
             emptyDecorations
 
 
-initialState : State
-initialState =
-    State.state doubleInitNode Nothing
-
-
-initEditor : Editor EditorMsg
-initEditor =
-    editor MarkdownSpec.spec initialState InternalMsg
+initEditor : State -> Editor EditorMsg
+initEditor iState =
+    editor MarkdownSpec.spec iState InternalMsg
         |> withDecorations decorations
         |> withCommandMap commandBindings
 
@@ -128,9 +124,9 @@ initInsertImageModal =
     { visible = False, src = "", alt = "", editorState = Nothing }
 
 
-init : Model
-init =
-    { editor = initEditor
+init : State -> Model
+init iState =
+    { editor = initEditor iState
     , insertImageModal = initInsertImageModal
     , insertLinkModal = initInsertLinkModal
     }
@@ -320,11 +316,6 @@ handleToggleStyle style model =
                     model.editor
                 )
     }
-
-
-handleInsertCode : Model -> Model
-handleInsertCode model =
-    model
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -535,8 +526,8 @@ handleUpdateLinkHref href model =
 view : Model -> Html Msg
 view model =
     div [ Html.Attributes.class "editor-container" ]
-        [ BasicEditorControls.editorControlPanel model.editor
+        [ Controls.editorControlPanel model.editor
         , RichTextEditor.Editor.renderEditor model.editor
-        , BasicEditorControls.renderInsertLinkModal model.insertLinkModal
-        , BasicEditorControls.renderInsertImageModal model.insertImageModal
+        , Controls.renderInsertLinkModal model.insertLinkModal
+        , Controls.renderInsertImageModal model.insertImageModal
         ]
