@@ -19,7 +19,8 @@
             "elm-community/string-extra": "4.0.1",
             "folkertdev/elm-deque": "3.0.1",
             "hecrj/html-parser": "2.3.4",
-            "lattyware/elm-fontawesome": "4.0.0"
+            "lattyware/elm-fontawesome": "4.0.0",
+            "pablohirafuji/elm-markdown": "2.0.5"
         },
         "indirect": {
             "elm/parser": "1.1.0",

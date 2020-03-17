@@ -1,4 +1,4 @@
-module BasicEditor exposing (..)
+module Editor exposing (..)
 
 import Array
 import Controls exposing (EditorMsg(..), InsertImageModal, InsertLinkModal, Style(..))
@@ -9,7 +9,6 @@ import RichTextEditor.Decorations exposing (addElementDecoration, selectableDeco
 import RichTextEditor.Editor exposing (internalUpdate)
 import RichTextEditor.Internal.Editor exposing (applyCommand, applyNamedCommandList)
 import RichTextEditor.List exposing (ListType, defaultListDefinition)
-import RichTextEditor.MarkdownSpec as MarkdownSpec exposing (blockquote, bold, code, codeBlock, doc, heading, horizontalRule, image, italic, link, paragraph)
 import RichTextEditor.Model.Annotation exposing (selectableAnnotation)
 import RichTextEditor.Model.Attribute exposing (Attribute(..))
 import RichTextEditor.Model.Command as Command exposing (inputEvent, key, set, transformCommand)
@@ -18,9 +17,11 @@ import RichTextEditor.Model.Keys exposing (enterKey, returnKey)
 import RichTextEditor.Model.Mark as Mark exposing (ToggleAction(..), mark)
 import RichTextEditor.Model.Node exposing (BlockNode, ChildNodes(..), InlineLeaf(..), Node(..), blockArray, blockNode, elementParameters, inlineLeaf, inlineLeafArray, inlineLeafParameters, marksFromInlineLeaf, textLeafWithText)
 import RichTextEditor.Model.Selection exposing (anchorNode, focusNode, normalize)
+import RichTextEditor.Model.Spec exposing (Spec)
 import RichTextEditor.Model.State as State exposing (State)
 import RichTextEditor.Node exposing (anyRange, foldlRange)
 import RichTextEditor.Spec exposing (markOrderFromSpec)
+import RichTextEditor.Specs as MarkdownSpec exposing (blockquote, bold, code, codeBlock, doc, heading, horizontalRule, image, italic, link, paragraph)
 import Set
 
 
@@ -107,9 +108,9 @@ decorations =
             emptyDecorations
 
 
-initEditor : State -> Editor EditorMsg
-initEditor iState =
-    editor MarkdownSpec.spec iState InternalMsg
+initEditor : Spec -> State -> Editor EditorMsg
+initEditor spec iState =
+    editor spec iState InternalMsg
         |> withDecorations decorations
         |> withCommandMap commandBindings
 
@@ -124,9 +125,9 @@ initInsertImageModal =
     { visible = False, src = "", alt = "", editorState = Nothing }
 
 
-init : State -> Model
-init iState =
-    { editor = initEditor iState
+init : State -> Spec -> Model
+init iState spec =
+    { editor = initEditor spec iState
     , insertImageModal = initInsertImageModal
     , insertLinkModal = initInsertLinkModal
     }

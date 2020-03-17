@@ -1,10 +1,9 @@
 module Page.Home exposing (..)
 
 import Array
-import BasicEditor
+import Editor
 import Html exposing (Html, h1, text)
 import Html.Attributes exposing (class)
-import RichTextEditor.MarkdownSpec exposing (code, doc, image, paragraph)
 import RichTextEditor.Model.Annotation exposing (selectableAnnotation)
 import RichTextEditor.Model.Attribute exposing (Attribute(..))
 import RichTextEditor.Model.Mark exposing (mark)
@@ -23,19 +22,20 @@ import RichTextEditor.Model.Node
         , withText
         )
 import RichTextEditor.Model.State as State exposing (State)
+import RichTextEditor.Specs as Specs exposing (code, doc, image, paragraph)
 import Session exposing (Session)
 import Set
 
 
 type alias Model =
     { session : Session
-    , editor : BasicEditor.Model
+    , editor : Editor.Model
     }
 
 
 type Msg
     = Msg
-    | EditorMsg BasicEditor.EditorMsg
+    | EditorMsg Editor.EditorMsg
     | GotSession Session
 
 
@@ -50,14 +50,14 @@ view model =
     , content =
         [ h1 [ class "main-header" ]
             [ text "Elm package for building rich text editors" ]
-        , Html.map EditorMsg (BasicEditor.view model.editor)
+        , Html.map EditorMsg (Editor.view model.editor)
         ]
     }
 
 
 init : Session -> ( Model, Cmd Msg )
 init session =
-    ( { session = session, editor = BasicEditor.init initialState }, Cmd.none )
+    ( { session = session, editor = Editor.init initialState Specs.markdown }, Cmd.none )
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -66,9 +66,8 @@ update msg model =
         EditorMsg editorMsg ->
             let
                 ( e, _ ) =
-                    BasicEditor.update editorMsg model.editor
+                    Editor.update editorMsg model.editor
             in
-            -- TODO: hook up commands from full editor
             ( { model | editor = e }, Cmd.none )
 
         _ ->

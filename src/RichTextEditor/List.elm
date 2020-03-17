@@ -9,7 +9,6 @@ import RichTextEditor.Commands
         , liftAnnotation
         , liftConcatMapFunc
         )
-import RichTextEditor.MarkdownSpec exposing (listItem, orderedList, unorderedList)
 import RichTextEditor.Model.Command exposing (CommandMap, Transform, emptyCommandMap, inputEvent, key, set, transformCommand)
 import RichTextEditor.Model.Keys exposing (altKey, backspaceKey, deleteKey, enterKey, returnKey)
 import RichTextEditor.Model.Node exposing (BlockArray, BlockNode, ChildNodes(..), ElementParameters, Fragment(..), InlineLeaf(..), Node(..), Path, blockArray, blockNode, childNodes, elementParameters, elementParametersFromBlockNode, fromBlockArray, nameFromElementParameters, text)
@@ -32,6 +31,7 @@ import RichTextEditor.Selection
         , clearSelectionAnnotations
         , selectionFromAnnotations
         )
+import RichTextEditor.Specs exposing (listItem, orderedList, unorderedList)
 import Set
 
 

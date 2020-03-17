@@ -1,4 +1,4 @@
-module RichTextEditor.MarkdownSpec exposing (..)
+module RichTextEditor.Specs exposing (..)
 
 import Array exposing (Array)
 import RichTextEditor.Model.Annotation exposing (selectableAnnotation)
@@ -356,6 +356,64 @@ htmlToListItem =
     defaultHtmlToElement "li"
 
 
+htmlBlock : NodeDefinition
+htmlBlock =
+    nodeDefinition
+        "html"
+        "block"
+        (blockNodeContentType [ "block" ])
+        htmlBlockToHtml
+        htmlToHtmlBlock
+
+
+htmlBlockToHtml : ElementToHtml
+htmlBlockToHtml parameters children =
+    let
+        attributes =
+            attributesFromElementParameters parameters
+
+        elementTag =
+            Maybe.withDefault "div" <| findStringAttribute "%tag%" attributes
+
+        elementAttributes =
+            List.filterMap
+                (\x ->
+                    case x of
+                        StringAttribute k v ->
+                            if k == "%tag" then
+                                Nothing
+
+                            else
+                                Just ( k, v )
+
+                        _ ->
+                            Nothing
+                )
+                attributes
+    in
+    ElementNode elementTag
+        elementAttributes
+        children
+
+
+htmlToHtmlBlock : HtmlToElement
+htmlToHtmlBlock def node =
+    case node of
+        ElementNode name attributes children ->
+            Just
+                ( elementParameters
+                    def
+                    (StringAttribute "%tag%" name
+                        :: List.map (\( k, v ) -> StringAttribute k v) attributes
+                    )
+                    Set.empty
+                , children
+                )
+
+        _ ->
+            Nothing
+
+
 
 -- Mark definitions
 
@@ -463,8 +521,8 @@ htmlNodeToCode =
     defaultHtmlToMark "code"
 
 
-spec : Spec
-spec =
+markdown : Spec
+markdown =
     emptySpec
         |> withNodeDefinitions
             [ doc
@@ -485,3 +543,7 @@ spec =
             , italic
             , code
             ]
+
+
+
+--------

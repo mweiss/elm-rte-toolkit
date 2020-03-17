@@ -47,6 +47,7 @@ module RichTextEditor.Model.Node exposing
     , nameFromElementParameters
     , reverseLookupFromInlineArray
     , text
+    , textLeaf
     , textLeafParametersWithAnnotations
     , textLeafParametersWithMarks
     , textLeafWithText
@@ -546,3 +547,12 @@ isSameBlockNode bn1 bn2 =
 inlineLeaf : ElementParameters -> List Mark -> InlineLeaf
 inlineLeaf parameters mark =
     InlineLeaf (inlineLeafParameters parameters mark)
+
+
+textLeaf : String -> List Mark -> InlineLeaf
+textLeaf s marks =
+    TextLeaf
+        (emptyTextLeafParameters
+            |> withText s
+            |> textLeafParametersWithMarks marks
+        )

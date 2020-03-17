@@ -115,3 +115,11 @@ a:hover {
 a {
     text-decoration: none;
 }
+
+/*
+ * Markdown example
+ */
+.markdown-textarea {
+    width: 100%;
+    min-height: 150px;
+}

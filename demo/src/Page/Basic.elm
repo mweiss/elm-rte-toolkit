@@ -1,21 +1,22 @@
 module Page.Basic exposing (..)
 
-import BasicEditor
+import Editor
 import Html exposing (Html, a, h1, p, text)
 import Html.Attributes exposing (href, title)
 import Links exposing (rteToolkit)
+import RichTextEditor.Specs as MarkdownSpec
 import Session exposing (Session)
 
 
 type alias Model =
     { session : Session
-    , editor : BasicEditor.Model
+    , editor : Editor.Model
     }
 
 
 type Msg
     = Msg
-    | EditorMsg BasicEditor.EditorMsg
+    | EditorMsg Editor.EditorMsg
     | GotSession Session
 
 
@@ -31,7 +32,7 @@ view model =
                     In this example, we use the default spec to create an editor which supports
                     things like headers, lists, as well as links and images."""
             ]
-        , Html.map EditorMsg (BasicEditor.view model.editor)
+        , Html.map EditorMsg (Editor.view model.editor)
         , p []
             [ text "You can see the code for this example in the "
             , a
@@ -46,12 +47,25 @@ view model =
 
 init : Session -> ( Model, Cmd Msg )
 init session =
-    ( { session = session, editor = BasicEditor.init BasicEditor.initialState }, Cmd.none )
+    ( { session = session
+      , editor = Editor.init Editor.initialState MarkdownSpec.markdown
+      }
+    , Cmd.none
+    )
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-    ( model, Cmd.none )
+    case msg of
+        EditorMsg editorMsg ->
+            let
+                ( e, _ ) =
+                    Editor.update editorMsg model.editor
+            in
+            ( { model | editor = e }, Cmd.none )
+
+        _ ->
+            ( model, Cmd.none )
 
 
 toSession : Model -> Session

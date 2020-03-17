@@ -6,7 +6,6 @@ import List.Extra
 import Regex
 import RichTextEditor.Annotation exposing (clearAnnotations)
 import RichTextEditor.Internal.DeleteWord as DeleteWord
-import RichTextEditor.MarkdownSpec exposing (hardBreak)
 import RichTextEditor.Marks
     exposing
         ( hasMarkWithName
@@ -92,6 +91,7 @@ import RichTextEditor.Selection
         , clearSelectionAnnotations
         , selectionFromAnnotations
         )
+import RichTextEditor.Specs exposing (hardBreak)
 import Set
 import String.Extra
 
