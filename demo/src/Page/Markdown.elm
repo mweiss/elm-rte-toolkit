@@ -1,6 +1,7 @@
 module Page.Markdown exposing (..)
 
 import Array exposing (Array)
+import Controls exposing (Style(..))
 import Editor
 import Html exposing (Html, a, div, h1, p, text, textarea)
 import Html.Attributes exposing (href, title)
@@ -10,10 +11,11 @@ import Markdown.Block as M
 import Markdown.Config as M
 import Markdown.Inline as MI
 import RichTextEditor.Model.Attribute exposing (Attribute(..), findIntegerAttribute, findStringAttribute)
-import RichTextEditor.Model.Editor exposing (state)
+import RichTextEditor.Model.Editor exposing (Editor, state)
 import RichTextEditor.Model.Mark as Mark exposing (Mark, MarkOrder)
 import RichTextEditor.Model.Node as Node exposing (BlockNode, ChildNodes(..), ElementParameters, InlineLeaf(..), InlineLeafTree(..), attributesFromElementParameters, blockArray, blockNode, childNodes, elementParameters, elementParametersFromBlockNode, elementParametersFromInlineLeafParameters, emptyTextLeafParameters, fromBlockArray, fromInlineArray, inlineLeaf, inlineLeafArray, marksFromInlineLeaf, nameFromElementParameters, textLeaf, textLeafParametersWithMarks, textLeafWithText, treeFromInlineArray, withText)
-import RichTextEditor.Model.State as State
+import RichTextEditor.Model.Spec exposing (Spec, withMarkDefinitions)
+import RichTextEditor.Model.State as State exposing (State)
 import RichTextEditor.Spec exposing (markOrderFromSpec)
 import RichTextEditor.Specs as MarkdownSpec exposing (blockquote, bold, code, codeBlock, doc, hardBreak, heading, horizontalRule, image, link, listItem, orderedList, paragraph, unorderedList)
 import Session exposing (Session)
@@ -50,10 +52,21 @@ type alias Model =
     }
 
 
+customMarkdownSpec : Spec
+customMarkdownSpec =
+    MarkdownSpec.markdown
+        |> withMarkDefinitions
+            [ link
+            , bold
+            , code
+            ]
+
+
 type Msg
     = Msg
     | EditorMsg Editor.EditorMsg
     | EditorChange EditorType
+    | TextAreaChange String
     | GotSession Session
 
 
@@ -127,6 +140,7 @@ markdownTextArea model =
         [ textarea
             [ Html.Attributes.class "markdown-textarea"
             , Html.Attributes.value model.textMarkdown
+            , Html.Events.onInput TextAreaChange
             ]
             []
         ]
@@ -147,7 +161,7 @@ init session =
                     ( m, Nothing )
     in
     ( { session = session
-      , editor = Editor.init Editor.initialState MarkdownSpec.markdown
+      , editor = initializeEditor Editor.initialState
       , textMarkdown = result
       , markdownError = error
       , editorType = WYSIWYG
@@ -158,7 +172,7 @@ init session =
 
 markdownMarkOrder : MarkOrder
 markdownMarkOrder =
-    markOrderFromSpec MarkdownSpec.markdown
+    markOrderFromSpec customMarkdownSpec
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -173,6 +187,9 @@ update msg model =
 
         EditorChange type_ ->
             ( changeEditorType type_ model, Cmd.none )
+
+        TextAreaChange value ->
+            ( { model | textMarkdown = value }, Cmd.none )
 
         _ ->
             ( model, Cmd.none )
@@ -239,12 +256,20 @@ changeEditorTypeToWYSIWYG model =
 
         Ok root ->
             { model
-                | editor =
-                    Editor.init (State.state root Nothing)
-                        MarkdownSpec.markdown
+                | editor = initializeEditor (State.state root Nothing)
                 , markdownError = Nothing
                 , editorType = WYSIWYG
             }
+
+
+initializeEditor : State -> Editor.Model
+initializeEditor state =
+    let
+        initialEditor =
+            Editor.init state
+                MarkdownSpec.markdown
+    in
+    { initialEditor | styles = [ Bold ] }
 
 
 toSession : Model -> Session

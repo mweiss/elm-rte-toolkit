@@ -51,3 +51,8 @@
 .rte-main a:visited {
     color: blueviolet;
 }
+
+.rte-main blockquote {
+    padding-left: 16px;
+    border-left: 2px solid #ccc
+}

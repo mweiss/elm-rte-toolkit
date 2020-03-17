@@ -300,8 +300,21 @@ deriveControlState state =
             }
 
 
-editorControlPanel : Editor EditorMsg -> Html EditorMsg
-editorControlPanel editor =
+styleToIcon : Style -> Icon
+styleToIcon style =
+    case style of
+        Bold ->
+            Solid.bold
+
+        Italic ->
+            Solid.italic
+
+        Code ->
+            Solid.code
+
+
+editorControlPanel : List Style -> Editor EditorMsg -> Html EditorMsg
+editorControlPanel styles editor =
     let
         controlState =
             deriveControlState (state editor)
@@ -310,8 +323,8 @@ editorControlPanel editor =
         [ div [ class "rte-controls" ]
             (List.map2
                 (createButtonForStyle controlState)
-                [ Bold, Italic ]
-                [ Solid.bold, Solid.italic ]
+                styles
+                (List.map styleToIcon styles)
             )
         , div
             [ class "rte-controls" ]

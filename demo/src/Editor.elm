@@ -35,6 +35,7 @@ type alias EditorMsg =
 
 type alias Model =
     { editor : Editor EditorMsg
+    , styles : List Style
     , insertLinkModal : InsertLinkModal
     , insertImageModal : InsertImageModal
     }
@@ -67,7 +68,7 @@ doubleInitNode : BlockNode
 doubleInitNode =
     blockNode
         (elementParameters doc [] Set.empty)
-        (blockArray (Array.fromList [ initialEditorNode, paragraphWithImage, initialEditorNode ]))
+        (blockArray (Array.fromList [ initialEditorNode ]))
 
 
 initialEditorNode : BlockNode
@@ -128,6 +129,7 @@ initInsertImageModal =
 init : State -> Spec -> Model
 init iState spec =
     { editor = initEditor spec iState
+    , styles = [ Bold, Italic ]
     , insertImageModal = initInsertImageModal
     , insertLinkModal = initInsertLinkModal
     }
@@ -527,7 +529,7 @@ handleUpdateLinkHref href model =
 view : Model -> Html Msg
 view model =
     div [ Html.Attributes.class "editor-container" ]
-        [ Controls.editorControlPanel model.editor
+        [ Controls.editorControlPanel model.styles model.editor
         , RichTextEditor.Editor.renderEditor model.editor
         , Controls.renderInsertLinkModal model.insertLinkModal
         , Controls.renderInsertImageModal model.insertImageModal
