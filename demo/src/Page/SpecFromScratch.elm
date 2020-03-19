@@ -150,14 +150,12 @@ itemToHtml params children =
             [ ElementNode "div"
                 [ ( "contenteditable", "false" ) ]
                 (Array.fromList
-                    [ ElementNode "input"
-                        ([ ( "type", "checkbox" ), ( "value", "1" ) ]
-                            ++ (if checked then
-                                    [ ( "checked", "checked" ) ]
+                    [ ElementNode "div"
+                        (if checked then
+                            [ ( "class", "checked checkbox" ) ]
 
-                                else
-                                    []
-                               )
+                         else
+                            [ ( "class", "not-checked checkbox" ) ]
                         )
                         Array.empty
                     ]
@@ -179,7 +177,7 @@ htmlToItem def node =
                                 if childName == "input" && List.any (\( k, v ) -> k == "type" && v == "checkbox") attributes then
                                     let
                                         checked =
-                                            List.any (\( k, _ ) -> k == "checked") attributes
+                                            List.any (\( k, v ) -> k == "checked" && v == "checked") attributes
                                     in
                                     case Array.get 1 children of
                                         Just n2 ->
@@ -220,8 +218,12 @@ decorations =
 
 toggleCheckboxDecoration : DecoderFunc Msg -> Path -> ElementParameters -> Path -> List (Html.Attribute Msg)
 toggleCheckboxDecoration decoder editorNodePath elementParameters p =
+    let
+        checked =
+            Maybe.withDefault False (findBoolAttribute "checked" (attributesFromElementParameters elementParameters))
+    in
     if p == [ 0, 0 ] then
-        [ Html.Events.onCheck (ToggleCheckedTodoItem editorNodePath) ]
+        [ Html.Events.onClick (ToggleCheckedTodoItem editorNodePath (not checked)) ]
 
     else
         []

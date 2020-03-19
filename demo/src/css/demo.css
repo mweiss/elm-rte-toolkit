@@ -168,3 +168,55 @@ li.todo-list-item {
 li.todo-list-item input {
     margin-right: 8px;
 }
+
+.todo-list-item-contents {
+    width: 100%;
+    margin-top: 5px;
+}
+
+
+div.checkbox {
+    position: relative;
+    display: inline-block;
+    margin-top: 9px;
+    margin-left: 10px;
+    margin-right: 10px;
+    width: 16px;
+    height: 16px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+
+div.checkbox::before {
+    position: absolute;
+    left: 0;
+    top: 50%;
+    height: 50%;
+    width: 3px;
+    background-color: #336699;
+    content: "";
+    transform: translateX(5px) rotate(-45deg);
+    transform-origin: left bottom;
+}
+
+div.checkbox::after {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    height: 3px;
+    width: 100%;
+    background-color: #336699;
+    content: "";
+    transform: translateX(5px) rotate(-45deg);
+    transform-origin: left bottom;
+}
+
+
+div.checkbox.not-checked::before {
+    background-color: transparent;
+}
+
+div.checkbox.not-checked::after {
+    background-color: transparent;
+}
