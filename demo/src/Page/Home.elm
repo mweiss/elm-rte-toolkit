@@ -4,7 +4,7 @@ import Array
 import Editor
 import Html exposing (Html, h1, text)
 import Html.Attributes exposing (class)
-import RichTextEditor.Model.Annotation exposing (selectableAnnotation)
+import RichTextEditor.Model.Annotations exposing (selectable)
 import RichTextEditor.Model.Attribute exposing (Attribute(..))
 import RichTextEditor.Model.Mark exposing (mark)
 import RichTextEditor.Model.Node

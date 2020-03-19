@@ -1,9 +1,26 @@
-module RichTextEditor.EditorState exposing (..)
+module RichTextEditor.State exposing (..)
 
 import Array exposing (Array)
 import List.Extra
-import RichTextEditor.Model.Annotation exposing (selectionAnnotation)
-import RichTextEditor.Model.Node exposing (BlockNode, ChildNodes(..), InlineLeaf(..), InlineLeafArray, Node(..), Path, annotationsFromTextLeafParameters, childNodes, comparableMarksFromTextLeafParameters, fromInlineArray, inlineLeafArray, isSameBlockNode, text, withChildNodes, withText)
+import RichTextEditor.Model.Annotations exposing (selection)
+import RichTextEditor.Model.Node
+    exposing
+        ( BlockNode
+        , ChildNodes(..)
+        , InlineLeaf(..)
+        , InlineLeafArray
+        , Node(..)
+        , Path
+        , annotationsFromTextLeafParameters
+        , childNodes
+        , comparableMarksFromTextLeafParameters
+        , fromInlineArray
+        , inlineLeafArray
+        , isSameBlockNode
+        , text
+        , withChildNodes
+        , withText
+        )
 import RichTextEditor.Model.Selection
     exposing
         ( anchorNode
@@ -32,10 +49,10 @@ removeExtraEmptyTextLeaves inlineLeaves =
                 TextLeaf xL ->
                     case y of
                         TextLeaf yL ->
-                            if String.isEmpty (text xL) && (not <| Set.member selectionAnnotation (annotationsFromTextLeafParameters xL)) then
+                            if String.isEmpty (text xL) && (not <| Set.member selection (annotationsFromTextLeafParameters xL)) then
                                 removeExtraEmptyTextLeaves (y :: xs)
 
-                            else if String.isEmpty (text yL) && (not <| Set.member selectionAnnotation (annotationsFromTextLeafParameters yL)) then
+                            else if String.isEmpty (text yL) && (not <| Set.member selection (annotationsFromTextLeafParameters yL)) then
                                 removeExtraEmptyTextLeaves (x :: xs)
 
                             else

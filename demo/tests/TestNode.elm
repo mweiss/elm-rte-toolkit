@@ -2,7 +2,7 @@ module TestNode exposing (..)
 
 import Array
 import Expect
-import RichTextEditor.Model.Annotation exposing (Annotation, selectableAnnotation)
+import RichTextEditor.Model.Annotations exposing (selectable)
 import RichTextEditor.Model.Node exposing (BlockNode, ChildNodes(..), Fragment(..), InlineLeaf(..), Node(..), Path, blockArray, blockNode, blockNodeWithElementParameters, elementParameters, elementParametersFromBlockNode, elementParametersFromInlineLeafParameters, elementParametersWithAnnotations, emptyTextLeafParameters, inlineLeafArray, inlineLeafParameters, inlineLeafParametersWithElementParameters, nameFromElementParameters, text, textLeafParametersWithAnnotations, textLeafWithText, withText)
 import RichTextEditor.Node
     exposing
@@ -150,13 +150,13 @@ testIsSelectable =
         [ test "Test that a text node is selectable" <|
             \_ -> Expect.equal True <| isSelectable (Inline (textLeafWithText ""))
         , test "Test that a element node with a selectable mark is selectable" <|
-            \_ -> Expect.equal True <| isSelectable (Block (blockNode (elementParameters "div" [] (Set.fromList [ selectableAnnotation ])) Leaf))
+            \_ -> Expect.equal True <| isSelectable (Block (blockNode (elementParameters "div" [] (Set.fromList [ selectable ])) Leaf))
         , test "Test that a element node without a selectable mark is not selectable" <|
             \_ -> Expect.equal False <| isSelectable (Block (blockNode (elementParameters "div" [] Set.empty) Leaf))
         ]
 
 
-setAnnotations : Annotation -> Node -> Node
+setAnnotations : String -> Node -> Node
 setAnnotations mark node =
     let
         annotations =

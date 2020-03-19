@@ -3,18 +3,11 @@ module RichTextEditor.Internal.BeforeInput exposing (..)
 import Json.Decode as D
 import RichTextEditor.Internal.Editor exposing (applyNamedCommandList)
 import RichTextEditor.Model.Command exposing (namedCommandListFromInputEvent)
-import RichTextEditor.Model.Editor
-    exposing
-        ( Editor
-        , InternalEditorMsg(..)
-        , commandMap
-        , decoder
-        , forceRerender
-        )
+import RichTextEditor.Model.Editor exposing (DecoderFunc, Editor, InternalEditorMsg(..), commandMap, forceRerender)
 import RichTextEditor.Model.Event exposing (InputEvent)
 
 
-preventDefaultOn : Editor msg -> InternalEditorMsg -> ( InternalEditorMsg, Bool )
+preventDefaultOn : Editor -> InternalEditorMsg -> ( InternalEditorMsg, Bool )
 preventDefaultOn editor msg =
     case msg of
         BeforeInputEvent inputEvent ->
@@ -24,7 +17,7 @@ preventDefaultOn editor msg =
             ( msg, False )
 
 
-shouldPreventDefault : Editor msg -> InputEvent -> Bool
+shouldPreventDefault : Editor -> InputEvent -> Bool
 shouldPreventDefault editor inputEvent =
     case handleInputEvent editor inputEvent of
         Err _ ->
@@ -34,9 +27,9 @@ shouldPreventDefault editor inputEvent =
             True
 
 
-preventDefaultOnBeforeInputDecoder : Editor msg -> D.Decoder ( msg, Bool )
-preventDefaultOnBeforeInputDecoder editor =
-    D.map (\( i, b ) -> ( decoder editor i, b )) (D.map (preventDefaultOn editor) beforeInputDecoder)
+preventDefaultOnBeforeInputDecoder : DecoderFunc msg -> Editor -> D.Decoder ( msg, Bool )
+preventDefaultOnBeforeInputDecoder decoder editor =
+    D.map (\( i, b ) -> ( decoder i, b )) (D.map (preventDefaultOn editor) beforeInputDecoder)
 
 
 beforeInputDecoder : D.Decoder InternalEditorMsg
@@ -49,7 +42,7 @@ beforeInputDecoder =
         )
 
 
-handleInputEvent : Editor msg -> InputEvent -> Result String (Editor msg)
+handleInputEvent : Editor -> InputEvent -> Result String Editor
 handleInputEvent editor inputEvent =
     let
         namedCommandList =
@@ -58,7 +51,7 @@ handleInputEvent editor inputEvent =
     applyNamedCommandList namedCommandList editor
 
 
-handleBeforeInput : InputEvent -> Editor msg -> Editor msg
+handleBeforeInput : InputEvent -> Editor -> Editor
 handleBeforeInput inputEvent editor =
     case handleInputEvent editor inputEvent of
         Err _ ->

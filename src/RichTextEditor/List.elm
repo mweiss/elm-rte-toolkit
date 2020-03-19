@@ -9,10 +9,53 @@ import RichTextEditor.Commands
         , liftAnnotation
         , liftConcatMapFunc
         )
-import RichTextEditor.Model.Command exposing (CommandMap, Transform, emptyCommandMap, inputEvent, key, set, transformCommand)
-import RichTextEditor.Model.Keys exposing (altKey, backspaceKey, deleteKey, enterKey, returnKey)
-import RichTextEditor.Model.Node exposing (BlockArray, BlockNode, ChildNodes(..), ElementParameters, Fragment(..), InlineLeaf(..), Node(..), Path, blockArray, blockNode, childNodes, elementParameters, elementParametersFromBlockNode, fromBlockArray, nameFromElementParameters, text)
-import RichTextEditor.Model.Selection exposing (Selection, anchorNode, anchorOffset, focusNode, focusOffset, isCollapsed, normalize)
+import RichTextEditor.Model.Command
+    exposing
+        ( CommandMap
+        , Transform
+        , emptyCommandMap
+        , inputEvent
+        , key
+        , set
+        , transformCommand
+        )
+import RichTextEditor.Model.Keys
+    exposing
+        ( altKey
+        , backspaceKey
+        , deleteKey
+        , enterKey
+        , returnKey
+        )
+import RichTextEditor.Model.Node
+    exposing
+        ( BlockArray
+        , BlockNode
+        , ChildNodes(..)
+        , ElementParameters
+        , Fragment(..)
+        , InlineLeaf(..)
+        , Node(..)
+        , Path
+        , blockArray
+        , blockNode
+        , childNodes
+        , elementParameters
+        , elementParametersFromBlockNode
+        , fromBlockArray
+        , nameFromElementParameters
+        , text
+        )
+import RichTextEditor.Model.Selection
+    exposing
+        ( Selection
+        , anchorNode
+        , anchorOffset
+        , focusNode
+        , focusOffset
+        , isCollapsed
+        , normalize
+        )
 import RichTextEditor.Model.State as State exposing (root, withRoot, withSelection)
 import RichTextEditor.Node
     exposing

@@ -6,7 +6,6 @@ import Html.Attributes
 import Html.Events
 import Html.Keyed
 import Json.Decode as D
-import List.Extra
 import RichTextEditor.Commands exposing (removeRangeSelection)
 import RichTextEditor.Decorations exposing (getElementDecorators, getMarkDecorators)
 import RichTextEditor.Internal.BeforeInput as BeforeInput
@@ -22,6 +21,7 @@ import RichTextEditor.Internal.KeyDown as KeyDown
 import RichTextEditor.Internal.Paste as Paste
 import RichTextEditor.Model.Command exposing (transformCommand)
 import RichTextEditor.Model.Constants exposing (zeroWidthSpace)
+import RichTextEditor.Model.Decoration exposing (Decorations)
 import RichTextEditor.Model.DomNode exposing (DomNode(..))
 import RichTextEditor.Model.Editor
     exposing
@@ -30,15 +30,12 @@ import RichTextEditor.Model.Editor
         , InternalEditorMsg(..)
         , bufferedEditorState
         , completeRerenderCount
-        , decoder
-        , decorations
         , forceCompleteRerender
         , forceRerender
         , forceReselection
         , isComposing
         , renderCount
         , selectionCount
-        , spec
         , state
         , withBufferedEditorState
         , withComposing
@@ -83,8 +80,6 @@ import RichTextEditor.Model.Selection
 import RichTextEditor.Model.Spec
     exposing
         ( Spec
-        , markDefinitions
-        , nameFromMarkDefinition
         , toHtmlNodeFromMarkDefinition
         , toHtmlNodeFromNodeDefinition
         )
@@ -95,7 +90,7 @@ import RichTextEditor.Selection exposing (annotateSelection, domToEditor, editor
 import RichTextEditor.Spec exposing (childNodesPlaceholder)
 
 
-updateSelection : Maybe Selection -> Bool -> Editor msg -> Editor msg
+updateSelection : Maybe Selection -> Bool -> Editor -> Editor
 updateSelection maybeSelection isDomPath editor =
     let
         editorState =
@@ -117,8 +112,8 @@ updateSelection maybeSelection isDomPath editor =
             editor |> withState (editorState |> withSelection translatedSelection)
 
 
-internalUpdate : InternalEditorMsg -> Editor msg -> Editor msg
-internalUpdate msg editor =
+update : InternalEditorMsg -> Editor -> Editor
+update msg editor =
     case msg of
         ChangeEvent change ->
             updateChangeEvent change editor
@@ -145,7 +140,7 @@ internalUpdate msg editor =
             handleCut editor
 
 
-handleCut : Editor msg -> Editor msg
+handleCut : Editor -> Editor
 handleCut editor =
     case applyNamedCommandList [ ( "removeRangeSelection", transformCommand removeRangeSelection ) ] editor of
         Err _ ->
@@ -184,7 +179,7 @@ deriveTextChanges editorNode domNode =
     findTextChanges htmlNode domNode
 
 
-applyForceFunctionOnEditor : (Editor msg -> Editor msg) -> Editor msg -> Editor msg
+applyForceFunctionOnEditor : (Editor -> Editor) -> Editor -> Editor
 applyForceFunctionOnEditor rerenderFunc editor =
     rerenderFunc
         (case bufferedEditorState editor of
@@ -202,7 +197,7 @@ applyForceFunctionOnEditor rerenderFunc editor =
         )
 
 
-updateChangeEvent : EditorChange -> Editor msg -> Editor msg
+updateChangeEvent : EditorChange -> Editor -> Editor
 updateChangeEvent change editor =
     case change.characterDataMutations of
         Nothing ->
@@ -252,7 +247,7 @@ differentText root ( path, t ) =
                     True
 
 
-updateChangeEventTextChanges : List TextChange -> Maybe Selection -> Editor msg -> Editor msg
+updateChangeEventTextChanges : List TextChange -> Maybe Selection -> Editor -> Editor
 updateChangeEventTextChanges textChanges selection editor =
     case textChangesDomToEditor (State.root (state editor)) textChanges of
         Nothing ->
@@ -293,7 +288,7 @@ updateChangeEventTextChanges textChanges selection editor =
                             applyForceFunctionOnEditor forceReselection newEditor
 
 
-updateChangeEventFullScan : DomNode -> Maybe Selection -> Editor msg -> Editor msg
+updateChangeEventFullScan : DomNode -> Maybe Selection -> Editor -> Editor
 updateChangeEventFullScan domRoot selection editor =
     case extractRootEditorBlockNode domRoot of
         Nothing ->
@@ -490,23 +485,23 @@ selectionAttribute maybeSelection renderCount selectionCount =
                 ]
 
 
-onBeforeInput : Editor msg -> Html.Attribute msg
-onBeforeInput editor =
-    Html.Events.preventDefaultOn "beforeinput" (BeforeInput.preventDefaultOnBeforeInputDecoder editor)
+onBeforeInput : DecoderFunc msg -> Editor -> Html.Attribute msg
+onBeforeInput decoder editor =
+    Html.Events.preventDefaultOn "beforeinput" (BeforeInput.preventDefaultOnBeforeInputDecoder decoder editor)
 
 
-onKeyDown : Editor msg -> Html.Attribute msg
-onKeyDown editor =
-    Html.Events.preventDefaultOn "keydown" (KeyDown.preventDefaultOnKeyDownDecoder editor)
+onKeyDown : DecoderFunc msg -> Editor -> Html.Attribute msg
+onKeyDown decoder editor =
+    Html.Events.preventDefaultOn "keydown" (KeyDown.preventDefaultOnKeyDownDecoder decoder editor)
 
 
-handleCompositionStart : Editor msg -> Editor msg
+handleCompositionStart : Editor -> Editor
 handleCompositionStart editor =
     editor
         |> withComposing True
 
 
-handleCompositionEnd : Editor msg -> Editor msg
+handleCompositionEnd : Editor -> Editor
 handleCompositionEnd editor =
     case bufferedEditorState editor of
         Nothing ->
@@ -559,7 +554,7 @@ markCaretSelectionOnEditorNodes editorState =
                 State.root editorState
 
 
-editorToDomSelection : Editor msg -> Maybe Selection
+editorToDomSelection : Editor -> Maybe Selection
 editorToDomSelection editor =
     case State.selection (state editor) of
         Nothing ->
@@ -569,34 +564,34 @@ editorToDomSelection editor =
             editorToDom (State.root (state editor)) selection
 
 
-renderEditor : Editor msg -> Html msg
-renderEditor editor =
+view : DecoderFunc msg -> Decorations msg -> Editor -> Html msg
+view decoder decorations editor =
     let
-        d =
-            decoder editor
+        st =
+            state editor
     in
     Html.Keyed.node "elm-editor"
-        [ onEditorChange d
-        , onEditorSelectionChange d
-        , onCompositionStart d
-        , onCompositionEnd d
-        , onPasteWithData d
-        , onCut d
+        [ onEditorChange decoder
+        , onEditorSelectionChange decoder
+        , onCompositionStart decoder
+        , onCompositionEnd decoder
+        , onPasteWithData decoder
+        , onCut decoder
         ]
         [ ( String.fromInt (completeRerenderCount editor)
           , Html.Keyed.node "div"
                 [ Html.Attributes.contenteditable True
                 , Html.Attributes.class "rte-main"
                 , Html.Attributes.attribute "data-rte-main" "true"
-                , Html.Attributes.classList [ ( "rte-hide-caret", shouldHideCaret (state editor) ) ]
-                , onBeforeInput editor
-                , onKeyDown editor
+                , Html.Attributes.classList [ ( "rte-hide-caret", shouldHideCaret st ) ]
+                , onBeforeInput decoder editor
+                , onKeyDown decoder editor
                 ]
                 [ ( String.fromInt (renderCount editor)
-                  , renderEditorBlockNode
-                        editor
+                  , viewEditorBlockNode
+                        decorations
                         []
-                        (markCaretSelectionOnEditorNodes (state editor))
+                        (markCaretSelectionOnEditorNodes st)
                   )
                 ]
           )
@@ -640,29 +635,23 @@ renderHtmlNode node decorators vdomChildren backwardsRelativePath =
             Html.text v
 
 
-renderMarkFromSpec : Editor msg -> Path -> Mark -> Array (Html msg) -> Html msg
-renderMarkFromSpec editor backwardsNodePath mark children =
+viewMark : Decorations msg -> Path -> Mark -> Array (Html msg) -> Html msg
+viewMark decorations backwardsNodePath mark children =
     let
         markDecorators =
-            getMarkDecorators (Mark.name mark) (decorations editor)
+            getMarkDecorators (Mark.name mark) decorations
 
         decorators =
-            List.map (\d -> d (decoder editor) (List.reverse backwardsNodePath) mark) markDecorators
+            List.map (\d -> d (List.reverse backwardsNodePath) mark) markDecorators
+
+        node =
+            toHtmlNodeFromMarkDefinition (Mark.definition mark) mark childNodesPlaceholder
     in
-    case List.Extra.find (\m -> nameFromMarkDefinition m == Mark.name mark) (markDefinitions (spec editor)) of
-        Nothing ->
-            Html.span [ Html.Attributes.class "rte-error" ] <| Array.toList children
-
-        Just definition ->
-            let
-                node =
-                    toHtmlNodeFromMarkDefinition definition mark childNodesPlaceholder
-            in
-            renderHtmlNode node decorators children []
+    renderHtmlNode node decorators children []
 
 
-renderElementFromSpec : Editor msg -> ElementParameters -> Path -> Array (Html msg) -> Html msg
-renderElementFromSpec editor elementParameters backwardsNodePath children =
+viewElement : Decorations msg -> ElementParameters -> Path -> Array (Html msg) -> Html msg
+viewElement decorations elementParameters backwardsNodePath children =
     let
         definition =
             definitionFromElementParameters elementParameters
@@ -671,10 +660,10 @@ renderElementFromSpec editor elementParameters backwardsNodePath children =
             toHtmlNodeFromNodeDefinition definition elementParameters childNodesPlaceholder
 
         elementDecorators =
-            getElementDecorators (nameFromElementParameters elementParameters) (decorations editor)
+            getElementDecorators (nameFromElementParameters elementParameters) decorations
 
         decorators =
-            List.map (\d -> d (decoder editor) (List.reverse backwardsNodePath) elementParameters) elementDecorators
+            List.map (\d -> d (List.reverse backwardsNodePath) elementParameters) elementDecorators
 
         nodeHtml =
             renderHtmlNode node decorators children []
@@ -682,42 +671,42 @@ renderElementFromSpec editor elementParameters backwardsNodePath children =
     nodeHtml
 
 
-renderInlineLeafTree : Editor msg -> Path -> Array InlineLeaf -> InlineLeafTree -> Html msg
-renderInlineLeafTree editor backwardsPath inlineLeafArray inlineLeafTree =
+viewInlineLeafTree : Decorations msg -> Path -> Array InlineLeaf -> InlineLeafTree -> Html msg
+viewInlineLeafTree decorations backwardsPath inlineLeafArray inlineLeafTree =
     case inlineLeafTree of
         LeafNode i ->
             case Array.get i inlineLeafArray of
                 Just l ->
-                    renderInlineLeaf editor (i :: backwardsPath) l
+                    viewInlineLeaf decorations (i :: backwardsPath) l
 
                 Nothing ->
                     -- TODO: Probably not the best thing, but what else can we do if we have an invalid tree?
                     Html.div [ Html.Attributes.class "rte-error" ] [ Html.text "Invalid leaf tree." ]
 
         MarkNode n ->
-            renderMarkFromSpec editor backwardsPath n.mark <|
-                Array.map (renderInlineLeafTree editor backwardsPath inlineLeafArray) n.children
+            viewMark decorations backwardsPath n.mark <|
+                Array.map (viewInlineLeafTree decorations backwardsPath inlineLeafArray) n.children
 
 
-renderEditorBlockNode : Editor msg -> Path -> BlockNode -> Html msg
-renderEditorBlockNode editor backwardsPath node =
-    renderElementFromSpec editor
+viewEditorBlockNode : Decorations msg -> Path -> BlockNode -> Html msg
+viewEditorBlockNode decorations backwardsPath node =
+    viewElement decorations
         (elementParametersFromBlockNode node)
         backwardsPath
         (case childNodes node of
             BlockChildren l ->
-                Array.indexedMap (\i n -> renderEditorBlockNode editor (i :: backwardsPath) n) (fromBlockArray l)
+                Array.indexedMap (\i n -> viewEditorBlockNode decorations (i :: backwardsPath) n) (fromBlockArray l)
 
             InlineChildren l ->
-                Array.map (\n -> renderInlineLeafTree editor backwardsPath (fromInlineArray l) n) (treeFromInlineArray l)
+                Array.map (\n -> viewInlineLeafTree decorations backwardsPath (fromInlineArray l) n) (treeFromInlineArray l)
 
             Leaf ->
                 Array.empty
         )
 
 
-renderText : String -> Html msg
-renderText text =
+viewText : String -> Html msg
+viewText text =
     Html.text
         (if String.isEmpty text then
             zeroWidthSpace
@@ -727,11 +716,11 @@ renderText text =
         )
 
 
-renderInlineLeaf : Editor msg -> Path -> InlineLeaf -> Html msg
-renderInlineLeaf editor backwardsPath leaf =
+viewInlineLeaf : Decorations msg -> Path -> InlineLeaf -> Html msg
+viewInlineLeaf decorations backwardsPath leaf =
     case leaf of
         InlineLeaf l ->
-            renderElementFromSpec editor (elementParametersFromInlineLeafParameters l) backwardsPath Array.empty
+            viewElement decorations (elementParametersFromInlineLeafParameters l) backwardsPath Array.empty
 
         TextLeaf v ->
-            renderText (text v)
+            viewText (text v)

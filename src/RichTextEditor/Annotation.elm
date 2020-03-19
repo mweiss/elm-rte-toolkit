@@ -1,12 +1,26 @@
 module RichTextEditor.Annotation exposing (..)
 
-import RichTextEditor.Model.Annotation exposing (Annotation)
-import RichTextEditor.Model.Node exposing (BlockNode, ElementParameters, InlineLeaf(..), Node(..), Path, annotationsFromElementParameters, annotationsFromTextLeafParameters, blockNodeWithElementParameters, elementParametersFromBlockNode, elementParametersFromInlineLeafParameters, elementParametersWithAnnotations, inlineLeafParametersWithElementParameters, textLeafParametersWithAnnotations)
+import RichTextEditor.Model.Node
+    exposing
+        ( BlockNode
+        , ElementParameters
+        , InlineLeaf(..)
+        , Node(..)
+        , Path
+        , annotationsFromElementParameters
+        , annotationsFromTextLeafParameters
+        , blockNodeWithElementParameters
+        , elementParametersFromBlockNode
+        , elementParametersFromInlineLeafParameters
+        , elementParametersWithAnnotations
+        , inlineLeafParametersWithElementParameters
+        , textLeafParametersWithAnnotations
+        )
 import RichTextEditor.Node exposing (indexedFoldl, map, nodeAt, replace)
 import Set exposing (Set)
 
 
-addAnnotationAtPath : Annotation -> Path -> BlockNode -> Result String BlockNode
+addAnnotationAtPath : String -> Path -> BlockNode -> Result String BlockNode
 addAnnotationAtPath annotation path node =
     case nodeAt path node of
         Nothing ->
@@ -16,7 +30,7 @@ addAnnotationAtPath annotation path node =
             replace path (add annotation n) node
 
 
-removeAnnotationAtPath : Annotation -> Path -> BlockNode -> Result String BlockNode
+removeAnnotationAtPath : String -> Path -> BlockNode -> Result String BlockNode
 removeAnnotationAtPath annotation path node =
     case nodeAt path node of
         Nothing ->
@@ -26,27 +40,17 @@ removeAnnotationAtPath annotation path node =
             replace path (remove annotation n) node
 
 
-removeAnnotationToSet : Annotation -> Set Annotation -> Set Annotation
-removeAnnotationToSet =
-    Set.remove
-
-
-addAnnotationToSet : Annotation -> Set Annotation -> Set Annotation
-addAnnotationToSet =
-    Set.insert
-
-
-remove : Annotation -> Node -> Node
+remove : String -> Node -> Node
 remove =
-    toggle removeAnnotationToSet
+    toggle Set.remove
 
 
-add : Annotation -> Node -> Node
+add : String -> Node -> Node
 add =
-    toggle addAnnotationToSet
+    toggle Set.insert
 
 
-toggleElementParameters : (Annotation -> Set Annotation -> Set Annotation) -> Annotation -> ElementParameters -> ElementParameters
+toggleElementParameters : (String -> Set String -> Set String) -> String -> ElementParameters -> ElementParameters
 toggleElementParameters func annotation parameters =
     let
         annotations =
@@ -55,7 +59,7 @@ toggleElementParameters func annotation parameters =
     elementParametersWithAnnotations (func annotation annotations) parameters
 
 
-toggle : (Annotation -> Set Annotation -> Set Annotation) -> Annotation -> Node -> Node
+toggle : (String -> Set String -> Set String) -> String -> Node -> Node
 toggle func annotation node =
     case node of
         Block bn ->
@@ -82,7 +86,7 @@ toggle func annotation node =
                         TextLeaf <| (tl |> textLeafParametersWithAnnotations (func annotation <| annotationsFromTextLeafParameters tl))
 
 
-clearAnnotations : Annotation -> BlockNode -> BlockNode
+clearAnnotations : String -> BlockNode -> BlockNode
 clearAnnotations annotation root =
     case map (remove annotation) (Block root) of
         Block bn ->
@@ -92,7 +96,7 @@ clearAnnotations annotation root =
             root
 
 
-getAnnotationsFromNode : Node -> Set Annotation
+getAnnotationsFromNode : Node -> Set String
 getAnnotationsFromNode node =
     case node of
         Block blockNode ->
@@ -107,7 +111,7 @@ getAnnotationsFromNode node =
                     annotationsFromTextLeafParameters p
 
 
-findPathsWithAnnotation : Annotation -> BlockNode -> List Path
+findPathsWithAnnotation : String -> BlockNode -> List Path
 findPathsWithAnnotation annotation node =
     indexedFoldl
         (\path n agg ->

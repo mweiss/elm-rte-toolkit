@@ -4,18 +4,21 @@ import Dict
 import Html
 import Html.Attributes
 import Html.Events
-import RichTextEditor.Model.Annotation exposing (selectionAnnotation)
-import RichTextEditor.Model.Editor
+import RichTextEditor.Model.Annotations exposing (selection)
+import RichTextEditor.Model.Decoration
     exposing
-        ( DecoderFunc
-        , Decorations
+        ( Decorations
         , ElementDecoratorFunction
-        , InternalEditorMsg(..)
         , MarkDecoratorFunction
         , elementDecorators
         , markDecorators
         , withElementDecorators
         , withMarkDecorators
+        )
+import RichTextEditor.Model.Editor
+    exposing
+        ( DecoderFunc
+        , InternalEditorMsg(..)
         )
 import RichTextEditor.Model.Node
     exposing
@@ -29,7 +32,7 @@ import Set
 
 selectableDecoration : DecoderFunc msg -> Path -> ElementParameters -> Path -> List (Html.Attribute msg)
 selectableDecoration decoder editorNodePath elementParameters _ =
-    (if Set.member selectionAnnotation (annotationsFromElementParameters elementParameters) then
+    (if Set.member selection (annotationsFromElementParameters elementParameters) then
         [ Html.Attributes.class "rte-selected" ]
 
      else

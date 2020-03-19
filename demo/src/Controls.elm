@@ -329,7 +329,7 @@ styleToIcon style =
             Solid.underline
 
 
-editorControlPanel : List Style -> Editor EditorMsg -> Html EditorMsg
+editorControlPanel : List Style -> Editor -> Html EditorMsg
 editorControlPanel styles editor =
     let
         controlState =

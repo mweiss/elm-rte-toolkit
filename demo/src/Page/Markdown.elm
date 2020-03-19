@@ -10,14 +10,57 @@ import Links exposing (rteToolkit)
 import Markdown.Block as M
 import Markdown.Config as M
 import Markdown.Inline as MI
-import RichTextEditor.Model.Attribute exposing (Attribute(..), findIntegerAttribute, findStringAttribute)
+import RichTextEditor.Model.Attribute
+    exposing
+        ( Attribute(..)
+        , findIntegerAttribute
+        , findStringAttribute
+        )
 import RichTextEditor.Model.Editor exposing (Editor, state)
 import RichTextEditor.Model.Mark as Mark exposing (Mark, MarkOrder)
-import RichTextEditor.Model.Node as Node exposing (BlockNode, ChildNodes(..), ElementParameters, InlineLeaf(..), InlineLeafTree(..), attributesFromElementParameters, blockArray, blockNode, childNodes, elementParameters, elementParametersFromBlockNode, elementParametersFromInlineLeafParameters, emptyTextLeafParameters, fromBlockArray, fromInlineArray, inlineLeaf, inlineLeafArray, marksFromInlineLeaf, nameFromElementParameters, textLeaf, textLeafParametersWithMarks, textLeafWithText, treeFromInlineArray, withText)
+import RichTextEditor.Model.Node as Node
+    exposing
+        ( BlockNode
+        , ChildNodes(..)
+        , ElementParameters
+        , InlineLeaf(..)
+        , InlineLeafTree(..)
+        , attributesFromElementParameters
+        , blockArray
+        , blockNode
+        , childNodes
+        , elementParameters
+        , elementParametersFromBlockNode
+        , elementParametersFromInlineLeafParameters
+        , fromBlockArray
+        , fromInlineArray
+        , inlineLeaf
+        , inlineLeafArray
+        , nameFromElementParameters
+        , textLeaf
+        , textLeafWithText
+        , treeFromInlineArray
+        )
 import RichTextEditor.Model.Spec exposing (Spec, withMarkDefinitions)
 import RichTextEditor.Model.State as State exposing (State)
 import RichTextEditor.Spec exposing (markOrderFromSpec)
-import RichTextEditor.Specs as MarkdownSpec exposing (blockquote, bold, code, codeBlock, doc, hardBreak, heading, horizontalRule, image, link, listItem, orderedList, paragraph, unorderedList)
+import RichTextEditor.Specs as MarkdownSpec
+    exposing
+        ( blockquote
+        , bold
+        , code
+        , codeBlock
+        , doc
+        , hardBreak
+        , heading
+        , horizontalRule
+        , image
+        , link
+        , listItem
+        , orderedList
+        , paragraph
+        , unorderedList
+        )
 import Session exposing (Session)
 import Set
 

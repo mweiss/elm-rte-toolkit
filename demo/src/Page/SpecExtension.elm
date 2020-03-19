@@ -12,7 +12,7 @@ import Links exposing (rteToolkit)
 import RichTextEditor.Commands as Commands
 import RichTextEditor.Decorations exposing (addElementDecoration, selectableDecoration)
 import RichTextEditor.Internal.Editor exposing (applyCommand, applyCommandNoForceSelection)
-import RichTextEditor.Model.Annotation exposing (selectableAnnotation)
+import RichTextEditor.Model.Annotations exposing (selectable)
 import RichTextEditor.Model.Attribute
     exposing
         ( Attribute(..)
@@ -20,13 +20,12 @@ import RichTextEditor.Model.Attribute
         , replaceOrAddStringAttribute
         )
 import RichTextEditor.Model.Command exposing (Transform, transformCommand)
-import RichTextEditor.Model.Editor exposing (DecoderFunc, decorations, withDecorations)
+import RichTextEditor.Model.Editor exposing (DecoderFunc)
 import RichTextEditor.Model.HtmlNode exposing (HtmlNode(..))
 import RichTextEditor.Model.Node exposing (BlockNode, ChildNodes(..), ElementParameters, Node(..), Path, attributesFromElementParameters, blockArray, blockNode, blockNodeWithElementParameters, elementParameters, elementParametersFromBlockNode, elementParametersWithAttributes, inlineLeafArray, nameFromElementParameters, textLeafWithText)
 import RichTextEditor.Model.Spec exposing (ElementToHtml, HtmlToElement, HtmlToMark, MarkDefinition, MarkToHtml, NodeDefinition, Spec, blockLeafContentType, markDefinition, markDefinitions, nodeDefinition, nodeDefinitions, textBlockContentType, withMarkDefinitions, withNodeDefinitions)
 import RichTextEditor.Model.State as State exposing (State, withRoot)
 import RichTextEditor.Node as Node exposing (nodeAt)
-import RichTextEditor.Spec exposing (defaultHtmlToMark)
 import RichTextEditor.Specs as MarkdownSpec exposing (doc, paragraph)
 import Session exposing (Session)
 import Set
@@ -122,7 +121,7 @@ handleInsertCaptionedImage model =
                                 , StringAttribute "alt" insertImageModal.alt
                                 , StringAttribute "caption" insertImageModal.caption
                                 ]
-                                (Set.singleton selectableAnnotation)
+                                (Set.singleton selectable)
 
                         img =
                             blockNode params Leaf
@@ -254,7 +253,7 @@ initialCaptionedImage =
     blockNode
         (elementParameters captionedImage
             [ StringAttribute "caption" "The elm logo!", StringAttribute "src" "/logo.svg" ]
-            (Set.singleton selectableAnnotation)
+            (Set.singleton selectable)
         )
         Leaf
 
@@ -271,11 +270,11 @@ init session =
             Editor.init initialState customSpec
 
         newDecorations =
-            decorations editor.editor |> addElementDecoration "captioned_image" preventKeyDownPropagationDecoration
+            Editor.decorations |> addElementDecoration "captioned_image" preventKeyDownPropagationDecoration
 
         newEditor =
             { editor
-                | editor = editor.editor |> withDecorations newDecorations
+                | decorations = newDecorations
                 , styles = [ Bold, Italic, Strikethrough, Underline ]
             }
     in
@@ -493,7 +492,7 @@ htmlNodeToImage def node =
                                     ( elementParameters
                                         def
                                         attr
-                                        (Set.singleton selectableAnnotation)
+                                        (Set.singleton selectable)
                                     , Array.empty
                                     )
 
@@ -504,10 +503,10 @@ htmlNodeToImage def node =
             Nothing
 
 
-preventKeyDownPropagationDecoration : DecoderFunc EditorMsg -> Path -> ElementParameters -> Path -> List (Html.Attribute EditorMsg)
-preventKeyDownPropagationDecoration decoder editorNodePath elementParameters elementPath =
+preventKeyDownPropagationDecoration : Path -> ElementParameters -> Path -> List (Html.Attribute EditorMsg)
+preventKeyDownPropagationDecoration editorNodePath elementParameters elementPath =
     if elementPath == [] then
-        selectableDecoration decoder editorNodePath elementParameters elementPath
+        selectableDecoration InternalMsg editorNodePath elementParameters elementPath
 
     else if elementPath == [ 1, 0 ] then
         [ Html.Events.stopPropagationOn "keydown" (D.succeed ( Noop, True ))

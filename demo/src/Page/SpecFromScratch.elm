@@ -7,14 +7,53 @@ import Html.Events
 import Links exposing (rteToolkit)
 import RichTextEditor.Commands as Commands
 import RichTextEditor.Decorations exposing (addElementDecoration)
-import RichTextEditor.Editor as Editor exposing (internalUpdate)
+import RichTextEditor.Editor as Editor exposing (update)
 import RichTextEditor.Internal.Editor exposing (applyCommand)
-import RichTextEditor.Model.Attribute exposing (Attribute(..), findBoolAttribute, replaceOrAddBoolAttribute)
+import RichTextEditor.Model.Attribute
+    exposing
+        ( Attribute(..)
+        , findBoolAttribute
+        , replaceOrAddBoolAttribute
+        )
 import RichTextEditor.Model.Command exposing (Transform, transformCommand)
-import RichTextEditor.Model.Editor exposing (DecoderFunc, Editor, InternalEditorMsg, editor, emptyDecorations, withCommandMap, withDecorations)
+import RichTextEditor.Model.Decoration exposing (emptyDecorations)
+import RichTextEditor.Model.Editor
+    exposing
+        ( DecoderFunc
+        , Editor
+        , InternalEditorMsg
+        , editor
+        , withCommandMap
+        )
 import RichTextEditor.Model.HtmlNode exposing (HtmlNode(..))
-import RichTextEditor.Model.Node exposing (BlockNode, ElementParameters, Node(..), Path, attributesFromElementParameters, blockArray, blockNode, blockNodeWithElementParameters, elementParameters, elementParametersFromBlockNode, elementParametersWithAttributes, inlineLeafArray, nameFromElementParameters, textLeafWithText)
-import RichTextEditor.Model.Spec exposing (ElementToHtml, HtmlToElement, NodeDefinition, blockNodeContentType, emptySpec, nodeDefinition, textBlockContentType, withNodeDefinitions)
+import RichTextEditor.Model.Node
+    exposing
+        ( BlockNode
+        , ElementParameters
+        , Node(..)
+        , Path
+        , attributesFromElementParameters
+        , blockArray
+        , blockNode
+        , blockNodeWithElementParameters
+        , elementParameters
+        , elementParametersFromBlockNode
+        , elementParametersWithAttributes
+        , inlineLeafArray
+        , nameFromElementParameters
+        , textLeafWithText
+        )
+import RichTextEditor.Model.Spec
+    exposing
+        ( ElementToHtml
+        , HtmlToElement
+        , NodeDefinition
+        , blockNodeContentType
+        , emptySpec
+        , nodeDefinition
+        , textBlockContentType
+        , withNodeDefinitions
+        )
 import RichTextEditor.Model.State as State exposing (State, withRoot)
 import RichTextEditor.Node as Node exposing (nodeAt)
 import RichTextEditor.Spec exposing (defaultHtmlToElement)
@@ -24,7 +63,7 @@ import Set
 
 type alias Model =
     { session : Session
-    , editor : Editor Msg
+    , editor : Editor
     }
 
 
@@ -42,7 +81,7 @@ view model =
         , p []
             [ text """This example shows how you can create a specification from scratch"""
             ]
-        , Editor.renderEditor model.editor
+        , Editor.view InternalMsg decorations model.editor
         , p []
             [ text "You can see the code for this example in the "
             , a
@@ -78,9 +117,8 @@ init : Session -> ( Model, Cmd Msg )
 init session =
     ( { session = session
       , editor =
-            editor todoSpec initialState InternalMsg
+            editor todoSpec initialState
                 |> withCommandMap commandBindings
-                |> withDecorations decorations
       }
     , Cmd.none
     )
@@ -94,7 +132,7 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         InternalMsg editorMsg ->
-            ( { model | editor = internalUpdate editorMsg model.editor }, Cmd.none )
+            ( { model | editor = Editor.update editorMsg model.editor }, Cmd.none )
 
         ToggleCheckedTodoItem path value ->
             ( handleTodoListChecked path value model, Cmd.none )
@@ -216,8 +254,8 @@ decorations =
         |> addElementDecoration "todo_item" toggleCheckboxDecoration
 
 
-toggleCheckboxDecoration : DecoderFunc Msg -> Path -> ElementParameters -> Path -> List (Html.Attribute Msg)
-toggleCheckboxDecoration decoder editorNodePath elementParameters p =
+toggleCheckboxDecoration : Path -> ElementParameters -> Path -> List (Html.Attribute Msg)
+toggleCheckboxDecoration editorNodePath elementParameters p =
     let
         checked =
             Maybe.withDefault False (findBoolAttribute "checked" (attributesFromElementParameters elementParameters))

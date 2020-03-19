@@ -57,7 +57,7 @@ import RichTextEditor.Selection
 import RichTextEditor.Spec exposing (htmlToElementArray)
 
 
-handlePaste : PasteEvent -> Editor msg -> Editor msg
+handlePaste : PasteEvent -> Editor -> Editor
 handlePaste event editor =
     let
         commandArray =

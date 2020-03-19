@@ -41,7 +41,6 @@ module RichTextEditor.Model.Spec exposing
     )
 
 import Array exposing (Array)
-import RichTextEditor.Model.Annotation exposing (Annotation)
 import RichTextEditor.Model.Attribute exposing (Attribute)
 import RichTextEditor.Model.HtmlNode exposing (HtmlNode)
 import Set exposing (Set)
@@ -50,7 +49,7 @@ import Set exposing (Set)
 type alias ElementParametersContents =
     { definition : NodeDefinition
     , attributes : List Attribute
-    , annotations : Set Annotation
+    , annotations : Set String
     }
 
 
@@ -58,7 +57,7 @@ type ElementParameters
     = ElementParameters ElementParametersContents
 
 
-elementParameters : NodeDefinition -> List Attribute -> Set Annotation -> ElementParameters
+elementParameters : NodeDefinition -> List Attribute -> Set String -> ElementParameters
 elementParameters def attrs annotations =
     ElementParameters { definition = def, attributes = attrs, annotations = annotations }
 
@@ -77,14 +76,14 @@ attributesFromElementParameters parameters =
             c.attributes
 
 
-annotationsFromElementParameters : ElementParameters -> Set Annotation
+annotationsFromElementParameters : ElementParameters -> Set String
 annotationsFromElementParameters parameters =
     case parameters of
         ElementParameters c ->
             c.annotations
 
 
-elementParametersWithAnnotations : Set Annotation -> ElementParameters -> ElementParameters
+elementParametersWithAnnotations : Set String -> ElementParameters -> ElementParameters
 elementParametersWithAnnotations annotations parameters =
     case parameters of
         ElementParameters c ->

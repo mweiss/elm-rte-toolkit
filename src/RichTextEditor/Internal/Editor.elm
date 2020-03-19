@@ -1,7 +1,6 @@
 module RichTextEditor.Internal.Editor exposing (..)
 
 import BoundedDeque exposing (BoundedDeque)
-import RichTextEditor.EditorState exposing (reduceEditorState)
 import RichTextEditor.Model.Command
     exposing
         ( Command(..)
@@ -14,7 +13,6 @@ import RichTextEditor.Model.Editor
         ( Editor
         , forceReselection
         , history
-        , spec
         , state
         , withHistory
         , withState
@@ -22,9 +20,10 @@ import RichTextEditor.Model.Editor
 import RichTextEditor.Model.History exposing (contents, fromContents)
 import RichTextEditor.Model.State exposing (State, isSame)
 import RichTextEditor.Spec exposing (validate)
+import RichTextEditor.State exposing (reduceEditorState)
 
 
-applyInternalCommand : InternalAction -> Editor msg -> Result String (Editor msg)
+applyInternalCommand : InternalAction -> Editor -> Result String Editor
 applyInternalCommand action editor =
     case action of
         Undo ->
@@ -52,7 +51,7 @@ findNextState editorState undoDeque =
                 findNextState editorState rest
 
 
-handleUndo : Editor msg -> Result String (Editor msg)
+handleUndo : Editor -> Result String Editor
 handleUndo editor =
     let
         editorHistory =
@@ -76,7 +75,7 @@ handleUndo editor =
             Ok (editor |> withState newState |> withHistory (fromContents newHistory))
 
 
-handleRedo : Editor msg -> Result String (Editor msg)
+handleRedo : Editor -> Result String Editor
 handleRedo editor =
     let
         editorHistory =
@@ -99,7 +98,7 @@ handleRedo editor =
             Ok (editor |> withState newState |> withHistory (fromContents newHistory))
 
 
-updateEditorState : String -> State -> Editor msg -> Editor msg
+updateEditorState : String -> State -> Editor -> Editor
 updateEditorState action newState editor =
     let
         editorHistory =
@@ -114,7 +113,7 @@ updateEditorState action newState editor =
     editor |> withState newState |> withHistory (fromContents newHistory)
 
 
-applyCommand : NamedCommand -> Editor msg -> Result String (Editor msg)
+applyCommand : NamedCommand -> Editor -> Result String Editor
 applyCommand ( name, command ) editor =
     case command of
         InternalCommand action ->
@@ -133,7 +132,7 @@ applyCommand ( name, command ) editor =
                     Ok <| forceReselection (updateEditorState name reducedState editor)
 
 
-applyCommandNoForceSelection : NamedCommand -> Editor msg -> Result String (Editor msg)
+applyCommandNoForceSelection : NamedCommand -> Editor -> Result String Editor
 applyCommandNoForceSelection ( name, command ) editor =
     case command of
         InternalCommand action ->
@@ -152,7 +151,7 @@ applyCommandNoForceSelection ( name, command ) editor =
                     Ok <| updateEditorState name reducedState editor
 
 
-applyNamedCommandList : NamedCommandList -> Editor msg -> Result String (Editor msg)
+applyNamedCommandList : NamedCommandList -> Editor -> Result String Editor
 applyNamedCommandList list editor =
     List.foldl
         (\cmd result ->

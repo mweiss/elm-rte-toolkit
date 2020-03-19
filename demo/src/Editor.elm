@@ -5,24 +5,60 @@ import Controls exposing (EditorMsg(..), InsertImageModal, InsertLinkModal, Styl
 import ExtraMarks exposing (strikethrough, underline)
 import Html exposing (Html, div)
 import Html.Attributes
-import RichTextEditor.Commands as Commands exposing (insertBlockNode, lift, liftEmpty, splitBlockHeaderToNewParagraph, toggleBlock, toggleMarkOnInlineNodes, wrap)
+import RichTextEditor.Commands as Commands
+    exposing
+        ( insertBlockNode
+        , lift
+        , liftEmpty
+        , splitBlockHeaderToNewParagraph
+        , toggleBlock
+        , toggleMarkOnInlineNodes
+        , wrap
+        )
 import RichTextEditor.Decorations exposing (addElementDecoration, selectableDecoration)
-import RichTextEditor.Editor exposing (internalUpdate)
+import RichTextEditor.Editor as Editor exposing (update)
 import RichTextEditor.Internal.Editor exposing (applyCommand, applyNamedCommandList)
 import RichTextEditor.List exposing (ListType, defaultListDefinition)
-import RichTextEditor.Model.Annotation exposing (selectableAnnotation)
+import RichTextEditor.Model.Annotations exposing (selectable)
 import RichTextEditor.Model.Attribute exposing (Attribute(..))
 import RichTextEditor.Model.Command as Command exposing (inputEvent, key, set, transformCommand)
-import RichTextEditor.Model.Editor exposing (Editor, editor, emptyDecorations, spec, state, withCommandMap, withDecorations)
+import RichTextEditor.Model.Decoration exposing (Decorations, emptyDecorations)
+import RichTextEditor.Model.Editor exposing (Editor, editor, spec, state, withCommandMap)
 import RichTextEditor.Model.Keys exposing (enterKey, returnKey)
 import RichTextEditor.Model.Mark as Mark exposing (ToggleAction(..), mark)
-import RichTextEditor.Model.Node exposing (BlockNode, ChildNodes(..), InlineLeaf(..), Node(..), blockArray, blockNode, elementParameters, inlineLeaf, inlineLeafArray, inlineLeafParameters, marksFromInlineLeaf, textLeafWithText)
+import RichTextEditor.Model.Node
+    exposing
+        ( BlockNode
+        , ChildNodes(..)
+        , InlineLeaf(..)
+        , Node(..)
+        , blockArray
+        , blockNode
+        , elementParameters
+        , inlineLeaf
+        , inlineLeafArray
+        , marksFromInlineLeaf
+        , textLeafWithText
+        )
 import RichTextEditor.Model.Selection exposing (anchorNode, focusNode, normalize)
 import RichTextEditor.Model.Spec exposing (Spec)
 import RichTextEditor.Model.State as State exposing (State)
-import RichTextEditor.Node exposing (anyRange, foldlRange)
+import RichTextEditor.Node exposing (anyRange)
 import RichTextEditor.Spec exposing (markOrderFromSpec)
-import RichTextEditor.Specs as MarkdownSpec exposing (blockquote, bold, code, codeBlock, doc, heading, horizontalRule, image, italic, link, paragraph)
+import RichTextEditor.Specs
+    exposing
+        ( blockquote
+        , bold
+        , code
+        , codeBlock
+        , doc
+        , heading
+        , horizontalRule
+        , image
+        , italic
+        , link
+        , paragraph
+        )
 import Set
 
 
@@ -35,34 +71,12 @@ type alias EditorMsg =
 
 
 type alias Model =
-    { editor : Editor EditorMsg
+    { editor : Editor
+    , decorations : Decorations EditorMsg
     , styles : List Style
     , insertLinkModal : InsertLinkModal
     , insertImageModal : InsertImageModal
     }
-
-
-inlineImageNode : InlineLeaf
-inlineImageNode =
-    InlineLeaf <|
-        inlineLeafParameters
-            (elementParameters image [ StringAttribute "src" "logo.svg" ] <|
-                Set.fromList [ selectableAnnotation ]
-            )
-            []
-
-
-paragraphWithImage =
-    blockNode
-        (elementParameters paragraph [] Set.empty)
-        (inlineLeafArray
-            (Array.fromList
-                [ textLeafWithText ""
-                , inlineImageNode
-                , textLeafWithText ""
-                ]
-            )
-        )
 
 
 docInitNode : BlockNode
@@ -105,15 +119,14 @@ commandBindings =
 
 
 decorations =
-    addElementDecoration "image" selectableDecoration <|
-        addElementDecoration "horizontal_rule" selectableDecoration <|
+    addElementDecoration "image" (selectableDecoration InternalMsg) <|
+        addElementDecoration "horizontal_rule" (selectableDecoration InternalMsg) <|
             emptyDecorations
 
 
-initEditor : Spec -> State -> Editor EditorMsg
+initEditor : Spec -> State -> Editor
 initEditor spec iState =
-    editor spec iState InternalMsg
-        |> withDecorations decorations
+    editor spec iState
         |> withCommandMap commandBindings
 
 
@@ -130,6 +143,7 @@ initInsertImageModal =
 init : State -> Spec -> Model
 init iState spec =
     { editor = initEditor spec iState
+    , decorations = decorations
     , styles = [ Bold, Italic ]
     , insertImageModal = initInsertImageModal
     , insertLinkModal = initInsertLinkModal
@@ -267,7 +281,7 @@ handleInsertImage model =
                                 [ StringAttribute "src" insertImageModal.src
                                 , StringAttribute "alt" insertImageModal.alt
                                 ]
-                                (Set.singleton selectableAnnotation)
+                                (Set.singleton selectable)
 
                         img =
                             inlineLeaf params []
@@ -332,7 +346,7 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         InternalMsg internalEditorMsg ->
-            ( { model | editor = internalUpdate internalEditorMsg model.editor }, Cmd.none )
+            ( { model | editor = Editor.update internalEditorMsg model.editor }, Cmd.none )
 
         ToggleStyle style ->
             ( handleToggleStyle style model, Cmd.none )
@@ -474,7 +488,7 @@ handleInsertHorizontalRule model =
                                 (elementParameters
                                     horizontalRule
                                     []
-                                    (Set.fromList [ selectableAnnotation ])
+                                    (Set.fromList [ selectable ])
                                 )
                                 Leaf
                             )
@@ -543,7 +557,7 @@ view : Model -> Html Msg
 view model =
     div [ Html.Attributes.class "editor-container" ]
         [ Controls.editorControlPanel model.styles model.editor
-        , RichTextEditor.Editor.renderEditor model.editor
+        , Editor.view InternalMsg model.decorations model.editor
         , Controls.renderInsertLinkModal model.insertLinkModal
         , Controls.renderInsertImageModal model.insertImageModal
         ]

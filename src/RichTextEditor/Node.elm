@@ -35,7 +35,7 @@ module RichTextEditor.Node exposing
 
 import Array exposing (Array)
 import Array.Extra
-import RichTextEditor.Model.Annotation exposing (selectableAnnotation)
+import RichTextEditor.Model.Annotations exposing (selectable)
 import RichTextEditor.Model.Node exposing (BlockNode, ChildNodes(..), Fragment(..), InlineLeaf(..), Node(..), Path, TextLeafParameters, annotationsFromElementParameters, blockArray, childNodes, elementParametersFromBlockNode, elementParametersFromInlineLeafParameters, fromBlockArray, fromInlineArray, inlineLeafArray, text, withChildNodes, withText)
 import RichTextEditor.NodePath exposing (parent)
 import Set
@@ -232,7 +232,7 @@ isSelectable : Node -> Bool
 isSelectable node =
     case node of
         Block bn ->
-            Set.member selectableAnnotation (annotationsFromElementParameters (elementParametersFromBlockNode bn))
+            Set.member selectable (annotationsFromElementParameters (elementParametersFromBlockNode bn))
 
         Inline ln ->
             case ln of
@@ -240,7 +240,7 @@ isSelectable node =
                     True
 
                 InlineLeaf l ->
-                    Set.member selectableAnnotation (annotationsFromElementParameters (elementParametersFromInlineLeafParameters l))
+                    Set.member selectable (annotationsFromElementParameters (elementParametersFromInlineLeafParameters l))
 
 
 findNodeFromExclusive : Iterator -> (Path -> Node -> Bool) -> Path -> BlockNode -> Maybe ( Path, Node )

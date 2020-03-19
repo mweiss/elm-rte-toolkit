@@ -3,11 +3,11 @@ module RichTextEditor.Internal.KeyDown exposing (..)
 import Json.Decode as D
 import RichTextEditor.Internal.Editor exposing (applyNamedCommandList)
 import RichTextEditor.Model.Command exposing (namedCommandListFromKeyboardEvent)
-import RichTextEditor.Model.Editor exposing (Editor, InternalEditorMsg(..), commandMap, decoder)
+import RichTextEditor.Model.Editor exposing (DecoderFunc, Editor, InternalEditorMsg(..), commandMap)
 import RichTextEditor.Model.Event exposing (KeyboardEvent)
 
 
-preventDefaultOn : Editor msg -> InternalEditorMsg -> ( InternalEditorMsg, Bool )
+preventDefaultOn : Editor -> InternalEditorMsg -> ( InternalEditorMsg, Bool )
 preventDefaultOn editor msg =
     case msg of
         KeyDownEvent key ->
@@ -17,7 +17,7 @@ preventDefaultOn editor msg =
             ( msg, False )
 
 
-shouldPreventDefault : Editor msg -> KeyboardEvent -> Bool
+shouldPreventDefault : Editor -> KeyboardEvent -> Bool
 shouldPreventDefault editor keyboardEvent =
     case handleKeyDownEvent editor keyboardEvent of
         Err _ ->
@@ -27,9 +27,9 @@ shouldPreventDefault editor keyboardEvent =
             True
 
 
-preventDefaultOnKeyDownDecoder : Editor msg -> D.Decoder ( msg, Bool )
-preventDefaultOnKeyDownDecoder editor =
-    D.map (\( i, b ) -> ( decoder editor i, b )) (D.map (preventDefaultOn editor) keyDownDecoder)
+preventDefaultOnKeyDownDecoder : DecoderFunc msg -> Editor -> D.Decoder ( msg, Bool )
+preventDefaultOnKeyDownDecoder decoder editor =
+    D.map (\( i, b ) -> ( decoder i, b )) (D.map (preventDefaultOn editor) keyDownDecoder)
 
 
 keyDownDecoder : D.Decoder InternalEditorMsg
@@ -45,7 +45,7 @@ keyDownDecoder =
             (D.oneOf [ D.field "isComposing" D.bool, D.succeed False ])
 
 
-handleKeyDownEvent : Editor msg -> KeyboardEvent -> Result String (Editor msg)
+handleKeyDownEvent : Editor -> KeyboardEvent -> Result String Editor
 handleKeyDownEvent editor event =
     let
         namedCommandList =
@@ -54,6 +54,6 @@ handleKeyDownEvent editor event =
     applyNamedCommandList namedCommandList editor
 
 
-handleKeyDown : KeyboardEvent -> Editor msg -> Editor msg
+handleKeyDown : KeyboardEvent -> Editor -> Editor
 handleKeyDown keyboardEvent editor =
     Result.withDefault editor <| handleKeyDownEvent editor keyboardEvent

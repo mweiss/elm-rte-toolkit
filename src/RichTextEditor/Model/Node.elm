@@ -63,7 +63,6 @@ the main type used to identify where a node is in the editor.
 import Array exposing (Array)
 import Array.Extra as Array
 import List.Extra
-import RichTextEditor.Model.Annotation exposing (Annotation)
 import RichTextEditor.Model.Attribute exposing (Attribute)
 import RichTextEditor.Model.Mark exposing (Mark, attributes, name)
 import RichTextEditor.Model.Spec as Spec exposing (NodeDefinition)
@@ -88,7 +87,7 @@ type alias ElementParameters =
     Spec.ElementParameters
 
 
-annotationsFromElementParameters : ElementParameters -> Set Annotation
+annotationsFromElementParameters : ElementParameters -> Set String
 annotationsFromElementParameters =
     Spec.annotationsFromElementParameters
 
@@ -108,12 +107,12 @@ nameFromElementParameters ele =
     Spec.nameFromNodeDefinition (definitionFromElementParameters ele)
 
 
-elementParameters : NodeDefinition -> List Attribute -> Set Annotation -> ElementParameters
+elementParameters : NodeDefinition -> List Attribute -> Set String -> ElementParameters
 elementParameters =
     Spec.elementParameters
 
 
-elementParametersWithAnnotations : Set Annotation -> ElementParameters -> ElementParameters
+elementParametersWithAnnotations : Set String -> ElementParameters -> ElementParameters
 elementParametersWithAnnotations =
     Spec.elementParametersWithAnnotations
 
@@ -135,7 +134,7 @@ blockNodeWithElementParameters parameters node =
             BlockNode { c | parameters = parameters }
 
 
-annotationsFromBlockNode : BlockNode -> Set Annotation
+annotationsFromBlockNode : BlockNode -> Set String
 annotationsFromBlockNode node =
     annotationsFromElementParameters <| elementParametersFromBlockNode node
 
@@ -320,7 +319,7 @@ withText s parameters =
             TextLeafParameters { c | text = s }
 
 
-textLeafParametersWithAnnotations : Set Annotation -> TextLeafParameters -> TextLeafParameters
+textLeafParametersWithAnnotations : Set String -> TextLeafParameters -> TextLeafParameters
 textLeafParametersWithAnnotations annotations parameters =
     case parameters of
         TextLeafParameters c ->
@@ -356,7 +355,7 @@ comparableMarksFromInlineLeafParameters parameters =
     List.map (\m -> ( name m, attributes m )) (marksFromInlineLeafParameters parameters)
 
 
-annotationsFromTextLeafParameters : TextLeafParameters -> Set Annotation
+annotationsFromTextLeafParameters : TextLeafParameters -> Set String
 annotationsFromTextLeafParameters parameters =
     case parameters of
         TextLeafParameters c ->
@@ -372,7 +371,7 @@ text parameters =
 
 type alias TextLeafParametersContents =
     { marks : List Mark
-    , annotations : Set Annotation
+    , annotations : Set String
     , text : String
     }
 

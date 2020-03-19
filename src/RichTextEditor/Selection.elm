@@ -12,7 +12,7 @@ import RichTextEditor.Annotation
         , clearAnnotations
         , findPathsWithAnnotation
         )
-import RichTextEditor.Model.Annotation exposing (selectionAnnotation)
+import RichTextEditor.Model.Annotations exposing (selection)
 import RichTextEditor.Model.Node exposing (BlockNode, Path)
 import RichTextEditor.Model.Selection
     exposing
@@ -58,12 +58,12 @@ annotateSelection selection node =
 
 addSelectionAnnotationAtPath : Path -> BlockNode -> BlockNode
 addSelectionAnnotationAtPath nodePath node =
-    Result.withDefault node (addAnnotationAtPath selectionAnnotation nodePath node)
+    Result.withDefault node (addAnnotationAtPath selection nodePath node)
 
 
 clearSelectionAnnotations : BlockNode -> BlockNode
 clearSelectionAnnotations =
-    clearAnnotations selectionAnnotation
+    clearAnnotations selection
 
 
 selectionFromAnnotations : BlockNode -> Int -> Int -> Maybe Selection
@@ -80,7 +80,7 @@ findNodeRangeFromSelectionAnnotations : BlockNode -> Maybe ( Path, Path )
 findNodeRangeFromSelectionAnnotations node =
     let
         paths =
-            findPathsWithAnnotation selectionAnnotation node
+            findPathsWithAnnotation selection node
     in
     case paths of
         [] ->
