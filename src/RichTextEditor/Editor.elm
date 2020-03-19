@@ -626,7 +626,7 @@ renderHtmlNode node decorators vdomChildren backwardsRelativePath =
 
                     else
                         Array.indexedMap
-                            (\i n -> renderHtmlNode n [] vdomChildren (i :: backwardsRelativePath))
+                            (\i n -> renderHtmlNode n decorators vdomChildren (i :: backwardsRelativePath))
                             children
             in
             Html.node

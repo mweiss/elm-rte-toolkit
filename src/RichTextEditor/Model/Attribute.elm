@@ -7,6 +7,8 @@ module RichTextEditor.Model.Attribute exposing
     , findStringAttribute
     , float
     , int
+    , replaceOrAddBoolAttribute
+    , replaceOrAddStringAttribute
     , string
     )
 
@@ -116,3 +118,49 @@ findIntegerAttribute name attributes =
 
                 _ ->
                     findIntegerAttribute name xs
+
+
+replaceOrAddBoolAttribute : String -> Bool -> List Attribute -> List Attribute
+replaceOrAddBoolAttribute name value attributes =
+    case findStringAttribute name attributes of
+        Nothing ->
+            BoolAttribute name value :: attributes
+
+        Just _ ->
+            List.map
+                (\x ->
+                    case x of
+                        BoolAttribute k v ->
+                            if k == name then
+                                BoolAttribute name value
+
+                            else
+                                x
+
+                        _ ->
+                            x
+                )
+                attributes
+
+
+replaceOrAddStringAttribute : String -> String -> List Attribute -> List Attribute
+replaceOrAddStringAttribute name value attributes =
+    case findStringAttribute name attributes of
+        Nothing ->
+            StringAttribute name value :: attributes
+
+        Just _ ->
+            List.map
+                (\x ->
+                    case x of
+                        StringAttribute k v ->
+                            if k == name then
+                                StringAttribute name value
+
+                            else
+                                x
+
+                        _ ->
+                            x
+                )
+                attributes

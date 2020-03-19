@@ -16,6 +16,8 @@ under Other.
 type Page
     = Basic
     | Markdown
+    | SpecExtension
+    | SpecFromScratch
     | Home
     | Examples
 

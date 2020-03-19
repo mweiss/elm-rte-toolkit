@@ -39,7 +39,36 @@ import RichTextEditor.Model.Keys
         , shiftKey
         )
 import RichTextEditor.Model.Mark as Mark exposing (Mark, MarkOrder, ToggleAction(..), toggle)
-import RichTextEditor.Model.Node exposing (BlockArray, BlockNode, ChildNodes(..), ElementParameters, Fragment(..), InlineLeaf(..), Node(..), Path, annotationsFromBlockNode, blockArray, blockNode, blockNodeWithElementParameters, childNodes, comparableElementParameters, elementParameters, elementParametersFromBlockNode, fromBlockArray, fromInlineArray, inlineLeafArray, inlineLeafParameters, inlineLeafParametersWithMarks, marksFromInlineLeaf, nameFromElementParameters, text, textLeafParametersWithMarks, withChildNodes, withText)
+import RichTextEditor.Model.Node
+    exposing
+        ( BlockArray
+        , BlockNode
+        , ChildNodes(..)
+        , ElementParameters
+        , Fragment(..)
+        , InlineLeaf(..)
+        , Node(..)
+        , Path
+        , annotationsFromBlockNode
+        , blockArray
+        , blockNode
+        , blockNodeWithElementParameters
+        , childNodes
+        , comparableElementParameters
+        , elementParameters
+        , elementParametersFromBlockNode
+        , fromBlockArray
+        , fromInlineArray
+        , inlineLeafArray
+        , inlineLeafParameters
+        , inlineLeafParametersWithMarks
+        , marksFromInlineLeaf
+        , nameFromElementParameters
+        , text
+        , textLeafParametersWithMarks
+        , withChildNodes
+        , withText
+        )
 import RichTextEditor.Model.Selection
     exposing
         ( Selection

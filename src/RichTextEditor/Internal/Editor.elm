@@ -133,6 +133,25 @@ applyCommand ( name, command ) editor =
                     Ok <| forceReselection (updateEditorState name reducedState editor)
 
 
+applyCommandNoForceSelection : NamedCommand -> Editor msg -> Result String (Editor msg)
+applyCommandNoForceSelection ( name, command ) editor =
+    case command of
+        InternalCommand action ->
+            applyInternalCommand action editor
+
+        TransformCommand transform ->
+            case transform (state editor) |> Result.andThen validate of
+                Err s ->
+                    Err s
+
+                Ok v ->
+                    let
+                        reducedState =
+                            reduceEditorState v
+                    in
+                    Ok <| updateEditorState name reducedState editor
+
+
 applyNamedCommandList : NamedCommandList -> Editor msg -> Result String (Editor msg)
 applyNamedCommandList list editor =
     List.foldl

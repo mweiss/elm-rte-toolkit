@@ -9,48 +9,55 @@ const getSelectionPath = (node, editor, offset) => {
     }
 
     let path = [];
-    while (node && node.tagName !== "BODY") {
-        path.push(node);
-        if (node === editor) {
-            break;
-        }
-        node = node.parentNode
-    }
-
-    if (path[path.length - 1] !== editor) {
-        return null
-    }
-
-    let indexPath = [];
-    for (let i = 0; i < path.length - 1; i += 1) {
-        let child = path[i];
-        let parent = path[i + 1];
-
-        let index = 0;
-        for (let childNode of parent.childNodes) {
-            if (childNode === child) {
+    try {
+        while (node && node.tagName !== "BODY") {
+            path.push(node);
+            if (node === editor) {
                 break;
             }
-            index += 1;
+            node = node.parentNode
         }
-        indexPath.unshift(index);
-    }
 
-    if (originalNode.nodeType === Node.ELEMENT_NODE && offset > 0) {
-        indexPath.push(offset - 1)
-    } else if (originalNode.nodeType === Node.ELEMENT_NODE && originalNode.childNodes[0]) {
-        indexPath.push(0)
-    }
+        if (path[path.length - 1] !== editor) {
+            return null
+        }
 
-    if (indexPath.length <= 2) {
+        let indexPath = [];
+        for (let i = 0; i < path.length - 1; i += 1) {
+            let child = path[i];
+            let parent = path[i + 1];
+
+            let index = 0;
+            for (let childNode of parent.childNodes) {
+                if (childNode === child) {
+                    break;
+                }
+                index += 1;
+            }
+            indexPath.unshift(index);
+        }
+
+        if (originalNode.nodeType === Node.ELEMENT_NODE && offset > 0) {
+            indexPath.push(offset - 1)
+        } else if (originalNode.nodeType === Node.ELEMENT_NODE && originalNode.childNodes[0]) {
+            indexPath.push(0)
+        }
+
+        if (indexPath.length <= 2) {
+            return null;
+        }
+
+        // TODO: clean this up Drop the first two nodes
+        indexPath.shift();
+        indexPath.shift();
+
+        return indexPath.slice();
+    }
+    catch (e) {
+        // Sometimes we can get errors from trying to access properties like "tagName".  In that
+        // just return null.
         return null;
     }
-
-    // TODO: clean this up Drop the first two nodes
-    indexPath.shift();
-    indexPath.shift();
-
-    return indexPath.slice();
 };
 
 const findNodeFromPath = (path, editor) => {

@@ -2,6 +2,7 @@ module Editor exposing (..)
 
 import Array
 import Controls exposing (EditorMsg(..), InsertImageModal, InsertLinkModal, Style(..))
+import ExtraMarks exposing (strikethrough, underline)
 import Html exposing (Html, div)
 import Html.Attributes
 import RichTextEditor.Commands as Commands exposing (insertBlockNode, lift, liftEmpty, splitBlockHeaderToNewParagraph, toggleBlock, toggleMarkOnInlineNodes, wrap)
@@ -64,8 +65,8 @@ paragraphWithImage =
         )
 
 
-doubleInitNode : BlockNode
-doubleInitNode =
+docInitNode : BlockNode
+docInitNode =
     blockNode
         (elementParameters doc [] Set.empty)
         (blockArray (Array.fromList [ initialEditorNode ]))
@@ -80,7 +81,7 @@ initialEditorNode =
 
 initialState : State
 initialState =
-    State.state doubleInitNode Nothing
+    State.state docInitNode Nothing
 
 
 listCommandBindings =
@@ -305,6 +306,12 @@ handleToggleStyle style model =
                 Code ->
                     code
 
+                Strikethrough ->
+                    strikethrough
+
+                Underline ->
+                    underline
+
         markOrder =
             markOrderFromSpec (spec model.editor)
     in
@@ -368,6 +375,12 @@ update msg model =
 
         WrapInList listType ->
             ( handleWrapInList listType model, Cmd.none )
+
+        Noop ->
+            ( model, Cmd.none )
+
+        CaptionedImage _ _ ->
+            ( model, Cmd.none )
 
 
 handleLiftBlock : Model -> Model

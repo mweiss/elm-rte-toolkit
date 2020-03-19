@@ -9,6 +9,8 @@ import Page.Basic as Basic
 import Page.Examples as Examples
 import Page.Home as Home
 import Page.Markdown as Markdown
+import Page.SpecExtension as SpecExtension
+import Page.SpecFromScratch as SpecFromScratch
 import Route exposing (Route)
 import Session exposing (Session(..))
 import Task
@@ -27,6 +29,8 @@ type Model
     = Redirect Session
     | NotFound Session
     | Basic Basic.Model
+    | SpecExtension SpecExtension.Model
+    | SpecFromScratch SpecFromScratch.Model
     | Markdown Markdown.Model
     | Home Home.Model
     | Examples Examples.Model
@@ -78,6 +82,12 @@ view model =
         Markdown md ->
             viewPage Page.Markdown GotMarkdownMsg (Markdown.view md)
 
+        SpecExtension se ->
+            viewPage Page.SpecExtension GotSpecExtensionMsg (SpecExtension.view se)
+
+        SpecFromScratch sfs ->
+            viewPage Page.SpecFromScratch GotSpecFromScratchMsg (SpecFromScratch.view sfs)
+
         Examples examples ->
             viewPage Page.Examples GotExamplesMsg (Examples.view examples)
 
@@ -91,6 +101,8 @@ type Msg
     | ClickedLink Browser.UrlRequest
     | GotBasicMsg Basic.Msg
     | GotMarkdownMsg Markdown.Msg
+    | GotSpecExtensionMsg SpecExtension.Msg
+    | GotSpecFromScratchMsg SpecFromScratch.Msg
     | GotExamplesMsg Examples.Msg
     | GotHomeMsg Home.Msg
     | GotSession Session
@@ -111,6 +123,12 @@ changeRouteTo maybeRoute model =
 
         Just Route.Markdown ->
             Markdown.init session |> updateWith Markdown GotMarkdownMsg model
+
+        Just Route.SpecExtension ->
+            SpecExtension.init session |> updateWith SpecExtension GotSpecExtensionMsg model
+
+        Just Route.SpecFromScratch ->
+            SpecFromScratch.init session |> updateWith SpecFromScratch GotSpecFromScratchMsg model
 
         Just Route.Home ->
             Home.init session
@@ -164,6 +182,14 @@ update msg model =
             Basic.update subMsg basic
                 |> updateWith Basic GotBasicMsg model
 
+        ( GotSpecExtensionMsg subMsg, SpecExtension md ) ->
+            SpecExtension.update subMsg md
+                |> updateWith SpecExtension GotSpecExtensionMsg model
+
+        ( GotSpecFromScratchMsg subMsg, SpecFromScratch basic ) ->
+            SpecFromScratch.update subMsg basic
+                |> updateWith SpecFromScratch GotSpecFromScratchMsg model
+
         ( _, _ ) ->
             -- Disregard messages that arrived for the wrong page.
             ( model, Cmd.none )
@@ -201,6 +227,12 @@ subscriptions model =
         Examples m ->
             Sub.map GotExamplesMsg (Examples.subscriptions m)
 
+        SpecExtension m ->
+            Sub.map GotSpecExtensionMsg (SpecExtension.subscriptions m)
+
+        SpecFromScratch m ->
+            Sub.map GotSpecFromScratchMsg (SpecFromScratch.subscriptions m)
+
 
 
 -- MAIN
@@ -230,11 +262,17 @@ toSession page =
         Home home ->
             Home.toSession home
 
+        Basic basic ->
+            Basic.toSession basic
+
         Markdown full ->
             Markdown.toSession full
 
-        Basic basic ->
-            Basic.toSession basic
+        SpecExtension e ->
+            SpecExtension.toSession e
+
+        SpecFromScratch e ->
+            SpecFromScratch.toSession e
 
         Examples examples ->
             Examples.toSession examples

@@ -9,7 +9,7 @@ import Json.Decode exposing (succeed)
 import RichTextEditor.List exposing (ListType(..))
 import RichTextEditor.Model.Editor exposing (Editor, InternalEditorMsg, state)
 import RichTextEditor.Model.Mark as Mark
-import RichTextEditor.Model.Node exposing (Node(..), elementParametersFromBlockNode, marksFromInlineLeaf, nameFromElementParameters)
+import RichTextEditor.Model.Node exposing (Node(..), Path, elementParametersFromBlockNode, marksFromInlineLeaf, nameFromElementParameters)
 import RichTextEditor.Model.Selection exposing (anchorNode, focusNode, normalize)
 import RichTextEditor.Model.State as State exposing (State)
 import RichTextEditor.Node as Node
@@ -42,6 +42,8 @@ type Style
     = Bold
     | Italic
     | Code
+    | Strikethrough
+    | Underline
 
 
 type EditorMsg
@@ -60,6 +62,8 @@ type EditorMsg
     | InsertHorizontalRule
     | WrapInBlockQuote
     | LiftOutOfBlock
+    | Noop
+    | CaptionedImage Path String
 
 
 statusForStyle : Style -> ControlState -> Status
@@ -85,6 +89,12 @@ styleToString style =
 
         Code ->
             "code"
+
+        Strikethrough ->
+            "strikethrough"
+
+        Underline ->
+            "underline"
 
 
 onButtonPressToggleStyle : Style -> Attribute EditorMsg
@@ -311,6 +321,12 @@ styleToIcon style =
 
         Code ->
             Solid.code
+
+        Strikethrough ->
+            Solid.strikethrough
+
+        Underline ->
+            Solid.underline
 
 
 editorControlPanel : List Style -> Editor EditorMsg -> Html EditorMsg

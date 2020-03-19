@@ -33,11 +33,11 @@ values =
       , text =
             "This example shows how you can extend the default specification "
                 ++ "with your own mark and node definitions."
-      , route = Route.Markdown
+      , route = Route.SpecExtension
       }
     , { title = "New specification"
       , text = "This example shows how you can create a new document specification from scratch."
-      , route = Route.Markdown
+      , route = Route.SpecFromScratch
       }
     ]
 

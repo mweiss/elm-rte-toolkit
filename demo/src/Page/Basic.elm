@@ -15,8 +15,7 @@ type alias Model =
 
 
 type Msg
-    = Msg
-    | EditorMsg Editor.EditorMsg
+    = EditorMsg Editor.EditorMsg
     | GotSession Session
 
 

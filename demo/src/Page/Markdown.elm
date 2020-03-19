@@ -63,8 +63,7 @@ customMarkdownSpec =
 
 
 type Msg
-    = Msg
-    | EditorMsg Editor.EditorMsg
+    = EditorMsg Editor.EditorMsg
     | EditorChange EditorType
     | TextAreaChange String
     | GotSession Session
@@ -415,7 +414,7 @@ inlineToMarkdown leaves tree =
                     in
                     case Mark.name m.mark of
                         "bold" ->
-                            Ok <| [ MI.Emphasis 1 flattenedChildren ]
+                            Ok <| [ MI.Emphasis 2 flattenedChildren ]
 
                         "code" ->
                             Ok <|

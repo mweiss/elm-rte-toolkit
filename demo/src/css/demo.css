@@ -123,3 +123,48 @@ a {
     width: 100%;
     min-height: 150px;
 }
+
+
+/*
+ * Extension example
+ */
+.rte-main figure {
+    margin-top: 16px;
+    margin-bottom: 8px;
+    width: 100%;
+    text-align: center;
+}
+
+.rte-main figure.rte-selected {
+    outline: transparent;
+}
+
+.rte-main figure.rte-selected img {
+    outline: 2px solid #8cf;
+}
+
+figure input.caption  {
+    color: #555;
+    width: 100%;
+    border: none;
+    height: 24px;
+    resize: none;
+    caret-color: #333333;
+    text-align: center;
+    outline: none;
+}
+
+/*
+ * create spec example
+ */
+li.todo-list-item {
+    margin: 5px;
+    list-style-type: none;
+    display: flex;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+}
+
+li.todo-list-item input {
+    margin-right: 8px;
+}
