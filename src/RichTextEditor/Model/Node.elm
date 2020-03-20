@@ -64,8 +64,9 @@ import Array exposing (Array)
 import Array.Extra as Array
 import List.Extra
 import RichTextEditor.Model.Attribute exposing (Attribute)
+import RichTextEditor.Model.Internal.Spec as Spec exposing (NodeDefinition)
 import RichTextEditor.Model.Mark exposing (Mark, attributes, name)
-import RichTextEditor.Model.Spec as Spec exposing (NodeDefinition)
+import RichTextEditor.Model.Spec exposing (nameFromNodeDefinition)
 import Set exposing (Set)
 
 
@@ -104,7 +105,7 @@ definitionFromElementParameters =
 
 nameFromElementParameters : ElementParameters -> String
 nameFromElementParameters ele =
-    Spec.nameFromNodeDefinition (definitionFromElementParameters ele)
+    nameFromNodeDefinition (definitionFromElementParameters ele)
 
 
 elementParameters : NodeDefinition -> List Attribute -> Set String -> ElementParameters

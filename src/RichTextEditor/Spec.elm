@@ -1,4 +1,13 @@
-module RichTextEditor.Spec exposing (..)
+module RichTextEditor.Spec exposing
+    ( childNodesPlaceholder
+    , defaultElementToHtml
+    , defaultHtmlToElement
+    , defaultHtmlToMark
+    , defaultMarkToHtml
+    , htmlToElementArray
+    , markOrderFromSpec
+    , validate
+    )
 
 import Array exposing (Array)
 import Dict exposing (Dict)
@@ -7,6 +16,7 @@ import Result exposing (Result)
 import RichTextEditor.Model.Attribute exposing (Attribute(..))
 import RichTextEditor.Model.Constants exposing (zeroWidthSpace)
 import RichTextEditor.Model.HtmlNode exposing (HtmlNode(..))
+import RichTextEditor.Model.Internal.Spec exposing (ContentType(..))
 import RichTextEditor.Model.Mark as Mark
     exposing
         ( Mark
@@ -38,7 +48,21 @@ import RichTextEditor.Model.Node
         , textLeafParametersWithMarks
         , withText
         )
-import RichTextEditor.Model.Spec exposing (ContentType(..), MarkDefinition, NodeDefinition, Spec, blockLeafContentType, contentTypeFromNodeDefinition, fromHtmlNodeFromMarkDefinition, fromHtmlNodeFromNodeDefinition, groupFromNodeDefinition, markDefinitions, nameFromMarkDefinition, nameFromNodeDefinition, nodeDefinitions)
+import RichTextEditor.Model.Spec
+    exposing
+        ( MarkDefinition
+        , NodeDefinition
+        , Spec
+        , blockLeafContentType
+        , contentTypeFromNodeDefinition
+        , fromHtmlNodeFromMarkDefinition
+        , fromHtmlNodeFromNodeDefinition
+        , groupFromNodeDefinition
+        , markDefinitions
+        , nameFromMarkDefinition
+        , nameFromNodeDefinition
+        , nodeDefinitions
+        )
 import RichTextEditor.Model.State as State exposing (State)
 import Set exposing (Set)
 

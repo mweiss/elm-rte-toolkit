@@ -4,8 +4,6 @@ import Array
 import Editor
 import Html exposing (Html, h1, text)
 import Html.Attributes exposing (class)
-import RichTextEditor.Model.Annotations exposing (selectable)
-import RichTextEditor.Model.Attribute exposing (Attribute(..))
 import RichTextEditor.Model.Mark exposing (mark)
 import RichTextEditor.Model.Node
     exposing
@@ -16,13 +14,12 @@ import RichTextEditor.Model.Node
         , elementParameters
         , emptyTextLeafParameters
         , inlineLeafArray
-        , inlineLeafParameters
         , textLeafParametersWithMarks
         , textLeafWithText
         , withText
         )
 import RichTextEditor.Model.State as State exposing (State)
-import RichTextEditor.Specs as Specs exposing (code, doc, image, paragraph)
+import RichTextEditor.Specs as Specs exposing (code, doc, paragraph)
 import Session exposing (Session)
 import Set
 
@@ -34,8 +31,7 @@ type alias Model =
 
 
 type Msg
-    = Msg
-    | EditorMsg Editor.EditorMsg
+    = EditorMsg Editor.EditorMsg
     | GotSession Session
 
 

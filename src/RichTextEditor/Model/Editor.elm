@@ -1,49 +1,4 @@
-module RichTextEditor.Model.Editor exposing
-    ( DecoderFunc
-    , Editor
-    , InternalEditorMsg(..)
-    , bufferedEditorState
-    , commandMap
-    , completeRerenderCount
-    , editor
-    , forceCompleteRerender
-    , forceRerender
-    , forceReselection
-    , history
-    , isComposing
-    , renderCount
-    , selectionCount
-    , spec
-    , state
-    , withBufferedEditorState
-    , withCommandMap
-    , withComposing
-    , withHistory
-    , withState
-    )
-
-{-| The decoder function is used to translate the messages the editor needs to your overall application.
-A typical use case might be:
-
-    type alias Model = { editor : Editor }
-
-    type MyApplicationMsg
-        = EditorInternalMsg InternalEditorMsg
-        | OtherAppAction1
-        | OtherAppAction2
-
-    decoder =
-        EditorInternalMsg
-
-    update :
-        update : MyApplicationMsg -> Model -> ( Model, Cmd MyApplicationMsg )
-        update msg model =
-            case msg of
-                InternalMsg internalEditorMsg ->
-                    ( { model | editor = Editor.internalUpdate internalEditorMsg model.editor }, Cmd.none )
-                ...
-
--}
+module RichTextEditor.Model.Editor exposing (..)
 
 import RichTextEditor.Model.Command exposing (CommandMap, emptyCommandMap)
 import RichTextEditor.Model.Event exposing (EditorChange, InputEvent, KeyboardEvent, PasteEvent)
@@ -53,8 +8,48 @@ import RichTextEditor.Model.Spec exposing (Spec)
 import RichTextEditor.Model.State exposing (State)
 
 
-type alias DecoderFunc msg =
+type alias Tagger msg =
     InternalEditorMsg -> msg
+
+
+type Editor
+    = Editor EditorContents
+
+
+{-| Represents a rich text editor. The state of the editor, along with render information,
+tagger function, and command map.
+-}
+type alias EditorContents =
+    { state : State
+    , renderCount : Int
+    , selectionCount : Int
+    , completeRerenderCount : Int
+    , isComposing : Bool
+    , bufferedEditorState : Maybe State
+    , commandMap : CommandMap
+    , spec : Spec
+    , history : History
+    }
+
+
+defaultDequeSize : Int
+defaultDequeSize =
+    64
+
+
+editor : Spec -> State -> Editor
+editor iSpec iState =
+    Editor
+        { renderCount = 0
+        , bufferedEditorState = Nothing
+        , completeRerenderCount = 0
+        , selectionCount = 0
+        , isComposing = False
+        , commandMap = emptyCommandMap
+        , spec = iSpec
+        , state = iState
+        , history = emptyHistory defaultDequeSize
+        }
 
 
 {-| The internal events that an editor has to respond to. These events should be mapped via a DecoderFunc.
@@ -68,26 +63,6 @@ type InternalEditorMsg
     | CompositionEnd
     | PasteWithDataEvent PasteEvent
     | CutEvent
-
-
-type Editor
-    = Editor EditorContents
-
-
-{-| Represents a rich text editor. The state of the editor, along with render information,
-decoder function, and command map.
--}
-type alias EditorContents =
-    { state : State
-    , renderCount : Int
-    , selectionCount : Int
-    , completeRerenderCount : Int
-    , isComposing : Bool
-    , bufferedEditorState : Maybe State
-    , commandMap : CommandMap
-    , spec : Spec
-    , history : History
-    }
 
 
 completeRerenderCount : Editor -> Int
@@ -207,23 +182,3 @@ forceCompleteRerender e =
     case e of
         Editor c ->
             Editor { c | completeRerenderCount = c.completeRerenderCount + 1 }
-
-
-defaultDequeSize : Int
-defaultDequeSize =
-    64
-
-
-editor : Spec -> State -> Editor
-editor iSpec iState =
-    Editor
-        { renderCount = 0
-        , bufferedEditorState = Nothing
-        , completeRerenderCount = 0
-        , selectionCount = 0
-        , isComposing = False
-        , commandMap = emptyCommandMap
-        , spec = iSpec
-        , state = iState
-        , history = emptyHistory defaultDequeSize
-        }

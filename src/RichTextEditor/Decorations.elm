@@ -1,4 +1,10 @@
-module RichTextEditor.Decorations exposing (..)
+module RichTextEditor.Decorations exposing
+    ( addElementDecoration
+    , addMarkDecoration
+    , getElementDecorators
+    , getMarkDecorators
+    , selectableDecoration
+    )
 
 import Dict
 import Html
@@ -17,8 +23,8 @@ import RichTextEditor.Model.Decoration
         )
 import RichTextEditor.Model.Editor
     exposing
-        ( DecoderFunc
-        , InternalEditorMsg(..)
+        ( InternalEditorMsg(..)
+        , Tagger
         )
 import RichTextEditor.Model.Node
     exposing
@@ -30,8 +36,8 @@ import RichTextEditor.Model.Selection exposing (caretSelection)
 import Set
 
 
-selectableDecoration : DecoderFunc msg -> Path -> ElementParameters -> Path -> List (Html.Attribute msg)
-selectableDecoration decoder editorNodePath elementParameters _ =
+selectableDecoration : Tagger msg -> Path -> ElementParameters -> Path -> List (Html.Attribute msg)
+selectableDecoration tagger editorNodePath elementParameters _ =
     (if Set.member selection (annotationsFromElementParameters elementParameters) then
         [ Html.Attributes.class "rte-selected" ]
 
@@ -39,7 +45,7 @@ selectableDecoration decoder editorNodePath elementParameters _ =
         []
     )
         ++ [ Html.Events.onClick
-                (decoder <|
+                (tagger <|
                     SelectionEvent (Just (caretSelection editorNodePath 0)) False
                 )
            ]

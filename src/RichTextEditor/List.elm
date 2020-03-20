@@ -1,4 +1,23 @@
-module RichTextEditor.List exposing (..)
+module RichTextEditor.List exposing
+    ( ListDefinition
+    , ListType(..)
+    , addListItem
+    , commandBindings
+    , defaultListDefinition
+    , findListItemAncestor
+    , isBeginningOfListItem
+    , isEndOfListItem
+    , isListNode
+    , item
+    , joinBackward
+    , joinForward
+    , lift
+    , liftEmpty
+    , ordered
+    , split
+    , unordered
+    , wrap
+    )
 
 import Array exposing (Array)
 import List.Extra
@@ -6,9 +25,9 @@ import RichTextEditor.Annotation exposing (clearAnnotations)
 import RichTextEditor.Commands
     exposing
         ( isEmptyTextBlock
-        , liftAnnotation
         , liftConcatMapFunc
         )
+import RichTextEditor.Model.Annotations as Annotations
 import RichTextEditor.Model.Command
     exposing
         ( CommandMap
@@ -195,7 +214,7 @@ isListNode definition node =
 
 addLiftAnnotationAtPathAndChildren : Path -> BlockNode -> Result String BlockNode
 addLiftAnnotationAtPathAndChildren path root =
-    case RichTextEditor.Annotation.addAnnotationAtPath liftAnnotation path root of
+    case RichTextEditor.Annotation.addAnnotationAtPath Annotations.lift path root of
         Err s ->
             Err s
 
@@ -216,7 +235,7 @@ addLiftAnnotationAtPathAndChildren path root =
                                                     result
 
                                                 Ok n ->
-                                                    RichTextEditor.Annotation.addAnnotationAtPath liftAnnotation (path ++ [ i ]) n
+                                                    RichTextEditor.Annotation.addAnnotationAtPath Annotations.lift (path ++ [ i ]) n
                                         )
                                         (Ok newRoot)
                                         (List.range 0 (Array.length (fromBlockArray ba) - 1))
@@ -307,7 +326,7 @@ lift definition editorState =
                     Ok
                         (editorState
                             |> withSelection newSelection
-                            |> withRoot (clearAnnotations liftAnnotation <| clearSelectionAnnotations liftedRoot)
+                            |> withRoot (clearAnnotations Annotations.lift <| clearSelectionAnnotations liftedRoot)
                         )
 
 

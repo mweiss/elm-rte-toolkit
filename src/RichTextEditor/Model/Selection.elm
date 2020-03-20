@@ -1,4 +1,15 @@
-module RichTextEditor.Model.Selection exposing (..)
+module RichTextEditor.Model.Selection exposing
+    ( Selection
+    , anchorNode
+    , anchorOffset
+    , caretSelection
+    , focusNode
+    , focusOffset
+    , isCollapsed
+    , normalize
+    , rangeSelection
+    , singleNodeRangeSelection
+    )
 
 {-| A selection represents the information received and translated from the selection API. Note that
 the anchorNode and focusNode are translations of the node paths relative to the editor.

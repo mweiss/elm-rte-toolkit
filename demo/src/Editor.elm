@@ -16,8 +16,7 @@ import RichTextEditor.Commands as Commands
         , wrap
         )
 import RichTextEditor.Decorations exposing (addElementDecoration, selectableDecoration)
-import RichTextEditor.Editor as Editor exposing (update)
-import RichTextEditor.Internal.Editor exposing (applyCommand, applyNamedCommandList)
+import RichTextEditor.Editor as Editor exposing (applyCommand, applyNamedCommandList)
 import RichTextEditor.List exposing (ListType, defaultListDefinition)
 import RichTextEditor.Model.Annotations exposing (selectable)
 import RichTextEditor.Model.Attribute exposing (Attribute(..))

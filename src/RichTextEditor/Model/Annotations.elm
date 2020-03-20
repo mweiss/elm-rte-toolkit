@@ -1,5 +1,6 @@
 module RichTextEditor.Model.Annotations exposing
-    ( selectable
+    ( lift
+    , selectable
     , selection
     )
 
@@ -12,3 +13,7 @@ selection =
 selectable : String
 selectable =
     "__selectable__"
+
+
+lift =
+    "__lift__"

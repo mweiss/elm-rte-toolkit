@@ -2,7 +2,7 @@ module RichTextEditor.Internal.HtmlNode exposing (..)
 
 import Array exposing (Array)
 import RichTextEditor.Model.HtmlNode exposing (HtmlNode(..))
-import RichTextEditor.Model.Mark exposing (Mark)
+import RichTextEditor.Model.Mark as Mark exposing (Mark)
 import RichTextEditor.Model.Node
     exposing
         ( BlockNode
@@ -22,7 +22,6 @@ import RichTextEditor.Model.Node
 import RichTextEditor.Model.Spec
     exposing
         ( Spec
-        , definitionFromMark
         , toHtmlNodeFromMarkDefinition
         , toHtmlNodeFromNodeDefinition
         )
@@ -34,7 +33,7 @@ markToHtmlNode : Mark -> Array HtmlNode -> HtmlNode
 markToHtmlNode mark children =
     let
         markDefinition =
-            definitionFromMark mark
+            Mark.definition mark
     in
     toHtmlNodeFromMarkDefinition markDefinition mark children
 

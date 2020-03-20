@@ -36,7 +36,27 @@ module RichTextEditor.Node exposing
 import Array exposing (Array)
 import Array.Extra
 import RichTextEditor.Model.Annotations exposing (selectable)
-import RichTextEditor.Model.Node exposing (BlockNode, ChildNodes(..), Fragment(..), InlineLeaf(..), Node(..), Path, TextLeafParameters, annotationsFromElementParameters, blockArray, childNodes, elementParametersFromBlockNode, elementParametersFromInlineLeafParameters, fromBlockArray, fromInlineArray, inlineLeafArray, text, withChildNodes, withText)
+import RichTextEditor.Model.Node
+    exposing
+        ( BlockNode
+        , ChildNodes(..)
+        , Fragment(..)
+        , InlineLeaf(..)
+        , Node(..)
+        , Path
+        , TextLeafParameters
+        , annotationsFromElementParameters
+        , blockArray
+        , childNodes
+        , elementParametersFromBlockNode
+        , elementParametersFromInlineLeafParameters
+        , fromBlockArray
+        , fromInlineArray
+        , inlineLeafArray
+        , text
+        , withChildNodes
+        , withText
+        )
 import RichTextEditor.NodePath exposing (parent)
 import Set
 

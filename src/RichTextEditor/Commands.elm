@@ -1,4 +1,42 @@
-module RichTextEditor.Commands exposing (..)
+module RichTextEditor.Commands exposing
+    ( backspaceBlockNode
+    , backspaceCommands
+    , backspaceInlineElement
+    , backspaceText
+    , backspaceWord
+    , defaultCommandBindings
+    , defaultInputEventCommand
+    , defaultKeyCommand
+    , deleteBlockNode
+    , deleteCommands
+    , deleteInlineElement
+    , deleteText
+    , deleteWord
+    , insertBlockNode
+    , insertBlockNodeBeforeSelection
+    , insertInlineElement
+    , insertLineBreak
+    , insertTextAtSelection
+    , isEmptyTextBlock
+    , joinBackward
+    , joinForward
+    , lift
+    , liftConcatMapFunc
+    , liftEmpty
+    , removeRangeSelection
+    , removeRangeSelectionAndInsert
+    , removeSelectedLeafElement
+    , selectAll
+    , selectionIsBeginningOfTextBlock
+    , selectionIsEndOfTextBlock
+    , splitBlock
+    , splitBlockHeaderToNewParagraph
+    , splitTextBlock
+    , toggleBlock
+    , toggleMarkOnInlineNodes
+    , toggleMarkSingleInlineNode
+    , wrap
+    )
 
 import Array exposing (Array)
 import Array.Extra
@@ -11,6 +49,7 @@ import RichTextEditor.Marks
         ( hasMarkWithName
         , toggleMark
         )
+import RichTextEditor.Model.Annotations as Annotations
 import RichTextEditor.Model.Command
     exposing
         ( CommandBinding
@@ -1477,15 +1516,6 @@ selectAll editorState =
                 )
 
 
-
--- mark each text block to lift
--- for each block, lift it out of its container if possible
-
-
-liftAnnotation =
-    "__lift__"
-
-
 addLiftMarkToBlocksInSelection : Selection -> BlockNode -> BlockNode
 addLiftMarkToBlocksInSelection selection root =
     let
@@ -1517,7 +1547,7 @@ addLiftMarkToBlocksInSelection selection root =
                                             False
                             in
                             if addMarker then
-                                RichTextEditor.Annotation.add liftAnnotation <| Block bn
+                                RichTextEditor.Annotation.add Annotations.lift <| Block bn
 
                             else
                                 node
@@ -1551,10 +1581,10 @@ liftConcatMapFunc node =
                             List.Extra.groupWhile
                                 (\n1 n2 ->
                                     Set.member
-                                        liftAnnotation
+                                        Annotations.lift
                                         (annotationsFromBlockNode n1)
                                         == Set.member
-                                            liftAnnotation
+                                            Annotations.lift
                                             (annotationsFromBlockNode n2)
                                 )
                                 (Array.toList (fromBlockArray a))
@@ -1562,7 +1592,7 @@ liftConcatMapFunc node =
                     List.map Block <|
                         List.concatMap
                             (\( n, l ) ->
-                                if Set.member liftAnnotation (annotationsFromBlockNode n) then
+                                if Set.member Annotations.lift (annotationsFromBlockNode n) then
                                     n :: l
 
                                 else
@@ -1602,7 +1632,7 @@ lift editorState =
                 (editorState
                     |> withSelection newSelection
                     |> withRoot
-                        (clearAnnotations liftAnnotation <|
+                        (clearAnnotations Annotations.lift <|
                             clearSelectionAnnotations liftedRoot
                         )
                 )

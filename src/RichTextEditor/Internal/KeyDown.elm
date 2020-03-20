@@ -3,7 +3,7 @@ module RichTextEditor.Internal.KeyDown exposing (..)
 import Json.Decode as D
 import RichTextEditor.Internal.Editor exposing (applyNamedCommandList)
 import RichTextEditor.Model.Command exposing (namedCommandListFromKeyboardEvent)
-import RichTextEditor.Model.Editor exposing (DecoderFunc, Editor, InternalEditorMsg(..), commandMap)
+import RichTextEditor.Model.Editor exposing (Editor, InternalEditorMsg(..), Tagger, commandMap)
 import RichTextEditor.Model.Event exposing (KeyboardEvent)
 
 
@@ -27,9 +27,9 @@ shouldPreventDefault editor keyboardEvent =
             True
 
 
-preventDefaultOnKeyDownDecoder : DecoderFunc msg -> Editor -> D.Decoder ( msg, Bool )
-preventDefaultOnKeyDownDecoder decoder editor =
-    D.map (\( i, b ) -> ( decoder i, b )) (D.map (preventDefaultOn editor) keyDownDecoder)
+preventDefaultOnKeyDownDecoder : Tagger msg -> Editor -> D.Decoder ( msg, Bool )
+preventDefaultOnKeyDownDecoder tagger editor =
+    D.map (\( i, b ) -> ( tagger i, b )) (D.map (preventDefaultOn editor) keyDownDecoder)
 
 
 keyDownDecoder : D.Decoder InternalEditorMsg

@@ -1,4 +1,14 @@
-module RichTextEditor.Model.Mark exposing (Mark, MarkOrder(..), ToggleAction(..), attributes, definition, mark, name, sort, toggle)
+module RichTextEditor.Model.Mark exposing
+    ( Mark
+    , MarkOrder(..)
+    , ToggleAction(..)
+    , attributes
+    , definition
+    , mark
+    , name
+    , sort
+    , toggle
+    )
 
 {-| A mark is a piece of information that can be attached to a node. It can be used to as extra
 information when rendering a node (like color, font, and link information).
@@ -6,7 +16,8 @@ information when rendering a node (like color, font, and link information).
 
 import Dict exposing (Dict)
 import RichTextEditor.Model.Attribute exposing (Attribute)
-import RichTextEditor.Model.Spec as Spec exposing (MarkDefinition, attributesFromMark, nameFromMarkDefinition)
+import RichTextEditor.Model.Internal.Spec as Spec exposing (MarkDefinition, attributesFromMark)
+import RichTextEditor.Model.Spec as Spec exposing (nameFromMarkDefinition)
 
 
 type alias Mark =

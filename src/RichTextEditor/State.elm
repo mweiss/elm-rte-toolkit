@@ -1,4 +1,4 @@
-module RichTextEditor.State exposing (..)
+module RichTextEditor.State exposing (reduceEditorState)
 
 import Array exposing (Array)
 import List.Extra

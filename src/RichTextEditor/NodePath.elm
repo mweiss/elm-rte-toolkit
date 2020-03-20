@@ -40,7 +40,6 @@ import RichTextEditor.Model.Node
 import RichTextEditor.Model.Spec
     exposing
         ( Spec
-        , definitionFromMark
         , toHtmlNodeFromMarkDefinition
         , toHtmlNodeFromNodeDefinition
         )
@@ -59,7 +58,7 @@ domToEditorInlineLeafTree tree path =
         MarkNode n ->
             let
                 markDefinition =
-                    definitionFromMark n.mark
+                    Mark.definition n.mark
 
                 structure =
                     toHtmlNodeFromMarkDefinition markDefinition n.mark childNodesPlaceholder

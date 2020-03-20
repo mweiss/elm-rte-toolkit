@@ -3,7 +3,14 @@ module RichTextEditor.Internal.BeforeInput exposing (..)
 import Json.Decode as D
 import RichTextEditor.Internal.Editor exposing (applyNamedCommandList)
 import RichTextEditor.Model.Command exposing (namedCommandListFromInputEvent)
-import RichTextEditor.Model.Editor exposing (DecoderFunc, Editor, InternalEditorMsg(..), commandMap, forceRerender)
+import RichTextEditor.Model.Editor
+    exposing
+        ( Editor
+        , InternalEditorMsg(..)
+        , Tagger
+        , commandMap
+        , forceRerender
+        )
 import RichTextEditor.Model.Event exposing (InputEvent)
 
 
@@ -27,9 +34,9 @@ shouldPreventDefault editor inputEvent =
             True
 
 
-preventDefaultOnBeforeInputDecoder : DecoderFunc msg -> Editor -> D.Decoder ( msg, Bool )
-preventDefaultOnBeforeInputDecoder decoder editor =
-    D.map (\( i, b ) -> ( decoder i, b )) (D.map (preventDefaultOn editor) beforeInputDecoder)
+preventDefaultOnBeforeInputDecoder : Tagger msg -> Editor -> D.Decoder ( msg, Bool )
+preventDefaultOnBeforeInputDecoder tagger editor =
+    D.map (\( i, b ) -> ( tagger i, b )) (D.map (preventDefaultOn editor) beforeInputDecoder)
 
 
 beforeInputDecoder : D.Decoder InternalEditorMsg

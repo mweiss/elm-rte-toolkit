@@ -9,7 +9,14 @@ import Json.Decode exposing (succeed)
 import RichTextEditor.List exposing (ListType(..))
 import RichTextEditor.Model.Editor exposing (Editor, InternalEditorMsg, state)
 import RichTextEditor.Model.Mark as Mark
-import RichTextEditor.Model.Node exposing (Node(..), Path, elementParametersFromBlockNode, marksFromInlineLeaf, nameFromElementParameters)
+import RichTextEditor.Model.Node
+    exposing
+        ( Node(..)
+        , Path
+        , elementParametersFromBlockNode
+        , marksFromInlineLeaf
+        , nameFromElementParameters
+        )
 import RichTextEditor.Model.Selection exposing (anchorNode, focusNode, normalize)
 import RichTextEditor.Model.State as State exposing (State)
 import RichTextEditor.Node as Node

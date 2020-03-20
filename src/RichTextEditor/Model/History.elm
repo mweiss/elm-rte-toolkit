@@ -1,4 +1,4 @@
-module RichTextEditor.Model.History exposing (..)
+module RichTextEditor.Model.History exposing (Contents, History, contents, emptyHistory, fromContents)
 
 import BoundedDeque exposing (BoundedDeque)
 import RichTextEditor.Model.State exposing (State)

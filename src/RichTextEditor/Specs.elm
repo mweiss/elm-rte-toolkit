@@ -1,4 +1,21 @@
-module RichTextEditor.Specs exposing (..)
+module RichTextEditor.Specs exposing
+    ( blockquote
+    , bold
+    , code
+    , codeBlock
+    , doc
+    , hardBreak
+    , heading
+    , horizontalRule
+    , image
+    , italic
+    , link
+    , listItem
+    , markdown
+    , orderedList
+    , paragraph
+    , unorderedList
+    )
 
 import Array exposing (Array)
 import RichTextEditor.Model.Annotations exposing (selectable)
@@ -6,7 +23,25 @@ import RichTextEditor.Model.Attribute exposing (Attribute(..), findIntegerAttrib
 import RichTextEditor.Model.HtmlNode exposing (HtmlNode(..))
 import RichTextEditor.Model.Mark as Mark exposing (mark)
 import RichTextEditor.Model.Node exposing (attributesFromElementParameters, elementParameters)
-import RichTextEditor.Model.Spec exposing (ElementToHtml, HtmlToElement, HtmlToMark, MarkDefinition, MarkToHtml, NodeDefinition, Spec, blockLeafContentType, blockNodeContentType, emptySpec, inlineLeafContentType, markDefinition, nodeDefinition, textBlockContentType, withMarkDefinitions, withNodeDefinitions)
+import RichTextEditor.Model.Spec
+    exposing
+        ( ElementToHtml
+        , HtmlToElement
+        , HtmlToMark
+        , MarkDefinition
+        , MarkToHtml
+        , NodeDefinition
+        , Spec
+        , blockLeafContentType
+        , blockNodeContentType
+        , emptySpec
+        , inlineLeafContentType
+        , markDefinition
+        , nodeDefinition
+        , textBlockContentType
+        , withMarkDefinitions
+        , withNodeDefinitions
+        )
 import RichTextEditor.Spec exposing (defaultElementToHtml, defaultHtmlToElement, defaultHtmlToMark)
 import Set
 

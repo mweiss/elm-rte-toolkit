@@ -1,4 +1,10 @@
-module RichTextEditor.Marks exposing (..)
+module RichTextEditor.Marks exposing
+    ( addMark
+    , hasMarkWithName
+    , removeMark
+    , toggleMark
+    , toggleMarkAtPath
+    )
 
 import RichTextEditor.Model.Mark as Mark exposing (Mark, MarkOrder, ToggleAction(..), name, toggle)
 import RichTextEditor.Model.Node

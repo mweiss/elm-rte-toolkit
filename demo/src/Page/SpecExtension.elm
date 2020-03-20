@@ -11,7 +11,7 @@ import Json.Decode as D
 import Links exposing (rteToolkit)
 import RichTextEditor.Commands as Commands
 import RichTextEditor.Decorations exposing (addElementDecoration, selectableDecoration)
-import RichTextEditor.Internal.Editor exposing (applyCommand, applyCommandNoForceSelection)
+import RichTextEditor.Editor exposing (applyCommand, applyCommandNoForceSelection)
 import RichTextEditor.Model.Annotations exposing (selectable)
 import RichTextEditor.Model.Attribute
     exposing
@@ -20,10 +20,42 @@ import RichTextEditor.Model.Attribute
         , replaceOrAddStringAttribute
         )
 import RichTextEditor.Model.Command exposing (Transform, transformCommand)
-import RichTextEditor.Model.Editor exposing (DecoderFunc)
+import RichTextEditor.Model.Editor
 import RichTextEditor.Model.HtmlNode exposing (HtmlNode(..))
-import RichTextEditor.Model.Node exposing (BlockNode, ChildNodes(..), ElementParameters, Node(..), Path, attributesFromElementParameters, blockArray, blockNode, blockNodeWithElementParameters, elementParameters, elementParametersFromBlockNode, elementParametersWithAttributes, inlineLeafArray, nameFromElementParameters, textLeafWithText)
-import RichTextEditor.Model.Spec exposing (ElementToHtml, HtmlToElement, HtmlToMark, MarkDefinition, MarkToHtml, NodeDefinition, Spec, blockLeafContentType, markDefinition, markDefinitions, nodeDefinition, nodeDefinitions, textBlockContentType, withMarkDefinitions, withNodeDefinitions)
+import RichTextEditor.Model.Node
+    exposing
+        ( BlockNode
+        , ChildNodes(..)
+        , ElementParameters
+        , Node(..)
+        , Path
+        , attributesFromElementParameters
+        , blockArray
+        , blockNode
+        , blockNodeWithElementParameters
+        , elementParameters
+        , elementParametersFromBlockNode
+        , elementParametersWithAttributes
+        , inlineLeafArray
+        , nameFromElementParameters
+        , textLeafWithText
+        )
+import RichTextEditor.Model.Spec
+    exposing
+        ( ElementToHtml
+        , HtmlToElement
+        , HtmlToMark
+        , MarkDefinition
+        , MarkToHtml
+        , NodeDefinition
+        , Spec
+        , blockLeafContentType
+        , markDefinitions
+        , nodeDefinition
+        , nodeDefinitions
+        , withMarkDefinitions
+        , withNodeDefinitions
+        )
 import RichTextEditor.Model.State as State exposing (State, withRoot)
 import RichTextEditor.Node as Node exposing (nodeAt)
 import RichTextEditor.Specs as MarkdownSpec exposing (doc, paragraph)

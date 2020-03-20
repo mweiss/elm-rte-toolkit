@@ -1,4 +1,11 @@
-module RichTextEditor.Editor exposing (..)
+module RichTextEditor.Editor exposing
+    ( applyCommand
+    , applyCommandNoForceSelection
+    , applyNamedCommandList
+    , update
+    , updateEditorState
+    , view
+    )
 
 import Array exposing (Array)
 import Html exposing (Html)
@@ -15,19 +22,19 @@ import RichTextEditor.Internal.DomNode
         , extractRootEditorBlockNode
         , findTextChanges
         )
-import RichTextEditor.Internal.Editor exposing (applyNamedCommandList, updateEditorState)
+import RichTextEditor.Internal.Editor
 import RichTextEditor.Internal.HtmlNode exposing (editorBlockNodeToHtmlNode)
 import RichTextEditor.Internal.KeyDown as KeyDown
 import RichTextEditor.Internal.Paste as Paste
-import RichTextEditor.Model.Command exposing (transformCommand)
+import RichTextEditor.Model.Command exposing (NamedCommand, NamedCommandList, transformCommand)
 import RichTextEditor.Model.Constants exposing (zeroWidthSpace)
 import RichTextEditor.Model.Decoration exposing (Decorations)
 import RichTextEditor.Model.DomNode exposing (DomNode(..))
 import RichTextEditor.Model.Editor
     exposing
-        ( DecoderFunc
-        , Editor
+        ( Editor
         , InternalEditorMsg(..)
+        , Tagger
         , bufferedEditorState
         , completeRerenderCount
         , forceCompleteRerender
@@ -485,14 +492,14 @@ selectionAttribute maybeSelection renderCount selectionCount =
                 ]
 
 
-onBeforeInput : DecoderFunc msg -> Editor -> Html.Attribute msg
-onBeforeInput decoder editor =
-    Html.Events.preventDefaultOn "beforeinput" (BeforeInput.preventDefaultOnBeforeInputDecoder decoder editor)
+onBeforeInput : Tagger msg -> Editor -> Html.Attribute msg
+onBeforeInput tagger editor =
+    Html.Events.preventDefaultOn "beforeinput" (BeforeInput.preventDefaultOnBeforeInputDecoder tagger editor)
 
 
-onKeyDown : DecoderFunc msg -> Editor -> Html.Attribute msg
-onKeyDown decoder editor =
-    Html.Events.preventDefaultOn "keydown" (KeyDown.preventDefaultOnKeyDownDecoder decoder editor)
+onKeyDown : Tagger msg -> Editor -> Html.Attribute msg
+onKeyDown tagger editor =
+    Html.Events.preventDefaultOn "keydown" (KeyDown.preventDefaultOnKeyDownDecoder tagger editor)
 
 
 handleCompositionStart : Editor -> Editor
@@ -564,19 +571,19 @@ editorToDomSelection editor =
             editorToDom (State.root (state editor)) selection
 
 
-view : DecoderFunc msg -> Decorations msg -> Editor -> Html msg
-view decoder decorations editor =
+view : Tagger msg -> Decorations msg -> Editor -> Html msg
+view tagger decorations editor =
     let
         st =
             state editor
     in
     Html.Keyed.node "elm-editor"
-        [ onEditorChange decoder
-        , onEditorSelectionChange decoder
-        , onCompositionStart decoder
-        , onCompositionEnd decoder
-        , onPasteWithData decoder
-        , onCut decoder
+        [ onEditorChange tagger
+        , onEditorSelectionChange tagger
+        , onCompositionStart tagger
+        , onCompositionEnd tagger
+        , onPasteWithData tagger
+        , onCut tagger
         ]
         [ ( String.fromInt (completeRerenderCount editor)
           , Html.Keyed.node "div"
@@ -584,8 +591,8 @@ view decoder decorations editor =
                 , Html.Attributes.class "rte-main"
                 , Html.Attributes.attribute "data-rte-main" "true"
                 , Html.Attributes.classList [ ( "rte-hide-caret", shouldHideCaret st ) ]
-                , onBeforeInput decoder editor
-                , onKeyDown decoder editor
+                , onBeforeInput tagger editor
+                , onKeyDown tagger editor
                 ]
                 [ ( String.fromInt (renderCount editor)
                   , viewEditorBlockNode
@@ -724,3 +731,23 @@ viewInlineLeaf decorations backwardsPath leaf =
 
         TextLeaf v ->
             viewText (text v)
+
+
+applyNamedCommandList : NamedCommandList -> Editor -> Result String Editor
+applyNamedCommandList =
+    RichTextEditor.Internal.Editor.applyNamedCommandList
+
+
+applyCommand : NamedCommand -> Editor -> Result String Editor
+applyCommand =
+    RichTextEditor.Internal.Editor.applyCommand
+
+
+applyCommandNoForceSelection : NamedCommand -> Editor -> Result String Editor
+applyCommandNoForceSelection =
+    RichTextEditor.Internal.Editor.applyCommandNoForceSelection
+
+
+updateEditorState : String -> State -> Editor -> Editor
+updateEditorState =
+    RichTextEditor.Internal.Editor.updateEditorState

@@ -1,4 +1,14 @@
-module RichTextEditor.Annotation exposing (..)
+module RichTextEditor.Annotation exposing
+    ( add
+    , addAnnotationAtPath
+    , clearAnnotations
+    , findPathsWithAnnotation
+    , getAnnotationsFromNode
+    , remove
+    , removeAnnotationAtPath
+    , toggle
+    , toggleElementParameters
+    )
 
 import RichTextEditor.Model.Node
     exposing

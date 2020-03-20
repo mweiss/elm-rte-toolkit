@@ -7,8 +7,7 @@ import Html.Events
 import Links exposing (rteToolkit)
 import RichTextEditor.Commands as Commands
 import RichTextEditor.Decorations exposing (addElementDecoration)
-import RichTextEditor.Editor as Editor exposing (update)
-import RichTextEditor.Internal.Editor exposing (applyCommand)
+import RichTextEditor.Editor as Editor exposing (applyCommand)
 import RichTextEditor.Model.Attribute
     exposing
         ( Attribute(..)
@@ -19,10 +18,9 @@ import RichTextEditor.Model.Command exposing (Transform, transformCommand)
 import RichTextEditor.Model.Decoration exposing (emptyDecorations)
 import RichTextEditor.Model.Editor
     exposing
-        ( DecoderFunc
-        , Editor
+        ( Editor
         , InternalEditorMsg
-        , editor
+        , Tagger
         , withCommandMap
         )
 import RichTextEditor.Model.HtmlNode exposing (HtmlNode(..))
@@ -117,7 +115,7 @@ init : Session -> ( Model, Cmd Msg )
 init session =
     ( { session = session
       , editor =
-            editor todoSpec initialState
+            RichTextEditor.Model.Editor.editor todoSpec initialState
                 |> withCommandMap commandBindings
       }
     , Cmd.none

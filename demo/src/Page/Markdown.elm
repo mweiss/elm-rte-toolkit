@@ -16,7 +16,7 @@ import RichTextEditor.Model.Attribute
         , findIntegerAttribute
         , findStringAttribute
         )
-import RichTextEditor.Model.Editor exposing (Editor, state)
+import RichTextEditor.Model.Editor exposing (state)
 import RichTextEditor.Model.Mark as Mark exposing (Mark, MarkOrder)
 import RichTextEditor.Model.Node as Node
     exposing
@@ -668,11 +668,11 @@ inlineMarkdownToString inline =
             in
             Result.map (\c -> e ++ c ++ e) (inlineMarkdownChildrenToString children)
 
-        MI.HtmlInline tag attributes children ->
+        MI.HtmlInline _ _ _ ->
             Err "Html inline is not implemented."
 
-        MI.Custom i children ->
-            Err "Not implemented"
+        MI.Custom _ _ ->
+            Err "Custom elements are not implemented"
 
 
 inlineMarkdownChildrenToString : List Inline -> Result String String
@@ -754,7 +754,7 @@ markdownBlockToString block =
         M.ThematicBreak ->
             Ok <| "---"
 
-        M.Heading s i children ->
+        M.Heading _ i children ->
             Result.map
                 (\x -> String.repeat i "#" ++ " " ++ x)
                 (inlineMarkdownChildrenToString children)
@@ -762,7 +762,7 @@ markdownBlockToString block =
         M.CodeBlock cb s ->
             markdownCodeBlockToString cb s
 
-        M.Paragraph s children ->
+        M.Paragraph _ children ->
             Result.map (\x -> x)
                 (inlineMarkdownChildrenToString children)
 
@@ -779,7 +779,7 @@ markdownBlockToString block =
         M.PlainInlines children ->
             inlineMarkdownChildrenToString children
 
-        M.Custom custom children ->
+        M.Custom _ _ ->
             Err "Custom element are not implemented"
 
 
@@ -852,7 +852,7 @@ markdownInlineToInlineLeaves marks inline =
             in
             markdownInlineListToInlineLeaves (linkMark :: marks) children
 
-        MI.Image src alt children ->
+        MI.Image src alt _ ->
             let
                 inlineImage =
                     inlineLeaf
@@ -973,7 +973,7 @@ markdownBlockToEditorBlock block =
                     (elementParameters horizontalRule [] Set.empty)
                     Leaf
 
-        M.Heading s i children ->
+        M.Heading _ i children ->
             Result.map
                 (\c ->
                     blockNode
