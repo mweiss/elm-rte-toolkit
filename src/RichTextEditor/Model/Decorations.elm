@@ -1,7 +1,9 @@
-module RichTextEditor.Model.Decoration exposing
+module RichTextEditor.Model.Decorations exposing
     ( Decorations
     , ElementDecoratorFunction
     , MarkDecoratorFunction
+    , addElementDecoration
+    , addMarkDecoration
     , elementDecorators
     , emptyDecorations
     , markDecorators
@@ -64,3 +66,29 @@ type alias ElementDecoratorFunction msg =
 
 type alias MarkDecoratorFunction msg =
     Path -> Mark -> Path -> List (Html.Attribute msg)
+
+
+addElementDecoration : String -> ElementDecoratorFunction msg -> Decorations msg -> Decorations msg
+addElementDecoration name decorator decorations =
+    let
+        eleDecorators =
+            elementDecorators decorations
+
+        previousDecorations =
+            Maybe.withDefault [] (Dict.get name eleDecorators)
+    in
+    decorations
+        |> withElementDecorators (Dict.insert name (decorator :: previousDecorations) eleDecorators)
+
+
+addMarkDecoration : String -> MarkDecoratorFunction msg -> Decorations msg -> Decorations msg
+addMarkDecoration name decorator decorations =
+    let
+        mDecorators =
+            markDecorators decorations
+
+        previousDecorations =
+            Maybe.withDefault [] (Dict.get name mDecorators)
+    in
+    decorations
+        |> withMarkDecorators (Dict.insert name (decorator :: previousDecorations) mDecorators)

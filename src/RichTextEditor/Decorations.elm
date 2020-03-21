@@ -1,26 +1,9 @@
-module RichTextEditor.Decorations exposing
-    ( addElementDecoration
-    , addMarkDecoration
-    , getElementDecorators
-    , getMarkDecorators
-    , selectableDecoration
-    )
+module RichTextEditor.Decorations exposing (selectableDecoration)
 
-import Dict
 import Html
 import Html.Attributes
 import Html.Events
 import RichTextEditor.Model.Annotations exposing (selection)
-import RichTextEditor.Model.Decoration
-    exposing
-        ( Decorations
-        , ElementDecoratorFunction
-        , MarkDecoratorFunction
-        , elementDecorators
-        , markDecorators
-        , withElementDecorators
-        , withMarkDecorators
-        )
 import RichTextEditor.Model.Editor
     exposing
         ( InternalEditorMsg(..)
@@ -49,47 +32,3 @@ selectableDecoration tagger editorNodePath elementParameters _ =
                     SelectionEvent (Just (caretSelection editorNodePath 0)) False
                 )
            ]
-
-
-addElementDecoration : String -> ElementDecoratorFunction msg -> Decorations msg -> Decorations msg
-addElementDecoration name decorator decorations =
-    let
-        eleDecorators =
-            elementDecorators decorations
-
-        previousDecorations =
-            Maybe.withDefault [] (Dict.get name eleDecorators)
-    in
-    decorations
-        |> withElementDecorators (Dict.insert name (decorator :: previousDecorations) eleDecorators)
-
-
-addMarkDecoration : String -> MarkDecoratorFunction msg -> Decorations msg -> Decorations msg
-addMarkDecoration name decorator decorations =
-    let
-        mDecorators =
-            markDecorators decorations
-
-        previousDecorations =
-            Maybe.withDefault [] (Dict.get name mDecorators)
-    in
-    decorations
-        |> withMarkDecorators (Dict.insert name (decorator :: previousDecorations) mDecorators)
-
-
-getMarkDecorators : String -> Decorations msg -> List (MarkDecoratorFunction msg)
-getMarkDecorators name decorations =
-    let
-        mDecorators =
-            markDecorators decorations
-    in
-    Maybe.withDefault [] (Dict.get name mDecorators)
-
-
-getElementDecorators : String -> Decorations msg -> List (ElementDecoratorFunction msg)
-getElementDecorators name decorations =
-    let
-        eDecorators =
-            elementDecorators decorations
-    in
-    Maybe.withDefault [] (Dict.get name eDecorators)

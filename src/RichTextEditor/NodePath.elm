@@ -130,7 +130,7 @@ domToEditor node path =
                                         Nothing
 
                                     Just tree ->
-                                        --  TODO:  we assume the content of the leaf node is valid, but maybe we should validate its content?
+                                        -- we assume the content of the leaf node is valid, but maybe we should validate its content?
                                         domToEditorInlineLeafTree tree (List.drop 1 rest)
 
                             Leaf ->

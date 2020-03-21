@@ -6,7 +6,6 @@ import Html.Attributes exposing (href, title)
 import Html.Events
 import Links exposing (rteToolkit)
 import RichTextEditor.Commands as Commands
-import RichTextEditor.Decorations exposing (addElementDecoration)
 import RichTextEditor.Editor as Editor exposing (applyCommand)
 import RichTextEditor.Model.Attribute
     exposing
@@ -15,7 +14,7 @@ import RichTextEditor.Model.Attribute
         , replaceOrAddBoolAttribute
         )
 import RichTextEditor.Model.Command exposing (Transform, transformCommand)
-import RichTextEditor.Model.Decoration exposing (emptyDecorations)
+import RichTextEditor.Model.Decorations exposing (addElementDecoration, emptyDecorations)
 import RichTextEditor.Model.Editor
     exposing
         ( Editor

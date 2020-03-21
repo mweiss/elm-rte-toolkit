@@ -316,7 +316,7 @@ lift definition editorState =
 
                 Ok markedRoot ->
                     let
-                        -- TODO: this logic looks suspicious...
+                        -- this logic looks suspicious... but it seems to work
                         liftedRoot =
                             concatMap liftConcatMapFunc <| concatMap liftConcatMapFunc markedRoot
 

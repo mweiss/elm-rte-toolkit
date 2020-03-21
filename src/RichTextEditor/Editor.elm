@@ -8,13 +8,13 @@ module RichTextEditor.Editor exposing
     )
 
 import Array exposing (Array)
+import Dict
 import Html exposing (Html)
 import Html.Attributes
 import Html.Events
 import Html.Keyed
 import Json.Decode as D
 import RichTextEditor.Commands exposing (removeRangeSelection)
-import RichTextEditor.Decorations exposing (getElementDecorators, getMarkDecorators)
 import RichTextEditor.Internal.BeforeInput as BeforeInput
 import RichTextEditor.Internal.DomNode
     exposing
@@ -28,7 +28,7 @@ import RichTextEditor.Internal.KeyDown as KeyDown
 import RichTextEditor.Internal.Paste as Paste
 import RichTextEditor.Model.Command exposing (NamedCommand, NamedCommandList, transformCommand)
 import RichTextEditor.Model.Constants exposing (zeroWidthSpace)
-import RichTextEditor.Model.Decoration exposing (Decorations)
+import RichTextEditor.Model.Decorations exposing (Decorations, elementDecorators, markDecorators)
 import RichTextEditor.Model.DomNode exposing (DomNode(..))
 import RichTextEditor.Model.Editor
     exposing
@@ -645,11 +645,15 @@ renderHtmlNode node decorators vdomChildren backwardsRelativePath =
 viewMark : Decorations msg -> Path -> Mark -> Array (Html msg) -> Html msg
 viewMark decorations backwardsNodePath mark children =
     let
-        markDecorators =
-            getMarkDecorators (Mark.name mark) decorations
+        mDecorators =
+            Maybe.withDefault []
+                (Dict.get
+                    (Mark.name mark)
+                    (markDecorators decorations)
+                )
 
         decorators =
-            List.map (\d -> d (List.reverse backwardsNodePath) mark) markDecorators
+            List.map (\d -> d (List.reverse backwardsNodePath) mark) mDecorators
 
         node =
             toHtmlNodeFromMarkDefinition (Mark.definition mark) mark childNodesPlaceholder
@@ -666,11 +670,15 @@ viewElement decorations elementParameters backwardsNodePath children =
         node =
             toHtmlNodeFromNodeDefinition definition elementParameters childNodesPlaceholder
 
-        elementDecorators =
-            getElementDecorators (nameFromElementParameters elementParameters) decorations
+        eDecorators =
+            Maybe.withDefault []
+                (Dict.get
+                    (nameFromElementParameters elementParameters)
+                    (elementDecorators decorations)
+                )
 
         decorators =
-            List.map (\d -> d (List.reverse backwardsNodePath) elementParameters) elementDecorators
+            List.map (\d -> d (List.reverse backwardsNodePath) elementParameters) eDecorators
 
         nodeHtml =
             renderHtmlNode node decorators children []
@@ -687,7 +695,8 @@ viewInlineLeafTree decorations backwardsPath inlineLeafArray inlineLeafTree =
                     viewInlineLeaf decorations (i :: backwardsPath) l
 
                 Nothing ->
-                    -- TODO: Probably not the best thing, but what else can we do if we have an invalid tree?
+                    -- Not the best thing, but what else can we do if we have an invalid tree?
+                    -- This state should be impossible though.
                     Html.div [ Html.Attributes.class "rte-error" ] [ Html.text "Invalid leaf tree." ]
 
         MarkNode n ->

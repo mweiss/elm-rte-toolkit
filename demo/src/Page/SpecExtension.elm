@@ -10,7 +10,7 @@ import Html.Events exposing (onClick)
 import Json.Decode as D
 import Links exposing (rteToolkit)
 import RichTextEditor.Commands as Commands
-import RichTextEditor.Decorations exposing (addElementDecoration, selectableDecoration)
+import RichTextEditor.Decorations exposing (selectableDecoration)
 import RichTextEditor.Editor exposing (applyCommand, applyCommandNoForceSelection)
 import RichTextEditor.Model.Annotations exposing (selectable)
 import RichTextEditor.Model.Attribute
@@ -20,6 +20,7 @@ import RichTextEditor.Model.Attribute
         , replaceOrAddStringAttribute
         )
 import RichTextEditor.Model.Command exposing (Transform, transformCommand)
+import RichTextEditor.Model.Decorations exposing (addElementDecoration)
 import RichTextEditor.Model.Editor
 import RichTextEditor.Model.HtmlNode exposing (HtmlNode(..))
 import RichTextEditor.Model.Node

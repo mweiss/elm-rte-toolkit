@@ -47,7 +47,7 @@ const getSelectionPath = (node, editor, offset) => {
             return null;
         }
 
-        // TODO: clean this up Drop the first two nodes
+        // Drop the first two nodes
         indexPath.shift();
         indexPath.shift();
 
