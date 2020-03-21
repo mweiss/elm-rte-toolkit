@@ -4,7 +4,6 @@ import Array exposing (Array)
 import Expect
 import RichTextEditor.Model.Mark exposing (mark)
 import RichTextEditor.Model.Node exposing (InlineLeaf(..), blockNode, elementParameters, emptyTextLeafParameters, inlineLeafArray, textLeafParametersWithMarks, textLeafWithText, withText)
-import RichTextEditor.Model.Spec exposing (emptySpec)
 import RichTextEditor.NodePath
     exposing
         ( commonAncestor
@@ -16,24 +15,24 @@ import RichTextEditor.NodePath
         , toString
         )
 import Set
-import SimpleSpec exposing (simpleSpec)
+import SimpleSpec exposing (bold, codeBlock, crazyBlock, paragraph)
 import Test exposing (..)
 
 
 paragraphParams =
-    elementParameters "p" [] Set.empty
+    elementParameters paragraph [] Set.empty
 
 
 codeBlockParams =
-    elementParameters "code_block" [] Set.empty
+    elementParameters codeBlock [] Set.empty
 
 
 crazyBlockParams =
-    elementParameters "crazy_block" [] Set.empty
+    elementParameters crazyBlock [] Set.empty
 
 
 boldMark =
-    mark "bold" []
+    mark bold []
 
 
 paragraphNode =
@@ -76,31 +75,31 @@ testDomToEditor =
     describe "Tests the transformation function from a dom node path to an editor node path"
         [ test "Test that an empty spec returns the same path" <|
             \_ ->
-                Expect.equal (Just [ 0 ]) (domToEditor emptySpec paragraphNode [ 0 ])
+                Expect.equal (Just [ 0 ]) (domToEditor paragraphNode [ 0 ])
         , test "Test the empty path" <|
             \_ ->
-                Expect.equal (Just []) (domToEditor emptySpec paragraphNode [])
+                Expect.equal (Just []) (domToEditor paragraphNode [])
         , test "Test invalid path" <|
             \_ ->
-                Expect.equal Nothing (domToEditor emptySpec paragraphNode [ 1 ])
+                Expect.equal Nothing (domToEditor paragraphNode [ 1 ])
         , test "Test node spec with custom toHtmlNode" <|
             \_ ->
-                Expect.equal (Just [ 0 ]) (domToEditor simpleSpec codeBlockNode [ 0, 0 ])
+                Expect.equal (Just [ 0 ]) (domToEditor codeBlockNode [ 0, 0 ])
         , test "Test invalid node with custom toHtmlNode" <|
             \_ ->
-                Expect.equal Nothing (domToEditor simpleSpec codeBlockNode [ 1, 0 ])
+                Expect.equal Nothing (domToEditor codeBlockNode [ 1, 0 ])
         , test "Test bold spec with custom toHtmlNode" <|
             \_ ->
-                Expect.equal (Just [ 0 ]) (domToEditor simpleSpec boldParagraphNode [ 0, 0 ])
+                Expect.equal (Just [ 0 ]) (domToEditor boldParagraphNode [ 0, 0 ])
         , test "Test more complicated custom toHtmlNode" <|
             \_ ->
-                Expect.equal (Just [ 0 ]) (domToEditor simpleSpec crazyBlockNode [ 2, 0 ])
+                Expect.equal (Just [ 0 ]) (domToEditor crazyBlockNode [ 2, 0 ])
         , test "Test more complicated custom toHtmlNode but select the parent in the dom tree" <|
             \_ ->
-                Expect.equal (Just []) (domToEditor simpleSpec crazyBlockNode [ 2 ])
+                Expect.equal (Just []) (domToEditor crazyBlockNode [ 2 ])
         , test "Test more complicated custom toHtmlNode but select a sibling node in the dom tree" <|
             \_ ->
-                Expect.equal (Just []) (domToEditor simpleSpec crazyBlockNode [ 1, 0 ])
+                Expect.equal (Just []) (domToEditor crazyBlockNode [ 1, 0 ])
         ]
 
 
@@ -109,25 +108,25 @@ testEditorToDom =
     describe "Tests the transformation function from an editor node path to a dom node path"
         [ test "Test that an empty spec returns the same path" <|
             \_ ->
-                Expect.equal (Just [ 0 ]) (editorToDom emptySpec paragraphNode [ 0 ])
+                Expect.equal (Just [ 0 ]) (editorToDom paragraphNode [ 0 ])
         , test "Test the empty path" <|
             \_ ->
-                Expect.equal (Just []) (editorToDom emptySpec paragraphNode [])
+                Expect.equal (Just []) (editorToDom paragraphNode [])
         , test "Test invalid path" <|
             \_ ->
-                Expect.equal Nothing (editorToDom emptySpec paragraphNode [ 1 ])
+                Expect.equal Nothing (editorToDom paragraphNode [ 1 ])
         , test "Test node spec with custom toHtmlNode" <|
             \_ ->
-                Expect.equal (Just [ 0, 0 ]) (editorToDom simpleSpec codeBlockNode [ 0 ])
+                Expect.equal (Just [ 0, 0 ]) (editorToDom codeBlockNode [ 0 ])
         , test "Test invalid node with custom toHtmlNode" <|
             \_ ->
-                Expect.equal Nothing (editorToDom simpleSpec codeBlockNode [ 1 ])
+                Expect.equal Nothing (editorToDom codeBlockNode [ 1 ])
         , test "Test bold spec with custom toHtmlNode" <|
             \_ ->
-                Expect.equal (Just [ 0, 0 ]) (editorToDom simpleSpec boldParagraphNode [ 0 ])
+                Expect.equal (Just [ 0, 0 ]) (editorToDom boldParagraphNode [ 0 ])
         , test "Test more complicated custom toHtmlNode" <|
             \_ ->
-                Expect.equal (Just [ 2, 0 ]) (editorToDom simpleSpec crazyBlockNode [ 0 ])
+                Expect.equal (Just [ 2, 0 ]) (editorToDom crazyBlockNode [ 0 ])
         ]
 
 

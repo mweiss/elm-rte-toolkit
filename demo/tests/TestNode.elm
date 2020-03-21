@@ -3,7 +3,31 @@ module TestNode exposing (..)
 import Array
 import Expect
 import RichTextEditor.Model.Annotations exposing (selectable)
-import RichTextEditor.Model.Node exposing (BlockNode, ChildNodes(..), Fragment(..), InlineLeaf(..), Node(..), Path, blockArray, blockNode, blockNodeWithElementParameters, elementParameters, elementParametersFromBlockNode, elementParametersFromInlineLeafParameters, elementParametersWithAnnotations, emptyTextLeafParameters, inlineLeafArray, inlineLeafParameters, inlineLeafParametersWithElementParameters, nameFromElementParameters, text, textLeafParametersWithAnnotations, textLeafWithText, withText)
+import RichTextEditor.Model.Node
+    exposing
+        ( BlockNode
+        , ChildNodes(..)
+        , Fragment(..)
+        , InlineLeaf(..)
+        , Node(..)
+        , Path
+        , blockArray
+        , blockNode
+        , blockNodeWithElementParameters
+        , elementParameters
+        , elementParametersFromBlockNode
+        , elementParametersFromInlineLeafParameters
+        , elementParametersWithAnnotations
+        , emptyTextLeafParameters
+        , inlineLeafArray
+        , inlineLeafParameters
+        , inlineLeafParametersWithElementParameters
+        , nameFromElementParameters
+        , text
+        , textLeafParametersWithAnnotations
+        , textLeafWithText
+        , withText
+        )
 import RichTextEditor.Node
     exposing
         ( allRange
@@ -33,6 +57,7 @@ import RichTextEditor.Node
         , splitTextLeaf
         )
 import RichTextEditor.NodePath exposing (toString)
+import RichTextEditor.Specs exposing (doc, image, paragraph)
 import Set
 import Test exposing (Test, describe, test)
 
@@ -40,14 +65,14 @@ import Test exposing (Test, describe, test)
 rootNode : BlockNode
 rootNode =
     blockNode
-        (elementParameters "div" [] Set.empty)
+        (elementParameters doc [] Set.empty)
         (blockArray <| Array.fromList [ pNode ])
 
 
 pNode : BlockNode
 pNode =
     blockNode
-        (elementParameters "p" [] Set.empty)
+        (elementParameters paragraph [] Set.empty)
         (inlineLeafArray <|
             Array.fromList [ textNode1, textNode2 ]
         )
@@ -114,7 +139,7 @@ testIndexedFoldr =
         [ test "Test that the node paths are passed in as expected" <|
             \_ -> Expect.equal [ [], [ 0 ], [ 0, 0 ], [ 0, 1 ] ] (indexedFoldr nodePathList [] (Block rootNode))
         , test "Test that the nodes are passed in as expected" <|
-            \_ -> Expect.equal [ "div", "p", "sample1", "sample2" ] (indexedFoldr nodeNameOrTextValue [] (Block rootNode))
+            \_ -> Expect.equal [ "doc", "paragraph", "sample1", "sample2" ] (indexedFoldr nodeNameOrTextValue [] (Block rootNode))
         ]
 
 
@@ -122,7 +147,7 @@ testFoldr : Test
 testFoldr =
     describe "Tests that foldr works as expected"
         [ test "Test that the nodes are passed in as expected" <|
-            \_ -> Expect.equal [ "div", "p", "sample1", "sample2" ] (foldr (\x -> nodeNameOrTextValue [] x) [] (Block rootNode))
+            \_ -> Expect.equal [ "doc", "paragraph", "sample1", "sample2" ] (foldr (\x -> nodeNameOrTextValue [] x) [] (Block rootNode))
         ]
 
 
@@ -132,7 +157,7 @@ testIndexedFoldl =
         [ test "Test that the node paths are passed in as expected" <|
             \_ -> Expect.equal [ [ 0, 1 ], [ 0, 0 ], [ 0 ], [] ] (indexedFoldl nodePathList [] (Block rootNode))
         , test "Test that the nodes are passed in as expected" <|
-            \_ -> Expect.equal [ "sample2", "sample1", "p", "div" ] (indexedFoldl nodeNameOrTextValue [] (Block rootNode))
+            \_ -> Expect.equal [ "sample2", "sample1", "paragraph", "doc" ] (indexedFoldl nodeNameOrTextValue [] (Block rootNode))
         ]
 
 
@@ -140,7 +165,7 @@ testFoldl : Test
 testFoldl =
     describe "Tests that foldl works as expected"
         [ test "Test that the nodes are passed in as expected" <|
-            \_ -> Expect.equal [ "sample2", "sample1", "p", "div" ] (foldl (\x -> nodeNameOrTextValue [] x) [] (Block rootNode))
+            \_ -> Expect.equal [ "sample2", "sample1", "paragraph", "doc" ] (foldl (\x -> nodeNameOrTextValue [] x) [] (Block rootNode))
         ]
 
 
@@ -150,9 +175,9 @@ testIsSelectable =
         [ test "Test that a text node is selectable" <|
             \_ -> Expect.equal True <| isSelectable (Inline (textLeafWithText ""))
         , test "Test that a element node with a selectable mark is selectable" <|
-            \_ -> Expect.equal True <| isSelectable (Block (blockNode (elementParameters "div" [] (Set.fromList [ selectable ])) Leaf))
+            \_ -> Expect.equal True <| isSelectable (Block (blockNode (elementParameters doc [] (Set.fromList [ selectable ])) Leaf))
         , test "Test that a element node without a selectable mark is not selectable" <|
-            \_ -> Expect.equal False <| isSelectable (Block (blockNode (elementParameters "div" [] Set.empty) Leaf))
+            \_ -> Expect.equal False <| isSelectable (Block (blockNode (elementParameters doc [] Set.empty) Leaf))
         ]
 
 
@@ -203,7 +228,7 @@ addPathAnnotation path node =
 
 rootNodeWithPathAnnotation =
     blockNode
-        (elementParameters "div" [] (Set.fromList [ "" ]))
+        (elementParameters doc [] (Set.fromList [ "" ]))
         (blockArray <|
             Array.fromList [ pHtmlNodeWithPathAnnotation ]
         )
@@ -211,7 +236,7 @@ rootNodeWithPathAnnotation =
 
 pHtmlNodeWithPathAnnotation =
     blockNode
-        (elementParameters "p" [] (Set.fromList [ "0" ]))
+        (elementParameters paragraph [] (Set.fromList [ "0" ]))
         (inlineLeafArray <|
             Array.fromList [ textNode1WithPathAnnotation, textNode2WithPathAnnotation ]
         )
@@ -245,7 +270,7 @@ testIndexedMap =
 
 rootNodeWithSameAnnotation =
     blockNode
-        (elementParameters "div" [] (Set.fromList [ dummyAnnotation ]))
+        (elementParameters doc [] (Set.fromList [ dummyAnnotation ]))
         (blockArray <|
             Array.fromList [ pHtmlNodeWithSameAnnotation ]
         )
@@ -253,7 +278,7 @@ rootNodeWithSameAnnotation =
 
 pHtmlNodeWithSameAnnotation =
     blockNode
-        (elementParameters "p" [] (Set.fromList [ dummyAnnotation ]))
+        (elementParameters paragraph [] (Set.fromList [ dummyAnnotation ]))
         (inlineLeafArray <|
             Array.fromList [ textNode1WithSameAnnotation, textNode2WithSameAnnotation ]
         )
@@ -305,7 +330,7 @@ testFindAncestor =
                 Expect.equal
                     (Just ( [], rootNode ))
                     (findAncestor
-                        (\n -> nameFromElementParameters (elementParametersFromBlockNode n) == "div")
+                        (\n -> nameFromElementParameters (elementParametersFromBlockNode n) == "doc")
                         [ 0, 0 ]
                         rootNode
                     )
@@ -350,7 +375,7 @@ testFindBackwardFrom =
         , test "Tests that the function passes in the node parameter correctly" <|
             \_ ->
                 Expect.equal (Just ( [], Block rootNode ))
-                    (findBackwardFrom (findNodeWithName "div") [ 0, 1 ] rootNode)
+                    (findBackwardFrom (findNodeWithName "doc") [ 0, 1 ] rootNode)
         ]
 
 
@@ -372,7 +397,7 @@ testFindBackwardFromExclusive =
         , test "Tests that the function passes in the node parameter correctly" <|
             \_ ->
                 Expect.equal (Just ( [], Block rootNode ))
-                    (findBackwardFromExclusive (findNodeWithName "div") [ 0, 1 ] rootNode)
+                    (findBackwardFromExclusive (findNodeWithName "doc") [ 0, 1 ] rootNode)
         ]
 
 
@@ -394,7 +419,7 @@ testFindForwardFrom =
         , test "Tests that the function passes in the node parameter correctly" <|
             \_ ->
                 Expect.equal (Just ( [], Block rootNode ))
-                    (findForwardFrom (findNodeWithName "div") [] rootNode)
+                    (findForwardFrom (findNodeWithName "doc") [] rootNode)
         ]
 
 
@@ -416,7 +441,7 @@ testFindForwardFromExclusive =
         , test "Tests that the function passes in the node parameter correctly" <|
             \_ ->
                 Expect.equal (Just ( [ 0 ], Block pNode ))
-                    (findForwardFromExclusive (findNodeWithName "p") [] rootNode)
+                    (findForwardFromExclusive (findNodeWithName "paragraph") [] rootNode)
         ]
 
 
@@ -450,7 +475,7 @@ testPrevious =
 
 removedRootNode =
     blockNode
-        (elementParameters "div" [] Set.empty)
+        (elementParameters doc [] Set.empty)
         (blockArray <|
             Array.fromList [ removedPHtmlNode ]
         )
@@ -458,7 +483,7 @@ removedRootNode =
 
 removedPHtmlNode =
     blockNode
-        (elementParameters "p" [] Set.empty)
+        (elementParameters paragraph [] Set.empty)
         (inlineLeafArray <|
             Array.fromList [ textNode2 ]
         )
@@ -466,19 +491,19 @@ removedPHtmlNode =
 
 removedRootAll =
     blockNode
-        (elementParameters "div" [] Set.empty)
+        (elementParameters doc [] Set.empty)
         (blockArray Array.empty)
 
 
 removedPHtmlNodeAll =
     blockNode
-        (elementParameters "p" [] Set.empty)
+        (elementParameters paragraph [] Set.empty)
         (inlineLeafArray Array.empty)
 
 
 removedRootNodeRemovedPNodeAll =
     blockNode
-        (elementParameters "div" [] Set.empty)
+        (elementParameters doc [] Set.empty)
         (blockArray <|
             Array.fromList [ removedPHtmlNodeAll ]
         )
@@ -514,13 +539,13 @@ testRemoveInRange =
 
 replaceRootPNode =
     blockNode
-        (elementParameters "div" [] Set.empty)
+        (elementParameters doc [] Set.empty)
         (blockArray <| Array.fromList [ replacePNode ])
 
 
 replacePNode =
     blockNode
-        (elementParameters "p" [] Set.empty)
+        (elementParameters paragraph [] Set.empty)
         (inlineLeafArray <|
             Array.fromList [ textNode2, textNode2 ]
         )
@@ -574,7 +599,7 @@ testAnyRange =
 
 doubleRoot =
     blockNode
-        (elementParameters "div" [] Set.empty)
+        (elementParameters doc [] Set.empty)
         (blockArray <|
             Array.fromList [ doublePNode, doublePNode ]
         )
@@ -582,7 +607,7 @@ doubleRoot =
 
 doublePNode =
     blockNode
-        (elementParameters "p" [] Set.empty)
+        (elementParameters paragraph [] Set.empty)
         (inlineLeafArray <|
             Array.fromList [ textNode1, textNode1, textNode2, textNode2 ]
         )
@@ -601,7 +626,7 @@ testConcatMap =
 
 nodeBeforeTextLeafSplit =
     blockNode
-        (elementParameters "div" [] Set.empty)
+        (elementParameters paragraph [] Set.empty)
         (inlineLeafArray <|
             Array.fromList [ textLeafWithText "sam" ]
         )
@@ -609,7 +634,7 @@ nodeBeforeTextLeafSplit =
 
 nodeAfterTextLeafSplit =
     blockNode
-        (elementParameters "div" [] Set.empty)
+        (elementParameters paragraph [] Set.empty)
         (inlineLeafArray <|
             Array.fromList [ textLeafWithText "ple1" ]
         )
@@ -617,19 +642,19 @@ nodeAfterTextLeafSplit =
 
 nodeWithTextLeafToSplit =
     blockNode
-        (elementParameters "div" [] Set.empty)
+        (elementParameters paragraph [] Set.empty)
         (inlineLeafArray <|
             Array.fromList [ textNode1 ]
         )
 
 
 inlineImg =
-    InlineLeaf <| inlineLeafParameters (elementParameters "img" [] Set.empty) []
+    InlineLeaf <| inlineLeafParameters (elementParameters image [] Set.empty) []
 
 
 nodeAfterInlineLeafSplit =
     blockNode
-        (elementParameters "div" [] Set.empty)
+        (elementParameters paragraph [] Set.empty)
         (inlineLeafArray <|
             Array.fromList [ inlineImg ]
         )
@@ -637,13 +662,13 @@ nodeAfterInlineLeafSplit =
 
 nodeBeforeInlineLeafSplit =
     blockNode
-        (elementParameters "div" [] Set.empty)
+        (elementParameters paragraph [] Set.empty)
         (inlineLeafArray Array.empty)
 
 
 nodeWithInlineLeafToSplit =
     blockNode
-        (elementParameters "div" [] Set.empty)
+        (elementParameters paragraph [] Set.empty)
         (inlineLeafArray <| Array.fromList [ inlineImg ])
 
 

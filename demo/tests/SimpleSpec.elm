@@ -2,6 +2,7 @@ module SimpleSpec exposing (..)
 
 import Array exposing (Array)
 import RichTextEditor.Model.HtmlNode exposing (HtmlNode(..))
+import RichTextEditor.Model.Internal.Spec exposing (NodeDefinition)
 import RichTextEditor.Model.Mark exposing (Mark)
 import RichTextEditor.Model.Node exposing (ElementParameters, elementParameters)
 import RichTextEditor.Model.Spec exposing (Spec, blockNodeContentType, emptySpec, inlineLeafContentType, markDefinition, nodeDefinition, textBlockContentType, withMarkDefinitions, withNodeDefinitions)
@@ -28,8 +29,8 @@ crazyBlockToHtmlNode _ children =
             ]
 
 
-htmlNodeToCrazyBlock : HtmlNode -> Maybe ( ElementParameters, Array HtmlNode )
-htmlNodeToCrazyBlock node =
+htmlNodeToCrazyBlock : NodeDefinition -> HtmlNode -> Maybe ( ElementParameters, Array HtmlNode )
+htmlNodeToCrazyBlock def node =
     case node of
         ElementNode name _ children ->
             if name == "div" && Array.length children /= 3 then
@@ -43,7 +44,7 @@ htmlNodeToCrazyBlock node =
                     Just n ->
                         case n of
                             ElementNode _ _ c ->
-                                Just ( elementParameters "crazy_block" [] Set.empty, c )
+                                Just ( elementParameters def [] Set.empty, c )
 
                             _ ->
                                 Nothing
@@ -52,8 +53,8 @@ htmlNodeToCrazyBlock node =
             Nothing
 
 
-htmlNodeToCodeBlock : HtmlNode -> Maybe ( ElementParameters, Array HtmlNode )
-htmlNodeToCodeBlock node =
+htmlNodeToCodeBlock : NodeDefinition -> HtmlNode -> Maybe ( ElementParameters, Array HtmlNode )
+htmlNodeToCodeBlock def node =
     case node of
         ElementNode name _ children ->
             if name == "pre" && Array.length children == 1 then
@@ -64,7 +65,7 @@ htmlNodeToCodeBlock node =
                     Just n ->
                         case n of
                             ElementNode _ _ childChildren ->
-                                Just ( elementParameters "code_block" [] Set.empty, childChildren )
+                                Just ( elementParameters def [] Set.empty, childChildren )
 
                             _ ->
                                 Nothing
@@ -86,36 +87,64 @@ italicToHtmlNode _ children =
     ElementNode "i" [] children
 
 
+codeBlock =
+    nodeDefinition
+        "code_block"
+        "block"
+        (blockNodeContentType [])
+        codeBlockToHtmlNode
+        htmlNodeToCodeBlock
+
+
+crazyBlock =
+    nodeDefinition
+        "crazy_block"
+        "block"
+        (blockNodeContentType [])
+        crazyBlockToHtmlNode
+        htmlNodeToCrazyBlock
+
+
+paragraph =
+    nodeDefinition
+        "paragraph"
+        "block"
+        (textBlockContentType [])
+        (defaultElementToHtml "p")
+        (defaultHtmlToElement "p")
+
+
+image =
+    nodeDefinition
+        "image"
+        "inline"
+        inlineLeafContentType
+        (defaultElementToHtml "img")
+        (defaultHtmlToElement "img")
+
+
+bold =
+    markDefinition "bold" boldToHtmlNode (defaultHtmlToMark "b")
+
+
+italic =
+    markDefinition "italic" italicToHtmlNode (defaultHtmlToMark "i")
+
+
+strikethrough =
+    markDefinition "strikethrough" italicToHtmlNode (defaultHtmlToMark "s")
+
+
 simpleSpec : Spec
 simpleSpec =
     emptySpec
         |> withNodeDefinitions
-            [ nodeDefinition
-                "code_block"
-                "block"
-                (blockNodeContentType [])
-                codeBlockToHtmlNode
-                htmlNodeToCodeBlock
-            , nodeDefinition
-                "crazy_block"
-                "block"
-                (blockNodeContentType [])
-                crazyBlockToHtmlNode
-                htmlNodeToCrazyBlock
-            , nodeDefinition
-                "paragraph"
-                "block"
-                (textBlockContentType [])
-                (defaultElementToHtml "p")
-                (defaultHtmlToElement "p" "paragraph")
-            , nodeDefinition
-                "image"
-                "inline"
-                inlineLeafContentType
-                (defaultElementToHtml "img")
-                (defaultHtmlToElement "img" "image")
+            [ codeBlock
+            , crazyBlock
+            , paragraph
+            , image
             ]
         |> withMarkDefinitions
-            [ markDefinition "bold" boldToHtmlNode (defaultHtmlToMark "b" "bold")
-            , markDefinition "italic" italicToHtmlNode (defaultHtmlToMark "i" "italic")
+            [ bold
+            , italic
             ]

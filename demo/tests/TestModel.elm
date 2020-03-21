@@ -4,19 +4,20 @@ import Array
 import Expect
 import RichTextEditor.Model.Mark exposing (Mark, mark)
 import RichTextEditor.Model.Node exposing (InlineLeafTree(..), marksToMarkNodeList)
+import SimpleSpec exposing (bold, italic, strikethrough)
 import Test exposing (Test, describe, test)
 
 
 mark1 =
-    mark "mark1" []
+    mark bold []
 
 
 mark2 =
-    mark "mark2" []
+    mark italic []
 
 
 mark3 =
-    mark "mark3" []
+    mark strikethrough []
 
 
 testMarkLists =
