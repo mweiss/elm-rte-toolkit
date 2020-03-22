@@ -5,8 +5,7 @@ import Expect
 import RichTextEditor.Model.Mark exposing (mark)
 import RichTextEditor.Model.Node
     exposing
-        ( Fragment(..)
-        , InlineLeaf(..)
+        ( InlineLeaf(..)
         , blockArray
         , blockNode
         , elementParameters
@@ -16,6 +15,7 @@ import RichTextEditor.Model.Node
         , textLeafWithText
         , withText
         )
+import RichTextEditor.Node exposing (Fragment(..))
 import RichTextEditor.Spec exposing (htmlToElementArray)
 import RichTextEditor.Specs exposing (blockquote, bold, italic, markdown, paragraph)
 import Set

@@ -7,9 +7,7 @@ import RichTextEditor.Model.Node
     exposing
         ( BlockNode
         , ChildNodes(..)
-        , Fragment(..)
         , InlineLeaf(..)
-        , Node(..)
         , Path
         , blockArray
         , blockNode
@@ -28,7 +26,42 @@ import RichTextEditor.Model.Node
         , textLeafWithText
         , withText
         )
-import RichTextEditor.Node exposing (allRange, anyRange, concatMap, findAncestor, findBackwardFrom, findBackwardFromExclusive, findForwardFrom, findForwardFromExclusive, findTextBlockNodeAncestor, foldl, foldlRange, foldr, foldrRange, indexedFoldl, indexedFoldr, indexedMap, insertAfter, insertBefore, isSelectable, joinBlocks, last, map, next, nodeAt, previous, removeInRange, removeNodeAndEmptyParents, replace, replaceWithFragment, splitBlockAtPathAndOffset, splitTextLeaf)
+import RichTextEditor.Node
+    exposing
+        ( Fragment(..)
+        , Node(..)
+        , allRange
+        , anyRange
+        , concatMap
+        , findAncestor
+        , findBackwardFrom
+        , findBackwardFromExclusive
+        , findForwardFrom
+        , findForwardFromExclusive
+        , findTextBlockNodeAncestor
+        , foldl
+        , foldlRange
+        , foldr
+        , foldrRange
+        , indexedFoldl
+        , indexedFoldr
+        , indexedMap
+        , insertAfter
+        , insertBefore
+        , isSelectable
+        , joinBlocks
+        , last
+        , map
+        , next
+        , nodeAt
+        , previous
+        , removeInRange
+        , removeNodeAndEmptyParents
+        , replace
+        , replaceWithFragment
+        , splitBlockAtPathAndOffset
+        , splitTextLeaf
+        )
 import RichTextEditor.NodePath exposing (toString)
 import RichTextEditor.Specs exposing (doc, horizontalRule, image, paragraph)
 import Set
