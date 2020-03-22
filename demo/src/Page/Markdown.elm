@@ -17,26 +17,23 @@ import RichTextEditor.Model.Attribute
         , findStringAttribute
         )
 import RichTextEditor.Model.Editor exposing (state)
+import RichTextEditor.Model.Element as Element exposing (Element, element)
 import RichTextEditor.Model.Mark as Mark exposing (Mark, MarkOrder)
 import RichTextEditor.Model.Node as Node
     exposing
         ( BlockNode
         , ChildNodes(..)
-        , Element
         , InlineLeaf(..)
         , InlineLeafTree(..)
-        , attributesFromElement
         , blockArray
         , blockNode
         , childNodes
-        , element
         , elementFromBlockNode
         , elementFromInlineLeafParameters
         , fromBlockArray
         , fromInlineArray
         , inlineLeaf
         , inlineLeafArray
-        , nameFromElement
         , textLeaf
         , textLeafWithText
         , treeFromInlineArray
@@ -404,7 +401,7 @@ imageToMarkdown : Element -> Result String MInline
 imageToMarkdown parameters =
     let
         attributes =
-            attributesFromElement parameters
+            Element.attributes parameters
 
         alt =
             findStringAttribute "alt" attributes
@@ -435,7 +432,7 @@ inlineToMarkdown leaves tree =
                                 parameters =
                                     elementFromInlineLeafParameters il
                             in
-                            case nameFromElement parameters of
+                            case Element.name parameters of
                                 "image" ->
                                     Result.map List.singleton (imageToMarkdown parameters)
 
@@ -505,7 +502,7 @@ textFromChildNodes cn =
 
                                 InlineLeaf p ->
                                     if
-                                        nameFromElement
+                                        Element.name
                                             (elementFromInlineLeafParameters p)
                                             == "hard_break"
                                     then
@@ -524,7 +521,7 @@ headingToMarkdown : Element -> ChildNodes -> Result String MBlock
 headingToMarkdown p cn =
     let
         attributes =
-            attributesFromElement p
+            Element.attributes p
 
         level =
             Maybe.withDefault 1 (findIntegerAttribute "level" attributes)
@@ -548,7 +545,7 @@ listToMarkdown type_ parameters cn =
             Maybe.withDefault "." <|
                 findStringAttribute
                     "delimiter"
-                    (attributesFromElement parameters)
+                    (Element.attributes parameters)
 
         listItems =
             case cn of
@@ -591,7 +588,7 @@ blockToMarkdown node =
         children =
             childNodes node
     in
-    case nameFromElement parameters of
+    case Element.name parameters of
         "paragraph" ->
             Result.map (M.Paragraph "") (inlineChildrenToMarkdown children)
 

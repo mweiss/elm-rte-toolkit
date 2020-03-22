@@ -2,7 +2,6 @@ module RichTextEditor.Model.Node exposing
     ( BlockArray
     , BlockNode
     , ChildNodes(..)
-    , Element
     , InlineLeaf(..)
     , InlineLeafArray
     , InlineLeafParameters
@@ -11,22 +10,14 @@ module RichTextEditor.Model.Node exposing
     , Path
     , TextLeafParameters
     , annotationsFromBlockNode
-    , annotationsFromElement
     , annotationsFromTextLeafParameters
-    , attributesFromElement
     , blockArray
     , blockNode
     , blockNodeWithElement
     , childNodes
-    , comparableElement
     , comparableMarksFromTextLeafParameters
-    , definitionFromElement
-    , element
     , elementFromBlockNode
     , elementFromInlineLeafParameters
-    , elementWithAnnotations
-    , elementWithAttributes
-    , elementWithDefinition
     , emptyTextLeafParameters
     , fromBlockArray
     , fromInlineArray
@@ -42,7 +33,6 @@ module RichTextEditor.Model.Node exposing
     , marksFromInlineLeafParameters
     , marksFromTextLeafParameters
     , marksToMarkNodeList
-    , nameFromElement
     , parent
     , reverseLookupFromInlineArray
     , text
@@ -63,58 +53,14 @@ import Array exposing (Array)
 import Array.Extra as Array
 import List.Extra
 import RichTextEditor.Model.Attribute exposing (Attribute)
-import RichTextEditor.Model.Internal.Spec as Spec exposing (NodeDefinition)
+import RichTextEditor.Model.Element as Element exposing (Element)
+import RichTextEditor.Model.Internal.Spec exposing (NodeDefinition, annotationsFromElement)
 import RichTextEditor.Model.Mark exposing (Mark, attributes, name)
-import RichTextEditor.Model.Spec exposing (nameFromNodeDefinition)
 import Set exposing (Set)
 
 
 type alias Path =
     List Int
-
-
-type alias Element =
-    Spec.Element
-
-
-annotationsFromElement : Element -> Set String
-annotationsFromElement =
-    Spec.annotationsFromElement
-
-
-attributesFromElement : Element -> List Attribute
-attributesFromElement =
-    Spec.attributesFromElement
-
-
-definitionFromElement : Element -> NodeDefinition
-definitionFromElement =
-    Spec.definitionFromElement
-
-
-nameFromElement : Element -> String
-nameFromElement ele =
-    nameFromNodeDefinition (definitionFromElement ele)
-
-
-element : NodeDefinition -> List Attribute -> Set String -> Element
-element =
-    Spec.element
-
-
-elementWithAnnotations : Set String -> Element -> Element
-elementWithAnnotations =
-    Spec.elementWithAnnotations
-
-
-elementWithAttributes : List Attribute -> Element -> Element
-elementWithAttributes =
-    Spec.elementWithAttributes
-
-
-elementWithDefinition : NodeDefinition -> Element -> Element
-elementWithDefinition =
-    Spec.elementWithDefinition
 
 
 blockNodeWithElement : Element -> BlockNode -> BlockNode
@@ -159,14 +105,6 @@ elementFromBlockNode node =
     case node of
         BlockNode n ->
             n.parameters
-
-
-comparableElement : Element -> ( String, List Attribute, Set String )
-comparableElement p =
-    ( nameFromElement p
-    , attributesFromElement p
-    , annotationsFromElement p
-    )
 
 
 childNodes : BlockNode -> ChildNodes
@@ -457,8 +395,8 @@ isSameInlineLeaf i1 i2 =
                 InlineLeaf il2 ->
                     comparableMarksFromInlineLeafParameters il1
                         == comparableMarksFromInlineLeafParameters il2
-                        && comparableElement (elementFromInlineLeafParameters il1)
-                        == comparableElement (elementFromInlineLeafParameters il2)
+                        && Element.comparableElement (elementFromInlineLeafParameters il1)
+                        == Element.comparableElement (elementFromInlineLeafParameters il2)
 
                 _ ->
                     False
@@ -521,10 +459,10 @@ isSameBlockNode : BlockNode -> BlockNode -> Bool
 isSameBlockNode bn1 bn2 =
     let
         e1 =
-            comparableElement <| elementFromBlockNode bn1
+            Element.comparableElement <| elementFromBlockNode bn1
 
         e2 =
-            comparableElement <| elementFromBlockNode bn2
+            Element.comparableElement <| elementFromBlockNode bn2
     in
     if e1 /= e2 then
         False

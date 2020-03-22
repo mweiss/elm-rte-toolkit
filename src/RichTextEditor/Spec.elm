@@ -15,6 +15,7 @@ import Html.Parser exposing (Node(..))
 import Result exposing (Result)
 import RichTextEditor.Model.Attribute exposing (Attribute(..))
 import RichTextEditor.Model.Constants exposing (zeroWidthSpace)
+import RichTextEditor.Model.Element as Element exposing (Element, element)
 import RichTextEditor.Model.HtmlNode exposing (HtmlNode(..))
 import RichTextEditor.Model.Internal.Spec exposing (ContentType(..))
 import RichTextEditor.Model.Mark as Mark
@@ -29,14 +30,10 @@ import RichTextEditor.Model.Node
     exposing
         ( BlockNode
         , ChildNodes(..)
-        , Element
         , InlineLeaf(..)
-        , attributesFromElement
         , blockArray
         , blockNode
         , childNodes
-        , definitionFromElement
-        , element
         , elementFromBlockNode
         , elementFromInlineLeafParameters
         , emptyTextLeafParameters
@@ -84,7 +81,7 @@ defaultElementToHtml tagName elementParameters children =
                     _ ->
                         Nothing
             )
-            (attributesFromElement elementParameters)
+            (Element.attributes elementParameters)
         )
         children
 
@@ -173,7 +170,7 @@ validateInlineLeaf allowedGroups leaf =
         InlineLeaf il ->
             let
                 definition =
-                    definitionFromElement (elementFromInlineLeafParameters il)
+                    Element.definition (elementFromInlineLeafParameters il)
             in
             validateAllowedGroups allowedGroups (groupFromNodeDefinition definition) (nameFromNodeDefinition definition)
 
@@ -207,7 +204,7 @@ validateEditorBlockNode allowedGroups node =
             elementFromBlockNode node
 
         definition =
-            definitionFromElement parameters
+            Element.definition parameters
     in
     let
         allowedGroupsErrors =

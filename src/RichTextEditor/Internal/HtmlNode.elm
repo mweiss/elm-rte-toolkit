@@ -1,17 +1,16 @@
 module RichTextEditor.Internal.HtmlNode exposing (..)
 
 import Array exposing (Array)
+import RichTextEditor.Model.Element as Element exposing (Element)
 import RichTextEditor.Model.HtmlNode exposing (HtmlNode(..))
 import RichTextEditor.Model.Mark as Mark exposing (Mark)
 import RichTextEditor.Model.Node
     exposing
         ( BlockNode
         , ChildNodes(..)
-        , Element
         , InlineLeaf(..)
         , InlineLeafTree(..)
         , childNodes
-        , definitionFromElement
         , elementFromBlockNode
         , elementFromInlineLeafParameters
         , fromBlockArray
@@ -44,7 +43,7 @@ elementToHtmlNode : Element -> Array HtmlNode -> HtmlNode
 elementToHtmlNode parameters children =
     let
         nodeDefinition =
-            definitionFromElement parameters
+            Element.definition parameters
     in
     toHtmlNodeFromNodeDefinition nodeDefinition parameters children
 

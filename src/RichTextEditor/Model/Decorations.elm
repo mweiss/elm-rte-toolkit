@@ -13,8 +13,9 @@ module RichTextEditor.Model.Decorations exposing
 
 import Dict exposing (Dict)
 import Html
+import RichTextEditor.Model.Element exposing (Element)
 import RichTextEditor.Model.Mark exposing (Mark)
-import RichTextEditor.Model.Node exposing (Element, Path)
+import RichTextEditor.Model.Node exposing (Path)
 
 
 type Decorations msg

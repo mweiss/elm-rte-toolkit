@@ -20,9 +20,9 @@ module RichTextEditor.Specs exposing
 import Array exposing (Array)
 import RichTextEditor.Model.Annotations exposing (selectable)
 import RichTextEditor.Model.Attribute exposing (Attribute(..), findIntegerAttribute, findStringAttribute)
+import RichTextEditor.Model.Element exposing (attributes, element)
 import RichTextEditor.Model.HtmlNode exposing (HtmlNode(..))
 import RichTextEditor.Model.Mark as Mark exposing (mark)
-import RichTextEditor.Model.Node exposing (attributesFromElement, element)
 import RichTextEditor.Model.Spec
     exposing
         ( ElementToHtml
@@ -144,7 +144,7 @@ headingToHtml : ElementToHtml
 headingToHtml parameters children =
     let
         level =
-            Maybe.withDefault 1 <| findIntegerAttribute "level" (attributesFromElement parameters)
+            Maybe.withDefault 1 <| findIntegerAttribute "level" (attributes parameters)
     in
     ElementNode ("h" ++ String.fromInt level) [] children
 
@@ -242,15 +242,15 @@ image =
 imageToHtmlNode : ElementToHtml
 imageToHtmlNode parameters _ =
     let
-        attributes =
+        attr =
             filterAttributesToHtml
-                [ ( "src", Just <| Maybe.withDefault "" (findStringAttribute "src" (attributesFromElement parameters)) )
-                , ( "alt", findStringAttribute "alt" (attributesFromElement parameters) )
-                , ( "title", findStringAttribute "title" (attributesFromElement parameters) )
+                [ ( "src", Just <| Maybe.withDefault "" (findStringAttribute "src" (attributes parameters)) )
+                , ( "alt", findStringAttribute "alt" (attributes parameters) )
+                , ( "title", findStringAttribute "title" (attributes parameters) )
                 ]
     in
     ElementNode "img"
-        attributes
+        attr
         Array.empty
 
 

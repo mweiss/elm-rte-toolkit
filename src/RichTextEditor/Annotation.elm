@@ -10,18 +10,16 @@ module RichTextEditor.Annotation exposing
     , toggleElementParameters
     )
 
+import RichTextEditor.Model.Element as Element exposing (Element)
 import RichTextEditor.Model.Node
     exposing
         ( BlockNode
-        , Element
         , InlineLeaf(..)
         , Path
-        , annotationsFromElement
         , annotationsFromTextLeafParameters
         , blockNodeWithElement
         , elementFromBlockNode
         , elementFromInlineLeafParameters
-        , elementWithAnnotations
         , inlineLeafParametersWithElement
         , textLeafParametersWithAnnotations
         )
@@ -63,9 +61,9 @@ toggleElementParameters : (String -> Set String -> Set String) -> String -> Elem
 toggleElementParameters func annotation parameters =
     let
         annotations =
-            annotationsFromElement parameters
+            Element.annotations parameters
     in
-    elementWithAnnotations (func annotation annotations) parameters
+    Element.withAnnotations (func annotation annotations) parameters
 
 
 toggle : (String -> Set String -> Set String) -> String -> Node -> Node
@@ -109,12 +107,12 @@ getAnnotationsFromNode : Node -> Set String
 getAnnotationsFromNode node =
     case node of
         Block blockNode ->
-            annotationsFromElement <| elementFromBlockNode blockNode
+            Element.annotations <| elementFromBlockNode blockNode
 
         Inline inlineLeaf ->
             case inlineLeaf of
                 InlineLeaf p ->
-                    annotationsFromElement <| elementFromInlineLeafParameters p
+                    Element.annotations <| elementFromInlineLeafParameters p
 
                 TextLeaf p ->
                     annotationsFromTextLeafParameters p

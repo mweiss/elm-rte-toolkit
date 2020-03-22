@@ -48,6 +48,7 @@ import RichTextEditor.Model.Editor
         , withComposing
         , withState
         )
+import RichTextEditor.Model.Element as Element exposing (Element)
 import RichTextEditor.Model.Event exposing (EditorChange, PasteEvent, TextChange)
 import RichTextEditor.Model.HtmlNode exposing (HtmlNode(..))
 import RichTextEditor.Model.Mark as Mark exposing (Mark)
@@ -55,19 +56,16 @@ import RichTextEditor.Model.Node
     exposing
         ( BlockNode
         , ChildNodes(..)
-        , Element
         , InlineLeaf(..)
         , InlineLeafTree(..)
         , Path
         , blockArray
         , childNodes
-        , definitionFromElement
         , elementFromBlockNode
         , elementFromInlineLeafParameters
         , fromBlockArray
         , fromInlineArray
         , inlineLeafArray
-        , nameFromElement
         , text
         , treeFromInlineArray
         , withChildNodes
@@ -664,7 +662,7 @@ viewElement : Decorations msg -> Element -> Path -> Array (Html msg) -> Html msg
 viewElement decorations elementParameters backwardsNodePath children =
     let
         definition =
-            definitionFromElement elementParameters
+            Element.definition elementParameters
 
         node =
             toHtmlNodeFromNodeDefinition definition elementParameters childNodesPlaceholder
@@ -672,7 +670,7 @@ viewElement decorations elementParameters backwardsNodePath children =
         eDecorators =
             Maybe.withDefault []
                 (Dict.get
-                    (nameFromElement elementParameters)
+                    (Element.name elementParameters)
                     (elementDecorators decorations)
                 )
 

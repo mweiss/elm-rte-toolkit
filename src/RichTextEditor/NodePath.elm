@@ -19,18 +19,17 @@ module RichTextEditor.NodePath exposing
 
 import Array exposing (Array)
 import List.Extra
+import RichTextEditor.Model.Element as Element exposing (Element)
 import RichTextEditor.Model.HtmlNode exposing (HtmlNode(..))
 import RichTextEditor.Model.Mark as Mark exposing (Mark)
 import RichTextEditor.Model.Node
     exposing
         ( BlockNode
         , ChildNodes(..)
-        , Element
         , InlineLeaf
         , InlineLeafTree(..)
         , Path
         , childNodes
-        , definitionFromElement
         , elementFromBlockNode
         , fromBlockArray
         , fromInlineArray
@@ -95,7 +94,7 @@ domToEditor node path =
                 elementFromBlockNode node
 
             nodeDefinition =
-                definitionFromElement parameters
+                Element.definition parameters
 
             structure =
                 toHtmlNodeFromNodeDefinition nodeDefinition parameters childNodesPlaceholder
@@ -298,7 +297,7 @@ pathToChildContentsFromElementParameters : Element -> Maybe Path
 pathToChildContentsFromElementParameters parameters =
     let
         nodeDefinition =
-            definitionFromElement parameters
+            Element.definition parameters
 
         nodeStructure =
             toHtmlNodeFromNodeDefinition nodeDefinition parameters childNodesPlaceholder

@@ -8,13 +8,13 @@ import Html.Events exposing (preventDefaultOn)
 import Json.Decode exposing (succeed)
 import RichTextEditor.List exposing (ListType(..))
 import RichTextEditor.Model.Editor exposing (Editor, InternalEditorMsg, state)
+import RichTextEditor.Model.Element as Element
 import RichTextEditor.Model.Mark as Mark
 import RichTextEditor.Model.Node
     exposing
         ( Path
         , elementFromBlockNode
         , marksFromInlineLeaf
-        , nameFromElement
         )
 import RichTextEditor.Model.Selection exposing (anchorNode, focusNode, normalize)
 import RichTextEditor.Model.State as State exposing (State)
@@ -274,7 +274,7 @@ accumulateControlState node controlState =
         Block n ->
             { controlState
                 | nodes =
-                    Set.insert (nameFromElement (elementFromBlockNode n)) controlState.nodes
+                    Set.insert (Element.name (elementFromBlockNode n)) controlState.nodes
             }
 
         Inline inline ->

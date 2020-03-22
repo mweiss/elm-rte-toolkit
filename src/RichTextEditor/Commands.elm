@@ -66,6 +66,7 @@ import RichTextEditor.Model.Command
         , withDefaultInputEventCommand
         , withDefaultKeyCommand
         )
+import RichTextEditor.Model.Element as Element exposing (Element, element)
 import RichTextEditor.Model.Event exposing (InputEvent, KeyboardEvent)
 import RichTextEditor.Model.Keys
     exposing
@@ -83,7 +84,6 @@ import RichTextEditor.Model.Node
         ( BlockArray
         , BlockNode
         , ChildNodes(..)
-        , Element
         , InlineLeaf(..)
         , Path
         , annotationsFromBlockNode
@@ -91,8 +91,6 @@ import RichTextEditor.Model.Node
         , blockNode
         , blockNodeWithElement
         , childNodes
-        , comparableElement
-        , element
         , elementFromBlockNode
         , fromBlockArray
         , fromInlineArray
@@ -100,7 +98,6 @@ import RichTextEditor.Model.Node
         , inlineLeafParameters
         , inlineLeafParametersWithMarks
         , marksFromInlineLeaf
-        , nameFromElement
         , text
         , textLeafParametersWithMarks
         , withChildNodes
@@ -1287,8 +1284,8 @@ toggleBlock allowedBlocks onParams offParams editorState =
                         (\node ->
                             case node of
                                 Block bn ->
-                                    comparableElement (elementFromBlockNode bn)
-                                        == comparableElement onParams
+                                    Element.comparableElement (elementFromBlockNode bn)
+                                        == Element.comparableElement onParams
 
                                 _ ->
                                     True
@@ -1318,7 +1315,7 @@ toggleBlock allowedBlocks onParams offParams editorState =
                                                 p =
                                                     elementFromBlockNode bn
                                             in
-                                            if List.member (nameFromElement p) allowedBlocks then
+                                            if List.member (Element.name p) allowedBlocks then
                                                 Block (bn |> blockNodeWithElement newParams)
 
                                             else
@@ -1735,7 +1732,7 @@ splitBlockHeaderToNewParagraph headerElements paragraphElement editorState =
                                         in
                                         if
                                             List.member
-                                                (nameFromElement parameters)
+                                                (Element.name parameters)
                                                 headerElements
                                                 && isEmptyTextBlock node
                                         then

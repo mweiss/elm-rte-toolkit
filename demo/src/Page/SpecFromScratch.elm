@@ -22,21 +22,17 @@ import RichTextEditor.Model.Editor
         , Tagger
         , withCommandMap
         )
+import RichTextEditor.Model.Element as Element exposing (Element, element)
 import RichTextEditor.Model.HtmlNode exposing (HtmlNode(..))
 import RichTextEditor.Model.Node
     exposing
         ( BlockNode
-        , Element
         , Path
-        , attributesFromElement
         , blockArray
         , blockNode
         , blockNodeWithElement
-        , element
         , elementFromBlockNode
-        , elementWithAttributes
         , inlineLeafArray
-        , nameFromElement
         , textLeafWithText
         )
 import RichTextEditor.Model.Spec
@@ -173,7 +169,7 @@ itemToHtml : ElementToHtml
 itemToHtml params children =
     let
         attributes =
-            attributesFromElement params
+            Element.attributes params
 
         checked =
             Maybe.withDefault False (findBoolAttribute "checked" attributes)
@@ -254,7 +250,7 @@ toggleCheckboxDecoration : Path -> Element -> Path -> List (Html.Attribute Msg)
 toggleCheckboxDecoration editorNodePath elementParameters p =
     let
         checked =
-            Maybe.withDefault False (findBoolAttribute "checked" (attributesFromElement elementParameters))
+            Maybe.withDefault False (findBoolAttribute "checked" (Element.attributes elementParameters))
     in
     if p == [ 0, 0 ] then
         [ Html.Events.onClick (ToggleCheckedTodoItem editorNodePath (not checked)) ]
@@ -301,18 +297,18 @@ updateTodoListItem path value state =
                             elementFromBlockNode bn
 
                         attributes =
-                            attributesFromElement ep
+                            Element.attributes ep
 
                         newAttributes =
                             replaceOrAddBoolAttribute "checked" value attributes
 
                         newElementParameters =
-                            ep |> elementWithAttributes newAttributes
+                            ep |> Element.withAttributes newAttributes
 
                         newBlockNode =
                             bn |> blockNodeWithElement newElementParameters
                     in
-                    if nameFromElement ep /= "todo_item" then
+                    if Element.name ep /= "todo_item" then
                         Err "I received a node that was not a todo item"
 
                     else

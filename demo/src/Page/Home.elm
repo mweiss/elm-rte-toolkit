@@ -4,6 +4,7 @@ import Array
 import Editor
 import Html exposing (Html, h1, text)
 import Html.Attributes exposing (class)
+import RichTextEditor.Model.Element exposing (element)
 import RichTextEditor.Model.Mark exposing (mark)
 import RichTextEditor.Model.Node
     exposing
@@ -11,7 +12,6 @@ import RichTextEditor.Model.Node
         , InlineLeaf(..)
         , blockArray
         , blockNode
-        , element
         , emptyTextLeafParameters
         , inlineLeafArray
         , textLeafParametersWithMarks

@@ -23,6 +23,7 @@ import RichTextEditor.Model.Attribute exposing (Attribute(..))
 import RichTextEditor.Model.Command as Command exposing (inputEvent, key, set, transformCommand)
 import RichTextEditor.Model.Decorations exposing (Decorations, addElementDecoration, emptyDecorations)
 import RichTextEditor.Model.Editor exposing (Editor, editor, spec, state, withCommandMap)
+import RichTextEditor.Model.Element exposing (element)
 import RichTextEditor.Model.Keys exposing (enterKey, returnKey)
 import RichTextEditor.Model.Mark as Mark exposing (ToggleAction(..), mark)
 import RichTextEditor.Model.Node
@@ -32,7 +33,6 @@ import RichTextEditor.Model.Node
         , InlineLeaf(..)
         , blockArray
         , blockNode
-        , element
         , inlineLeaf
         , inlineLeafArray
         , marksFromInlineLeaf

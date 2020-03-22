@@ -38,6 +38,7 @@ import RichTextEditor.Model.Command
         , set
         , transformCommand
         )
+import RichTextEditor.Model.Element as Element exposing (Element, element)
 import RichTextEditor.Model.Keys
     exposing
         ( altKey
@@ -51,16 +52,13 @@ import RichTextEditor.Model.Node
         ( BlockArray
         , BlockNode
         , ChildNodes(..)
-        , Element
         , InlineLeaf(..)
         , Path
         , blockArray
         , blockNode
         , childNodes
-        , element
         , elementFromBlockNode
         , fromBlockArray
-        , nameFromElement
         , text
         )
 import RichTextEditor.Model.Selection
@@ -187,7 +185,7 @@ wrap definition type_ editorState =
 
 findListItemAncestor : Element -> Path -> BlockNode -> Maybe ( Path, BlockNode )
 findListItemAncestor parameters =
-    findAncestor (\n -> nameFromElement (elementFromBlockNode n) == nameFromElement parameters)
+    findAncestor (\n -> Element.name (elementFromBlockNode n) == Element.name parameters)
 
 
 split : ListDefinition -> Transform
@@ -204,12 +202,12 @@ isListNode definition node =
         Block bn ->
             let
                 bnName =
-                    nameFromElement (elementFromBlockNode bn)
+                    Element.name (elementFromBlockNode bn)
             in
             bnName
-                == nameFromElement (ordered definition)
+                == Element.name (ordered definition)
                 || bnName
-                == nameFromElement (unordered definition)
+                == Element.name (unordered definition)
 
 
 addLiftAnnotationAtPathAndChildren : Path -> BlockNode -> Result String BlockNode

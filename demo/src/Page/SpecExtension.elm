@@ -22,22 +22,18 @@ import RichTextEditor.Model.Attribute
 import RichTextEditor.Model.Command exposing (Transform, transformCommand)
 import RichTextEditor.Model.Decorations exposing (addElementDecoration)
 import RichTextEditor.Model.Editor
+import RichTextEditor.Model.Element as Element exposing (Element, element)
 import RichTextEditor.Model.HtmlNode exposing (HtmlNode(..))
 import RichTextEditor.Model.Node
     exposing
         ( BlockNode
         , ChildNodes(..)
-        , Element
         , Path
-        , attributesFromElement
         , blockArray
         , blockNode
         , blockNodeWithElement
-        , element
         , elementFromBlockNode
-        , elementWithAttributes
         , inlineLeafArray
-        , nameFromElement
         , textLeafWithText
         )
 import RichTextEditor.Model.Spec
@@ -379,18 +375,18 @@ updateCaptionedImageText path value state =
                             elementFromBlockNode bn
 
                         attributes =
-                            attributesFromElement ep
+                            Element.attributes ep
 
                         newAttributes =
                             replaceOrAddStringAttribute "caption" value attributes
 
                         newElementParameters =
-                            ep |> elementWithAttributes newAttributes
+                            ep |> Element.withAttributes newAttributes
 
                         newBlockNode =
                             bn |> blockNodeWithElement newElementParameters
                     in
-                    if nameFromElement ep /= "captioned_image" then
+                    if Element.name ep /= "captioned_image" then
                         Err "I received a node that was not a captioned image"
 
                     else
@@ -440,13 +436,13 @@ imageToHtmlNode parameters _ =
         caption =
             Maybe.withDefault
                 ""
-                (findStringAttribute "caption" (attributesFromElement parameters))
+                (findStringAttribute "caption" (Element.attributes parameters))
 
         attributes =
             List.filterMap identity
-                [ Just <| ( "src", Maybe.withDefault "" (findStringAttribute "src" (attributesFromElement parameters)) )
-                , Maybe.map (\x -> ( "alt", x )) (findStringAttribute "alt" (attributesFromElement parameters))
-                , Maybe.map (\x -> ( "title", x )) (findStringAttribute "title" (attributesFromElement parameters))
+                [ Just <| ( "src", Maybe.withDefault "" (findStringAttribute "src" (Element.attributes parameters)) )
+                , Maybe.map (\x -> ( "alt", x )) (findStringAttribute "alt" (Element.attributes parameters))
+                , Maybe.map (\x -> ( "title", x )) (findStringAttribute "title" (Element.attributes parameters))
                 , Just ( "data-caption", caption )
                 ]
     in
@@ -475,7 +471,7 @@ imageToHtmlNode parameters _ =
 parseImageAttributes : HtmlNode -> Maybe (List Attribute)
 parseImageAttributes node =
     case node of
-        ElementNode name attributes children ->
+        ElementNode name attributes _ ->
             if name == "img" then
                 Just <|
                     List.filterMap
