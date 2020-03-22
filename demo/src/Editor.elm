@@ -35,7 +35,7 @@ import RichTextEditor.Model.Node
         , fromBlockArray
         , inlineChildren
         , inlineElement
-        , marksFromInlineLeaf
+        , marksFromInline
         , plainText
         )
 import RichTextEditor.Model.Selection exposing (anchorNode, focusNode, normalize)
@@ -179,7 +179,7 @@ handleShowInsertLinkModal model =
                         (\n ->
                             case n of
                                 Inline il ->
-                                    List.any (\m -> Mark.name m == "link") (marksFromInlineLeaf il)
+                                    List.any (\m -> Mark.name m == "link") (marksFromInline il)
 
                                 _ ->
                                     False

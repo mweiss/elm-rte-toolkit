@@ -19,7 +19,7 @@ module RichTextEditor.Model.Node exposing
     , isSameChildren
     , isSameInline
     , markedText
-    , marksFromInlineLeaf
+    , marksFromInline
     , marksToMarkNodeList
     , parent
     , plainText
@@ -37,7 +37,7 @@ import Array exposing (Array)
 import Array.Extra as Array
 import List.Extra
 import RichTextEditor.Model.Element as Element exposing (Element)
-import RichTextEditor.Model.InlineElement as InlineElement exposing (InlineElement, inlineElement)
+import RichTextEditor.Model.InlineElement as InlineElement exposing (InlineElement)
 import RichTextEditor.Model.Mark exposing (Mark, name)
 import RichTextEditor.Model.Text as Text exposing (Text)
 
@@ -177,18 +177,18 @@ inlineChildren : Array Inline -> Children
 inlineChildren arr =
     let
         tree =
-            marksToMarkNodeList (List.map marksFromInlineLeaf (Array.toList arr))
+            marksToMarkNodeList (List.map marksFromInline (Array.toList arr))
     in
     InlineChildren <|
         InlineLeafArray
             { array = arr
             , tree = tree
-            , reverseLookup = Array.fromList <| inlineLeafTreeToPaths [] tree
+            , reverseLookup = Array.fromList <| inlineTreeToPaths [] tree
             }
 
 
-inlineLeafTreeToPaths : Path -> Array InlineTree -> List Path
-inlineLeafTreeToPaths backwardsPath tree =
+inlineTreeToPaths : Path -> Array InlineTree -> List Path
+inlineTreeToPaths backwardsPath tree =
     List.concatMap
         (\( i, n ) ->
             case n of
@@ -196,13 +196,13 @@ inlineLeafTreeToPaths backwardsPath tree =
                     [ List.reverse (i :: backwardsPath) ]
 
                 MarkNode mn ->
-                    inlineLeafTreeToPaths (i :: backwardsPath) mn.children
+                    inlineTreeToPaths (i :: backwardsPath) mn.children
         )
         (List.indexedMap Tuple.pair (Array.toList tree))
 
 
-marksFromInlineLeaf : Inline -> List Mark
-marksFromInlineLeaf leaf =
+marksFromInline : Inline -> List Mark
+marksFromInline leaf =
     case leaf of
         Text l ->
             Text.marks l

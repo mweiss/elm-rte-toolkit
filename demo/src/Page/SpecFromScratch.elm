@@ -35,15 +35,10 @@ import RichTextEditor.Model.Node
         , plainText
         , withElement
         )
+import RichTextEditor.Model.NodeDefinition as NodeDefinition exposing (ElementToHtml, HtmlToElement, NodeDefinition, nodeDefinition)
 import RichTextEditor.Model.Spec
     exposing
-        ( ElementToHtml
-        , HtmlToElement
-        , NodeDefinition
-        , blockNodeContentType
-        , emptySpec
-        , nodeDefinition
-        , textBlockContentType
+        ( emptySpec
         , withNodeDefinitions
         )
 import RichTextEditor.Model.State as State exposing (State, withRoot)
@@ -145,7 +140,7 @@ subscriptions model =
 
 todoList : NodeDefinition
 todoList =
-    nodeDefinition "todo_list" "root" (blockNodeContentType [ "items" ]) todoListToHtml htmlToTodoList
+    nodeDefinition "todo_list" "root" (NodeDefinition.blockNode [ "items" ]) todoListToHtml htmlToTodoList
 
 
 todoListToHtml : ElementToHtml
@@ -162,7 +157,7 @@ htmlToTodoList =
 
 item : NodeDefinition
 item =
-    nodeDefinition "todo_item" "items" (textBlockContentType [ "inline" ]) itemToHtml htmlToItem
+    nodeDefinition "todo_item" "items" (NodeDefinition.textBlock [ "inline" ]) itemToHtml htmlToItem
 
 
 itemToHtml : ElementToHtml

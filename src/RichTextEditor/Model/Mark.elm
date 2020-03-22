@@ -17,7 +17,7 @@ information when rendering a node (like color, font, and link information).
 import Dict exposing (Dict)
 import RichTextEditor.Model.Attribute exposing (Attribute)
 import RichTextEditor.Model.Internal.Spec as Spec exposing (MarkDefinition, attributesFromMark)
-import RichTextEditor.Model.Spec as Spec exposing (nameFromMarkDefinition)
+import RichTextEditor.Model.MarkDefinition as MarkDefinition
 
 
 type alias Mark =
@@ -41,7 +41,7 @@ definition =
 
 name : Mark -> String
 name m =
-    nameFromMarkDefinition (definition m)
+    MarkDefinition.name (definition m)
 
 
 type MarkOrder

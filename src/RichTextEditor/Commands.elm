@@ -93,7 +93,7 @@ import RichTextEditor.Model.Node
         , fromBlockArray
         , inlineArray
         , inlineChildren
-        , marksFromInlineLeaf
+        , marksFromInline
         , toBlockArray
         , withChildNodes
         , withElement
@@ -985,7 +985,7 @@ isBlockOrInlineNodeWithMark : String -> Node -> Bool
 isBlockOrInlineNodeWithMark markName node =
     case node of
         Inline il ->
-            hasMarkWithName markName (marksFromInlineLeaf il)
+            hasMarkWithName markName (marksFromInline il)
 
         _ ->
             True
@@ -1018,7 +1018,7 @@ toggleMarkSingleInlineNode markOrder mark action editorState =
                             Inline il ->
                                 let
                                     newMarks =
-                                        toggle action markOrder mark (marksFromInlineLeaf il)
+                                        toggle action markOrder mark (marksFromInline il)
 
                                     leaves =
                                         case il of

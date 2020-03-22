@@ -36,18 +36,18 @@ import RichTextEditor.Model.Node
         , plainText
         , withElement
         )
-import RichTextEditor.Model.Spec
+import RichTextEditor.Model.NodeDefinition
     exposing
         ( ElementToHtml
         , HtmlToElement
-        , HtmlToMark
-        , MarkDefinition
-        , MarkToHtml
         , NodeDefinition
-        , Spec
-        , blockLeafContentType
-        , markDefinitions
+        , blockLeaf
         , nodeDefinition
+        )
+import RichTextEditor.Model.Spec
+    exposing
+        ( Spec
+        , markDefinitions
         , nodeDefinitions
         , withMarkDefinitions
         , withNodeDefinitions
@@ -427,7 +427,7 @@ subscriptions model =
 
 captionedImage : NodeDefinition
 captionedImage =
-    nodeDefinition "captioned_image" "block" blockLeafContentType imageToHtmlNode htmlNodeToImage
+    nodeDefinition "captioned_image" "block" blockLeaf imageToHtmlNode htmlNodeToImage
 
 
 imageToHtmlNode : ElementToHtml

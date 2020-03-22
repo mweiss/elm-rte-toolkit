@@ -27,6 +27,7 @@ import RichTextEditor.Model.Mark as Mark
         , mark
         , toggle
         )
+import RichTextEditor.Model.MarkDefinition as MarkDefinition exposing (MarkDefinition)
 import RichTextEditor.Model.Node as Node
     exposing
         ( Block
@@ -40,19 +41,11 @@ import RichTextEditor.Model.Node as Node
         , inlineChildren
         , toBlockArray
         )
+import RichTextEditor.Model.NodeDefinition as NodeDefinition exposing (NodeDefinition)
 import RichTextEditor.Model.Spec
     exposing
-        ( MarkDefinition
-        , NodeDefinition
-        , Spec
-        , blockLeafContentType
-        , contentTypeFromNodeDefinition
-        , fromHtmlNodeFromMarkDefinition
-        , fromHtmlNodeFromNodeDefinition
-        , groupFromNodeDefinition
+        ( Spec
         , markDefinitions
-        , nameFromMarkDefinition
-        , nameFromNodeDefinition
         , nodeDefinitions
         )
 import RichTextEditor.Model.State as State exposing (State)
@@ -169,7 +162,7 @@ validateInlineLeaf allowedGroups leaf =
                 definition =
                     Element.definition (InlineElement.element il)
             in
-            validateAllowedGroups allowedGroups (groupFromNodeDefinition definition) (nameFromNodeDefinition definition)
+            validateAllowedGroups allowedGroups (NodeDefinition.group definition) (NodeDefinition.name definition)
 
 
 validateAllowedGroups : Maybe (Set String) -> String -> String -> List String
@@ -205,7 +198,7 @@ validateEditorBlockNode allowedGroups node =
     in
     let
         allowedGroupsErrors =
-            validateAllowedGroups allowedGroups (groupFromNodeDefinition definition) (nameFromNodeDefinition definition)
+            validateAllowedGroups allowedGroups (NodeDefinition.group definition) (NodeDefinition.name definition)
     in
     if not <| List.isEmpty allowedGroupsErrors then
         allowedGroupsErrors
@@ -213,7 +206,7 @@ validateEditorBlockNode allowedGroups node =
     else
         let
             contentType =
-                contentTypeFromNodeDefinition definition
+                NodeDefinition.contentType definition
         in
         case childNodes node of
             BlockChildren ba ->
@@ -237,7 +230,7 @@ validateEditorBlockNode allowedGroups node =
                         [ "I was expecting textblock content type, but instead I got " ++ toStringContentType contentType ]
 
             Leaf ->
-                if contentType == blockLeafContentType then
+                if contentType == NodeDefinition.blockLeaf then
                     []
 
                 else
@@ -303,7 +296,7 @@ htmlNodeToEditorFragment spec marks node =
                         (\definition result ->
                             case result of
                                 Nothing ->
-                                    case fromHtmlNodeFromNodeDefinition definition definition node of
+                                    case NodeDefinition.fromHtmlNode definition definition node of
                                         Nothing ->
                                             Nothing
 
@@ -320,7 +313,7 @@ htmlNodeToEditorFragment spec marks node =
                 Just ( definition, ( element, children ) ) ->
                     let
                         contentType =
-                            contentTypeFromNodeDefinition definition
+                            NodeDefinition.contentType definition
                     in
                     if contentType == InlineLeafNodeType then
                         Ok <|
@@ -364,7 +357,7 @@ htmlNodeToMark spec node =
         (\definition result ->
             case result of
                 Nothing ->
-                    case fromHtmlNodeFromMarkDefinition definition definition node of
+                    case MarkDefinition.fromHtmlNode definition definition node of
                         Nothing ->
                             Nothing
 
@@ -519,4 +512,4 @@ nodeListToHtmlNodeArray nodeList =
 
 markOrderFromSpec : Spec -> MarkOrder
 markOrderFromSpec spec =
-    MarkOrder <| Dict.fromList (List.indexedMap (\i m -> ( nameFromMarkDefinition m, i )) (markDefinitions spec))
+    MarkOrder <| Dict.fromList (List.indexedMap (\i m -> ( MarkDefinition.name m, i )) (markDefinitions spec))

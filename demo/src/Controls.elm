@@ -14,7 +14,7 @@ import RichTextEditor.Model.Node
     exposing
         ( Path
         , elementFromBlockNode
-        , marksFromInlineLeaf
+        , marksFromInline
         )
 import RichTextEditor.Model.Selection exposing (anchorNode, focusNode, normalize)
 import RichTextEditor.Model.State as State exposing (State)
@@ -280,7 +280,7 @@ accumulateControlState node controlState =
         Inline inline ->
             let
                 names =
-                    List.map Mark.name (marksFromInlineLeaf inline)
+                    List.map Mark.name (marksFromInline inline)
             in
             { controlState | hasInline = True, marks = Set.union (Set.fromList names) controlState.marks }
 

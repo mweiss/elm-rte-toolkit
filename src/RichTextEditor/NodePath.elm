@@ -22,6 +22,7 @@ import List.Extra
 import RichTextEditor.Model.Element as Element exposing (Element)
 import RichTextEditor.Model.HtmlNode exposing (HtmlNode(..))
 import RichTextEditor.Model.Mark as Mark exposing (Mark)
+import RichTextEditor.Model.MarkDefinition as MarkDefinition
 import RichTextEditor.Model.Node
     exposing
         ( Block
@@ -36,12 +37,7 @@ import RichTextEditor.Model.Node
         , reverseLookup
         , toBlockArray
         )
-import RichTextEditor.Model.Spec
-    exposing
-        ( Spec
-        , toHtmlNodeFromMarkDefinition
-        , toHtmlNodeFromNodeDefinition
-        )
+import RichTextEditor.Model.NodeDefinition as NodeDefinition
 import RichTextEditor.Spec
     exposing
         ( childNodesPlaceholder
@@ -60,7 +56,7 @@ domToEditorInlineLeafTree tree path =
                     Mark.definition n.mark
 
                 structure =
-                    toHtmlNodeFromMarkDefinition markDefinition n.mark childNodesPlaceholder
+                    MarkDefinition.toHtmlNode markDefinition n.mark childNodesPlaceholder
             in
             case removePathUpToChildContents structure path of
                 Nothing ->
@@ -97,7 +93,7 @@ domToEditor node path =
                 Element.definition parameters
 
             structure =
-                toHtmlNodeFromNodeDefinition nodeDefinition parameters childNodesPlaceholder
+                NodeDefinition.toHtmlNode nodeDefinition parameters childNodesPlaceholder
         in
         case removePathUpToChildContents structure path of
             Nothing ->
@@ -284,7 +280,7 @@ pathToChildContentsFromMark mark =
     in
     let
         markStructure =
-            toHtmlNodeFromMarkDefinition markDefinition mark childNodesPlaceholder
+            MarkDefinition.toHtmlNode markDefinition mark childNodesPlaceholder
     in
     pathToChildContents markStructure
 
@@ -300,7 +296,7 @@ pathToChildContentsFromElementParameters parameters =
             Element.definition parameters
 
         nodeStructure =
-            toHtmlNodeFromNodeDefinition nodeDefinition parameters childNodesPlaceholder
+            NodeDefinition.toHtmlNode nodeDefinition parameters childNodesPlaceholder
     in
     pathToChildContents nodeStructure
 

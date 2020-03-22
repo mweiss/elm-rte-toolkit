@@ -53,6 +53,7 @@ import RichTextEditor.Model.Event exposing (EditorChange, PasteEvent, TextChange
 import RichTextEditor.Model.HtmlNode exposing (HtmlNode(..))
 import RichTextEditor.Model.InlineElement as InlineElement
 import RichTextEditor.Model.Mark as Mark exposing (Mark)
+import RichTextEditor.Model.MarkDefinition as MarkDefinition
 import RichTextEditor.Model.Node
     exposing
         ( Block
@@ -69,6 +70,7 @@ import RichTextEditor.Model.Node
         , toBlockArray
         , withChildNodes
         )
+import RichTextEditor.Model.NodeDefinition as NodeDefinition
 import RichTextEditor.Model.Selection
     exposing
         ( Selection
@@ -78,12 +80,6 @@ import RichTextEditor.Model.Selection
         , focusOffset
         , isCollapsed
         , rangeSelection
-        )
-import RichTextEditor.Model.Spec
-    exposing
-        ( Spec
-        , toHtmlNodeFromMarkDefinition
-        , toHtmlNodeFromNodeDefinition
         )
 import RichTextEditor.Model.State as State exposing (State, withRoot, withSelection)
 import RichTextEditor.Model.Text as Text
@@ -652,7 +648,7 @@ viewMark decorations backwardsNodePath mark children =
             List.map (\d -> d (List.reverse backwardsNodePath) mark) mDecorators
 
         node =
-            toHtmlNodeFromMarkDefinition (Mark.definition mark) mark childNodesPlaceholder
+            MarkDefinition.toHtmlNode (Mark.definition mark) mark childNodesPlaceholder
     in
     renderHtmlNode node decorators children []
 
@@ -664,7 +660,7 @@ viewElement decorations elementParameters backwardsNodePath children =
             Element.definition elementParameters
 
         node =
-            toHtmlNodeFromNodeDefinition definition elementParameters childNodesPlaceholder
+            NodeDefinition.toHtmlNode definition elementParameters childNodesPlaceholder
 
         eDecorators =
             Maybe.withDefault []

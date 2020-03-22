@@ -13,7 +13,7 @@ module RichTextEditor.Model.Element exposing
 
 import RichTextEditor.Model.Attribute exposing (Attribute)
 import RichTextEditor.Model.Internal.Spec as Spec
-import RichTextEditor.Model.Spec exposing (NodeDefinition, nameFromNodeDefinition)
+import RichTextEditor.Model.NodeDefinition as NodeDefinition exposing (NodeDefinition)
 import Set exposing (Set)
 
 
@@ -38,7 +38,7 @@ definition =
 
 name : Element -> String
 name ele =
-    nameFromNodeDefinition (definition ele)
+    NodeDefinition.name (definition ele)
 
 
 element : NodeDefinition -> List Attribute -> Set String -> Element

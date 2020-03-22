@@ -23,22 +23,28 @@ import RichTextEditor.Model.Attribute exposing (Attribute(..), findIntegerAttrib
 import RichTextEditor.Model.Element exposing (attributes, element)
 import RichTextEditor.Model.HtmlNode exposing (HtmlNode(..))
 import RichTextEditor.Model.Mark as Mark exposing (mark)
-import RichTextEditor.Model.Spec
+import RichTextEditor.Model.MarkDefinition
+    exposing
+        ( HtmlToMark
+        , MarkDefinition
+        , MarkToHtml
+        , markDefinition
+        )
+import RichTextEditor.Model.NodeDefinition
     exposing
         ( ElementToHtml
         , HtmlToElement
-        , HtmlToMark
-        , MarkDefinition
-        , MarkToHtml
         , NodeDefinition
-        , Spec
-        , blockLeafContentType
-        , blockNodeContentType
-        , emptySpec
-        , inlineLeafContentType
-        , markDefinition
+        , blockLeaf
+        , blockNode
+        , inlineLeaf
         , nodeDefinition
-        , textBlockContentType
+        , textBlock
+        )
+import RichTextEditor.Model.Spec
+    exposing
+        ( Spec
+        , emptySpec
         , withMarkDefinitions
         , withNodeDefinitions
         )
@@ -48,7 +54,7 @@ import Set
 
 doc : NodeDefinition
 doc =
-    nodeDefinition "doc" "root" (blockNodeContentType [ "block" ]) docToHtml htmlToDoc
+    nodeDefinition "doc" "root" (blockNode [ "block" ]) docToHtml htmlToDoc
 
 
 docToHtml : ElementToHtml
@@ -74,7 +80,7 @@ htmlToDoc definition node =
 
 paragraph : NodeDefinition
 paragraph =
-    nodeDefinition "paragraph" "block" (textBlockContentType [ "inline" ]) paragraphToHtml htmlToParagraph
+    nodeDefinition "paragraph" "block" (textBlock [ "inline" ]) paragraphToHtml htmlToParagraph
 
 
 paragraphToHtml : ElementToHtml
@@ -98,7 +104,7 @@ htmlToParagraph definition node =
 
 blockquote : NodeDefinition
 blockquote =
-    nodeDefinition "blockquote" "block" (blockNodeContentType [ "block" ]) blockquoteToHtml htmlToBlockquote
+    nodeDefinition "blockquote" "block" (blockNode [ "block" ]) blockquoteToHtml htmlToBlockquote
 
 
 blockquoteToHtml : ElementToHtml
@@ -113,7 +119,7 @@ htmlToBlockquote =
 
 horizontalRule : NodeDefinition
 horizontalRule =
-    nodeDefinition "horizontal_rule" "block" blockLeafContentType horizontalRuleToHtml htmlToHorizontalRule
+    nodeDefinition "horizontal_rule" "block" blockLeaf horizontalRuleToHtml htmlToHorizontalRule
 
 
 horizontalRuleToHtml : ElementToHtml
@@ -137,7 +143,7 @@ htmlToHorizontalRule def node =
 
 heading : NodeDefinition
 heading =
-    nodeDefinition "heading" "block" (textBlockContentType [ "inline" ]) headingToHtml htmlToHeading
+    nodeDefinition "heading" "block" (textBlock [ "inline" ]) headingToHtml htmlToHeading
 
 
 headingToHtml : ElementToHtml
@@ -198,7 +204,7 @@ codeBlock =
     nodeDefinition
         "code_block"
         "block"
-        (textBlockContentType [ "text", "hard_break" ])
+        (textBlock [ "text", "hard_break" ])
         codeBlockToHtmlNode
         htmlNodeToCodeBlock
 
@@ -236,7 +242,7 @@ htmlNodeToCodeBlock def node =
 
 image : NodeDefinition
 image =
-    nodeDefinition "image" "inline" inlineLeafContentType imageToHtmlNode htmlNodeToImage
+    nodeDefinition "image" "inline" inlineLeaf imageToHtmlNode htmlNodeToImage
 
 
 imageToHtmlNode : ElementToHtml
@@ -300,7 +306,7 @@ htmlNodeToImage def node =
 
 hardBreak : NodeDefinition
 hardBreak =
-    nodeDefinition "hard_break" "inline" inlineLeafContentType hardBreakToHtml htmlToHardBreak
+    nodeDefinition "hard_break" "inline" inlineLeaf hardBreakToHtml htmlToHardBreak
 
 
 hardBreakToHtml : ElementToHtml
@@ -336,7 +342,7 @@ orderedList =
     nodeDefinition
         "ordered_list"
         "block"
-        (blockNodeContentType [ "list_item" ])
+        (blockNode [ "list_item" ])
         orderedListToHtml
         htmlToOrderedList
 
@@ -356,7 +362,7 @@ unorderedList =
     nodeDefinition
         "unordered_list"
         "block"
-        (blockNodeContentType [ "list_item" ])
+        (blockNode [ "list_item" ])
         unorderedListToHtml
         htmlToUnorderedList
 
@@ -376,7 +382,7 @@ listItem =
     nodeDefinition
         "list_item"
         "list_item"
-        (blockNodeContentType [ "block" ])
+        (blockNode [ "block" ])
         listItemToHtml
         htmlToListItem
 

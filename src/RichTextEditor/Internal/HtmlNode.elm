@@ -5,6 +5,7 @@ import RichTextEditor.Model.Element as Element exposing (Element)
 import RichTextEditor.Model.HtmlNode exposing (HtmlNode(..))
 import RichTextEditor.Model.InlineElement exposing (element)
 import RichTextEditor.Model.Mark as Mark exposing (Mark)
+import RichTextEditor.Model.MarkDefinition as MarkDefinition
 import RichTextEditor.Model.Node
     exposing
         ( Block
@@ -17,12 +18,7 @@ import RichTextEditor.Model.Node
         , inlineTree
         , toBlockArray
         )
-import RichTextEditor.Model.Spec
-    exposing
-        ( Spec
-        , toHtmlNodeFromMarkDefinition
-        , toHtmlNodeFromNodeDefinition
-        )
+import RichTextEditor.Model.NodeDefinition as NodeDefinition
 import RichTextEditor.Model.Text exposing (text)
 
 
@@ -34,7 +30,7 @@ markToHtmlNode mark children =
         markDefinition =
             Mark.definition mark
     in
-    toHtmlNodeFromMarkDefinition markDefinition mark children
+    MarkDefinition.toHtmlNode markDefinition mark children
 
 
 {-| Renders element parameters to their HtmlNode representation.
@@ -45,7 +41,7 @@ elementToHtmlNode parameters children =
         nodeDefinition =
             Element.definition parameters
     in
-    toHtmlNodeFromNodeDefinition nodeDefinition parameters children
+    NodeDefinition.toHtmlNode nodeDefinition parameters children
 
 
 {-| Renders element block nodes to their HtmlNode representation.

@@ -11,8 +11,7 @@ type alias Model =
 
 
 type Msg
-    = Msg
-    | GotSession Session
+    = GotSession Session
 
 
 values : List { title : String, route : Route, text : String }
