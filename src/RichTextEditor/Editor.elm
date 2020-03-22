@@ -55,18 +55,18 @@ import RichTextEditor.Model.InlineElement as InlineElement
 import RichTextEditor.Model.Mark as Mark exposing (Mark)
 import RichTextEditor.Model.Node
     exposing
-        ( BlockNode
-        , ChildNodes(..)
-        , InlineLeaf(..)
-        , InlineLeafTree(..)
+        ( Block
+        , Children(..)
+        , Inline(..)
+        , InlineTree(..)
         , Path
-        , blockArray
         , childNodes
         , elementFromBlockNode
         , fromBlockArray
-        , fromInlineArray
-        , inlineLeafArray
-        , treeFromInlineArray
+        , inlineArray
+        , inlineChildren
+        , inlineTree
+        , toBlockArray
         , withChildNodes
         )
 import RichTextEditor.Model.Selection
@@ -153,7 +153,7 @@ handleCut editor =
             forceRerender e
 
 
-textChangesDomToEditor : BlockNode -> List TextChange -> Maybe (List TextChange)
+textChangesDomToEditor : Block -> List TextChange -> Maybe (List TextChange)
 textChangesDomToEditor editorNode changes =
     List.foldl
         (\( p, text ) maybeAgg ->
@@ -173,7 +173,7 @@ textChangesDomToEditor editorNode changes =
         changes
 
 
-deriveTextChanges : BlockNode -> DomNode -> Result String (List TextChange)
+deriveTextChanges : Block -> DomNode -> Result String (List TextChange)
 deriveTextChanges editorNode domNode =
     let
         htmlNode =
@@ -228,7 +228,7 @@ sanitizeMutations changes =
         changes
 
 
-differentText : BlockNode -> TextChange -> Bool
+differentText : Block -> TextChange -> Bool
 differentText root ( path, t ) =
     case nodeAt path root of
         Nothing ->
@@ -239,7 +239,7 @@ differentText root ( path, t ) =
             case node of
                 Inline il ->
                     case il of
-                        TextLeaf tl ->
+                        Text tl ->
                             Text.text tl /= t
 
                         _ ->
@@ -393,7 +393,7 @@ onEditorSelectionChange msgFunc =
     Html.Events.on "editorselectionchange" (D.map msgFunc editorSelectionChangeDecoder)
 
 
-replaceText : BlockNode -> List TextChange -> Maybe BlockNode
+replaceText : Block -> List TextChange -> Maybe Block
 replaceText editorNode changes =
     List.foldl
         (\change maybeNode ->
@@ -408,7 +408,7 @@ replaceText editorNode changes =
         changes
 
 
-applyTextChange : BlockNode -> TextChange -> Maybe BlockNode
+applyTextChange : Block -> TextChange -> Maybe Block
 applyTextChange editorNode ( path, text ) =
     case path of
         [] ->
@@ -419,7 +419,7 @@ applyTextChange editorNode ( path, text ) =
                 BlockChildren array ->
                     let
                         a =
-                            fromBlockArray array
+                            toBlockArray array
                     in
                     case Array.get x a of
                         Nothing ->
@@ -433,13 +433,13 @@ applyTextChange editorNode ( path, text ) =
                                 Just textChangeNode ->
                                     Just <|
                                         (editorNode
-                                            |> withChildNodes (blockArray <| Array.set x textChangeNode a)
+                                            |> withChildNodes (fromBlockArray <| Array.set x textChangeNode a)
                                         )
 
                 InlineChildren array ->
                     let
                         a =
-                            fromInlineArray array
+                            inlineArray array
                     in
                     if not <| List.isEmpty xs then
                         Nothing
@@ -451,13 +451,13 @@ applyTextChange editorNode ( path, text ) =
 
                             Just inlineNode ->
                                 case inlineNode of
-                                    TextLeaf contents ->
+                                    Text contents ->
                                         Just
                                             (editorNode
                                                 |> withChildNodes
-                                                    (inlineLeafArray <|
+                                                    (inlineChildren <|
                                                         Array.set x
-                                                            (TextLeaf
+                                                            (Text
                                                                 (contents |> Text.withText (String.replace zeroWidthSpace "" text))
                                                             )
                                                             a
@@ -536,14 +536,14 @@ shouldHideCaret editorState =
 
                             Inline leaf ->
                                 case leaf of
-                                    ElementLeaf _ ->
+                                    InlineElement _ ->
                                         True
 
                                     _ ->
                                         False
 
 
-markCaretSelectionOnEditorNodes : State -> BlockNode
+markCaretSelectionOnEditorNodes : State -> Block
 markCaretSelectionOnEditorNodes editorState =
     case State.selection editorState of
         Nothing ->
@@ -682,7 +682,7 @@ viewElement decorations elementParameters backwardsNodePath children =
     nodeHtml
 
 
-viewInlineLeafTree : Decorations msg -> Path -> Array InlineLeaf -> InlineLeafTree -> Html msg
+viewInlineLeafTree : Decorations msg -> Path -> Array Inline -> InlineTree -> Html msg
 viewInlineLeafTree decorations backwardsPath inlineLeafArray inlineLeafTree =
     case inlineLeafTree of
         LeafNode i ->
@@ -700,17 +700,17 @@ viewInlineLeafTree decorations backwardsPath inlineLeafArray inlineLeafTree =
                 Array.map (viewInlineLeafTree decorations backwardsPath inlineLeafArray) n.children
 
 
-viewEditorBlockNode : Decorations msg -> Path -> BlockNode -> Html msg
+viewEditorBlockNode : Decorations msg -> Path -> Block -> Html msg
 viewEditorBlockNode decorations backwardsPath node =
     viewElement decorations
         (elementFromBlockNode node)
         backwardsPath
         (case childNodes node of
             BlockChildren l ->
-                Array.indexedMap (\i n -> viewEditorBlockNode decorations (i :: backwardsPath) n) (fromBlockArray l)
+                Array.indexedMap (\i n -> viewEditorBlockNode decorations (i :: backwardsPath) n) (toBlockArray l)
 
             InlineChildren l ->
-                Array.map (\n -> viewInlineLeafTree decorations backwardsPath (fromInlineArray l) n) (treeFromInlineArray l)
+                Array.map (\n -> viewInlineLeafTree decorations backwardsPath (inlineArray l) n) (inlineTree l)
 
             Leaf ->
                 Array.empty
@@ -728,13 +728,13 @@ viewText text =
         )
 
 
-viewInlineLeaf : Decorations msg -> Path -> InlineLeaf -> Html msg
+viewInlineLeaf : Decorations msg -> Path -> Inline -> Html msg
 viewInlineLeaf decorations backwardsPath leaf =
     case leaf of
-        ElementLeaf l ->
+        InlineElement l ->
             viewElement decorations (InlineElement.element l) backwardsPath Array.empty
 
-        TextLeaf v ->
+        Text v ->
             viewText (Text.text v)
 
 

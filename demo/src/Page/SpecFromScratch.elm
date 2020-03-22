@@ -26,14 +26,14 @@ import RichTextEditor.Model.Element as Element exposing (Element, element)
 import RichTextEditor.Model.HtmlNode exposing (HtmlNode(..))
 import RichTextEditor.Model.Node
     exposing
-        ( BlockNode
+        ( Block
         , Path
-        , blockArray
         , blockNode
-        , blockNodeWithElement
         , elementFromBlockNode
-        , inlineLeafArray
-        , textLeafWithText
+        , fromBlockArray
+        , inlineChildren
+        , plainText
+        , withElement
         )
 import RichTextEditor.Model.Spec
     exposing
@@ -86,18 +86,18 @@ view model =
     }
 
 
-todoInitNode : BlockNode
+todoInitNode : Block
 todoInitNode =
     blockNode
         (element todoList [] Set.empty)
-        (blockArray (Array.fromList [ initialTodoNode "Item 1", initialTodoNode "Item 2" ]))
+        (fromBlockArray (Array.fromList [ initialTodoNode "Item 1", initialTodoNode "Item 2" ]))
 
 
-initialTodoNode : String -> BlockNode
+initialTodoNode : String -> Block
 initialTodoNode s =
     blockNode
         (element item [] Set.empty)
-        (inlineLeafArray (Array.fromList [ textLeafWithText s ]))
+        (inlineChildren (Array.fromList [ plainText s ]))
 
 
 initialState : State
@@ -306,7 +306,7 @@ updateTodoListItem path value state =
                             ep |> Element.withAttributes newAttributes
 
                         newBlockNode =
-                            bn |> blockNodeWithElement newElementParameters
+                            bn |> withElement newElementParameters
                     in
                     if Element.name ep /= "todo_item" then
                         Err "I received a node that was not a todo item"

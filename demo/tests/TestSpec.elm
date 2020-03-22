@@ -5,14 +5,14 @@ import Expect
 import RichTextEditor.Model.Mark exposing (mark)
 import RichTextEditor.Model.Node
     exposing
-        ( InlineLeaf(..)
-        , blockArray
+        ( Inline(..)
         , blockNode
         , element
         , emptyTextLeafParameters
-        , inlineLeafArray
+        , fromBlockArray
+        , inlineChildren
+        , plainText
         , textLeafParametersWithMarks
-        , textLeafWithText
         , withText
         )
 import RichTextEditor.Node exposing (Fragment(..))
@@ -32,9 +32,9 @@ expectedOneParagraph =
             Array.fromList
                 [ blockNode
                     (element paragraph [] Set.empty)
-                    (inlineLeafArray
+                    (inlineChildren
                         (Array.fromList
-                            [ textLeafWithText "test"
+                            [ plainText "test"
                             ]
                         )
                     )
@@ -50,17 +50,17 @@ twoParagraphsBlockFragment =
     Array.fromList
         [ blockNode
             (element paragraph [] Set.empty)
-            (inlineLeafArray
+            (inlineChildren
                 (Array.fromList
-                    [ textLeafWithText "test1"
+                    [ plainText "test1"
                     ]
                 )
             )
         , blockNode
             (element paragraph [] Set.empty)
-            (inlineLeafArray
+            (inlineChildren
                 (Array.fromList
-                    [ textLeafWithText "test2"
+                    [ plainText "test2"
                     ]
                 )
             )
@@ -78,7 +78,7 @@ justText =
 
 justTextInlineFragment =
     Array.fromList
-        [ textLeafWithText "test"
+        [ plainText "test"
         ]
 
 
@@ -97,7 +97,7 @@ expectedBlockquoteAndParagraphs =
             Array.fromList
                 [ blockNode
                     (element blockquote [] Set.empty)
-                    (blockArray twoParagraphsBlockFragment)
+                    (fromBlockArray twoParagraphsBlockFragment)
                 ]
         ]
 
@@ -120,9 +120,9 @@ expectedOneParagraphWithBold =
             Array.fromList
                 [ blockNode
                     (element paragraph [] Set.empty)
-                    (inlineLeafArray
+                    (inlineChildren
                         (Array.fromList
-                            [ TextLeaf (emptyTextLeafParameters |> withText "test" |> textLeafParametersWithMarks [ boldMark ])
+                            [ Text (emptyTextLeafParameters |> withText "test" |> textLeafParametersWithMarks [ boldMark ])
                             ]
                         )
                     )
@@ -140,11 +140,11 @@ expectedOneParagraphWithBoldAndItalic =
             Array.fromList
                 [ blockNode
                     (element paragraph [] Set.empty)
-                    (inlineLeafArray
+                    (inlineChildren
                         (Array.fromList
-                            [ TextLeaf (emptyTextLeafParameters |> withText "tes" |> textLeafParametersWithMarks [ boldMark ])
-                            , TextLeaf (emptyTextLeafParameters |> withText "t" |> textLeafParametersWithMarks [ boldMark, italicMark ])
-                            , TextLeaf (emptyTextLeafParameters |> withText "1" |> textLeafParametersWithMarks [ italicMark ])
+                            [ Text (emptyTextLeafParameters |> withText "tes" |> textLeafParametersWithMarks [ boldMark ])
+                            , Text (emptyTextLeafParameters |> withText "t" |> textLeafParametersWithMarks [ boldMark, italicMark ])
+                            , Text (emptyTextLeafParameters |> withText "1" |> textLeafParametersWithMarks [ italicMark ])
                             ]
                         )
                     )

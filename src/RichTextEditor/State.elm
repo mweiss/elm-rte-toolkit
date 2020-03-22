@@ -5,15 +5,15 @@ import List.Extra
 import RichTextEditor.Model.Annotations exposing (selection)
 import RichTextEditor.Model.Node
     exposing
-        ( BlockNode
-        , ChildNodes(..)
-        , InlineLeaf(..)
-        , InlineLeafArray
+        ( Block
+        , Children(..)
+        , Inline(..)
+        , InlineChildren
         , Path
         , childNodes
-        , fromInlineArray
-        , inlineLeafArray
-        , isSameBlockNode
+        , inlineArray
+        , inlineChildren
+        , isSameBlock
         , withChildNodes
         )
 import RichTextEditor.Model.Selection
@@ -31,7 +31,7 @@ import RichTextEditor.Selection exposing (annotateSelection, clearSelectionAnnot
 import Set
 
 
-removeExtraEmptyTextLeaves : List InlineLeaf -> List InlineLeaf
+removeExtraEmptyTextLeaves : List Inline -> List Inline
 removeExtraEmptyTextLeaves inlineLeaves =
     case inlineLeaves of
         [] ->
@@ -42,9 +42,9 @@ removeExtraEmptyTextLeaves inlineLeaves =
 
         x :: y :: xs ->
             case x of
-                TextLeaf xL ->
+                Text xL ->
                     case y of
-                        TextLeaf yL ->
+                        Text yL ->
                             if String.isEmpty (text xL) && (not <| Set.member selection (Text.annotations xL)) then
                                 removeExtraEmptyTextLeaves (y :: xs)
 
@@ -54,14 +54,14 @@ removeExtraEmptyTextLeaves inlineLeaves =
                             else
                                 x :: removeExtraEmptyTextLeaves (y :: xs)
 
-                        ElementLeaf _ ->
+                        InlineElement _ ->
                             x :: removeExtraEmptyTextLeaves (y :: xs)
 
-                ElementLeaf _ ->
+                InlineElement _ ->
                     x :: removeExtraEmptyTextLeaves (y :: xs)
 
 
-mergeSimilarInlineLeaves : List InlineLeaf -> List InlineLeaf
+mergeSimilarInlineLeaves : List Inline -> List Inline
 mergeSimilarInlineLeaves inlineLeaves =
     case inlineLeaves of
         [] ->
@@ -72,23 +72,23 @@ mergeSimilarInlineLeaves inlineLeaves =
 
         x :: y :: xs ->
             case x of
-                TextLeaf xL ->
+                Text xL ->
                     case y of
-                        TextLeaf yL ->
+                        Text yL ->
                             if Text.comparableMarks xL == Text.comparableMarks yL then
-                                mergeSimilarInlineLeaves (TextLeaf (xL |> withText (text xL ++ text yL)) :: xs)
+                                mergeSimilarInlineLeaves (Text (xL |> withText (text xL ++ text yL)) :: xs)
 
                             else
                                 x :: mergeSimilarInlineLeaves (y :: xs)
 
-                        ElementLeaf _ ->
+                        InlineElement _ ->
                             x :: mergeSimilarInlineLeaves (y :: xs)
 
-                ElementLeaf _ ->
+                InlineElement _ ->
                     x :: mergeSimilarInlineLeaves (y :: xs)
 
 
-reduceNode : BlockNode -> BlockNode
+reduceNode : Block -> Block
 reduceNode node =
     case
         map
@@ -100,9 +100,9 @@ reduceNode node =
                                 Block <|
                                     (bn
                                         |> withChildNodes
-                                            (inlineLeafArray <|
+                                            (inlineChildren <|
                                                 Array.fromList
-                                                    (mergeSimilarInlineLeaves (removeExtraEmptyTextLeaves (Array.toList (fromInlineArray a))))
+                                                    (mergeSimilarInlineLeaves (removeExtraEmptyTextLeaves (Array.toList (inlineArray a))))
                                             )
                                     )
 
@@ -152,7 +152,7 @@ reduceEditorState editorState =
                 |> withSelection (Just <| rangeSelection aP aO fP fO)
 
 
-translatePath : BlockNode -> BlockNode -> Path -> Int -> ( Path, Int )
+translatePath : Block -> Block -> Path -> Int -> ( Path, Int )
 translatePath old new path offset =
     case findTextBlockNodeAncestor path old of
         Nothing ->
@@ -164,7 +164,7 @@ translatePath old new path offset =
                     ( path, offset )
 
                 Just ( _, newN ) ->
-                    if isSameBlockNode oldN newN then
+                    if isSameBlock oldN newN then
                         ( path, offset )
 
                     else
@@ -179,10 +179,10 @@ translatePath old new path offset =
                                             InlineChildren newA ->
                                                 let
                                                     pOff =
-                                                        parentOffset (fromInlineArray oldA) lastIndex offset
+                                                        parentOffset (inlineArray oldA) lastIndex offset
 
                                                     ( cI, cO ) =
-                                                        childOffset (fromInlineArray newA) pOff
+                                                        childOffset (inlineArray newA) pOff
 
                                                     newPath =
                                                         List.take (List.length path - 1) path ++ [ cI ]
@@ -196,14 +196,14 @@ translatePath old new path offset =
                                 ( path, offset )
 
 
-parentOffset : Array InlineLeaf -> Int -> Int -> Int
+parentOffset : Array Inline -> Int -> Int -> Int
 parentOffset leaves index offset =
     let
         ( _, newOffset ) =
             Array.foldl
                 (\l ( i, accOffset ) ->
                     case l of
-                        TextLeaf tl ->
+                        Text tl ->
                             ( i + 1
                             , if i < index then
                                 accOffset + String.length (text tl)
@@ -212,7 +212,7 @@ parentOffset leaves index offset =
                                 accOffset
                             )
 
-                        ElementLeaf _ ->
+                        InlineElement _ ->
                             ( i + 1
                             , if i < index then
                                 accOffset + 1
@@ -227,7 +227,7 @@ parentOffset leaves index offset =
     newOffset
 
 
-childOffset : Array InlineLeaf -> Int -> ( Int, Int )
+childOffset : Array Inline -> Int -> ( Int, Int )
 childOffset leaves offset =
     let
         ( newIndex, newOffset, _ ) =
@@ -241,14 +241,14 @@ childOffset leaves offset =
 
                     else
                         case l of
-                            TextLeaf tl ->
+                            Text tl ->
                                 if accOffset <= String.length (text tl) then
                                     ( i, accOffset, True )
 
                                 else
                                     ( i + 1, accOffset - String.length (text tl), False )
 
-                            ElementLeaf _ ->
+                            InlineElement _ ->
                                 ( i + 1, accOffset - 1, False )
                 )
                 ( 0, offset, False )

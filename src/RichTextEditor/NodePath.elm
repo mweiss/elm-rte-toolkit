@@ -24,17 +24,17 @@ import RichTextEditor.Model.HtmlNode exposing (HtmlNode(..))
 import RichTextEditor.Model.Mark as Mark exposing (Mark)
 import RichTextEditor.Model.Node
     exposing
-        ( BlockNode
-        , ChildNodes(..)
-        , InlineLeaf
-        , InlineLeafTree(..)
+        ( Block
+        , Children(..)
+        , Inline
+        , InlineTree(..)
         , Path
         , childNodes
         , elementFromBlockNode
-        , fromBlockArray
-        , fromInlineArray
-        , reverseLookupFromInlineArray
-        , treeFromInlineArray
+        , inlineArray
+        , inlineTree
+        , reverseLookup
+        , toBlockArray
         )
 import RichTextEditor.Model.Spec
     exposing
@@ -48,7 +48,7 @@ import RichTextEditor.Spec
         )
 
 
-domToEditorInlineLeafTree : InlineLeafTree -> Path -> Maybe Path
+domToEditorInlineLeafTree : InlineTree -> Path -> Maybe Path
 domToEditorInlineLeafTree tree path =
     case tree of
         LeafNode i ->
@@ -83,7 +83,7 @@ domToEditorInlineLeafTree tree path =
 {-| Translates a DOM node path to an editor node path. Returns Nothing if the
 path is invalid.
 -}
-domToEditor : BlockNode -> Path -> Maybe Path
+domToEditor : Block -> Path -> Maybe Path
 domToEditor node path =
     if List.isEmpty path then
         Just []
@@ -111,7 +111,7 @@ domToEditor node path =
                     Just i ->
                         case childNodes node of
                             BlockChildren l ->
-                                case Array.get i (fromBlockArray l) of
+                                case Array.get i (toBlockArray l) of
                                     Nothing ->
                                         Nothing
 
@@ -124,7 +124,7 @@ domToEditor node path =
                                                 Just (i :: p)
 
                             InlineChildren l ->
-                                case Array.get i (treeFromInlineArray l) of
+                                case Array.get i (inlineTree l) of
                                     Nothing ->
                                         Nothing
 
@@ -140,7 +140,7 @@ domToEditor node path =
 {-| Translates an editor node path to a DOM node path. Returns Nothing if the
 path is invalid.
 -}
-editorToDom : BlockNode -> Path -> Maybe Path
+editorToDom : Block -> Path -> Maybe Path
 editorToDom node path =
     case path of
         [] ->
@@ -154,7 +154,7 @@ editorToDom node path =
                 Just childPath ->
                     case childNodes node of
                         BlockChildren l ->
-                            case Array.get x (fromBlockArray l) of
+                            case Array.get x (toBlockArray l) of
                                 Nothing ->
                                     Nothing
 
@@ -167,15 +167,15 @@ editorToDom node path =
                                             Just (childPath ++ (x :: p))
 
                         InlineChildren l ->
-                            case Array.get x (reverseLookupFromInlineArray l) of
+                            case Array.get x (reverseLookup l) of
                                 Nothing ->
                                     Nothing
 
                                 Just inlineTreePath ->
                                     case
                                         pathToChildContentsFromInlineTreePath
-                                            (fromInlineArray l)
-                                            (treeFromInlineArray l)
+                                            (inlineArray l)
+                                            (inlineTree l)
                                             inlineTreePath
                                     of
                                         Nothing ->
@@ -305,7 +305,7 @@ pathToChildContentsFromElementParameters parameters =
     pathToChildContents nodeStructure
 
 
-pathToChildContentsFromInlineTreePath : Array InlineLeaf -> Array InlineLeafTree -> Path -> Maybe Path
+pathToChildContentsFromInlineTreePath : Array Inline -> Array InlineTree -> Path -> Maybe Path
 pathToChildContentsFromInlineTreePath array treeArray path =
     case path of
         [] ->

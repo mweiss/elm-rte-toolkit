@@ -12,7 +12,7 @@ module RichTextEditor.Model.State exposing
 track of and manipulate the contents of the editor.
 -}
 
-import RichTextEditor.Model.Node exposing (BlockNode, isSameBlockNode)
+import RichTextEditor.Model.Node exposing (Block, isSameBlock)
 import RichTextEditor.Model.Selection exposing (Selection)
 
 
@@ -21,12 +21,12 @@ type State
 
 
 type alias Contents =
-    { root : BlockNode
+    { root : Block
     , selection : Maybe Selection
     }
 
 
-state : BlockNode -> Maybe Selection -> State
+state : Block -> Maybe Selection -> State
 state r s =
     State { root = r, selection = s }
 
@@ -38,7 +38,7 @@ selection st =
             s.selection
 
 
-root : State -> BlockNode
+root : State -> Block
 root st =
     case st of
         State s ->
@@ -52,7 +52,7 @@ withSelection sel st =
             State { s | selection = sel }
 
 
-withRoot : BlockNode -> State -> State
+withRoot : Block -> State -> State
 withRoot node st =
     case st of
         State s ->
@@ -61,4 +61,4 @@ withRoot node st =
 
 isSame : State -> State -> Bool
 isSame s1 s2 =
-    isSameBlockNode (root s1) (root s2) && selection s1 == selection s2
+    isSameBlock (root s1) (root s2) && selection s1 == selection s2

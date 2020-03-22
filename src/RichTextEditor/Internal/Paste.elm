@@ -17,15 +17,15 @@ import RichTextEditor.Model.Editor exposing (Editor, spec)
 import RichTextEditor.Model.Event exposing (PasteEvent)
 import RichTextEditor.Model.Node
     exposing
-        ( BlockNode
-        , ChildNodes(..)
-        , InlineLeaf(..)
+        ( Block
+        , Children(..)
+        , Inline(..)
         , blockNode
         , childNodes
         , elementFromBlockNode
-        , fromInlineArray
-        , inlineLeafArray
-        , textLeafWithText
+        , inlineArray
+        , inlineChildren
+        , plainText
         )
 import RichTextEditor.Model.Selection
     exposing
@@ -97,9 +97,9 @@ pasteText text editorState =
                                     List.map
                                         (\line ->
                                             blockNode (elementFromBlockNode tbNode)
-                                                (inlineLeafArray <|
+                                                (inlineChildren <|
                                                     Array.fromList
-                                                        [ textLeafWithText line
+                                                        [ plainText line
                                                         ]
                                                 )
                                         )
@@ -145,7 +145,7 @@ pasteFragment fragment editorState =
             pasteBlockArray a editorState
 
 
-pasteInlineArray : Array InlineLeaf -> Transform
+pasteInlineArray : Array Inline -> Transform
 pasteInlineArray inlineFragment editorState =
     case State.selection editorState of
         Nothing ->
@@ -174,19 +174,19 @@ pasteInlineArray inlineFragment editorState =
                                         Err "Invalid state, somehow the anchor node is the root node"
 
                                     Just index ->
-                                        case Array.get index (fromInlineArray a) of
+                                        case Array.get index (inlineArray a) of
                                             Nothing ->
                                                 Err "Invalid anchor node path"
 
                                             Just inlineNode ->
                                                 case inlineNode of
-                                                    TextLeaf tl ->
+                                                    Text tl ->
                                                         let
                                                             ( previous, next ) =
                                                                 splitTextLeaf (anchorOffset selection) tl
 
                                                             newFragment =
-                                                                Array.fromList <| TextLeaf previous :: (Array.toList inlineFragment ++ [ TextLeaf next ])
+                                                                Array.fromList <| Text previous :: (Array.toList inlineFragment ++ [ Text next ])
 
                                                             replaceResult =
                                                                 replaceWithFragment (anchorNode selection)
@@ -207,7 +207,7 @@ pasteInlineArray inlineFragment editorState =
                                                                         |> withRoot newRoot
                                                                     )
 
-                                                    ElementLeaf _ ->
+                                                    InlineElement _ ->
                                                         let
                                                             replaceResult =
                                                                 replaceWithFragment (anchorNode selection) (InlineLeafFragment inlineFragment) (State.root editorState)
@@ -227,7 +227,7 @@ pasteInlineArray inlineFragment editorState =
                                                                     )
 
 
-pasteBlockArray : Array BlockNode -> Transform
+pasteBlockArray : Array Block -> Transform
 pasteBlockArray blockFragment editorState =
     -- split, add nodes, select beginning, join backwards, select end, join forward
     case State.selection editorState of

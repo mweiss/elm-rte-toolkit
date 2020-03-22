@@ -13,7 +13,7 @@ import RichTextEditor.Annotation
         , findPathsWithAnnotation
         )
 import RichTextEditor.Model.Annotations exposing (selection)
-import RichTextEditor.Model.Node exposing (BlockNode, Path)
+import RichTextEditor.Model.Node exposing (Block, Path)
 import RichTextEditor.Model.Selection
     exposing
         ( Selection
@@ -26,17 +26,17 @@ import RichTextEditor.Model.Selection
 import RichTextEditor.NodePath as Path
 
 
-domToEditor : BlockNode -> Selection -> Maybe Selection
+domToEditor : Block -> Selection -> Maybe Selection
 domToEditor =
     transformSelection Path.domToEditor
 
 
-editorToDom : BlockNode -> Selection -> Maybe Selection
+editorToDom : Block -> Selection -> Maybe Selection
 editorToDom =
     transformSelection Path.editorToDom
 
 
-transformSelection : (BlockNode -> Path -> Maybe Path) -> BlockNode -> Selection -> Maybe Selection
+transformSelection : (Block -> Path -> Maybe Path) -> Block -> Selection -> Maybe Selection
 transformSelection transformation node selection =
     case transformation node (anchorNode selection) of
         Nothing ->
@@ -51,22 +51,22 @@ transformSelection transformation node selection =
                     Just <| rangeSelection an (anchorOffset selection) fn (focusOffset selection)
 
 
-annotateSelection : Selection -> BlockNode -> BlockNode
+annotateSelection : Selection -> Block -> Block
 annotateSelection selection node =
     addSelectionAnnotationAtPath (focusNode selection) <| addSelectionAnnotationAtPath (anchorNode selection) node
 
 
-addSelectionAnnotationAtPath : Path -> BlockNode -> BlockNode
+addSelectionAnnotationAtPath : Path -> Block -> Block
 addSelectionAnnotationAtPath nodePath node =
     Result.withDefault node (addAnnotationAtPath selection nodePath node)
 
 
-clearSelectionAnnotations : BlockNode -> BlockNode
+clearSelectionAnnotations : Block -> Block
 clearSelectionAnnotations =
     clearAnnotations selection
 
 
-selectionFromAnnotations : BlockNode -> Int -> Int -> Maybe Selection
+selectionFromAnnotations : Block -> Int -> Int -> Maybe Selection
 selectionFromAnnotations node anchorOffset focusOffset =
     case findNodeRangeFromSelectionAnnotations node of
         Nothing ->
@@ -76,7 +76,7 @@ selectionFromAnnotations node anchorOffset focusOffset =
             Just (rangeSelection start anchorOffset end focusOffset)
 
 
-findNodeRangeFromSelectionAnnotations : BlockNode -> Maybe ( Path, Path )
+findNodeRangeFromSelectionAnnotations : Block -> Maybe ( Path, Path )
 findNodeRangeFromSelectionAnnotations node =
     let
         paths =

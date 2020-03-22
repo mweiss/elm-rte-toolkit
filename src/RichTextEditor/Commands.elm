@@ -82,22 +82,21 @@ import RichTextEditor.Model.Keys
 import RichTextEditor.Model.Mark as Mark exposing (Mark, MarkOrder, ToggleAction(..), toggle)
 import RichTextEditor.Model.Node
     exposing
-        ( BlockArray
-        , BlockNode
-        , ChildNodes(..)
-        , InlineLeaf(..)
+        ( Block
+        , BlockChildren
+        , Children(..)
+        , Inline(..)
         , Path
-        , annotationsFromBlockNode
-        , blockArray
         , blockNode
-        , blockNodeWithElement
         , childNodes
         , elementFromBlockNode
         , fromBlockArray
-        , fromInlineArray
-        , inlineLeafArray
+        , inlineArray
+        , inlineChildren
         , marksFromInlineLeaf
+        , toBlockArray
         , withChildNodes
+        , withElement
         )
 import RichTextEditor.Model.Selection
     exposing
@@ -154,7 +153,7 @@ import RichTextEditor.Selection
         , selectionFromAnnotations
         )
 import RichTextEditor.Specs exposing (hardBreak)
-import Set
+import Set exposing (Set)
 import String.Extra
 
 
@@ -259,16 +258,16 @@ insertTextAtSelection s editorState =
 
                             Inline il ->
                                 case il of
-                                    ElementLeaf _ ->
+                                    InlineElement _ ->
                                         Err "I was expecting a text leaf, but instead found a block node"
 
-                                    TextLeaf tl ->
+                                    Text tl ->
                                         let
                                             newText =
                                                 String.Extra.insertAt s (anchorOffset selection) (Text.text tl)
 
                                             newTextLeaf =
-                                                TextLeaf (tl |> Text.withText newText)
+                                                Text (tl |> Text.withText newText)
                                         in
                                         case
                                             replace
@@ -319,7 +318,7 @@ joinBackward editorState =
                                     InlineChildren a ->
                                         let
                                             array =
-                                                fromInlineArray a
+                                                inlineArray a
                                         in
                                         case Array.get (Array.length array - 1) array of
                                             Nothing ->
@@ -329,12 +328,12 @@ joinBackward editorState =
                                                 let
                                                     newSelection =
                                                         case leaf of
-                                                            TextLeaf tl ->
+                                                            Text tl ->
                                                                 caretSelection
                                                                     (p ++ [ Array.length array - 1 ])
                                                                     (String.length (Text.text tl))
 
-                                                            ElementLeaf _ ->
+                                                            InlineElement _ ->
                                                                 caretSelection
                                                                     (p ++ [ Array.length array - 1 ])
                                                                     0
@@ -348,7 +347,7 @@ joinBackward editorState =
                                         Err "I can only join with text blocks"
 
 
-selectionIsBeginningOfTextBlock : Selection -> BlockNode -> Bool
+selectionIsBeginningOfTextBlock : Selection -> Block -> Bool
 selectionIsBeginningOfTextBlock selection root =
     if not <| isCollapsed selection then
         False
@@ -366,7 +365,7 @@ selectionIsBeginningOfTextBlock selection root =
                                 False
 
                             Just i ->
-                                if i /= 0 || Array.isEmpty (fromInlineArray a) then
+                                if i /= 0 || Array.isEmpty (inlineArray a) then
                                     False
 
                                 else
@@ -376,7 +375,7 @@ selectionIsBeginningOfTextBlock selection root =
                         False
 
 
-selectionIsEndOfTextBlock : Selection -> BlockNode -> Bool
+selectionIsEndOfTextBlock : Selection -> Block -> Bool
 selectionIsEndOfTextBlock selection root =
     if not <| isCollapsed selection then
         False
@@ -394,20 +393,20 @@ selectionIsEndOfTextBlock selection root =
                                 False
 
                             Just i ->
-                                if i /= Array.length (fromInlineArray a) - 1 then
+                                if i /= Array.length (inlineArray a) - 1 then
                                     False
 
                                 else
-                                    case Array.get i (fromInlineArray a) of
+                                    case Array.get i (inlineArray a) of
                                         Nothing ->
                                             False
 
                                         Just leaf ->
                                             case leaf of
-                                                TextLeaf tl ->
+                                                Text tl ->
                                                     String.length (Text.text tl) == anchorOffset selection
 
-                                                ElementLeaf _ ->
+                                                InlineElement _ ->
                                                     True
 
                     _ ->
@@ -475,10 +474,10 @@ isTextBlock _ node =
 
 
 type alias FindFunc =
-    (Path -> Node -> Bool) -> Path -> BlockNode -> Maybe ( Path, Node )
+    (Path -> Node -> Bool) -> Path -> Block -> Maybe ( Path, Node )
 
 
-findTextBlock : FindFunc -> Path -> BlockNode -> Maybe ( Path, BlockNode )
+findTextBlock : FindFunc -> Path -> Block -> Maybe ( Path, Block )
 findTextBlock findFunc path node =
     case
         findFunc
@@ -498,12 +497,12 @@ findTextBlock findFunc path node =
                     Nothing
 
 
-findNextTextBlock : Path -> BlockNode -> Maybe ( Path, BlockNode )
+findNextTextBlock : Path -> Block -> Maybe ( Path, Block )
 findNextTextBlock =
     findTextBlock findForwardFromExclusive
 
 
-findPreviousTextBlock : Path -> BlockNode -> Maybe ( Path, BlockNode )
+findPreviousTextBlock : Path -> Block -> Maybe ( Path, Block )
 findPreviousTextBlock =
     findTextBlock findBackwardFromExclusive
 
@@ -615,10 +614,10 @@ removeRangeSelection editorState =
 insertLineBreak : Transform
 insertLineBreak =
     insertInlineElement
-        (ElementLeaf (inlineElement (element hardBreak [] Set.empty) []))
+        (InlineElement (inlineElement (element hardBreak [] Set.empty) []))
 
 
-insertInlineElement : InlineLeaf -> Transform
+insertInlineElement : Inline -> Transform
 insertInlineElement leaf editorState =
     case State.selection editorState of
         Nothing ->
@@ -637,7 +636,7 @@ insertInlineElement leaf editorState =
                         case node of
                             Inline il ->
                                 case il of
-                                    ElementLeaf _ ->
+                                    InlineElement _ ->
                                         case
                                             replace
                                                 (anchorNode selection)
@@ -668,7 +667,7 @@ insertInlineElement leaf editorState =
                                                         |> withSelection newSelection
                                                     )
 
-                                    TextLeaf tl ->
+                                    Text tl ->
                                         let
                                             ( before, after ) =
                                                 splitTextLeaf (anchorOffset selection) tl
@@ -678,7 +677,7 @@ insertInlineElement leaf editorState =
                                                 (anchorNode selection)
                                                 (InlineLeafFragment
                                                     (Array.fromList
-                                                        [ TextLeaf before, leaf, TextLeaf after ]
+                                                        [ Text before, leaf, Text after ]
                                                     )
                                                 )
                                                 (State.root editorState)
@@ -716,7 +715,7 @@ splitTextBlock =
     splitBlock findTextBlockNodeAncestor
 
 
-splitBlock : (Path -> BlockNode -> Maybe ( Path, BlockNode )) -> Transform
+splitBlock : (Path -> Block -> Maybe ( Path, Block )) -> Transform
 splitBlock ancestorFunc editorState =
     case State.selection editorState of
         Nothing ->
@@ -765,7 +764,7 @@ splitBlock ancestorFunc editorState =
                                             )
 
 
-isLeafNode : Path -> BlockNode -> Bool
+isLeafNode : Path -> Block -> Bool
 isLeafNode path root =
     case nodeAt path root of
         Nothing ->
@@ -783,14 +782,14 @@ isLeafNode path root =
 
                 Inline l ->
                     case l of
-                        ElementLeaf _ ->
+                        InlineElement _ ->
                             True
 
-                        TextLeaf _ ->
+                        Text _ ->
                             False
 
 
-removeTextAtRange : Path -> Int -> Maybe Int -> BlockNode -> Result String BlockNode
+removeTextAtRange : Path -> Int -> Maybe Int -> Block -> Result String Block
 removeTextAtRange nodePath start maybeEnd root =
     case nodeAt nodePath root of
         Just node ->
@@ -800,21 +799,21 @@ removeTextAtRange nodePath start maybeEnd root =
 
                 Inline leaf ->
                     case leaf of
-                        ElementLeaf _ ->
+                        InlineElement _ ->
                             Err "I was expecting a text leaf, but instead I got an inline leaf"
 
-                        TextLeaf v ->
+                        Text v ->
                             let
                                 textNode =
                                     case maybeEnd of
                                         Nothing ->
-                                            TextLeaf
+                                            Text
                                                 (v
                                                     |> Text.withText (String.left start (Text.text v))
                                                 )
 
                                         Just end ->
-                                            TextLeaf
+                                            Text
                                                 (v
                                                     |> Text.withText
                                                         (String.left start (Text.text v)
@@ -856,7 +855,7 @@ removeSelectedLeafElement editorState =
                                         case n of
                                             Inline il ->
                                                 case il of
-                                                    TextLeaf t ->
+                                                    Text t ->
                                                         String.length (Text.text t)
 
                                                     _ ->
@@ -923,15 +922,15 @@ backspaceText editorState =
 
                             Inline il ->
                                 case il of
-                                    ElementLeaf _ ->
+                                    InlineElement _ ->
                                         Err "I cannot backspace text of an inline leaf"
 
-                                    TextLeaf tl ->
+                                    Text tl ->
                                         if anchorOffset selection == 1 then
                                             case
                                                 replace (anchorNode selection)
                                                     (Inline
-                                                        (TextLeaf
+                                                        (Text
                                                             (tl
                                                                 |> Text.withText (String.dropLeft 1 (Text.text tl))
                                                             )
@@ -962,7 +961,7 @@ backspaceText editorState =
                                                     case previousNode of
                                                         Inline previousInlineLeafWrapper ->
                                                             case previousInlineLeafWrapper of
-                                                                TextLeaf previousTextLeaf ->
+                                                                Text previousTextLeaf ->
                                                                     let
                                                                         l =
                                                                             String.length (Text.text previousTextLeaf)
@@ -975,7 +974,7 @@ backspaceText editorState =
                                                                             |> withSelection (Just newSelection)
                                                                         )
 
-                                                                ElementLeaf _ ->
+                                                                InlineElement _ ->
                                                                     Err "Cannot backspace the text of an inline leaf"
 
                                                         Block _ ->
@@ -1023,26 +1022,26 @@ toggleMarkSingleInlineNode markOrder mark action editorState =
 
                                     leaves =
                                         case il of
-                                            ElementLeaf leaf ->
-                                                [ ElementLeaf
+                                            InlineElement leaf ->
+                                                [ InlineElement
                                                     (leaf
                                                         |> InlineElement.withMarks newMarks
                                                     )
                                                 ]
 
-                                            TextLeaf leaf ->
+                                            Text leaf ->
                                                 if
                                                     String.length (Text.text leaf)
                                                         == focusOffset normalizedSelection
                                                         && anchorOffset normalizedSelection
                                                         == 0
                                                 then
-                                                    [ TextLeaf (leaf |> Text.withMarks newMarks) ]
+                                                    [ Text (leaf |> Text.withMarks newMarks) ]
 
                                                 else
                                                     let
                                                         newNode =
-                                                            TextLeaf
+                                                            Text
                                                                 (leaf
                                                                     |> Text.withMarks newMarks
                                                                     |> Text.withText
@@ -1054,7 +1053,7 @@ toggleMarkSingleInlineNode markOrder mark action editorState =
                                                                 )
 
                                                         left =
-                                                            TextLeaf
+                                                            Text
                                                                 (leaf
                                                                     |> Text.withText
                                                                         (String.left
@@ -1064,7 +1063,7 @@ toggleMarkSingleInlineNode markOrder mark action editorState =
                                                                 )
 
                                                         right =
-                                                            TextLeaf
+                                                            Text
                                                                 (leaf
                                                                     |> Text.withText
                                                                         (String.dropLeft
@@ -1205,10 +1204,10 @@ toggleMarkOnInlineNodes markOrder mark action editorState =
                                         let
                                             focusOffset =
                                                 case il of
-                                                    TextLeaf leaf ->
+                                                    Text leaf ->
                                                         String.length (Text.text leaf)
 
-                                                    ElementLeaf _ ->
+                                                    InlineElement _ ->
                                                         0
                                         in
                                         Result.withDefault modifiedEndNodeEditorState <|
@@ -1313,7 +1312,7 @@ toggleBlock allowedBlocks onParams offParams editorState =
                                                     elementFromBlockNode bn
                                             in
                                             if List.member (Element.name p) allowedBlocks then
-                                                Block (bn |> blockNodeWithElement newParams)
+                                                Block (bn |> withElement newParams)
 
                                             else
                                                 node
@@ -1332,7 +1331,7 @@ toggleBlock allowedBlocks onParams offParams editorState =
             Ok (editorState |> withRoot newRoot)
 
 
-wrap : (BlockNode -> BlockNode) -> Element -> Transform
+wrap : (Block -> Block) -> Element -> Transform
 wrap contentsMapFunc elementParameters editorState =
     case State.selection editorState of
         Nothing ->
@@ -1365,10 +1364,10 @@ wrap contentsMapFunc elementParameters editorState =
                             newChildren =
                                 case node of
                                     Block bn ->
-                                        blockArray (Array.map contentsMapFunc (Array.fromList [ bn ]))
+                                        fromBlockArray (Array.map contentsMapFunc (Array.fromList [ bn ]))
 
                                     Inline il ->
-                                        inlineLeafArray (Array.fromList [ il ])
+                                        inlineChildren (Array.fromList [ il ])
 
                             newNode =
                                 blockNode elementParameters newChildren
@@ -1412,28 +1411,28 @@ wrap contentsMapFunc elementParameters editorState =
                                                         let
                                                             newChildNode =
                                                                 blockNode elementParameters
-                                                                    (blockArray <|
+                                                                    (fromBlockArray <|
                                                                         Array.map
                                                                             contentsMapFunc
                                                                             (Array.slice childAnchorIndex
                                                                                 (childFocusIndex + 1)
-                                                                                (fromBlockArray a)
+                                                                                (toBlockArray a)
                                                                             )
                                                                     )
 
                                                             newBlockArray =
-                                                                blockArray <|
+                                                                fromBlockArray <|
                                                                     Array.append
                                                                         (Array.append
                                                                             (Array.Extra.sliceUntil
                                                                                 childAnchorIndex
-                                                                                (fromBlockArray a)
+                                                                                (toBlockArray a)
                                                                             )
                                                                             (Array.fromList [ newChildNode ])
                                                                         )
                                                                         (Array.Extra.sliceFrom
                                                                             (childFocusIndex + 1)
-                                                                            (fromBlockArray a)
+                                                                            (toBlockArray a)
                                                                         )
 
                                                             newNode =
@@ -1477,10 +1476,10 @@ selectAll editorState =
                                 case node of
                                     Inline il ->
                                         case il of
-                                            TextLeaf tl ->
+                                            Text tl ->
                                                 String.length (Text.text tl)
 
-                                            ElementLeaf _ ->
+                                            InlineElement _ ->
                                                 0
 
                                     Block _ ->
@@ -1510,7 +1509,7 @@ selectAll editorState =
                 )
 
 
-addLiftMarkToBlocksInSelection : Selection -> BlockNode -> BlockNode
+addLiftMarkToBlocksInSelection : Selection -> Block -> Block
 addLiftMarkToBlocksInSelection selection root =
     let
         start =
@@ -1558,6 +1557,11 @@ addLiftMarkToBlocksInSelection selection root =
             root
 
 
+annotationsFromBlockNode : Block -> Set String
+annotationsFromBlockNode node =
+    Element.annotations <| elementFromBlockNode node
+
+
 liftConcatMapFunc : Node -> List Node
 liftConcatMapFunc node =
     case node of
@@ -1581,7 +1585,7 @@ liftConcatMapFunc node =
                                             Annotations.lift
                                             (annotationsFromBlockNode n2)
                                 )
-                                (Array.toList (fromBlockArray a))
+                                (Array.toList (toBlockArray a))
                     in
                     List.map Block <|
                         List.concatMap
@@ -1590,7 +1594,7 @@ liftConcatMapFunc node =
                                     n :: l
 
                                 else
-                                    [ bn |> withChildNodes (blockArray (Array.fromList <| n :: l)) ]
+                                    [ bn |> withChildNodes (fromBlockArray (Array.fromList <| n :: l)) ]
                             )
                             groupedBlockNodes
 
@@ -1670,7 +1674,7 @@ isEmptyTextBlock node =
                 InlineChildren a ->
                     let
                         array =
-                            fromInlineArray a
+                            inlineArray a
                     in
                     case Array.get 0 array of
                         Nothing ->
@@ -1680,7 +1684,7 @@ isEmptyTextBlock node =
                             Array.length array
                                 == 1
                                 && (case n of
-                                        TextLeaf t ->
+                                        Text t ->
                                             String.isEmpty (Text.text t)
 
                                         _ ->
@@ -1737,7 +1741,7 @@ splitBlockHeaderToNewParagraph headerElements paragraphElement editorState =
                                                 replace p
                                                     (Block
                                                         (bn
-                                                            |> blockNodeWithElement
+                                                            |> withElement
                                                                 paragraphElement
                                                         )
                                                     )
@@ -1756,7 +1760,7 @@ splitBlockHeaderToNewParagraph headerElements paragraphElement editorState =
                                         Ok splitEditorState
 
 
-insertBlockNode : BlockNode -> Transform
+insertBlockNode : Block -> Transform
 insertBlockNode node editorState =
     case State.selection editorState of
         Nothing ->
@@ -1809,7 +1813,7 @@ insertBlockNode node editorState =
                                         insertBlockNodeBeforeSelection node splitEditorState
 
 
-insertBlockNodeBeforeSelection : BlockNode -> Transform
+insertBlockNodeBeforeSelection : Block -> Transform
 insertBlockNodeBeforeSelection node editorState =
     case State.selection editorState of
         Nothing ->
@@ -1900,7 +1904,7 @@ backspaceInlineElement editorState =
                         case node of
                             Inline il ->
                                 case il of
-                                    ElementLeaf _ ->
+                                    InlineElement _ ->
                                         case
                                             replaceWithFragment
                                                 decrementedPath
@@ -1917,7 +1921,7 @@ backspaceInlineElement editorState =
                                                         |> withRoot newRoot
                                                     )
 
-                                    TextLeaf _ ->
+                                    Text _ ->
                                         Err "There is no previous inline leaf element, found a text leaf"
 
                             Block _ ->
@@ -1974,33 +1978,33 @@ backspaceBlockNode editorState =
                                 Err "The previous element is not a block node"
 
 
-groupSameTypeInlineLeaf : InlineLeaf -> InlineLeaf -> Bool
+groupSameTypeInlineLeaf : Inline -> Inline -> Bool
 groupSameTypeInlineLeaf a b =
     case a of
-        ElementLeaf _ ->
+        InlineElement _ ->
             case b of
-                ElementLeaf _ ->
+                InlineElement _ ->
                     True
 
-                TextLeaf _ ->
+                Text _ ->
                     False
 
-        TextLeaf _ ->
+        Text _ ->
             case b of
-                TextLeaf _ ->
+                Text _ ->
                     True
 
-                ElementLeaf _ ->
+                InlineElement _ ->
                     False
 
 
-textFromGroup : List InlineLeaf -> String
+textFromGroup : List Inline -> String
 textFromGroup leaves =
     String.join "" <|
         List.map
             (\leaf ->
                 case leaf of
-                    TextLeaf t ->
+                    Text t ->
                         Text.text t
 
                     _ ->
@@ -2009,15 +2013,15 @@ textFromGroup leaves =
             leaves
 
 
-lengthsFromGroup : List InlineLeaf -> List Int
+lengthsFromGroup : List Inline -> List Int
 lengthsFromGroup leaves =
     List.map
         (\il ->
             case il of
-                TextLeaf tl ->
+                Text tl ->
                     String.length (Text.text tl)
 
-                ElementLeaf _ ->
+                InlineElement _ ->
                     0
         )
         leaves
@@ -2053,7 +2057,7 @@ backspaceWord editorState =
                                         -- group text nodes together
                                         List.Extra.groupWhile
                                             groupSameTypeInlineLeaf
-                                            (Array.toList (fromInlineArray arr))
+                                            (Array.toList (inlineArray arr))
                                 in
                                 case List.Extra.last (anchorNode selection) of
                                     Nothing ->
@@ -2165,10 +2169,10 @@ deleteText editorState =
 
                             Inline il ->
                                 case il of
-                                    ElementLeaf _ ->
+                                    InlineElement _ ->
                                         Err "I cannot delete text if the selection an inline leaf"
 
-                                    TextLeaf tl ->
+                                    Text tl ->
                                         let
                                             textLength =
                                                 String.length (Text.text tl)
@@ -2181,7 +2185,7 @@ deleteText editorState =
                                                 replace
                                                     (anchorNode selection)
                                                     (Inline
-                                                        (TextLeaf
+                                                        (Text
                                                             (tl |> Text.withText (String.dropRight 1 (Text.text tl)))
                                                         )
                                                     )
@@ -2205,7 +2209,7 @@ deleteText editorState =
 
                                                         Inline nextInlineLeafWrapper ->
                                                             case nextInlineLeafWrapper of
-                                                                TextLeaf _ ->
+                                                                Text _ ->
                                                                     let
                                                                         newSelection =
                                                                             singleNodeRangeSelection nextPath 0 1
@@ -2215,7 +2219,7 @@ deleteText editorState =
                                                                             |> withSelection (Just newSelection)
                                                                         )
 
-                                                                ElementLeaf _ ->
+                                                                InlineElement _ ->
                                                                     Err "Cannot backspace the text of an inline leaf"
 
 
@@ -2243,10 +2247,10 @@ deleteInlineElement editorState =
                                 let
                                     length =
                                         case il of
-                                            TextLeaf t ->
+                                            Text t ->
                                                 String.length (Text.text t)
 
-                                            ElementLeaf _ ->
+                                            InlineElement _ ->
                                                 0
                                 in
                                 if length < anchorOffset selection then
@@ -2265,7 +2269,7 @@ deleteInlineElement editorState =
                                             case incrementedNode of
                                                 Inline nil ->
                                                     case nil of
-                                                        ElementLeaf _ ->
+                                                        InlineElement _ ->
                                                             case
                                                                 replaceWithFragment
                                                                     incrementedPath
@@ -2278,7 +2282,7 @@ deleteInlineElement editorState =
                                                                 Ok newRoot ->
                                                                     Ok (editorState |> withRoot newRoot)
 
-                                                        TextLeaf _ ->
+                                                        Text _ ->
                                                             Err "There is no next inline leaf element, found a text leaf"
 
                                                 Block _ ->
@@ -2346,7 +2350,7 @@ deleteWord editorState =
                                     groupedLeaves =
                                         List.Extra.groupWhile
                                             groupSameTypeInlineLeaf
-                                            (Array.toList (fromInlineArray arr))
+                                            (Array.toList (inlineArray arr))
                                 in
                                 case List.Extra.last (anchorNode selection) of
                                     Nothing ->

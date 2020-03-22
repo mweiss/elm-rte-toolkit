@@ -49,16 +49,16 @@ import RichTextEditor.Model.Keys
         )
 import RichTextEditor.Model.Node
     exposing
-        ( BlockArray
-        , BlockNode
-        , ChildNodes(..)
-        , InlineLeaf(..)
+        ( Block
+        , BlockChildren
+        , Children(..)
+        , Inline(..)
         , Path
-        , blockArray
         , blockNode
         , childNodes
         , elementFromBlockNode
         , fromBlockArray
+        , toBlockArray
         )
 import RichTextEditor.Model.Selection
     exposing
@@ -162,11 +162,11 @@ unordered definition =
             c.unordered
 
 
-addListItem : ListDefinition -> BlockNode -> BlockNode
+addListItem : ListDefinition -> Block -> Block
 addListItem definition node =
     blockNode
         (item definition)
-        (blockArray <|
+        (fromBlockArray <|
             Array.fromList [ node ]
         )
 
@@ -183,7 +183,7 @@ wrap definition type_ editorState =
         editorState
 
 
-findListItemAncestor : Element -> Path -> BlockNode -> Maybe ( Path, BlockNode )
+findListItemAncestor : Element -> Path -> Block -> Maybe ( Path, Block )
 findListItemAncestor parameters =
     findAncestor (\n -> Element.name (elementFromBlockNode n) == Element.name parameters)
 
@@ -210,7 +210,7 @@ isListNode definition node =
                 == Element.name (unordered definition)
 
 
-addLiftAnnotationAtPathAndChildren : Path -> BlockNode -> Result String BlockNode
+addLiftAnnotationAtPathAndChildren : Path -> Block -> Result String Block
 addLiftAnnotationAtPathAndChildren path root =
     case RichTextEditor.Annotation.addAnnotationAtPath Annotations.lift path root of
         Err s ->
@@ -236,7 +236,7 @@ addLiftAnnotationAtPathAndChildren path root =
                                                     RichTextEditor.Annotation.addAnnotationAtPath Annotations.lift (path ++ [ i ]) n
                                         )
                                         (Ok newRoot)
-                                        (List.range 0 (Array.length (fromBlockArray ba) - 1))
+                                        (List.range 0 (Array.length (toBlockArray ba) - 1))
 
                                 _ ->
                                     Err "I was expecting a block array to add a lift mark to"
@@ -245,7 +245,7 @@ addLiftAnnotationAtPathAndChildren path root =
                             Err "I was expecting a block node to add a lift mark to"
 
 
-addLiftMarkToListItems : ListDefinition -> Selection -> BlockNode -> Result String BlockNode
+addLiftMarkToListItems : ListDefinition -> Selection -> Block -> Result String Block
 addLiftMarkToListItems definition selection root =
     case findListItemAncestor (item definition) (anchorNode selection) root of
         Nothing ->
@@ -346,7 +346,7 @@ liftEmpty definition editorState =
                     Just ( _, node ) ->
                         case childNodes node of
                             BlockChildren a ->
-                                case Array.get 0 (fromBlockArray a) of
+                                case Array.get 0 (toBlockArray a) of
                                     Nothing ->
                                         Err "Cannot lift a list item with no children"
 
@@ -361,7 +361,7 @@ liftEmpty definition editorState =
                                 Err "I was expecting a list item to have block child nodes"
 
 
-isBeginningOfListItem : ListDefinition -> Selection -> BlockNode -> Bool
+isBeginningOfListItem : ListDefinition -> Selection -> Block -> Bool
 isBeginningOfListItem definition selection root =
     if not <| isCollapsed selection then
         False
@@ -452,7 +452,7 @@ joinBackward definition editorState =
                                                                 )
 
 
-isEndOfListItem : ListDefinition -> Selection -> BlockNode -> Bool
+isEndOfListItem : ListDefinition -> Selection -> Block -> Bool
 isEndOfListItem definition selection root =
     if not <| isCollapsed selection then
         False
@@ -474,7 +474,7 @@ isEndOfListItem definition selection root =
                     case lastNode of
                         Inline il ->
                             case il of
-                                TextLeaf tl ->
+                                Text tl ->
                                     String.length (text tl) == anchorOffset selection
 
                                 _ ->

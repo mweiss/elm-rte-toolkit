@@ -28,15 +28,15 @@ import RichTextEditor.Model.Keys exposing (enterKey, returnKey)
 import RichTextEditor.Model.Mark as Mark exposing (ToggleAction(..), mark)
 import RichTextEditor.Model.Node
     exposing
-        ( BlockNode
-        , ChildNodes(..)
-        , InlineLeaf(..)
-        , blockArray
+        ( Block
+        , Children(..)
+        , Inline(..)
         , blockNode
-        , inlineLeaf
-        , inlineLeafArray
+        , fromBlockArray
+        , inlineChildren
+        , inlineElement
         , marksFromInlineLeaf
-        , textLeafWithText
+        , plainText
         )
 import RichTextEditor.Model.Selection exposing (anchorNode, focusNode, normalize)
 import RichTextEditor.Model.Spec exposing (Spec)
@@ -77,18 +77,18 @@ type alias Model =
     }
 
 
-docInitNode : BlockNode
+docInitNode : Block
 docInitNode =
     blockNode
         (element doc [] Set.empty)
-        (blockArray (Array.fromList [ initialEditorNode ]))
+        (fromBlockArray (Array.fromList [ initialEditorNode ]))
 
 
-initialEditorNode : BlockNode
+initialEditorNode : Block
 initialEditorNode =
     blockNode
         (element paragraph [] Set.empty)
-        (inlineLeafArray (Array.fromList [ textLeafWithText "This is some sample text" ]))
+        (inlineChildren (Array.fromList [ plainText "This is some sample text" ]))
 
 
 initialState : State
@@ -282,7 +282,7 @@ handleInsertImage model =
                                 (Set.singleton selectable)
 
                         img =
-                            inlineLeaf params []
+                            inlineElement params []
                     in
                     Result.withDefault model.editor <|
                         applyCommand

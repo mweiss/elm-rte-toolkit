@@ -26,15 +26,15 @@ import RichTextEditor.Model.Element as Element exposing (Element, element)
 import RichTextEditor.Model.HtmlNode exposing (HtmlNode(..))
 import RichTextEditor.Model.Node
     exposing
-        ( BlockNode
-        , ChildNodes(..)
+        ( Block
+        , Children(..)
         , Path
-        , blockArray
         , blockNode
-        , blockNodeWithElement
         , elementFromBlockNode
-        , inlineLeafArray
-        , textLeafWithText
+        , fromBlockArray
+        , inlineChildren
+        , plainText
+        , withElement
         )
 import RichTextEditor.Model.Spec
     exposing
@@ -262,21 +262,21 @@ customSpec =
             )
 
 
-docInitNode : BlockNode
+docInitNode : Block
 docInitNode =
     blockNode
         (element doc [] Set.empty)
-        (blockArray (Array.fromList [ initialEditorNode, initialCaptionedImage, initialEditorNode ]))
+        (fromBlockArray (Array.fromList [ initialEditorNode, initialCaptionedImage, initialEditorNode ]))
 
 
-initialEditorNode : BlockNode
+initialEditorNode : Block
 initialEditorNode =
     blockNode
         (element paragraph [] Set.empty)
-        (inlineLeafArray (Array.fromList [ textLeafWithText "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum." ]))
+        (inlineChildren (Array.fromList [ plainText "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum." ]))
 
 
-initialCaptionedImage : BlockNode
+initialCaptionedImage : Block
 initialCaptionedImage =
     blockNode
         (element captionedImage
@@ -384,7 +384,7 @@ updateCaptionedImageText path value state =
                             ep |> Element.withAttributes newAttributes
 
                         newBlockNode =
-                            bn |> blockNodeWithElement newElementParameters
+                            bn |> withElement newElementParameters
                     in
                     if Element.name ep /= "captioned_image" then
                         Err "I received a node that was not a captioned image"

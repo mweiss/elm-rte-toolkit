@@ -3,7 +3,7 @@ module TestModel exposing (..)
 import Array
 import Expect
 import RichTextEditor.Model.Mark exposing (Mark, mark)
-import RichTextEditor.Model.Node exposing (InlineLeafTree(..), marksToMarkNodeList)
+import RichTextEditor.Model.Node exposing (InlineTree(..), marksToMarkNodeList)
 import SimpleSpec exposing (bold, italic, strikethrough)
 import Test exposing (Test, describe, test)
 

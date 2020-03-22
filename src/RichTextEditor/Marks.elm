@@ -10,8 +10,8 @@ import RichTextEditor.Model.InlineElement as InlineElement
 import RichTextEditor.Model.Mark as Mark exposing (Mark, MarkOrder, ToggleAction(..), name, toggle)
 import RichTextEditor.Model.Node
     exposing
-        ( BlockNode
-        , InlineLeaf(..)
+        ( Block
+        , Inline(..)
         , Path
         )
 import RichTextEditor.Model.Text as Text
@@ -23,7 +23,7 @@ hasMarkWithName name marks =
     List.any (\m -> name == Mark.name m) marks
 
 
-toggleMarkAtPath : ToggleAction -> MarkOrder -> Mark -> Path -> BlockNode -> Result String BlockNode
+toggleMarkAtPath : ToggleAction -> MarkOrder -> Mark -> Path -> Block -> Result String Block
 toggleMarkAtPath action markOrder mark path node =
     case nodeAt path node of
         Nothing ->
@@ -52,15 +52,15 @@ toggleMark action markOrder mark node =
         Inline il ->
             Inline <|
                 case il of
-                    TextLeaf leaf ->
-                        TextLeaf <|
+                    Text leaf ->
+                        Text <|
                             (leaf
                                 |> Text.withMarks
                                     (toggle action markOrder mark (Text.marks leaf))
                             )
 
-                    ElementLeaf leaf ->
-                        ElementLeaf <|
+                    InlineElement leaf ->
+                        InlineElement <|
                             (leaf
                                 |> InlineElement.withMarks
                                     (toggle action markOrder mark (InlineElement.marks leaf))

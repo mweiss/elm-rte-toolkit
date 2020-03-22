@@ -8,12 +8,12 @@ import RichTextEditor.Model.Element exposing (element)
 import RichTextEditor.Model.Mark exposing (mark)
 import RichTextEditor.Model.Node
     exposing
-        ( BlockNode
-        , InlineLeaf(..)
-        , blockArray
+        ( Block
+        , Inline(..)
         , blockNode
-        , inlineLeafArray
-        , textLeafWithText
+        , fromBlockArray
+        , inlineChildren
+        , plainText
         )
 import RichTextEditor.Model.State as State exposing (State)
 import RichTextEditor.Model.Text as Text
@@ -82,28 +82,28 @@ subscriptions model =
 ----
 
 
-initNode : BlockNode
+initNode : Block
 initNode =
     blockNode
         (element doc [] Set.empty)
-        (blockArray (Array.fromList [ initialEditorNode ]))
+        (fromBlockArray (Array.fromList [ initialEditorNode ]))
 
 
-initialEditorNode : BlockNode
+initialEditorNode : Block
 initialEditorNode =
     blockNode
         (element paragraph [] Set.empty)
-        (inlineLeafArray
+        (inlineChildren
             (Array.fromList
-                [ textLeafWithText <|
+                [ plainText <|
                     "Rich Text Editor Toolkit is an open source project to make cross platform editors on the web. "
                         ++ "This package treats "
-                , TextLeaf
+                , Text
                     (Text.empty
                         |> Text.withText "contenteditable"
                         |> Text.withMarks [ mark code [] ]
                     )
-                , textLeafWithText <|
+                , plainText <|
                     " as an I/O device, and uses browser events and mutation observers "
                         ++ "to detect changes and update itself.  The editor's model itself is defined "
                         ++ "and validated by a programmable specification that allows you to create a "

@@ -11,7 +11,7 @@ module RichTextEditor.Spec exposing
 
 import Array exposing (Array)
 import Dict exposing (Dict)
-import Html.Parser exposing (Node(..))
+import Html.Parser as Html exposing (Node(..))
 import Result exposing (Result)
 import RichTextEditor.Model.Attribute exposing (Attribute(..))
 import RichTextEditor.Model.Constants exposing (zeroWidthSpace)
@@ -27,18 +27,18 @@ import RichTextEditor.Model.Mark as Mark
         , mark
         , toggle
         )
-import RichTextEditor.Model.Node
+import RichTextEditor.Model.Node as Node
     exposing
-        ( BlockNode
-        , ChildNodes(..)
-        , InlineLeaf(..)
-        , blockArray
+        ( Block
+        , Children(..)
+        , Inline(..)
         , blockNode
         , childNodes
         , elementFromBlockNode
         , fromBlockArray
-        , fromInlineArray
-        , inlineLeafArray
+        , inlineArray
+        , inlineChildren
+        , toBlockArray
         )
 import RichTextEditor.Model.Spec
     exposing
@@ -158,13 +158,13 @@ toStringContentType contentType =
             "BlockLeafNodeType"
 
 
-validateInlineLeaf : Maybe (Set String) -> InlineLeaf -> List String
+validateInlineLeaf : Maybe (Set String) -> Inline -> List String
 validateInlineLeaf allowedGroups leaf =
     case leaf of
-        TextLeaf _ ->
+        Node.Text _ ->
             []
 
-        ElementLeaf il ->
+        Node.InlineElement il ->
             let
                 definition =
                     Element.definition (InlineElement.element il)
@@ -194,7 +194,7 @@ validateAllowedGroups allowedGroups group name =
                 ]
 
 
-validateEditorBlockNode : Maybe (Set String) -> BlockNode -> List String
+validateEditorBlockNode : Maybe (Set String) -> Block -> List String
 validateEditorBlockNode allowedGroups node =
     let
         parameters =
@@ -221,7 +221,7 @@ validateEditorBlockNode allowedGroups node =
                     BlockNodeType groups ->
                         List.concatMap
                             (validateEditorBlockNode groups)
-                            (Array.toList (fromBlockArray ba))
+                            (Array.toList (toBlockArray ba))
 
                     _ ->
                         [ "I was expecting textblock content type, but instead I got "
@@ -231,7 +231,7 @@ validateEditorBlockNode allowedGroups node =
             InlineChildren la ->
                 case contentType of
                     TextBlockNodeType groups ->
-                        List.concatMap (validateInlineLeaf groups) (Array.toList (fromInlineArray la))
+                        List.concatMap (validateInlineLeaf groups) (Array.toList (inlineArray la))
 
                     _ ->
                         [ "I was expecting textblock content type, but instead I got " ++ toStringContentType contentType ]
@@ -286,7 +286,7 @@ htmlNodeToEditorFragment spec marks node =
             Ok <|
                 InlineLeafFragment <|
                     Array.fromList
-                        [ TextLeaf <|
+                        [ Node.Text <|
                             (Text.empty
                                 |> Text.withText (String.replace zeroWidthSpace "" s)
                                 |> Text.withMarks marks
@@ -326,7 +326,7 @@ htmlNodeToEditorFragment spec marks node =
                         Ok <|
                             InlineLeafFragment <|
                                 Array.fromList
-                                    [ ElementLeaf <|
+                                    [ Node.InlineElement <|
                                         inlineElement element marks
                                     ]
 
@@ -408,7 +408,7 @@ reduceEditorFragmentArray fragmentArray =
         fragmentArray
 
 
-arrayToChildNodes : ContentType -> Array (Result String Fragment) -> Result String ChildNodes
+arrayToChildNodes : ContentType -> Array (Result String Fragment) -> Result String Children
 arrayToChildNodes contentType results =
     if Array.isEmpty results then
         case contentType of
@@ -428,7 +428,7 @@ arrayToChildNodes contentType results =
                     InlineLeafFragment ilf ->
                         case contentType of
                             TextBlockNodeType _ ->
-                                Ok <| inlineLeafArray ilf
+                                Ok <| inlineChildren ilf
 
                             _ ->
                                 Err "I received an inline leaf fragment, but the node I parsed doesn't accept this child type"
@@ -436,7 +436,7 @@ arrayToChildNodes contentType results =
                     BlockNodeFragment bnf ->
                         case contentType of
                             BlockNodeType _ ->
-                                Ok <| blockArray bnf
+                                Ok <| fromBlockArray bnf
 
                             _ ->
                                 Err "I received a block node fragment, but the node I parsed doesn't accept this child type"
@@ -486,7 +486,7 @@ arrayToFragment results =
 
 stringToHtmlNodeArray : String -> Result String (Array HtmlNode)
 stringToHtmlNodeArray html =
-    case Html.Parser.run html of
+    case Html.run html of
         Err _ ->
             Err "Could not parse html string"
 
@@ -500,7 +500,7 @@ nodeListToHtmlNodeArray nodeList =
         List.concatMap
             (\n ->
                 case n of
-                    Element name attributes children ->
+                    Html.Element name attributes children ->
                         -- We filter meta tags because chrome adds it to the pasted text/html
                         if String.toLower name /= "meta" then
                             [ ElementNode name attributes <| nodeListToHtmlNodeArray children ]
@@ -508,10 +508,10 @@ nodeListToHtmlNodeArray nodeList =
                         else
                             []
 
-                    Text s ->
+                    Html.Text s ->
                         [ TextNode s ]
 
-                    Comment _ ->
+                    Html.Comment _ ->
                         []
             )
             nodeList

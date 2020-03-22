@@ -22,21 +22,21 @@ import RichTextEditor.Model.InlineElement as InlineElement
 import RichTextEditor.Model.Mark as Mark exposing (Mark, MarkOrder)
 import RichTextEditor.Model.Node
     exposing
-        ( BlockNode
-        , ChildNodes(..)
-        , InlineLeaf(..)
-        , InlineLeafTree(..)
-        , blockArray
+        ( Block
+        , Children(..)
+        , Inline(..)
+        , InlineTree(..)
         , blockNode
         , childNodes
         , elementFromBlockNode
         , fromBlockArray
-        , fromInlineArray
-        , inlineLeaf
-        , inlineLeafArray
-        , textLeaf
-        , textLeafWithText
-        , treeFromInlineArray
+        , inlineArray
+        , inlineChildren
+        , inlineElement
+        , inlineTree
+        , markedText
+        , plainText
+        , toBlockArray
         )
 import RichTextEditor.Model.Spec exposing (Spec, withMarkDefinitions)
 import RichTextEditor.Model.State as State exposing (State)
@@ -355,13 +355,13 @@ unwrapAndFilterChildNodes results =
                     results
 
 
-blockChildrenToMarkdown : ChildNodes -> Result String (List MBlock)
+blockChildrenToMarkdown : Children -> Result String (List MBlock)
 blockChildrenToMarkdown cn =
     case cn of
         BlockChildren a ->
             let
                 results =
-                    List.map blockToMarkdown (Array.toList (fromBlockArray a))
+                    List.map blockToMarkdown (Array.toList (toBlockArray a))
             in
             unwrapAndFilterChildNodes results
 
@@ -372,13 +372,13 @@ blockChildrenToMarkdown cn =
             Err "Invalid child nodes, received leaf, expected block"
 
 
-inlineChildrenToMarkdown : ChildNodes -> Result String (List MInline)
+inlineChildrenToMarkdown : Children -> Result String (List MInline)
 inlineChildrenToMarkdown cn =
     case cn of
         InlineChildren a ->
             let
                 results =
-                    List.map (inlineToMarkdown (fromInlineArray a)) (Array.toList (treeFromInlineArray a))
+                    List.map (inlineToMarkdown (inlineArray a)) (Array.toList (inlineTree a))
             in
             Result.map (List.concatMap identity) (unwrapAndFilterChildNodes results)
 
@@ -389,7 +389,7 @@ inlineChildrenToMarkdown cn =
             Err "Invalid child nodes, was expected inline, received leaf"
 
 
-rootToMarkdown : BlockNode -> Result String (List MBlock)
+rootToMarkdown : Block -> Result String (List MBlock)
 rootToMarkdown node =
     let
         children =
@@ -415,7 +415,7 @@ imageToMarkdown parameters =
             Ok <| MI.Image src alt []
 
 
-inlineToMarkdown : Array InlineLeaf -> InlineLeafTree -> Result String (List MInline)
+inlineToMarkdown : Array Inline -> InlineTree -> Result String (List MInline)
 inlineToMarkdown leaves tree =
     case tree of
         LeafNode i ->
@@ -425,10 +425,10 @@ inlineToMarkdown leaves tree =
 
                 Just inlineLeaf ->
                     case inlineLeaf of
-                        TextLeaf p ->
+                        Text p ->
                             Ok <| [ MI.Text (Text.text p) ]
 
-                        ElementLeaf il ->
+                        InlineElement il ->
                             let
                                 parameters =
                                     InlineElement.element il
@@ -489,7 +489,7 @@ inlineToMarkdown leaves tree =
                             Err <| "Unsupported mark: " ++ name
 
 
-textFromChildNodes : ChildNodes -> String
+textFromChildNodes : Children -> String
 textFromChildNodes cn =
     case cn of
         InlineChildren il ->
@@ -498,10 +498,10 @@ textFromChildNodes cn =
                     Array.map
                         (\l ->
                             case l of
-                                TextLeaf tl ->
+                                Text tl ->
                                     Text.text tl
 
-                                ElementLeaf p ->
+                                InlineElement p ->
                                     if
                                         Element.name
                                             (InlineElement.element p)
@@ -512,13 +512,13 @@ textFromChildNodes cn =
                                     else
                                         ""
                         )
-                        (fromInlineArray il)
+                        (inlineArray il)
 
         _ ->
             ""
 
 
-headingToMarkdown : Element -> ChildNodes -> Result String MBlock
+headingToMarkdown : Element -> Children -> Result String MBlock
 headingToMarkdown p cn =
     let
         attributes =
@@ -530,7 +530,7 @@ headingToMarkdown p cn =
     Result.map (M.Heading "" level) (inlineChildrenToMarkdown cn)
 
 
-codeBlockToMarkdown : ChildNodes -> Result String MBlock
+codeBlockToMarkdown : Children -> Result String MBlock
 codeBlockToMarkdown cn =
     let
         t =
@@ -539,7 +539,7 @@ codeBlockToMarkdown cn =
     Ok <| M.CodeBlock M.Indented t
 
 
-listToMarkdown : M.ListType -> Element -> ChildNodes -> Result String MBlock
+listToMarkdown : M.ListType -> Element -> Children -> Result String MBlock
 listToMarkdown type_ parameters cn =
     let
         delimiter =
@@ -553,7 +553,7 @@ listToMarkdown type_ parameters cn =
                 BlockChildren a ->
                     let
                         children =
-                            Array.toList <| fromBlockArray a
+                            Array.toList <| toBlockArray a
                     in
                     unwrapAndFilterChildNodes <|
                         List.map
@@ -580,7 +580,7 @@ listToMarkdown type_ parameters cn =
                     lis
 
 
-blockToMarkdown : BlockNode -> Result String MBlock
+blockToMarkdown : Block -> Result String MBlock
 blockToMarkdown node =
     let
         parameters =
@@ -781,7 +781,7 @@ markdownBlockToString block =
             Err "Custom element are not implemented"
 
 
-markdownToBlock : List MBlock -> Result String BlockNode
+markdownToBlock : List MBlock -> Result String Block
 markdownToBlock md =
     Result.map
         (\children ->
@@ -792,42 +792,42 @@ markdownToBlock md =
         (markdownBlockListToBlockChildNodes md)
 
 
-markdownBlockListToBlockChildNodes : List MBlock -> Result String ChildNodes
+markdownBlockListToBlockChildNodes : List MBlock -> Result String Children
 markdownBlockListToBlockChildNodes blocks =
     Result.map
-        (\items -> blockArray (Array.fromList items))
+        (\items -> fromBlockArray (Array.fromList items))
         (markdownBlockListToBlockLeaves blocks)
 
 
-markdownBlockListToBlockLeaves : List MBlock -> Result String (List BlockNode)
+markdownBlockListToBlockLeaves : List MBlock -> Result String (List Block)
 markdownBlockListToBlockLeaves blocks =
     unwrapAndFilterChildNodes (List.map markdownBlockToEditorBlock blocks)
 
 
-markdownInlineListToInlineChildNodes : List MInline -> Result String ChildNodes
+markdownInlineListToInlineChildNodes : List MInline -> Result String Children
 markdownInlineListToInlineChildNodes inlines =
     Result.map
-        (\items -> inlineLeafArray (Array.fromList items))
+        (\items -> inlineChildren (Array.fromList items))
         (markdownInlineListToInlineLeaves [] inlines)
 
 
-markdownInlineListToInlineLeaves : List Mark -> List MInline -> Result String (List InlineLeaf)
+markdownInlineListToInlineLeaves : List Mark -> List MInline -> Result String (List Inline)
 markdownInlineListToInlineLeaves marks inlines =
     Result.map
         (\items -> List.concatMap identity items)
         (unwrapAndFilterChildNodes (List.map (markdownInlineToInlineLeaves marks) inlines))
 
 
-markdownInlineToInlineLeaves : List Mark -> MInline -> Result String (List InlineLeaf)
+markdownInlineToInlineLeaves : List Mark -> MInline -> Result String (List Inline)
 markdownInlineToInlineLeaves marks inline =
     case inline of
         MI.Text s ->
             Ok <|
-                [ textLeaf s (Mark.sort markdownMarkOrder marks) ]
+                [ markedText s (Mark.sort markdownMarkOrder marks) ]
 
         MI.HardLineBreak ->
             Ok <|
-                [ inlineLeaf (element hardBreak [] Set.empty)
+                [ inlineElement (element hardBreak [] Set.empty)
                     []
                 ]
 
@@ -836,7 +836,7 @@ markdownInlineToInlineLeaves marks inline =
                 codeMark =
                     Mark.mark code []
             in
-            Ok <| [ textLeaf s (Mark.sort markdownMarkOrder (codeMark :: marks)) ]
+            Ok <| [ markedText s (Mark.sort markdownMarkOrder (codeMark :: marks)) ]
 
         MI.Link href title children ->
             let
@@ -853,7 +853,7 @@ markdownInlineToInlineLeaves marks inline =
         MI.Image src alt _ ->
             let
                 inlineImage =
-                    inlineLeaf
+                    inlineElement
                         (element image
                             (List.filterMap identity
                                 [ Just <| StringAttribute "src" src
@@ -880,7 +880,7 @@ markdownInlineToInlineLeaves marks inline =
             Err "Not implemented"
 
 
-markdownCodeBlockToEditorBlock : M.CodeBlock -> String -> Result String BlockNode
+markdownCodeBlockToEditorBlock : M.CodeBlock -> String -> Result String Block
 markdownCodeBlockToEditorBlock cb s =
     let
         attributes =
@@ -900,10 +900,10 @@ markdownCodeBlockToEditorBlock cb s =
     Ok <|
         blockNode
             (element codeBlock attributes Set.empty)
-            (inlineLeafArray <| Array.fromList [ textLeafWithText s ])
+            (inlineChildren <| Array.fromList [ plainText s ])
 
 
-markdownListToEditorBlock : M.ListBlock -> List (List MBlock) -> Result String BlockNode
+markdownListToEditorBlock : M.ListBlock -> List (List MBlock) -> Result String Block
 markdownListToEditorBlock lb children =
     let
         ( node, typeAttributes ) =
@@ -924,7 +924,7 @@ markdownListToEditorBlock lb children =
         (\listItems ->
             blockNode
                 (element node attributes Set.empty)
-                (blockArray
+                (fromBlockArray
                     (Array.fromList
                         (List.map
                             (\cn ->
@@ -945,7 +945,7 @@ markdownListToEditorBlock lb children =
         )
 
 
-markdownInlineToParagraphBlock : List MInline -> Result String BlockNode
+markdownInlineToParagraphBlock : List MInline -> Result String Block
 markdownInlineToParagraphBlock children =
     Result.map
         (\c ->
@@ -956,14 +956,14 @@ markdownInlineToParagraphBlock children =
         (markdownInlineListToInlineChildNodes children)
 
 
-markdownBlockToEditorBlock : MBlock -> Result String BlockNode
+markdownBlockToEditorBlock : MBlock -> Result String Block
 markdownBlockToEditorBlock block =
     case block of
         M.BlankLine s ->
             Ok <|
                 blockNode
                     (element paragraph [] Set.empty)
-                    (inlineLeafArray <| Array.fromList [ textLeafWithText s ])
+                    (inlineChildren <| Array.fromList [ plainText s ])
 
         M.ThematicBreak ->
             Ok <|

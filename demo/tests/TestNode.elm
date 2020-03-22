@@ -5,25 +5,25 @@ import Expect
 import RichTextEditor.Model.Annotations exposing (selectable)
 import RichTextEditor.Model.Node
     exposing
-        ( BlockNode
-        , ChildNodes(..)
-        , InlineLeaf(..)
+        ( Block
+        , Children(..)
+        , Inline(..)
         , Path
-        , blockArray
         , blockNode
-        , blockNodeWithElement
         , element
         , elementFromBlockNode
         , elementFromInlineElement
         , elementWithAnnotations
         , emptyTextLeafParameters
-        , inlineLeafArray
+        , fromBlockArray
+        , inlineChildren
         , inlineLeafParameters
         , inlineLeafParametersWithElement
         , nameFromElement
+        , plainText
         , text
         , textLeafParametersWithAnnotations
-        , textLeafWithText
+        , withElement
         , withText
         )
 import RichTextEditor.Node
@@ -68,29 +68,29 @@ import Set
 import Test exposing (Test, describe, test)
 
 
-rootNode : BlockNode
+rootNode : Block
 rootNode =
     blockNode
         (element doc [] Set.empty)
-        (blockArray <| Array.fromList [ pNode ])
+        (fromBlockArray <| Array.fromList [ pNode ])
 
 
-pNode : BlockNode
+pNode : Block
 pNode =
     blockNode
         (element paragraph [] Set.empty)
-        (inlineLeafArray <|
+        (inlineChildren <|
             Array.fromList [ textNode1, textNode2 ]
         )
 
 
-textNode1 : InlineLeaf
+textNode1 : Inline
 textNode1 =
-    textLeafWithText "sample1"
+    plainText "sample1"
 
 
 textNode2 =
-    textLeafWithText "sample2"
+    plainText "sample2"
 
 
 testNodeAt : Test
@@ -130,10 +130,10 @@ nodeNameOrTextValue _ node list =
 
         Inline il ->
             case il of
-                TextLeaf tl ->
+                Text tl ->
                     text tl
 
-                ElementLeaf p ->
+                InlineElement p ->
                     nameFromElement (elementFromInlineElement p)
     )
         :: list
@@ -179,7 +179,7 @@ testIsSelectable : Test
 testIsSelectable =
     describe "Tests that a node is selectable"
         [ test "Test that a text node is selectable" <|
-            \_ -> Expect.equal True <| isSelectable (Inline (textLeafWithText ""))
+            \_ -> Expect.equal True <| isSelectable (Inline (plainText ""))
         , test "Test that a element node with a selectable mark is selectable" <|
             \_ -> Expect.equal True <| isSelectable (Block (blockNode (element doc [] (Set.fromList [ selectable ])) Leaf))
         , test "Test that a element node without a selectable mark is not selectable" <|
@@ -199,19 +199,19 @@ setAnnotations mark node =
                 params =
                     elementFromBlockNode bn
             in
-            Block (bn |> blockNodeWithElement (params |> elementWithAnnotations annotations))
+            Block (bn |> withElement (params |> elementWithAnnotations annotations))
 
         Inline il ->
             case il of
-                TextLeaf tl ->
-                    Inline (TextLeaf (tl |> textLeafParametersWithAnnotations annotations))
+                Text tl ->
+                    Inline (Text (tl |> textLeafParametersWithAnnotations annotations))
 
-                ElementLeaf l ->
+                InlineElement l ->
                     let
                         params =
                             elementFromInlineElement l
                     in
-                    Inline (ElementLeaf (l |> inlineLeafParametersWithElement (params |> elementWithAnnotations annotations)))
+                    Inline (InlineElement (l |> inlineLeafParametersWithElement (params |> elementWithAnnotations annotations)))
 
 
 dummyAnnotation =
@@ -235,7 +235,7 @@ addPathAnnotation path node =
 rootNodeWithPathAnnotation =
     blockNode
         (element doc [] (Set.fromList [ "" ]))
-        (blockArray <|
+        (fromBlockArray <|
             Array.fromList [ pHtmlNodeWithPathAnnotation ]
         )
 
@@ -243,13 +243,13 @@ rootNodeWithPathAnnotation =
 pHtmlNodeWithPathAnnotation =
     blockNode
         (element paragraph [] (Set.fromList [ "0" ]))
-        (inlineLeafArray <|
+        (inlineChildren <|
             Array.fromList [ textNode1WithPathAnnotation, textNode2WithPathAnnotation ]
         )
 
 
 textNode1WithPathAnnotation =
-    TextLeaf
+    Text
         (emptyTextLeafParameters
             |> withText "sample1"
             |> textLeafParametersWithAnnotations (Set.fromList [ "0:0" ])
@@ -257,7 +257,7 @@ textNode1WithPathAnnotation =
 
 
 textNode2WithPathAnnotation =
-    TextLeaf
+    Text
         (emptyTextLeafParameters
             |> withText "sample2"
             |> textLeafParametersWithAnnotations (Set.fromList [ "0:1" ])
@@ -277,7 +277,7 @@ testIndexedMap =
 rootNodeWithSameAnnotation =
     blockNode
         (element doc [] (Set.fromList [ dummyAnnotation ]))
-        (blockArray <|
+        (fromBlockArray <|
             Array.fromList [ pHtmlNodeWithSameAnnotation ]
         )
 
@@ -285,13 +285,13 @@ rootNodeWithSameAnnotation =
 pHtmlNodeWithSameAnnotation =
     blockNode
         (element paragraph [] (Set.fromList [ dummyAnnotation ]))
-        (inlineLeafArray <|
+        (inlineChildren <|
             Array.fromList [ textNode1WithSameAnnotation, textNode2WithSameAnnotation ]
         )
 
 
 textNode1WithSameAnnotation =
-    TextLeaf
+    Text
         (emptyTextLeafParameters
             |> withText "sample1"
             |> textLeafParametersWithAnnotations (Set.fromList [ dummyAnnotation ])
@@ -299,7 +299,7 @@ textNode1WithSameAnnotation =
 
 
 textNode2WithSameAnnotation =
-    TextLeaf
+    Text
         (emptyTextLeafParameters
             |> withText "sample2"
             |> textLeafParametersWithAnnotations (Set.fromList [ dummyAnnotation ])
@@ -356,7 +356,7 @@ findNodeWithName name _ node =
 
         Inline il ->
             case il of
-                ElementLeaf l ->
+                InlineElement l ->
                     nameFromElement (elementFromInlineElement l) == name
 
                 _ ->
@@ -482,7 +482,7 @@ testPrevious =
 removedRootNode =
     blockNode
         (element doc [] Set.empty)
-        (blockArray <|
+        (fromBlockArray <|
             Array.fromList [ removedPHtmlNode ]
         )
 
@@ -490,7 +490,7 @@ removedRootNode =
 removedPHtmlNode =
     blockNode
         (element paragraph [] Set.empty)
-        (inlineLeafArray <|
+        (inlineChildren <|
             Array.fromList [ textNode2 ]
         )
 
@@ -498,19 +498,19 @@ removedPHtmlNode =
 removedRootAll =
     blockNode
         (element doc [] Set.empty)
-        (blockArray Array.empty)
+        (fromBlockArray Array.empty)
 
 
 removedPHtmlNodeAll =
     blockNode
         (element paragraph [] Set.empty)
-        (inlineLeafArray Array.empty)
+        (inlineChildren Array.empty)
 
 
 removedRootNodeRemovedPNodeAll =
     blockNode
         (element doc [] Set.empty)
-        (blockArray <|
+        (fromBlockArray <|
             Array.fromList [ removedPHtmlNodeAll ]
         )
 
@@ -546,13 +546,13 @@ testRemoveInRange =
 replaceRootPNode =
     blockNode
         (element doc [] Set.empty)
-        (blockArray <| Array.fromList [ replacePNode ])
+        (fromBlockArray <| Array.fromList [ replacePNode ])
 
 
 replacePNode =
     blockNode
         (element paragraph [] Set.empty)
-        (inlineLeafArray <|
+        (inlineChildren <|
             Array.fromList [ textNode2, textNode2 ]
         )
 
@@ -606,7 +606,7 @@ testAnyRange =
 doubleRoot =
     blockNode
         (element doc [] Set.empty)
-        (blockArray <|
+        (fromBlockArray <|
             Array.fromList [ doublePNode, doublePNode ]
         )
 
@@ -614,7 +614,7 @@ doubleRoot =
 doublePNode =
     blockNode
         (element paragraph [] Set.empty)
-        (inlineLeafArray <|
+        (inlineChildren <|
             Array.fromList [ textNode1, textNode1, textNode2, textNode2 ]
         )
 
@@ -633,35 +633,35 @@ testConcatMap =
 nodeBeforeTextLeafSplit =
     blockNode
         (element paragraph [] Set.empty)
-        (inlineLeafArray <|
-            Array.fromList [ textLeafWithText "sam" ]
+        (inlineChildren <|
+            Array.fromList [ plainText "sam" ]
         )
 
 
 nodeAfterTextLeafSplit =
     blockNode
         (element paragraph [] Set.empty)
-        (inlineLeafArray <|
-            Array.fromList [ textLeafWithText "ple1" ]
+        (inlineChildren <|
+            Array.fromList [ plainText "ple1" ]
         )
 
 
 nodeWithTextLeafToSplit =
     blockNode
         (element paragraph [] Set.empty)
-        (inlineLeafArray <|
+        (inlineChildren <|
             Array.fromList [ textNode1 ]
         )
 
 
 inlineImg =
-    ElementLeaf <| inlineLeafParameters (element image [] Set.empty) []
+    InlineElement <| inlineLeafParameters (element image [] Set.empty) []
 
 
 nodeAfterInlineLeafSplit =
     blockNode
         (element paragraph [] Set.empty)
-        (inlineLeafArray <|
+        (inlineChildren <|
             Array.fromList [ inlineImg ]
         )
 
@@ -669,13 +669,13 @@ nodeAfterInlineLeafSplit =
 nodeBeforeInlineLeafSplit =
     blockNode
         (element paragraph [] Set.empty)
-        (inlineLeafArray Array.empty)
+        (inlineChildren Array.empty)
 
 
 nodeWithInlineLeafToSplit =
     blockNode
         (element paragraph [] Set.empty)
-        (inlineLeafArray <| Array.fromList [ inlineImg ])
+        (inlineChildren <| Array.fromList [ inlineImg ])
 
 
 testSplitBlockAtPathAndOffset : Test
@@ -708,7 +708,7 @@ testSplitTextLeaf =
         ]
 
 
-hrNode : BlockNode
+hrNode : Block
 hrNode =
     blockNode
         (element horizontalRule [] Set.empty)
@@ -762,25 +762,25 @@ blockInsertFragment =
     BlockNodeFragment (Array.fromList [ hrNode ])
 
 
-expectedInsertBeforeBlock : BlockNode
+expectedInsertBeforeBlock : Block
 expectedInsertBeforeBlock =
     blockNode
         (element doc [] Set.empty)
-        (blockArray <| Array.fromList [ hrNode, pNode ])
+        (fromBlockArray <| Array.fromList [ hrNode, pNode ])
 
 
-expectedInsertBeforeInline : BlockNode
+expectedInsertBeforeInline : Block
 expectedInsertBeforeInline =
     blockNode
         (element doc [] Set.empty)
-        (blockArray <| Array.fromList [ pNodeExpectedBeforeInline ])
+        (fromBlockArray <| Array.fromList [ pNodeExpectedBeforeInline ])
 
 
-pNodeExpectedBeforeInline : BlockNode
+pNodeExpectedBeforeInline : Block
 pNodeExpectedBeforeInline =
     blockNode
         (element paragraph [] Set.empty)
-        (inlineLeafArray <|
+        (inlineChildren <|
             Array.fromList [ textNode1, textNode2, textNode1, textNode2 ]
         )
 
@@ -814,25 +814,25 @@ testInsertBefore =
         ]
 
 
-expectedInsertAfterBlock : BlockNode
+expectedInsertAfterBlock : Block
 expectedInsertAfterBlock =
     blockNode
         (element doc [] Set.empty)
-        (blockArray <| Array.fromList [ pNode, hrNode ])
+        (fromBlockArray <| Array.fromList [ pNode, hrNode ])
 
 
-expectedInsertAfterInline : BlockNode
+expectedInsertAfterInline : Block
 expectedInsertAfterInline =
     blockNode
         (element doc [] Set.empty)
-        (blockArray <| Array.fromList [ pNodeExpectedAfterInline ])
+        (fromBlockArray <| Array.fromList [ pNodeExpectedAfterInline ])
 
 
-pNodeExpectedAfterInline : BlockNode
+pNodeExpectedAfterInline : Block
 pNodeExpectedAfterInline =
     blockNode
         (element paragraph [] Set.empty)
-        (inlineLeafArray <|
+        (inlineChildren <|
             Array.fromList [ textNode1, textNode1, textNode2, textNode2 ]
         )
 
@@ -866,38 +866,38 @@ testInsertAfter =
         ]
 
 
-pNodeReverse : BlockNode
+pNodeReverse : Block
 pNodeReverse =
     blockNode
         (element paragraph [] Set.empty)
-        (inlineLeafArray <|
+        (inlineChildren <|
             Array.fromList [ textNode2, textNode1 ]
         )
 
 
-pNodeExpectedJoin : BlockNode
+pNodeExpectedJoin : Block
 pNodeExpectedJoin =
     blockNode
         (element paragraph [] Set.empty)
-        (inlineLeafArray <|
+        (inlineChildren <|
             Array.fromList [ textNode1, textNode2, textNode2, textNode1 ]
         )
 
 
-rootWithReversePNode : BlockNode
+rootWithReversePNode : Block
 rootWithReversePNode =
     blockNode
         (element doc [] Set.empty)
-        (blockArray <|
+        (fromBlockArray <|
             Array.fromList [ pNodeReverse ]
         )
 
 
-rootAfterJoin : BlockNode
+rootAfterJoin : Block
 rootAfterJoin =
     blockNode
         (element doc [] Set.empty)
-        (blockArray <|
+        (fromBlockArray <|
             Array.fromList [ pNode, pNodeReverse ]
         )
 

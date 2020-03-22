@@ -7,15 +7,15 @@ import RichTextEditor.Model.InlineElement exposing (element)
 import RichTextEditor.Model.Mark as Mark exposing (Mark)
 import RichTextEditor.Model.Node
     exposing
-        ( BlockNode
-        , ChildNodes(..)
-        , InlineLeaf(..)
-        , InlineLeafTree(..)
+        ( Block
+        , Children(..)
+        , Inline(..)
+        , InlineTree(..)
         , childNodes
         , elementFromBlockNode
-        , fromBlockArray
-        , fromInlineArray
-        , treeFromInlineArray
+        , inlineArray
+        , inlineTree
+        , toBlockArray
         )
 import RichTextEditor.Model.Spec
     exposing
@@ -50,21 +50,21 @@ elementToHtmlNode parameters children =
 
 {-| Renders element block nodes to their HtmlNode representation.
 -}
-editorBlockNodeToHtmlNode : BlockNode -> HtmlNode
+editorBlockNodeToHtmlNode : Block -> HtmlNode
 editorBlockNodeToHtmlNode node =
     elementToHtmlNode (elementFromBlockNode node) (childNodesToHtmlNode (childNodes node))
 
 
 {-| Renders child nodes to their HtmlNode representation.
 -}
-childNodesToHtmlNode : ChildNodes -> Array HtmlNode
+childNodesToHtmlNode : Children -> Array HtmlNode
 childNodesToHtmlNode childNodes =
     case childNodes of
         BlockChildren blockArray ->
-            Array.map editorBlockNodeToHtmlNode (fromBlockArray blockArray)
+            Array.map editorBlockNodeToHtmlNode (toBlockArray blockArray)
 
         InlineChildren inlineLeafArray ->
-            Array.map (editorInlineLeafTreeToHtmlNode (fromInlineArray inlineLeafArray)) (treeFromInlineArray inlineLeafArray)
+            Array.map (editorInlineLeafTreeToHtmlNode (inlineArray inlineLeafArray)) (inlineTree inlineLeafArray)
 
         Leaf ->
             Array.empty
@@ -82,7 +82,7 @@ errorNode =
     ElementNode "div" [ ( "class", "rte-error" ) ] Array.empty
 
 
-editorInlineLeafTreeToHtmlNode : Array InlineLeaf -> InlineLeafTree -> HtmlNode
+editorInlineLeafTreeToHtmlNode : Array Inline -> InlineTree -> HtmlNode
 editorInlineLeafTreeToHtmlNode array tree =
     case tree of
         LeafNode i ->
@@ -99,11 +99,11 @@ editorInlineLeafTreeToHtmlNode array tree =
 
 {-| Renders inline leaf nodes to their HtmlNode representation.
 -}
-editorInlineLeafToHtmlNode : InlineLeaf -> HtmlNode
+editorInlineLeafToHtmlNode : Inline -> HtmlNode
 editorInlineLeafToHtmlNode node =
     case node of
-        TextLeaf contents ->
+        Text contents ->
             textToHtmlNode (text contents)
 
-        ElementLeaf l ->
+        InlineElement l ->
             elementToHtmlNode (element l) Array.empty

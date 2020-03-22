@@ -3,7 +3,7 @@ module TestNodePath exposing (..)
 import Array exposing (Array)
 import Expect
 import RichTextEditor.Model.Mark exposing (mark)
-import RichTextEditor.Model.Node exposing (InlineLeaf(..), blockNode, element, emptyTextLeafParameters, inlineLeafArray, textLeafParametersWithMarks, textLeafWithText, withText)
+import RichTextEditor.Model.Node exposing (Inline(..), blockNode, element, emptyTextLeafParameters, inlineChildren, plainText, textLeafParametersWithMarks, withText)
 import RichTextEditor.NodePath
     exposing
         ( commonAncestor
@@ -38,15 +38,15 @@ boldMark =
 paragraphNode =
     blockNode
         paragraphParams
-        (inlineLeafArray <| Array.fromList [ textLeafWithText "sample" ])
+        (inlineChildren <| Array.fromList [ plainText "sample" ])
 
 
 boldParagraphNode =
     blockNode
         paragraphParams
-        (inlineLeafArray <|
+        (inlineChildren <|
             Array.fromList
-                [ TextLeaf
+                [ Text
                     (emptyTextLeafParameters
                         |> withText "sample"
                         |> textLeafParametersWithMarks [ boldMark ]
@@ -58,16 +58,16 @@ boldParagraphNode =
 crazyBlockNode =
     blockNode
         crazyBlockParams
-        (inlineLeafArray <|
+        (inlineChildren <|
             Array.fromList
-                [ textLeafWithText "sample" ]
+                [ plainText "sample" ]
         )
 
 
 codeBlockNode =
     blockNode
         codeBlockParams
-        (inlineLeafArray <| Array.fromList [ textLeafWithText "sample" ])
+        (inlineChildren <| Array.fromList [ plainText "sample" ])
 
 
 testDomToEditor : Test
