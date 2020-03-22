@@ -17,6 +17,7 @@ import RichTextEditor.Model.Attribute exposing (Attribute(..))
 import RichTextEditor.Model.Constants exposing (zeroWidthSpace)
 import RichTextEditor.Model.Element as Element exposing (Element, element)
 import RichTextEditor.Model.HtmlNode exposing (HtmlNode(..))
+import RichTextEditor.Model.InlineElement as InlineElement exposing (inlineElement)
 import RichTextEditor.Model.Internal.Spec exposing (ContentType(..))
 import RichTextEditor.Model.Mark as Mark
     exposing
@@ -35,14 +36,9 @@ import RichTextEditor.Model.Node
         , blockNode
         , childNodes
         , elementFromBlockNode
-        , elementFromInlineLeafParameters
-        , emptyTextLeafParameters
         , fromBlockArray
         , fromInlineArray
         , inlineLeafArray
-        , inlineLeafParameters
-        , textLeafParametersWithMarks
-        , withText
         )
 import RichTextEditor.Model.Spec
     exposing
@@ -60,6 +56,7 @@ import RichTextEditor.Model.Spec
         , nodeDefinitions
         )
 import RichTextEditor.Model.State as State exposing (State)
+import RichTextEditor.Model.Text as Text
 import RichTextEditor.Node exposing (Fragment(..))
 import Set exposing (Set)
 
@@ -167,10 +164,10 @@ validateInlineLeaf allowedGroups leaf =
         TextLeaf _ ->
             []
 
-        InlineLeaf il ->
+        ElementLeaf il ->
             let
                 definition =
-                    Element.definition (elementFromInlineLeafParameters il)
+                    Element.definition (InlineElement.element il)
             in
             validateAllowedGroups allowedGroups (groupFromNodeDefinition definition) (nameFromNodeDefinition definition)
 
@@ -290,9 +287,9 @@ htmlNodeToEditorFragment spec marks node =
                 InlineLeafFragment <|
                     Array.fromList
                         [ TextLeaf <|
-                            (emptyTextLeafParameters
-                                |> withText (String.replace zeroWidthSpace "" s)
-                                |> textLeafParametersWithMarks marks
+                            (Text.empty
+                                |> Text.withText (String.replace zeroWidthSpace "" s)
+                                |> Text.withMarks marks
                             )
                         ]
 
@@ -329,8 +326,8 @@ htmlNodeToEditorFragment spec marks node =
                         Ok <|
                             InlineLeafFragment <|
                                 Array.fromList
-                                    [ InlineLeaf <|
-                                        inlineLeafParameters element marks
+                                    [ ElementLeaf <|
+                                        inlineElement element marks
                                     ]
 
                     else

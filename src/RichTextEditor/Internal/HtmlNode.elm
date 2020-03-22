@@ -3,6 +3,7 @@ module RichTextEditor.Internal.HtmlNode exposing (..)
 import Array exposing (Array)
 import RichTextEditor.Model.Element as Element exposing (Element)
 import RichTextEditor.Model.HtmlNode exposing (HtmlNode(..))
+import RichTextEditor.Model.InlineElement exposing (element)
 import RichTextEditor.Model.Mark as Mark exposing (Mark)
 import RichTextEditor.Model.Node
     exposing
@@ -12,10 +13,8 @@ import RichTextEditor.Model.Node
         , InlineLeafTree(..)
         , childNodes
         , elementFromBlockNode
-        , elementFromInlineLeafParameters
         , fromBlockArray
         , fromInlineArray
-        , text
         , treeFromInlineArray
         )
 import RichTextEditor.Model.Spec
@@ -24,6 +23,7 @@ import RichTextEditor.Model.Spec
         , toHtmlNodeFromMarkDefinition
         , toHtmlNodeFromNodeDefinition
         )
+import RichTextEditor.Model.Text exposing (text)
 
 
 {-| Renders marks to their HtmlNode representation.
@@ -105,5 +105,5 @@ editorInlineLeafToHtmlNode node =
         TextLeaf contents ->
             textToHtmlNode (text contents)
 
-        InlineLeaf l ->
-            elementToHtmlNode (elementFromInlineLeafParameters l) Array.empty
+        ElementLeaf l ->
+            elementToHtmlNode (element l) Array.empty

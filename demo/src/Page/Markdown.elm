@@ -18,8 +18,9 @@ import RichTextEditor.Model.Attribute
         )
 import RichTextEditor.Model.Editor exposing (state)
 import RichTextEditor.Model.Element as Element exposing (Element, element)
+import RichTextEditor.Model.InlineElement as InlineElement
 import RichTextEditor.Model.Mark as Mark exposing (Mark, MarkOrder)
-import RichTextEditor.Model.Node as Node
+import RichTextEditor.Model.Node
     exposing
         ( BlockNode
         , ChildNodes(..)
@@ -29,7 +30,6 @@ import RichTextEditor.Model.Node as Node
         , blockNode
         , childNodes
         , elementFromBlockNode
-        , elementFromInlineLeafParameters
         , fromBlockArray
         , fromInlineArray
         , inlineLeaf
@@ -40,6 +40,7 @@ import RichTextEditor.Model.Node as Node
         )
 import RichTextEditor.Model.Spec exposing (Spec, withMarkDefinitions)
 import RichTextEditor.Model.State as State exposing (State)
+import RichTextEditor.Model.Text as Text
 import RichTextEditor.Spec exposing (markOrderFromSpec)
 import RichTextEditor.Specs as MarkdownSpec
     exposing
@@ -425,12 +426,12 @@ inlineToMarkdown leaves tree =
                 Just inlineLeaf ->
                     case inlineLeaf of
                         TextLeaf p ->
-                            Ok <| [ MI.Text (Node.text p) ]
+                            Ok <| [ MI.Text (Text.text p) ]
 
-                        InlineLeaf il ->
+                        ElementLeaf il ->
                             let
                                 parameters =
-                                    elementFromInlineLeafParameters il
+                                    InlineElement.element il
                             in
                             case Element.name parameters of
                                 "image" ->
@@ -498,12 +499,12 @@ textFromChildNodes cn =
                         (\l ->
                             case l of
                                 TextLeaf tl ->
-                                    Node.text tl
+                                    Text.text tl
 
-                                InlineLeaf p ->
+                                ElementLeaf p ->
                                     if
                                         Element.name
-                                            (elementFromInlineLeafParameters p)
+                                            (InlineElement.element p)
                                             == "hard_break"
                                     then
                                         "\n"

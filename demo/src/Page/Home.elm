@@ -12,13 +12,11 @@ import RichTextEditor.Model.Node
         , InlineLeaf(..)
         , blockArray
         , blockNode
-        , emptyTextLeafParameters
         , inlineLeafArray
-        , textLeafParametersWithMarks
         , textLeafWithText
-        , withText
         )
 import RichTextEditor.Model.State as State exposing (State)
+import RichTextEditor.Model.Text as Text
 import RichTextEditor.Specs as Specs exposing (code, doc, paragraph)
 import Session exposing (Session)
 import Set
@@ -101,9 +99,9 @@ initialEditorNode =
                     "Rich Text Editor Toolkit is an open source project to make cross platform editors on the web. "
                         ++ "This package treats "
                 , TextLeaf
-                    (emptyTextLeafParameters
-                        |> withText "contenteditable"
-                        |> textLeafParametersWithMarks [ mark code [] ]
+                    (Text.empty
+                        |> Text.withText "contenteditable"
+                        |> Text.withMarks [ mark code [] ]
                     )
                 , textLeafWithText <|
                     " as an I/O device, and uses browser events and mutation observers "

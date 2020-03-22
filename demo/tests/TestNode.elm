@@ -14,7 +14,7 @@ import RichTextEditor.Model.Node
         , blockNodeWithElement
         , element
         , elementFromBlockNode
-        , elementFromInlineLeafParameters
+        , elementFromInlineElement
         , elementWithAnnotations
         , emptyTextLeafParameters
         , inlineLeafArray
@@ -133,8 +133,8 @@ nodeNameOrTextValue _ node list =
                 TextLeaf tl ->
                     text tl
 
-                InlineLeaf p ->
-                    nameFromElement (elementFromInlineLeafParameters p)
+                ElementLeaf p ->
+                    nameFromElement (elementFromInlineElement p)
     )
         :: list
 
@@ -206,12 +206,12 @@ setAnnotations mark node =
                 TextLeaf tl ->
                     Inline (TextLeaf (tl |> textLeafParametersWithAnnotations annotations))
 
-                InlineLeaf l ->
+                ElementLeaf l ->
                     let
                         params =
-                            elementFromInlineLeafParameters l
+                            elementFromInlineElement l
                     in
-                    Inline (InlineLeaf (l |> inlineLeafParametersWithElement (params |> elementWithAnnotations annotations)))
+                    Inline (ElementLeaf (l |> inlineLeafParametersWithElement (params |> elementWithAnnotations annotations)))
 
 
 dummyAnnotation =
@@ -356,8 +356,8 @@ findNodeWithName name _ node =
 
         Inline il ->
             case il of
-                InlineLeaf l ->
-                    nameFromElement (elementFromInlineLeafParameters l) == name
+                ElementLeaf l ->
+                    nameFromElement (elementFromInlineElement l) == name
 
                 _ ->
                     False
@@ -655,7 +655,7 @@ nodeWithTextLeafToSplit =
 
 
 inlineImg =
-    InlineLeaf <| inlineLeafParameters (element image [] Set.empty) []
+    ElementLeaf <| inlineLeafParameters (element image [] Set.empty) []
 
 
 nodeAfterInlineLeafSplit =

@@ -40,25 +40,23 @@ import Array exposing (Array)
 import Array.Extra
 import RichTextEditor.Model.Annotations exposing (selectable)
 import RichTextEditor.Model.Element as Element
+import RichTextEditor.Model.InlineElement as InlineElement
 import RichTextEditor.Model.Node
     exposing
         ( BlockNode
         , ChildNodes(..)
         , InlineLeaf(..)
         , Path
-        , TextLeafParameters
         , blockArray
         , childNodes
         , elementFromBlockNode
-        , elementFromInlineLeafParameters
         , fromBlockArray
         , fromInlineArray
         , inlineLeafArray
         , parent
-        , text
         , withChildNodes
-        , withText
         )
+import RichTextEditor.Model.Text exposing (Text, text, withText)
 import Set
 
 
@@ -270,8 +268,8 @@ isSelectable node =
                 TextLeaf _ ->
                     True
 
-                InlineLeaf l ->
-                    Set.member selectable (Element.annotations (elementFromInlineLeafParameters l))
+                ElementLeaf l ->
+                    Set.member selectable (Element.annotations (InlineElement.element l))
 
 
 findNodeFromExclusive : Iterator -> (Path -> Node -> Bool) -> Path -> BlockNode -> Maybe ( Path, Node )
@@ -1024,7 +1022,7 @@ removeNodeAndEmptyParents path node =
                     node
 
 
-splitTextLeaf : Int -> TextLeafParameters -> ( TextLeafParameters, TextLeafParameters )
+splitTextLeaf : Int -> Text -> ( Text, Text )
 splitTextLeaf offset leaf =
     let
         leafText =
@@ -1104,7 +1102,7 @@ splitBlockAtPathAndOffset path offset node =
                                         , node |> withChildNodes (inlineLeafArray (Array.set 0 (TextLeaf after) (Array.Extra.sliceFrom x arr)))
                                         )
 
-                                InlineLeaf _ ->
+                                ElementLeaf _ ->
                                     Just
                                         ( node |> withChildNodes (inlineLeafArray (Array.Extra.sliceUntil x arr))
                                         , node |> withChildNodes (inlineLeafArray (Array.Extra.sliceFrom x arr))

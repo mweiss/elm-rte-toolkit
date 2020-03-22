@@ -4,45 +4,30 @@ module RichTextEditor.Model.Node exposing
     , ChildNodes(..)
     , InlineLeaf(..)
     , InlineLeafArray
-    , InlineLeafParameters
     , InlineLeafTree(..)
     , MarkNodeContents
     , Path
-    , TextLeafParameters
     , annotationsFromBlockNode
-    , annotationsFromTextLeafParameters
     , blockArray
     , blockNode
     , blockNodeWithElement
     , childNodes
-    , comparableMarksFromTextLeafParameters
     , elementFromBlockNode
-    , elementFromInlineLeafParameters
-    , emptyTextLeafParameters
     , fromBlockArray
     , fromInlineArray
     , inlineLeaf
     , inlineLeafArray
-    , inlineLeafParameters
-    , inlineLeafParametersWithElement
-    , inlineLeafParametersWithMarks
     , isSameBlockNode
     , isSameChildNodes
     , isSameInlineLeaf
     , marksFromInlineLeaf
-    , marksFromInlineLeafParameters
-    , marksFromTextLeafParameters
     , marksToMarkNodeList
     , parent
     , reverseLookupFromInlineArray
-    , text
     , textLeaf
-    , textLeafParametersWithAnnotations
-    , textLeafParametersWithMarks
     , textLeafWithText
     , treeFromInlineArray
     , withChildNodes
-    , withText
     )
 
 {-| A node path is a list of indexes that represent the path from an editor fragment to a node. It's
@@ -52,10 +37,11 @@ the main type used to identify where a node is in the editor.
 import Array exposing (Array)
 import Array.Extra as Array
 import List.Extra
-import RichTextEditor.Model.Attribute exposing (Attribute)
 import RichTextEditor.Model.Element as Element exposing (Element)
+import RichTextEditor.Model.InlineElement as InlineElement exposing (InlineElement, inlineElement)
 import RichTextEditor.Model.Internal.Spec exposing (NodeDefinition, annotationsFromElement)
 import RichTextEditor.Model.Mark exposing (Mark, attributes, name)
+import RichTextEditor.Model.Text as Text exposing (Text)
 import Set exposing (Set)
 
 
@@ -177,131 +163,17 @@ type InlineLeafTree
     | LeafNode Int
 
 
-type InlineLeafParameters
-    = InlineLeafParameters InlineLeafParametersContents
-
-
-type alias InlineLeafParametersContents =
-    { marks : List Mark
-    , parameters : Element
-    }
-
-
-marksFromInlineLeafParameters : InlineLeafParameters -> List Mark
-marksFromInlineLeafParameters parameters =
-    case parameters of
-        InlineLeafParameters c ->
-            c.marks
-
-
-elementFromInlineLeafParameters : InlineLeafParameters -> Element
-elementFromInlineLeafParameters parameters =
-    case parameters of
-        InlineLeafParameters c ->
-            c.parameters
-
-
-inlineLeafParameters : Element -> List Mark -> InlineLeafParameters
-inlineLeafParameters parameters marks =
-    InlineLeafParameters { parameters = parameters, marks = marks }
-
-
-inlineLeafParametersWithElement : Element -> InlineLeafParameters -> InlineLeafParameters
-inlineLeafParametersWithElement eparams iparams =
-    case iparams of
-        InlineLeafParameters c ->
-            InlineLeafParameters { c | parameters = eparams }
-
-
-inlineLeafParametersWithMarks : List Mark -> InlineLeafParameters -> InlineLeafParameters
-inlineLeafParametersWithMarks marks iparams =
-    case iparams of
-        InlineLeafParameters c ->
-            InlineLeafParameters { c | marks = marks }
-
-
 {-| An inline leaf node represents an inline element in your document. It can either be an inline
 leaf node, like an image or line break, or a text node.
 -}
 type InlineLeaf
-    = InlineLeaf InlineLeafParameters
-    | TextLeaf TextLeafParameters
-
-
-{-| TextNodeContents represents the attributes that can be in a text node. The core attributes
-are marks and text.
--}
-type TextLeafParameters
-    = TextLeafParameters TextLeafParametersContents
-
-
-emptyTextLeafParameters : TextLeafParameters
-emptyTextLeafParameters =
-    TextLeafParameters { text = "", marks = [], annotations = Set.empty }
-
-
-withText : String -> TextLeafParameters -> TextLeafParameters
-withText s parameters =
-    case parameters of
-        TextLeafParameters c ->
-            TextLeafParameters { c | text = s }
-
-
-textLeafParametersWithAnnotations : Set String -> TextLeafParameters -> TextLeafParameters
-textLeafParametersWithAnnotations annotations parameters =
-    case parameters of
-        TextLeafParameters c ->
-            TextLeafParameters { c | annotations = annotations }
-
-
-textLeafParametersWithMarks : List Mark -> TextLeafParameters -> TextLeafParameters
-textLeafParametersWithMarks marks parameters =
-    case parameters of
-        TextLeafParameters c ->
-            TextLeafParameters { c | marks = marks }
+    = ElementLeaf InlineElement
+    | TextLeaf Text
 
 
 textLeafWithText : String -> InlineLeaf
 textLeafWithText s =
-    TextLeaf (TextLeafParameters { text = s, marks = [], annotations = Set.empty })
-
-
-marksFromTextLeafParameters : TextLeafParameters -> List Mark
-marksFromTextLeafParameters parameters =
-    case parameters of
-        TextLeafParameters c ->
-            c.marks
-
-
-comparableMarksFromTextLeafParameters : TextLeafParameters -> List ( String, List Attribute )
-comparableMarksFromTextLeafParameters parameters =
-    List.map (\m -> ( name m, attributes m )) (marksFromTextLeafParameters parameters)
-
-
-comparableMarksFromInlineLeafParameters : InlineLeafParameters -> List ( String, List Attribute )
-comparableMarksFromInlineLeafParameters parameters =
-    List.map (\m -> ( name m, attributes m )) (marksFromInlineLeafParameters parameters)
-
-
-annotationsFromTextLeafParameters : TextLeafParameters -> Set String
-annotationsFromTextLeafParameters parameters =
-    case parameters of
-        TextLeafParameters c ->
-            c.annotations
-
-
-text : TextLeafParameters -> String
-text parameters =
-    case parameters of
-        TextLeafParameters c ->
-            c.text
-
-
-type alias TextLeafParametersContents =
-    { marks : List Mark
-    , annotations : Set String
-    , text : String
-    }
+    TextLeaf (Text.empty |> Text.withText s)
 
 
 inlineLeafArray : Array InlineLeaf -> ChildNodes
@@ -336,10 +208,10 @@ marksFromInlineLeaf : InlineLeaf -> List Mark
 marksFromInlineLeaf leaf =
     case leaf of
         TextLeaf l ->
-            marksFromTextLeafParameters l
+            Text.marks l
 
-        InlineLeaf l ->
-            marksFromInlineLeafParameters l
+        ElementLeaf l ->
+            InlineElement.marks l
 
 
 marksToMarkNodeList : List (List Mark) -> Array InlineLeafTree
@@ -390,13 +262,13 @@ marksToMarkNodeListRec indexedMarkLists =
 isSameInlineLeaf : InlineLeaf -> InlineLeaf -> Bool
 isSameInlineLeaf i1 i2 =
     case i1 of
-        InlineLeaf il1 ->
+        ElementLeaf il1 ->
             case i2 of
-                InlineLeaf il2 ->
-                    comparableMarksFromInlineLeafParameters il1
-                        == comparableMarksFromInlineLeafParameters il2
-                        && Element.comparableElement (elementFromInlineLeafParameters il1)
-                        == Element.comparableElement (elementFromInlineLeafParameters il2)
+                ElementLeaf il2 ->
+                    InlineElement.comparableMarks il1
+                        == InlineElement.comparableMarks il2
+                        && Element.comparableElement (InlineElement.element il1)
+                        == Element.comparableElement (InlineElement.element il2)
 
                 _ ->
                     False
@@ -404,10 +276,10 @@ isSameInlineLeaf i1 i2 =
         TextLeaf tl1 ->
             case i2 of
                 TextLeaf tl2 ->
-                    comparableMarksFromTextLeafParameters tl1
-                        == comparableMarksFromTextLeafParameters tl2
-                        && text tl1
-                        == text tl2
+                    Text.comparableMarks tl1
+                        == Text.comparableMarks tl2
+                        && Text.text tl1
+                        == Text.text tl2
 
                 _ ->
                     False
@@ -473,15 +345,15 @@ isSameBlockNode bn1 bn2 =
 
 inlineLeaf : Element -> List Mark -> InlineLeaf
 inlineLeaf parameters mark =
-    InlineLeaf (inlineLeafParameters parameters mark)
+    ElementLeaf (inlineElement parameters mark)
 
 
 textLeaf : String -> List Mark -> InlineLeaf
 textLeaf s marks =
     TextLeaf
-        (emptyTextLeafParameters
-            |> withText s
-            |> textLeafParametersWithMarks marks
+        (Text.empty
+            |> Text.withText s
+            |> Text.withMarks marks
         )
 
 

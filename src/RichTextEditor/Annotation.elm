@@ -11,18 +11,16 @@ module RichTextEditor.Annotation exposing
     )
 
 import RichTextEditor.Model.Element as Element exposing (Element)
+import RichTextEditor.Model.InlineElement as InlineElement
 import RichTextEditor.Model.Node
     exposing
         ( BlockNode
         , InlineLeaf(..)
         , Path
-        , annotationsFromTextLeafParameters
         , blockNodeWithElement
         , elementFromBlockNode
-        , elementFromInlineLeafParameters
-        , inlineLeafParametersWithElement
-        , textLeafParametersWithAnnotations
         )
+import RichTextEditor.Model.Text as Text
 import RichTextEditor.Node exposing (Node(..), indexedFoldl, map, nodeAt, replace)
 import Set exposing (Set)
 
@@ -82,15 +80,15 @@ toggle func annotation node =
         Inline il ->
             Inline <|
                 case il of
-                    InlineLeaf l ->
+                    ElementLeaf l ->
                         let
                             newParameters =
-                                toggleElementParameters func annotation (elementFromInlineLeafParameters l)
+                                toggleElementParameters func annotation (InlineElement.element l)
                         in
-                        InlineLeaf <| inlineLeafParametersWithElement newParameters l
+                        ElementLeaf <| InlineElement.withElement newParameters l
 
                     TextLeaf tl ->
-                        TextLeaf <| (tl |> textLeafParametersWithAnnotations (func annotation <| annotationsFromTextLeafParameters tl))
+                        TextLeaf <| (tl |> Text.withAnnotations (func annotation <| Text.annotations tl))
 
 
 clearAnnotations : String -> BlockNode -> BlockNode
@@ -111,11 +109,11 @@ getAnnotationsFromNode node =
 
         Inline inlineLeaf ->
             case inlineLeaf of
-                InlineLeaf p ->
-                    Element.annotations <| elementFromInlineLeafParameters p
+                ElementLeaf p ->
+                    Element.annotations <| InlineElement.element p
 
                 TextLeaf p ->
-                    annotationsFromTextLeafParameters p
+                    Text.annotations p
 
 
 findPathsWithAnnotation : String -> BlockNode -> List Path

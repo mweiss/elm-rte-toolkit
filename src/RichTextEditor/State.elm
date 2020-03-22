@@ -10,15 +10,11 @@ import RichTextEditor.Model.Node
         , InlineLeaf(..)
         , InlineLeafArray
         , Path
-        , annotationsFromTextLeafParameters
         , childNodes
-        , comparableMarksFromTextLeafParameters
         , fromInlineArray
         , inlineLeafArray
         , isSameBlockNode
-        , text
         , withChildNodes
-        , withText
         )
 import RichTextEditor.Model.Selection
     exposing
@@ -29,6 +25,7 @@ import RichTextEditor.Model.Selection
         , rangeSelection
         )
 import RichTextEditor.Model.State as State exposing (State, withRoot, withSelection)
+import RichTextEditor.Model.Text as Text exposing (text, withText)
 import RichTextEditor.Node exposing (Node(..), findTextBlockNodeAncestor, map)
 import RichTextEditor.Selection exposing (annotateSelection, clearSelectionAnnotations)
 import Set
@@ -48,19 +45,19 @@ removeExtraEmptyTextLeaves inlineLeaves =
                 TextLeaf xL ->
                     case y of
                         TextLeaf yL ->
-                            if String.isEmpty (text xL) && (not <| Set.member selection (annotationsFromTextLeafParameters xL)) then
+                            if String.isEmpty (text xL) && (not <| Set.member selection (Text.annotations xL)) then
                                 removeExtraEmptyTextLeaves (y :: xs)
 
-                            else if String.isEmpty (text yL) && (not <| Set.member selection (annotationsFromTextLeafParameters yL)) then
+                            else if String.isEmpty (text yL) && (not <| Set.member selection (Text.annotations yL)) then
                                 removeExtraEmptyTextLeaves (x :: xs)
 
                             else
                                 x :: removeExtraEmptyTextLeaves (y :: xs)
 
-                        InlineLeaf _ ->
+                        ElementLeaf _ ->
                             x :: removeExtraEmptyTextLeaves (y :: xs)
 
-                InlineLeaf _ ->
+                ElementLeaf _ ->
                     x :: removeExtraEmptyTextLeaves (y :: xs)
 
 
@@ -78,16 +75,16 @@ mergeSimilarInlineLeaves inlineLeaves =
                 TextLeaf xL ->
                     case y of
                         TextLeaf yL ->
-                            if comparableMarksFromTextLeafParameters xL == comparableMarksFromTextLeafParameters yL then
+                            if Text.comparableMarks xL == Text.comparableMarks yL then
                                 mergeSimilarInlineLeaves (TextLeaf (xL |> withText (text xL ++ text yL)) :: xs)
 
                             else
                                 x :: mergeSimilarInlineLeaves (y :: xs)
 
-                        InlineLeaf _ ->
+                        ElementLeaf _ ->
                             x :: mergeSimilarInlineLeaves (y :: xs)
 
-                InlineLeaf _ ->
+                ElementLeaf _ ->
                     x :: mergeSimilarInlineLeaves (y :: xs)
 
 
@@ -215,7 +212,7 @@ parentOffset leaves index offset =
                                 accOffset
                             )
 
-                        InlineLeaf _ ->
+                        ElementLeaf _ ->
                             ( i + 1
                             , if i < index then
                                 accOffset + 1
@@ -251,7 +248,7 @@ childOffset leaves offset =
                                 else
                                     ( i + 1, accOffset - String.length (text tl), False )
 
-                            InlineLeaf _ ->
+                            ElementLeaf _ ->
                                 ( i + 1, accOffset - 1, False )
                 )
                 ( 0, offset, False )

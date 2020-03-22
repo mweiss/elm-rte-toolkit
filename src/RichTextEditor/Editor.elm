@@ -51,6 +51,7 @@ import RichTextEditor.Model.Editor
 import RichTextEditor.Model.Element as Element exposing (Element)
 import RichTextEditor.Model.Event exposing (EditorChange, PasteEvent, TextChange)
 import RichTextEditor.Model.HtmlNode exposing (HtmlNode(..))
+import RichTextEditor.Model.InlineElement as InlineElement
 import RichTextEditor.Model.Mark as Mark exposing (Mark)
 import RichTextEditor.Model.Node
     exposing
@@ -62,14 +63,11 @@ import RichTextEditor.Model.Node
         , blockArray
         , childNodes
         , elementFromBlockNode
-        , elementFromInlineLeafParameters
         , fromBlockArray
         , fromInlineArray
         , inlineLeafArray
-        , text
         , treeFromInlineArray
         , withChildNodes
-        , withText
         )
 import RichTextEditor.Model.Selection
     exposing
@@ -88,6 +86,7 @@ import RichTextEditor.Model.Spec
         , toHtmlNodeFromNodeDefinition
         )
 import RichTextEditor.Model.State as State exposing (State, withRoot, withSelection)
+import RichTextEditor.Model.Text as Text
 import RichTextEditor.Node exposing (Node(..), nodeAt)
 import RichTextEditor.NodePath as NodePath exposing (toString)
 import RichTextEditor.Selection exposing (annotateSelection, domToEditor, editorToDom)
@@ -241,7 +240,7 @@ differentText root ( path, t ) =
                 Inline il ->
                     case il of
                         TextLeaf tl ->
-                            text tl /= t
+                            Text.text tl /= t
 
                         _ ->
                             True
@@ -459,7 +458,7 @@ applyTextChange editorNode ( path, text ) =
                                                     (inlineLeafArray <|
                                                         Array.set x
                                                             (TextLeaf
-                                                                (contents |> withText (String.replace zeroWidthSpace "" text))
+                                                                (contents |> Text.withText (String.replace zeroWidthSpace "" text))
                                                             )
                                                             a
                                                     )
@@ -537,7 +536,7 @@ shouldHideCaret editorState =
 
                             Inline leaf ->
                                 case leaf of
-                                    InlineLeaf _ ->
+                                    ElementLeaf _ ->
                                         True
 
                                     _ ->
@@ -732,11 +731,11 @@ viewText text =
 viewInlineLeaf : Decorations msg -> Path -> InlineLeaf -> Html msg
 viewInlineLeaf decorations backwardsPath leaf =
     case leaf of
-        InlineLeaf l ->
-            viewElement decorations (elementFromInlineLeafParameters l) backwardsPath Array.empty
+        ElementLeaf l ->
+            viewElement decorations (InlineElement.element l) backwardsPath Array.empty
 
         TextLeaf v ->
-            viewText (text v)
+            viewText (Text.text v)
 
 
 applyNamedCommandList : NamedCommandList -> Editor -> Result String Editor

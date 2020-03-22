@@ -6,17 +6,15 @@ module RichTextEditor.Marks exposing
     , toggleMarkAtPath
     )
 
+import RichTextEditor.Model.InlineElement as InlineElement
 import RichTextEditor.Model.Mark as Mark exposing (Mark, MarkOrder, ToggleAction(..), name, toggle)
 import RichTextEditor.Model.Node
     exposing
         ( BlockNode
         , InlineLeaf(..)
         , Path
-        , inlineLeafParametersWithMarks
-        , marksFromInlineLeafParameters
-        , marksFromTextLeafParameters
-        , textLeafParametersWithMarks
         )
+import RichTextEditor.Model.Text as Text
 import RichTextEditor.Node exposing (Node(..), nodeAt, replace)
 
 
@@ -57,13 +55,13 @@ toggleMark action markOrder mark node =
                     TextLeaf leaf ->
                         TextLeaf <|
                             (leaf
-                                |> textLeafParametersWithMarks
-                                    (toggle action markOrder mark (marksFromTextLeafParameters leaf))
+                                |> Text.withMarks
+                                    (toggle action markOrder mark (Text.marks leaf))
                             )
 
-                    InlineLeaf leaf ->
-                        InlineLeaf <|
+                    ElementLeaf leaf ->
+                        ElementLeaf <|
                             (leaf
-                                |> inlineLeafParametersWithMarks
-                                    (toggle action markOrder mark (marksFromInlineLeafParameters leaf))
+                                |> InlineElement.withMarks
+                                    (toggle action markOrder mark (InlineElement.marks leaf))
                             )

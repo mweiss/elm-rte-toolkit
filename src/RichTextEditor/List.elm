@@ -59,7 +59,6 @@ import RichTextEditor.Model.Node
         , childNodes
         , elementFromBlockNode
         , fromBlockArray
-        , text
         )
 import RichTextEditor.Model.Selection
     exposing
@@ -72,6 +71,7 @@ import RichTextEditor.Model.Selection
         , normalize
         )
 import RichTextEditor.Model.State as State exposing (root, withRoot, withSelection)
+import RichTextEditor.Model.Text exposing (text)
 import RichTextEditor.Node
     exposing
         ( Fragment(..)

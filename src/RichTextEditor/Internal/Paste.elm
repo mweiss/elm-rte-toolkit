@@ -207,7 +207,7 @@ pasteInlineArray inlineFragment editorState =
                                                                         |> withRoot newRoot
                                                                     )
 
-                                                    InlineLeaf _ ->
+                                                    ElementLeaf _ ->
                                                         let
                                                             replaceResult =
                                                                 replaceWithFragment (anchorNode selection) (InlineLeafFragment inlineFragment) (State.root editorState)
