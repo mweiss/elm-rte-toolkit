@@ -3,7 +3,7 @@ module TestNodePath exposing (..)
 import Array exposing (Array)
 import Expect
 import RichTextEditor.Model.Mark exposing (mark)
-import RichTextEditor.Model.Node exposing (InlineLeaf(..), blockNode, elementParameters, emptyTextLeafParameters, inlineLeafArray, textLeafParametersWithMarks, textLeafWithText, withText)
+import RichTextEditor.Model.Node exposing (InlineLeaf(..), blockNode, element, emptyTextLeafParameters, inlineLeafArray, textLeafParametersWithMarks, textLeafWithText, withText)
 import RichTextEditor.NodePath
     exposing
         ( commonAncestor
@@ -20,15 +20,15 @@ import Test exposing (..)
 
 
 paragraphParams =
-    elementParameters paragraph [] Set.empty
+    element paragraph [] Set.empty
 
 
 codeBlockParams =
-    elementParameters codeBlock [] Set.empty
+    element codeBlock [] Set.empty
 
 
 crazyBlockParams =
-    elementParameters crazyBlock [] Set.empty
+    element crazyBlock [] Set.empty
 
 
 boldMark =

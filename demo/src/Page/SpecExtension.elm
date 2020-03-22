@@ -29,15 +29,15 @@ import RichTextEditor.Model.Node
         , ChildNodes(..)
         , Element
         , Path
-        , attributesFromElementParameters
+        , attributesFromElement
         , blockArray
         , blockNode
-        , blockNodeWithElementParameters
-        , elementParameters
-        , elementParametersFromBlockNode
-        , elementParametersWithAttributes
+        , blockNodeWithElement
+        , element
+        , elementFromBlockNode
+        , elementWithAttributes
         , inlineLeafArray
-        , nameFromElementParameters
+        , nameFromElement
         , textLeafWithText
         )
 import RichTextEditor.Model.Spec
@@ -148,7 +148,7 @@ handleInsertCaptionedImage model =
                 Just _ ->
                     let
                         params =
-                            elementParameters captionedImage
+                            element captionedImage
                                 [ StringAttribute "src" insertImageModal.src
                                 , StringAttribute "alt" insertImageModal.alt
                                 , StringAttribute "caption" insertImageModal.caption
@@ -269,21 +269,21 @@ customSpec =
 docInitNode : BlockNode
 docInitNode =
     blockNode
-        (elementParameters doc [] Set.empty)
+        (element doc [] Set.empty)
         (blockArray (Array.fromList [ initialEditorNode, initialCaptionedImage, initialEditorNode ]))
 
 
 initialEditorNode : BlockNode
 initialEditorNode =
     blockNode
-        (elementParameters paragraph [] Set.empty)
+        (element paragraph [] Set.empty)
         (inlineLeafArray (Array.fromList [ textLeafWithText "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum." ]))
 
 
 initialCaptionedImage : BlockNode
 initialCaptionedImage =
     blockNode
-        (elementParameters captionedImage
+        (element captionedImage
             [ StringAttribute "caption" "The elm logo!", StringAttribute "src" "/logo.svg" ]
             (Set.singleton selectable)
         )
@@ -376,21 +376,21 @@ updateCaptionedImageText path value state =
                 Block bn ->
                     let
                         ep =
-                            elementParametersFromBlockNode bn
+                            elementFromBlockNode bn
 
                         attributes =
-                            attributesFromElementParameters ep
+                            attributesFromElement ep
 
                         newAttributes =
                             replaceOrAddStringAttribute "caption" value attributes
 
                         newElementParameters =
-                            ep |> elementParametersWithAttributes newAttributes
+                            ep |> elementWithAttributes newAttributes
 
                         newBlockNode =
-                            bn |> blockNodeWithElementParameters newElementParameters
+                            bn |> blockNodeWithElement newElementParameters
                     in
-                    if nameFromElementParameters ep /= "captioned_image" then
+                    if nameFromElement ep /= "captioned_image" then
                         Err "I received a node that was not a captioned image"
 
                     else
@@ -440,13 +440,13 @@ imageToHtmlNode parameters _ =
         caption =
             Maybe.withDefault
                 ""
-                (findStringAttribute "caption" (attributesFromElementParameters parameters))
+                (findStringAttribute "caption" (attributesFromElement parameters))
 
         attributes =
             List.filterMap identity
-                [ Just <| ( "src", Maybe.withDefault "" (findStringAttribute "src" (attributesFromElementParameters parameters)) )
-                , Maybe.map (\x -> ( "alt", x )) (findStringAttribute "alt" (attributesFromElementParameters parameters))
-                , Maybe.map (\x -> ( "title", x )) (findStringAttribute "title" (attributesFromElementParameters parameters))
+                [ Just <| ( "src", Maybe.withDefault "" (findStringAttribute "src" (attributesFromElement parameters)) )
+                , Maybe.map (\x -> ( "alt", x )) (findStringAttribute "alt" (attributesFromElement parameters))
+                , Maybe.map (\x -> ( "title", x )) (findStringAttribute "title" (attributesFromElement parameters))
                 , Just ( "data-caption", caption )
                 ]
     in
@@ -521,7 +521,7 @@ htmlNodeToImage def node =
 
                             Just attr ->
                                 Just
-                                    ( elementParameters
+                                    ( element
                                         def
                                         attr
                                         (Set.singleton selectable)

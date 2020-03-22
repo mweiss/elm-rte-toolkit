@@ -89,18 +89,18 @@ import RichTextEditor.Model.Node
         , annotationsFromBlockNode
         , blockArray
         , blockNode
-        , blockNodeWithElementParameters
+        , blockNodeWithElement
         , childNodes
-        , comparableElementParameters
-        , elementParameters
-        , elementParametersFromBlockNode
+        , comparableElement
+        , element
+        , elementFromBlockNode
         , fromBlockArray
         , fromInlineArray
         , inlineLeafArray
         , inlineLeafParameters
         , inlineLeafParametersWithMarks
         , marksFromInlineLeaf
-        , nameFromElementParameters
+        , nameFromElement
         , text
         , textLeafParametersWithMarks
         , withChildNodes
@@ -621,7 +621,7 @@ removeRangeSelection editorState =
 insertLineBreak : Transform
 insertLineBreak =
     insertInlineElement
-        (InlineLeaf (inlineLeafParameters (elementParameters hardBreak [] Set.empty) []))
+        (InlineLeaf (inlineLeafParameters (element hardBreak [] Set.empty) []))
 
 
 insertInlineElement : InlineLeaf -> Transform
@@ -1287,8 +1287,8 @@ toggleBlock allowedBlocks onParams offParams editorState =
                         (\node ->
                             case node of
                                 Block bn ->
-                                    comparableElementParameters (elementParametersFromBlockNode bn)
-                                        == comparableElementParameters onParams
+                                    comparableElement (elementFromBlockNode bn)
+                                        == comparableElement onParams
 
                                 _ ->
                                     True
@@ -1316,10 +1316,10 @@ toggleBlock allowedBlocks onParams offParams editorState =
                                         Block bn ->
                                             let
                                                 p =
-                                                    elementParametersFromBlockNode bn
+                                                    elementFromBlockNode bn
                                             in
-                                            if List.member (nameFromElementParameters p) allowedBlocks then
-                                                Block (bn |> blockNodeWithElementParameters newParams)
+                                            if List.member (nameFromElement p) allowedBlocks then
+                                                Block (bn |> blockNodeWithElement newParams)
 
                                             else
                                                 node
@@ -1731,11 +1731,11 @@ splitBlockHeaderToNewParagraph headerElements paragraphElement editorState =
                                     Block bn ->
                                         let
                                             parameters =
-                                                elementParametersFromBlockNode bn
+                                                elementFromBlockNode bn
                                         in
                                         if
                                             List.member
-                                                (nameFromElementParameters parameters)
+                                                (nameFromElement parameters)
                                                 headerElements
                                                 && isEmptyTextBlock node
                                         then
@@ -1743,7 +1743,7 @@ splitBlockHeaderToNewParagraph headerElements paragraphElement editorState =
                                                 replace p
                                                     (Block
                                                         (bn
-                                                            |> blockNodeWithElementParameters
+                                                            |> blockNodeWithElement
                                                                 paragraphElement
                                                         )
                                                     )

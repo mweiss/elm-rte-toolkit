@@ -16,13 +16,13 @@ import RichTextEditor.Model.Node
         , Element
         , InlineLeaf(..)
         , Path
-        , annotationsFromElementParameters
+        , annotationsFromElement
         , annotationsFromTextLeafParameters
-        , blockNodeWithElementParameters
-        , elementParametersFromBlockNode
-        , elementParametersFromInlineLeafParameters
-        , elementParametersWithAnnotations
-        , inlineLeafParametersWithElementParameters
+        , blockNodeWithElement
+        , elementFromBlockNode
+        , elementFromInlineLeafParameters
+        , elementWithAnnotations
+        , inlineLeafParametersWithElement
         , textLeafParametersWithAnnotations
         )
 import RichTextEditor.Node exposing (Node(..), indexedFoldl, map, nodeAt, replace)
@@ -63,9 +63,9 @@ toggleElementParameters : (String -> Set String -> Set String) -> String -> Elem
 toggleElementParameters func annotation parameters =
     let
         annotations =
-            annotationsFromElementParameters parameters
+            annotationsFromElement parameters
     in
-    elementParametersWithAnnotations (func annotation annotations) parameters
+    elementWithAnnotations (func annotation annotations) parameters
 
 
 toggle : (String -> Set String -> Set String) -> String -> Node -> Node
@@ -74,10 +74,10 @@ toggle func annotation node =
         Block bn ->
             let
                 newParameters =
-                    toggleElementParameters func annotation (elementParametersFromBlockNode bn)
+                    toggleElementParameters func annotation (elementFromBlockNode bn)
 
                 newBlockNode =
-                    bn |> blockNodeWithElementParameters newParameters
+                    bn |> blockNodeWithElement newParameters
             in
             Block newBlockNode
 
@@ -87,9 +87,9 @@ toggle func annotation node =
                     InlineLeaf l ->
                         let
                             newParameters =
-                                toggleElementParameters func annotation (elementParametersFromInlineLeafParameters l)
+                                toggleElementParameters func annotation (elementFromInlineLeafParameters l)
                         in
-                        InlineLeaf <| inlineLeafParametersWithElementParameters newParameters l
+                        InlineLeaf <| inlineLeafParametersWithElement newParameters l
 
                     TextLeaf tl ->
                         TextLeaf <| (tl |> textLeafParametersWithAnnotations (func annotation <| annotationsFromTextLeafParameters tl))
@@ -109,12 +109,12 @@ getAnnotationsFromNode : Node -> Set String
 getAnnotationsFromNode node =
     case node of
         Block blockNode ->
-            annotationsFromElementParameters <| elementParametersFromBlockNode blockNode
+            annotationsFromElement <| elementFromBlockNode blockNode
 
         Inline inlineLeaf ->
             case inlineLeaf of
                 InlineLeaf p ->
-                    annotationsFromElementParameters <| elementParametersFromInlineLeafParameters p
+                    annotationsFromElement <| elementFromInlineLeafParameters p
 
                 TextLeaf p ->
                     annotationsFromTextLeafParameters p

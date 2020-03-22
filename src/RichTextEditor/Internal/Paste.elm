@@ -22,7 +22,7 @@ import RichTextEditor.Model.Node
         , InlineLeaf(..)
         , blockNode
         , childNodes
-        , elementParametersFromBlockNode
+        , elementFromBlockNode
         , fromInlineArray
         , inlineLeafArray
         , textLeafWithText
@@ -96,7 +96,7 @@ pasteText text editorState =
                                 newLines =
                                     List.map
                                         (\line ->
-                                            blockNode (elementParametersFromBlockNode tbNode)
+                                            blockNode (elementFromBlockNode tbNode)
                                                 (inlineLeafArray <|
                                                     Array.fromList
                                                         [ textLeafWithText line

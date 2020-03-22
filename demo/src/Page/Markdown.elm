@@ -25,18 +25,18 @@ import RichTextEditor.Model.Node as Node
         , Element
         , InlineLeaf(..)
         , InlineLeafTree(..)
-        , attributesFromElementParameters
+        , attributesFromElement
         , blockArray
         , blockNode
         , childNodes
-        , elementParameters
-        , elementParametersFromBlockNode
-        , elementParametersFromInlineLeafParameters
+        , element
+        , elementFromBlockNode
+        , elementFromInlineLeafParameters
         , fromBlockArray
         , fromInlineArray
         , inlineLeaf
         , inlineLeafArray
-        , nameFromElementParameters
+        , nameFromElement
         , textLeaf
         , textLeafWithText
         , treeFromInlineArray
@@ -404,7 +404,7 @@ imageToMarkdown : Element -> Result String Inline
 imageToMarkdown parameters =
     let
         attributes =
-            attributesFromElementParameters parameters
+            attributesFromElement parameters
 
         alt =
             findStringAttribute "alt" attributes
@@ -433,9 +433,9 @@ inlineToMarkdown leaves tree =
                         InlineLeaf il ->
                             let
                                 parameters =
-                                    elementParametersFromInlineLeafParameters il
+                                    elementFromInlineLeafParameters il
                             in
-                            case nameFromElementParameters parameters of
+                            case nameFromElement parameters of
                                 "image" ->
                                     Result.map List.singleton (imageToMarkdown parameters)
 
@@ -505,8 +505,8 @@ textFromChildNodes cn =
 
                                 InlineLeaf p ->
                                     if
-                                        nameFromElementParameters
-                                            (elementParametersFromInlineLeafParameters p)
+                                        nameFromElement
+                                            (elementFromInlineLeafParameters p)
                                             == "hard_break"
                                     then
                                         "\n"
@@ -524,7 +524,7 @@ headingToMarkdown : Element -> ChildNodes -> Result String Block
 headingToMarkdown p cn =
     let
         attributes =
-            attributesFromElementParameters p
+            attributesFromElement p
 
         level =
             Maybe.withDefault 1 (findIntegerAttribute "level" attributes)
@@ -548,7 +548,7 @@ listToMarkdown type_ parameters cn =
             Maybe.withDefault "." <|
                 findStringAttribute
                     "delimiter"
-                    (attributesFromElementParameters parameters)
+                    (attributesFromElement parameters)
 
         listItems =
             case cn of
@@ -586,12 +586,12 @@ blockToMarkdown : BlockNode -> Result String Block
 blockToMarkdown node =
     let
         parameters =
-            elementParametersFromBlockNode node
+            elementFromBlockNode node
 
         children =
             childNodes node
     in
-    case nameFromElementParameters parameters of
+    case nameFromElement parameters of
         "paragraph" ->
             Result.map (M.Paragraph "") (inlineChildrenToMarkdown children)
 
@@ -788,7 +788,7 @@ markdownToBlock md =
     Result.map
         (\children ->
             blockNode
-                (elementParameters doc [] Set.empty)
+                (element doc [] Set.empty)
                 children
         )
         (markdownBlockListToBlockChildNodes md)
@@ -829,7 +829,7 @@ markdownInlineToInlineLeaves marks inline =
 
         MI.HardLineBreak ->
             Ok <|
-                [ inlineLeaf (elementParameters hardBreak [] Set.empty)
+                [ inlineLeaf (element hardBreak [] Set.empty)
                     []
                 ]
 
@@ -856,7 +856,7 @@ markdownInlineToInlineLeaves marks inline =
             let
                 inlineImage =
                     inlineLeaf
-                        (elementParameters image
+                        (element image
                             (List.filterMap identity
                                 [ Just <| StringAttribute "src" src
                                 , Maybe.map (\t -> StringAttribute "alt" t) alt
@@ -901,7 +901,7 @@ markdownCodeBlockToEditorBlock cb s =
     in
     Ok <|
         blockNode
-            (elementParameters codeBlock attributes Set.empty)
+            (element codeBlock attributes Set.empty)
             (inlineLeafArray <| Array.fromList [ textLeafWithText s ])
 
 
@@ -925,13 +925,13 @@ markdownListToEditorBlock lb children =
     Result.map
         (\listItems ->
             blockNode
-                (elementParameters node attributes Set.empty)
+                (element node attributes Set.empty)
                 (blockArray
                     (Array.fromList
                         (List.map
                             (\cn ->
                                 blockNode
-                                    (elementParameters listItem [] Set.empty)
+                                    (element listItem [] Set.empty)
                                     cn
                             )
                             listItems
@@ -952,7 +952,7 @@ markdownInlineToParagraphBlock children =
     Result.map
         (\c ->
             blockNode
-                (elementParameters paragraph [] Set.empty)
+                (element paragraph [] Set.empty)
                 c
         )
         (markdownInlineListToInlineChildNodes children)
@@ -964,20 +964,20 @@ markdownBlockToEditorBlock block =
         M.BlankLine s ->
             Ok <|
                 blockNode
-                    (elementParameters paragraph [] Set.empty)
+                    (element paragraph [] Set.empty)
                     (inlineLeafArray <| Array.fromList [ textLeafWithText s ])
 
         M.ThematicBreak ->
             Ok <|
                 blockNode
-                    (elementParameters horizontalRule [] Set.empty)
+                    (element horizontalRule [] Set.empty)
                     Leaf
 
         M.Heading _ i children ->
             Result.map
                 (\c ->
                     blockNode
-                        (elementParameters
+                        (element
                             heading
                             [ IntegerAttribute "level" i ]
                             Set.empty
@@ -996,7 +996,7 @@ markdownBlockToEditorBlock block =
             Result.map
                 (\c ->
                     blockNode
-                        (elementParameters blockquote [] Set.empty)
+                        (element blockquote [] Set.empty)
                         c
                 )
                 (markdownBlockListToBlockChildNodes children)

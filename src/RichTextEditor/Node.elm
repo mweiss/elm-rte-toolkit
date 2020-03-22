@@ -46,11 +46,11 @@ import RichTextEditor.Model.Node
         , InlineLeaf(..)
         , Path
         , TextLeafParameters
-        , annotationsFromElementParameters
+        , annotationsFromElement
         , blockArray
         , childNodes
-        , elementParametersFromBlockNode
-        , elementParametersFromInlineLeafParameters
+        , elementFromBlockNode
+        , elementFromInlineLeafParameters
         , fromBlockArray
         , fromInlineArray
         , inlineLeafArray
@@ -263,7 +263,7 @@ isSelectable : Node -> Bool
 isSelectable node =
     case node of
         Block bn ->
-            Set.member selectable (annotationsFromElementParameters (elementParametersFromBlockNode bn))
+            Set.member selectable (annotationsFromElement (elementFromBlockNode bn))
 
         Inline ln ->
             case ln of
@@ -271,7 +271,7 @@ isSelectable node =
                     True
 
                 InlineLeaf l ->
-                    Set.member selectable (annotationsFromElementParameters (elementParametersFromInlineLeafParameters l))
+                    Set.member selectable (annotationsFromElement (elementFromInlineLeafParameters l))
 
 
 findNodeFromExclusive : Iterator -> (Path -> Node -> Bool) -> Path -> BlockNode -> Maybe ( Path, Node )

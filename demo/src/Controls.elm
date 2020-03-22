@@ -12,9 +12,9 @@ import RichTextEditor.Model.Mark as Mark
 import RichTextEditor.Model.Node
     exposing
         ( Path
-        , elementParametersFromBlockNode
+        , elementFromBlockNode
         , marksFromInlineLeaf
-        , nameFromElementParameters
+        , nameFromElement
         )
 import RichTextEditor.Model.Selection exposing (anchorNode, focusNode, normalize)
 import RichTextEditor.Model.State as State exposing (State)
@@ -274,7 +274,7 @@ accumulateControlState node controlState =
         Block n ->
             { controlState
                 | nodes =
-                    Set.insert (nameFromElementParameters (elementParametersFromBlockNode n)) controlState.nodes
+                    Set.insert (nameFromElement (elementFromBlockNode n)) controlState.nodes
             }
 
         Inline inline ->

@@ -22,7 +22,7 @@ import RichTextEditor.Model.Annotations exposing (selectable)
 import RichTextEditor.Model.Attribute exposing (Attribute(..), findIntegerAttribute, findStringAttribute)
 import RichTextEditor.Model.HtmlNode exposing (HtmlNode(..))
 import RichTextEditor.Model.Mark as Mark exposing (mark)
-import RichTextEditor.Model.Node exposing (attributesFromElementParameters, elementParameters)
+import RichTextEditor.Model.Node exposing (attributesFromElement, element)
 import RichTextEditor.Model.Spec
     exposing
         ( ElementToHtml
@@ -63,7 +63,7 @@ htmlToDoc definition node =
     case node of
         ElementNode name attrs children ->
             if name == "div" && attrs == [ ( "data-rte-doc", "true" ) ] then
-                Just <| ( elementParameters definition [] Set.empty, children )
+                Just <| ( element definition [] Set.empty, children )
 
             else
                 Nothing
@@ -87,7 +87,7 @@ htmlToParagraph definition node =
     case node of
         ElementNode name _ children ->
             if name == "p" then
-                Just <| ( elementParameters definition [] Set.empty, children )
+                Just <| ( element definition [] Set.empty, children )
 
             else
                 Nothing
@@ -126,7 +126,7 @@ htmlToHorizontalRule def node =
     case node of
         ElementNode name _ _ ->
             if name == "hr" then
-                Just ( elementParameters def [] <| Set.fromList [ selectable ], Array.empty )
+                Just ( element def [] <| Set.fromList [ selectable ], Array.empty )
 
             else
                 Nothing
@@ -144,7 +144,7 @@ headingToHtml : ElementToHtml
 headingToHtml parameters children =
     let
         level =
-            Maybe.withDefault 1 <| findIntegerAttribute "level" (attributesFromElementParameters parameters)
+            Maybe.withDefault 1 <| findIntegerAttribute "level" (attributesFromElement parameters)
     in
     ElementNode ("h" ++ String.fromInt level) [] children
 
@@ -183,7 +183,7 @@ htmlToHeading def node =
 
                 Just level ->
                     Just <|
-                        ( elementParameters def
+                        ( element def
                             [ IntegerAttribute "level" level ]
                             Set.empty
                         , children
@@ -222,7 +222,7 @@ htmlNodeToCodeBlock def node =
                     Just n ->
                         case n of
                             ElementNode _ _ childChildren ->
-                                Just ( elementParameters def [] Set.empty, childChildren )
+                                Just ( element def [] Set.empty, childChildren )
 
                             _ ->
                                 Nothing
@@ -244,9 +244,9 @@ imageToHtmlNode parameters _ =
     let
         attributes =
             filterAttributesToHtml
-                [ ( "src", Just <| Maybe.withDefault "" (findStringAttribute "src" (attributesFromElementParameters parameters)) )
-                , ( "alt", findStringAttribute "alt" (attributesFromElementParameters parameters) )
-                , ( "title", findStringAttribute "title" (attributesFromElementParameters parameters) )
+                [ ( "src", Just <| Maybe.withDefault "" (findStringAttribute "src" (attributesFromElement parameters)) )
+                , ( "alt", findStringAttribute "alt" (attributesFromElement parameters) )
+                , ( "title", findStringAttribute "title" (attributesFromElement parameters) )
                 ]
     in
     ElementNode "img"
@@ -280,7 +280,7 @@ htmlNodeToImage def node =
                 in
                 if findStringAttribute "src" elementNodeAttributes /= Nothing then
                     Just
-                        ( elementParameters
+                        ( element
                             def
                             elementNodeAttributes
                           <|

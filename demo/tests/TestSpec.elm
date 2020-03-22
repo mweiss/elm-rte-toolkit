@@ -8,7 +8,7 @@ import RichTextEditor.Model.Node
         ( InlineLeaf(..)
         , blockArray
         , blockNode
-        , elementParameters
+        , element
         , emptyTextLeafParameters
         , inlineLeafArray
         , textLeafParametersWithMarks
@@ -31,7 +31,7 @@ expectedOneParagraph =
         [ BlockNodeFragment <|
             Array.fromList
                 [ blockNode
-                    (elementParameters paragraph [] Set.empty)
+                    (element paragraph [] Set.empty)
                     (inlineLeafArray
                         (Array.fromList
                             [ textLeafWithText "test"
@@ -49,7 +49,7 @@ twoParagraphs =
 twoParagraphsBlockFragment =
     Array.fromList
         [ blockNode
-            (elementParameters paragraph [] Set.empty)
+            (element paragraph [] Set.empty)
             (inlineLeafArray
                 (Array.fromList
                     [ textLeafWithText "test1"
@@ -57,7 +57,7 @@ twoParagraphsBlockFragment =
                 )
             )
         , blockNode
-            (elementParameters paragraph [] Set.empty)
+            (element paragraph [] Set.empty)
             (inlineLeafArray
                 (Array.fromList
                     [ textLeafWithText "test2"
@@ -96,7 +96,7 @@ expectedBlockquoteAndParagraphs =
         [ BlockNodeFragment <|
             Array.fromList
                 [ blockNode
-                    (elementParameters blockquote [] Set.empty)
+                    (element blockquote [] Set.empty)
                     (blockArray twoParagraphsBlockFragment)
                 ]
         ]
@@ -119,7 +119,7 @@ expectedOneParagraphWithBold =
         [ BlockNodeFragment <|
             Array.fromList
                 [ blockNode
-                    (elementParameters paragraph [] Set.empty)
+                    (element paragraph [] Set.empty)
                     (inlineLeafArray
                         (Array.fromList
                             [ TextLeaf (emptyTextLeafParameters |> withText "test" |> textLeafParametersWithMarks [ boldMark ])
@@ -139,7 +139,7 @@ expectedOneParagraphWithBoldAndItalic =
         [ BlockNodeFragment <|
             Array.fromList
                 [ blockNode
-                    (elementParameters paragraph [] Set.empty)
+                    (element paragraph [] Set.empty)
                     (inlineLeafArray
                         (Array.fromList
                             [ TextLeaf (emptyTextLeafParameters |> withText "tes" |> textLeafParametersWithMarks [ boldMark ])

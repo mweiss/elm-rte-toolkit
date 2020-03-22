@@ -13,7 +13,7 @@ import RichTextEditor.Model.Node
     exposing
         ( Element
         , Path
-        , annotationsFromElementParameters
+        , annotationsFromElement
         )
 import RichTextEditor.Model.Selection exposing (caretSelection)
 import Set
@@ -21,7 +21,7 @@ import Set
 
 selectableDecoration : Tagger msg -> Path -> Element -> Path -> List (Html.Attribute msg)
 selectableDecoration tagger editorNodePath elementParameters _ =
-    (if Set.member selection (annotationsFromElementParameters elementParameters) then
+    (if Set.member selection (annotationsFromElement elementParameters) then
         [ Html.Attributes.class "rte-selected" ]
 
      else

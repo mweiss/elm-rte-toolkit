@@ -31,14 +31,14 @@ import RichTextEditor.Model.Node
         , ChildNodes(..)
         , Element
         , InlineLeaf(..)
-        , attributesFromElementParameters
+        , attributesFromElement
         , blockArray
         , blockNode
         , childNodes
-        , definitionFromElementParameters
-        , elementParameters
-        , elementParametersFromBlockNode
-        , elementParametersFromInlineLeafParameters
+        , definitionFromElement
+        , element
+        , elementFromBlockNode
+        , elementFromInlineLeafParameters
         , emptyTextLeafParameters
         , fromBlockArray
         , fromInlineArray
@@ -84,7 +84,7 @@ defaultElementToHtml tagName elementParameters children =
                     _ ->
                         Nothing
             )
-            (attributesFromElementParameters elementParameters)
+            (attributesFromElement elementParameters)
         )
         children
 
@@ -94,7 +94,7 @@ defaultHtmlToElement htmlTag def node =
     case node of
         ElementNode name _ children ->
             if name == htmlTag then
-                Just ( elementParameters def [] Set.empty, children )
+                Just ( element def [] Set.empty, children )
 
             else
                 Nothing
@@ -173,7 +173,7 @@ validateInlineLeaf allowedGroups leaf =
         InlineLeaf il ->
             let
                 definition =
-                    definitionFromElementParameters (elementParametersFromInlineLeafParameters il)
+                    definitionFromElement (elementFromInlineLeafParameters il)
             in
             validateAllowedGroups allowedGroups (groupFromNodeDefinition definition) (nameFromNodeDefinition definition)
 
@@ -204,10 +204,10 @@ validateEditorBlockNode : Maybe (Set String) -> BlockNode -> List String
 validateEditorBlockNode allowedGroups node =
     let
         parameters =
-            elementParametersFromBlockNode node
+            elementFromBlockNode node
 
         definition =
-            definitionFromElementParameters parameters
+            definitionFromElement parameters
     in
     let
         allowedGroupsErrors =

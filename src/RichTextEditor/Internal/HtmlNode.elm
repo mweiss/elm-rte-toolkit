@@ -11,9 +11,9 @@ import RichTextEditor.Model.Node
         , InlineLeaf(..)
         , InlineLeafTree(..)
         , childNodes
-        , definitionFromElementParameters
-        , elementParametersFromBlockNode
-        , elementParametersFromInlineLeafParameters
+        , definitionFromElement
+        , elementFromBlockNode
+        , elementFromInlineLeafParameters
         , fromBlockArray
         , fromInlineArray
         , text
@@ -44,7 +44,7 @@ elementToHtmlNode : Element -> Array HtmlNode -> HtmlNode
 elementToHtmlNode parameters children =
     let
         nodeDefinition =
-            definitionFromElementParameters parameters
+            definitionFromElement parameters
     in
     toHtmlNodeFromNodeDefinition nodeDefinition parameters children
 
@@ -53,7 +53,7 @@ elementToHtmlNode parameters children =
 -}
 editorBlockNodeToHtmlNode : BlockNode -> HtmlNode
 editorBlockNodeToHtmlNode node =
-    elementToHtmlNode (elementParametersFromBlockNode node) (childNodesToHtmlNode (childNodes node))
+    elementToHtmlNode (elementFromBlockNode node) (childNodesToHtmlNode (childNodes node))
 
 
 {-| Renders child nodes to their HtmlNode representation.
@@ -107,4 +107,4 @@ editorInlineLeafToHtmlNode node =
             textToHtmlNode (text contents)
 
         InlineLeaf l ->
-            elementToHtmlNode (elementParametersFromInlineLeafParameters l) Array.empty
+            elementToHtmlNode (elementFromInlineLeafParameters l) Array.empty

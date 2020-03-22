@@ -61,13 +61,13 @@ import RichTextEditor.Model.Node
         , Path
         , blockArray
         , childNodes
-        , definitionFromElementParameters
-        , elementParametersFromBlockNode
-        , elementParametersFromInlineLeafParameters
+        , definitionFromElement
+        , elementFromBlockNode
+        , elementFromInlineLeafParameters
         , fromBlockArray
         , fromInlineArray
         , inlineLeafArray
-        , nameFromElementParameters
+        , nameFromElement
         , text
         , treeFromInlineArray
         , withChildNodes
@@ -664,7 +664,7 @@ viewElement : Decorations msg -> Element -> Path -> Array (Html msg) -> Html msg
 viewElement decorations elementParameters backwardsNodePath children =
     let
         definition =
-            definitionFromElementParameters elementParameters
+            definitionFromElement elementParameters
 
         node =
             toHtmlNodeFromNodeDefinition definition elementParameters childNodesPlaceholder
@@ -672,7 +672,7 @@ viewElement decorations elementParameters backwardsNodePath children =
         eDecorators =
             Maybe.withDefault []
                 (Dict.get
-                    (nameFromElementParameters elementParameters)
+                    (nameFromElement elementParameters)
                     (elementDecorators decorations)
                 )
 
@@ -706,7 +706,7 @@ viewInlineLeafTree decorations backwardsPath inlineLeafArray inlineLeafTree =
 viewEditorBlockNode : Decorations msg -> Path -> BlockNode -> Html msg
 viewEditorBlockNode decorations backwardsPath node =
     viewElement decorations
-        (elementParametersFromBlockNode node)
+        (elementFromBlockNode node)
         backwardsPath
         (case childNodes node of
             BlockChildren l ->
@@ -735,7 +735,7 @@ viewInlineLeaf : Decorations msg -> Path -> InlineLeaf -> Html msg
 viewInlineLeaf decorations backwardsPath leaf =
     case leaf of
         InlineLeaf l ->
-            viewElement decorations (elementParametersFromInlineLeafParameters l) backwardsPath Array.empty
+            viewElement decorations (elementFromInlineLeafParameters l) backwardsPath Array.empty
 
         TextLeaf v ->
             viewText (text v)

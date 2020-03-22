@@ -28,15 +28,15 @@ import RichTextEditor.Model.Node
         ( BlockNode
         , Element
         , Path
-        , attributesFromElementParameters
+        , attributesFromElement
         , blockArray
         , blockNode
-        , blockNodeWithElementParameters
-        , elementParameters
-        , elementParametersFromBlockNode
-        , elementParametersWithAttributes
+        , blockNodeWithElement
+        , element
+        , elementFromBlockNode
+        , elementWithAttributes
         , inlineLeafArray
-        , nameFromElementParameters
+        , nameFromElement
         , textLeafWithText
         )
 import RichTextEditor.Model.Spec
@@ -93,14 +93,14 @@ view model =
 todoInitNode : BlockNode
 todoInitNode =
     blockNode
-        (elementParameters todoList [] Set.empty)
+        (element todoList [] Set.empty)
         (blockArray (Array.fromList [ initialTodoNode "Item 1", initialTodoNode "Item 2" ]))
 
 
 initialTodoNode : String -> BlockNode
 initialTodoNode s =
     blockNode
-        (elementParameters item [] Set.empty)
+        (element item [] Set.empty)
         (inlineLeafArray (Array.fromList [ textLeafWithText s ]))
 
 
@@ -173,7 +173,7 @@ itemToHtml : ElementToHtml
 itemToHtml params children =
     let
         attributes =
-            attributesFromElementParameters params
+            attributesFromElement params
 
         checked =
             Maybe.withDefault False (findBoolAttribute "checked" attributes)
@@ -219,7 +219,7 @@ htmlToItem def node =
                                                 ElementNode _ _ c ->
                                                     let
                                                         parameters =
-                                                            elementParameters def [ BoolAttribute "checked" checked ] Set.empty
+                                                            element def [ BoolAttribute "checked" checked ] Set.empty
                                                     in
                                                     Just ( parameters, c )
 
@@ -254,7 +254,7 @@ toggleCheckboxDecoration : Path -> Element -> Path -> List (Html.Attribute Msg)
 toggleCheckboxDecoration editorNodePath elementParameters p =
     let
         checked =
-            Maybe.withDefault False (findBoolAttribute "checked" (attributesFromElementParameters elementParameters))
+            Maybe.withDefault False (findBoolAttribute "checked" (attributesFromElement elementParameters))
     in
     if p == [ 0, 0 ] then
         [ Html.Events.onClick (ToggleCheckedTodoItem editorNodePath (not checked)) ]
@@ -298,21 +298,21 @@ updateTodoListItem path value state =
                 Block bn ->
                     let
                         ep =
-                            elementParametersFromBlockNode bn
+                            elementFromBlockNode bn
 
                         attributes =
-                            attributesFromElementParameters ep
+                            attributesFromElement ep
 
                         newAttributes =
                             replaceOrAddBoolAttribute "checked" value attributes
 
                         newElementParameters =
-                            ep |> elementParametersWithAttributes newAttributes
+                            ep |> elementWithAttributes newAttributes
 
                         newBlockNode =
-                            bn |> blockNodeWithElementParameters newElementParameters
+                            bn |> blockNodeWithElement newElementParameters
                     in
-                    if nameFromElementParameters ep /= "todo_item" then
+                    if nameFromElement ep /= "todo_item" then
                         Err "I received a node that was not a todo item"
 
                     else

@@ -4,7 +4,7 @@ import Array exposing (Array)
 import RichTextEditor.Model.HtmlNode exposing (HtmlNode(..))
 import RichTextEditor.Model.Internal.Spec exposing (NodeDefinition)
 import RichTextEditor.Model.Mark exposing (Mark)
-import RichTextEditor.Model.Node exposing (Element, elementParameters)
+import RichTextEditor.Model.Node exposing (Element, element)
 import RichTextEditor.Model.Spec exposing (Spec, blockNodeContentType, emptySpec, inlineLeafContentType, markDefinition, nodeDefinition, textBlockContentType, withMarkDefinitions, withNodeDefinitions)
 import RichTextEditor.Spec exposing (defaultElementToHtml, defaultHtmlToElement, defaultHtmlToMark)
 import Set
@@ -44,7 +44,7 @@ htmlNodeToCrazyBlock def node =
                     Just n ->
                         case n of
                             ElementNode _ _ c ->
-                                Just ( elementParameters def [] Set.empty, c )
+                                Just ( element def [] Set.empty, c )
 
                             _ ->
                                 Nothing
@@ -65,7 +65,7 @@ htmlNodeToCodeBlock def node =
                     Just n ->
                         case n of
                             ElementNode _ _ childChildren ->
-                                Just ( elementParameters def [] Set.empty, childChildren )
+                                Just ( element def [] Set.empty, childChildren )
 
                             _ ->
                                 Nothing

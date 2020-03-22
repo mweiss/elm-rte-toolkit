@@ -57,10 +57,10 @@ import RichTextEditor.Model.Node
         , blockArray
         , blockNode
         , childNodes
-        , elementParameters
-        , elementParametersFromBlockNode
+        , element
+        , elementFromBlockNode
         , fromBlockArray
-        , nameFromElementParameters
+        , nameFromElement
         , text
         )
 import RichTextEditor.Model.Selection
@@ -137,9 +137,9 @@ commandBindings definition =
 defaultListDefinition : ListDefinition
 defaultListDefinition =
     ListDefinition
-        { ordered = elementParameters orderedList [] Set.empty
-        , unordered = elementParameters unorderedList [] Set.empty
-        , item = elementParameters listItem [] Set.empty
+        { ordered = element orderedList [] Set.empty
+        , unordered = element unorderedList [] Set.empty
+        , item = element listItem [] Set.empty
         }
 
 
@@ -187,7 +187,7 @@ wrap definition type_ editorState =
 
 findListItemAncestor : Element -> Path -> BlockNode -> Maybe ( Path, BlockNode )
 findListItemAncestor parameters =
-    findAncestor (\n -> nameFromElementParameters (elementParametersFromBlockNode n) == nameFromElementParameters parameters)
+    findAncestor (\n -> nameFromElement (elementFromBlockNode n) == nameFromElement parameters)
 
 
 split : ListDefinition -> Transform
@@ -204,12 +204,12 @@ isListNode definition node =
         Block bn ->
             let
                 bnName =
-                    nameFromElementParameters (elementParametersFromBlockNode bn)
+                    nameFromElement (elementFromBlockNode bn)
             in
             bnName
-                == nameFromElementParameters (ordered definition)
+                == nameFromElement (ordered definition)
                 || bnName
-                == nameFromElementParameters (unordered definition)
+                == nameFromElement (unordered definition)
 
 
 addLiftAnnotationAtPathAndChildren : Path -> BlockNode -> Result String BlockNode

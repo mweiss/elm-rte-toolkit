@@ -29,22 +29,22 @@ elementParameters def attrs annotations =
     ElementParameters { definition = def, attributes = attrs, annotations = annotations }
 
 
-definitionFromElementParameters : Element -> NodeDefinition
-definitionFromElementParameters parameters =
+definitionFromElement : Element -> NodeDefinition
+definitionFromElement parameters =
     case parameters of
         ElementParameters c ->
             c.definition
 
 
-attributesFromElementParameters : Element -> List Attribute
-attributesFromElementParameters parameters =
+attributesFromElement : Element -> List Attribute
+attributesFromElement parameters =
     case parameters of
         ElementParameters c ->
             c.attributes
 
 
-annotationsFromElementParameters : Element -> Set String
-annotationsFromElementParameters parameters =
+annotationsFromElement : Element -> Set String
+annotationsFromElement parameters =
     case parameters of
         ElementParameters c ->
             c.annotations

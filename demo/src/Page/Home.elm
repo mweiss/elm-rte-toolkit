@@ -11,7 +11,7 @@ import RichTextEditor.Model.Node
         , InlineLeaf(..)
         , blockArray
         , blockNode
-        , elementParameters
+        , element
         , emptyTextLeafParameters
         , inlineLeafArray
         , textLeafParametersWithMarks
@@ -87,14 +87,14 @@ subscriptions model =
 initNode : BlockNode
 initNode =
     blockNode
-        (elementParameters doc [] Set.empty)
+        (element doc [] Set.empty)
         (blockArray (Array.fromList [ initialEditorNode ]))
 
 
 initialEditorNode : BlockNode
 initialEditorNode =
     blockNode
-        (elementParameters paragraph [] Set.empty)
+        (element paragraph [] Set.empty)
         (inlineLeafArray
             (Array.fromList
                 [ textLeafWithText <|

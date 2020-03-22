@@ -30,8 +30,8 @@ import RichTextEditor.Model.Node
         , InlineLeafTree(..)
         , Path
         , childNodes
-        , definitionFromElementParameters
-        , elementParametersFromBlockNode
+        , definitionFromElement
+        , elementFromBlockNode
         , fromBlockArray
         , fromInlineArray
         , reverseLookupFromInlineArray
@@ -92,10 +92,10 @@ domToEditor node path =
     else
         let
             parameters =
-                elementParametersFromBlockNode node
+                elementFromBlockNode node
 
             nodeDefinition =
-                definitionFromElementParameters parameters
+                definitionFromElement parameters
 
             structure =
                 toHtmlNodeFromNodeDefinition nodeDefinition parameters childNodesPlaceholder
@@ -148,7 +148,7 @@ editorToDom node path =
             Just []
 
         x :: xs ->
-            case pathToChildContentsFromElementParameters (elementParametersFromBlockNode node) of
+            case pathToChildContentsFromElementParameters (elementFromBlockNode node) of
                 Nothing ->
                     Nothing
 
@@ -298,7 +298,7 @@ pathToChildContentsFromElementParameters : Element -> Maybe Path
 pathToChildContentsFromElementParameters parameters =
     let
         nodeDefinition =
-            definitionFromElementParameters parameters
+            definitionFromElement parameters
 
         nodeStructure =
             toHtmlNodeFromNodeDefinition nodeDefinition parameters childNodesPlaceholder

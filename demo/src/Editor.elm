@@ -32,7 +32,7 @@ import RichTextEditor.Model.Node
         , InlineLeaf(..)
         , blockArray
         , blockNode
-        , elementParameters
+        , element
         , inlineLeaf
         , inlineLeafArray
         , marksFromInlineLeaf
@@ -80,14 +80,14 @@ type alias Model =
 docInitNode : BlockNode
 docInitNode =
     blockNode
-        (elementParameters doc [] Set.empty)
+        (element doc [] Set.empty)
         (blockArray (Array.fromList [ initialEditorNode ]))
 
 
 initialEditorNode : BlockNode
 initialEditorNode =
     blockNode
-        (elementParameters paragraph [] Set.empty)
+        (element paragraph [] Set.empty)
         (inlineLeafArray (Array.fromList [ textLeafWithText "This is some sample text" ]))
 
 
@@ -110,7 +110,7 @@ commandBindings =
                   , transformCommand <|
                         splitBlockHeaderToNewParagraph
                             [ "heading" ]
-                            (elementParameters paragraph [] Set.empty)
+                            (element paragraph [] Set.empty)
                   )
                 ]
         )
@@ -275,7 +275,7 @@ handleInsertImage model =
                 Just _ ->
                     let
                         params =
-                            elementParameters image
+                            element image
                                 [ StringAttribute "src" insertImageModal.src
                                 , StringAttribute "alt" insertImageModal.alt
                                 ]
@@ -427,13 +427,13 @@ handleToggleBlock block model =
     let
         onParams =
             if block == "Code block" then
-                elementParameters
+                element
                     codeBlock
                     []
                     Set.empty
 
             else
-                elementParameters
+                element
                     heading
                     [ IntegerAttribute
                         "level"
@@ -442,7 +442,7 @@ handleToggleBlock block model =
                     Set.empty
 
         offParams =
-            elementParameters paragraph [] Set.empty
+            element paragraph [] Set.empty
     in
     { model
         | editor =
@@ -466,7 +466,7 @@ handleWrapBlockNode model =
                     , transformCommand <|
                         wrap
                             (\n -> n)
-                            (elementParameters blockquote [] Set.empty)
+                            (element blockquote [] Set.empty)
                     )
                     model.editor
                 )
@@ -483,7 +483,7 @@ handleInsertHorizontalRule model =
                     , transformCommand <|
                         insertBlockNode
                             (blockNode
-                                (elementParameters
+                                (element
                                     horizontalRule
                                     []
                                     (Set.fromList [ selectable ])
