@@ -3,29 +3,10 @@ module TestNode exposing (..)
 import Array
 import Expect
 import RichTextEditor.Model.Annotations exposing (selectable)
-import RichTextEditor.Model.Node
-    exposing
-        ( Block
-        , Children(..)
-        , Inline(..)
-        , Path
-        , blockNode
-        , element
-        , elementFromBlockNode
-        , elementFromInlineElement
-        , elementWithAnnotations
-        , emptyTextLeafParameters
-        , fromBlockArray
-        , inlineChildren
-        , inlineLeafParameters
-        , inlineLeafParametersWithElement
-        , nameFromElement
-        , plainText
-        , text
-        , textLeafParametersWithAnnotations
-        , withElement
-        , withText
-        )
+import RichTextEditor.Model.Element as Element exposing (element)
+import RichTextEditor.Model.InlineElement as InlineElement
+import RichTextEditor.Model.Node exposing (Block, Children(..), Inline(..), Path, blockNode, elementFromBlockNode, fromBlockArray, inlineChildren, inlineElement, plainText, withElement)
+import RichTextEditor.Model.Text as Text exposing (text, withText)
 import RichTextEditor.Node
     exposing
         ( Fragment(..)
@@ -126,7 +107,7 @@ nodeNameOrTextValue : Path -> Node -> List String -> List String
 nodeNameOrTextValue _ node list =
     (case node of
         Block bn ->
-            nameFromElement (elementFromBlockNode bn)
+            Element.name (elementFromBlockNode bn)
 
         Inline il ->
             case il of
@@ -134,7 +115,7 @@ nodeNameOrTextValue _ node list =
                     text tl
 
                 InlineElement p ->
-                    nameFromElement (elementFromInlineElement p)
+                    Element.name (InlineElement.element p)
     )
         :: list
 
@@ -199,19 +180,19 @@ setAnnotations mark node =
                 params =
                     elementFromBlockNode bn
             in
-            Block (bn |> withElement (params |> elementWithAnnotations annotations))
+            Block (bn |> withElement (params |> Element.withAnnotations annotations))
 
         Inline il ->
             case il of
                 Text tl ->
-                    Inline (Text (tl |> textLeafParametersWithAnnotations annotations))
+                    Inline (Text (tl |> Text.withAnnotations annotations))
 
                 InlineElement l ->
                     let
                         params =
-                            elementFromInlineElement l
+                            InlineElement.element l
                     in
-                    Inline (InlineElement (l |> inlineLeafParametersWithElement (params |> elementWithAnnotations annotations)))
+                    Inline (InlineElement (l |> InlineElement.withElement (params |> Element.withAnnotations annotations)))
 
 
 dummyAnnotation =
@@ -250,17 +231,17 @@ pHtmlNodeWithPathAnnotation =
 
 textNode1WithPathAnnotation =
     Text
-        (emptyTextLeafParameters
+        (Text.empty
             |> withText "sample1"
-            |> textLeafParametersWithAnnotations (Set.fromList [ "0:0" ])
+            |> Text.withAnnotations (Set.fromList [ "0:0" ])
         )
 
 
 textNode2WithPathAnnotation =
     Text
-        (emptyTextLeafParameters
+        (Text.empty
             |> withText "sample2"
-            |> textLeafParametersWithAnnotations (Set.fromList [ "0:1" ])
+            |> Text.withAnnotations (Set.fromList [ "0:1" ])
         )
 
 
@@ -292,17 +273,17 @@ pHtmlNodeWithSameAnnotation =
 
 textNode1WithSameAnnotation =
     Text
-        (emptyTextLeafParameters
+        (Text.empty
             |> withText "sample1"
-            |> textLeafParametersWithAnnotations (Set.fromList [ dummyAnnotation ])
+            |> Text.withAnnotations (Set.fromList [ dummyAnnotation ])
         )
 
 
 textNode2WithSameAnnotation =
     Text
-        (emptyTextLeafParameters
+        (Text.empty
             |> withText "sample2"
-            |> textLeafParametersWithAnnotations (Set.fromList [ dummyAnnotation ])
+            |> Text.withAnnotations (Set.fromList [ dummyAnnotation ])
         )
 
 
@@ -336,7 +317,7 @@ testFindAncestor =
                 Expect.equal
                     (Just ( [], rootNode ))
                     (findAncestor
-                        (\n -> nameFromElement (elementFromBlockNode n) == "doc")
+                        (\n -> Element.name (elementFromBlockNode n) == "doc")
                         [ 0, 0 ]
                         rootNode
                     )
@@ -352,12 +333,12 @@ findNodeWithName : String -> Path -> Node -> Bool
 findNodeWithName name _ node =
     case node of
         Block bn ->
-            nameFromElement (elementFromBlockNode bn) == name
+            Element.name (elementFromBlockNode bn) == name
 
         Inline il ->
             case il of
                 InlineElement l ->
-                    nameFromElement (elementFromInlineElement l) == name
+                    Element.name (InlineElement.element l) == name
 
                 _ ->
                     False
@@ -655,7 +636,7 @@ nodeWithTextLeafToSplit =
 
 
 inlineImg =
-    InlineElement <| inlineLeafParameters (element image [] Set.empty) []
+    inlineElement (element image [] Set.empty) []
 
 
 nodeAfterInlineLeafSplit =
@@ -700,11 +681,11 @@ testSplitTextLeaf =
         [ test "Tests that splitting a text leaf works as expected" <|
             \_ ->
                 Expect.equal
-                    ( emptyTextLeafParameters |> withText "sam"
-                    , emptyTextLeafParameters |> withText "ple1"
+                    ( Text.empty |> withText "sam"
+                    , Text.empty |> withText "ple1"
                     )
                 <|
-                    splitTextLeaf 3 (emptyTextLeafParameters |> withText "sample1")
+                    splitTextLeaf 3 (Text.empty |> withText "sample1")
         ]
 
 

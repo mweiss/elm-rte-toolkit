@@ -2,19 +2,17 @@ module TestSpec exposing (..)
 
 import Array exposing (Array)
 import Expect
+import RichTextEditor.Model.Element exposing (element)
 import RichTextEditor.Model.Mark exposing (mark)
 import RichTextEditor.Model.Node
     exposing
         ( Inline(..)
         , blockNode
-        , element
-        , emptyTextLeafParameters
         , fromBlockArray
         , inlineChildren
         , plainText
-        , textLeafParametersWithMarks
-        , withText
         )
+import RichTextEditor.Model.Text as Text
 import RichTextEditor.Node exposing (Fragment(..))
 import RichTextEditor.Spec exposing (htmlToElementArray)
 import RichTextEditor.Specs exposing (blockquote, bold, italic, markdown, paragraph)
@@ -122,7 +120,7 @@ expectedOneParagraphWithBold =
                     (element paragraph [] Set.empty)
                     (inlineChildren
                         (Array.fromList
-                            [ Text (emptyTextLeafParameters |> withText "test" |> textLeafParametersWithMarks [ boldMark ])
+                            [ Text (Text.empty |> Text.withText "test" |> Text.withMarks [ boldMark ])
                             ]
                         )
                     )
@@ -142,9 +140,9 @@ expectedOneParagraphWithBoldAndItalic =
                     (element paragraph [] Set.empty)
                     (inlineChildren
                         (Array.fromList
-                            [ Text (emptyTextLeafParameters |> withText "tes" |> textLeafParametersWithMarks [ boldMark ])
-                            , Text (emptyTextLeafParameters |> withText "t" |> textLeafParametersWithMarks [ boldMark, italicMark ])
-                            , Text (emptyTextLeafParameters |> withText "1" |> textLeafParametersWithMarks [ italicMark ])
+                            [ Text (Text.empty |> Text.withText "tes" |> Text.withMarks [ boldMark ])
+                            , Text (Text.empty |> Text.withText "t" |> Text.withMarks [ boldMark, italicMark ])
+                            , Text (Text.empty |> Text.withText "1" |> Text.withMarks [ italicMark ])
                             ]
                         )
                     )
