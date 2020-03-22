@@ -1,22 +1,31 @@
 module RichTextEditor.Model.Attribute exposing
     ( Attribute(..)
-    , bool
-    , findBoolAttribute
-    , findFloatAttribute
-    , findIntegerAttribute
-    , findStringAttribute
-    , float
-    , int
-    , replaceOrAddBoolAttribute
-    , replaceOrAddStringAttribute
-    , string
+    , findBoolAttribute, findFloatAttribute, findIntegerAttribute, findStringAttribute, replaceOrAddBoolAttribute, replaceOrAddFloatAttribute, replaceOrAddIntegerAttribute, replaceOrAddStringAttribute
     )
 
-{-| An editor attribute is a key value pair. It's used to store information on a node or mark,
-like color, font type, or image or link locations.
+{-| This module contains basic methods for accessing and defining node attributes.
+
+
+# Attribute type
+
+@docs Attribute
+
+
+# Helpers
+
+@docs findBoolAttribute, findFloatAttribute, findIntegerAttribute, findStringAttribute, replaceOrAddBoolAttribute, replaceOrAddFloatAttribute, replaceOrAddIntegerAttribute, replaceOrAddStringAttribute
+
 -}
 
+import String
 
+
+{-| An editor attribute is a key value pair. It's used to store information on a node or mark.
+Information you can store are things like color, font type, or image or link locations.
+
+    StringAttribute "href" "www.google.com"
+
+-}
 type Attribute
     = StringAttribute String String
     | IntegerAttribute String Int
@@ -24,45 +33,13 @@ type Attribute
     | FloatAttribute String Float
 
 
-string : String -> String -> Attribute
-string k v =
-    StringAttribute k v
+{-| Find the first BoolAttribute that has the name provided and return Just that value. If no
+attribute exists, return Nothing.
 
+    findBoolAttribute "foo" [ BoolAttribute "foo" True, StringAttribute "foo2" "bar2" ]
+    --> Just True
 
-int : String -> Int -> Attribute
-int k v =
-    IntegerAttribute k v
-
-
-bool : String -> Bool -> Attribute
-bool k v =
-    BoolAttribute k v
-
-
-float : String -> Float -> Attribute
-float k v =
-    FloatAttribute k v
-
-
-findFloatAttribute : String -> List Attribute -> Maybe Float
-findFloatAttribute name attributes =
-    case attributes of
-        [] ->
-            Nothing
-
-        x :: xs ->
-            case x of
-                FloatAttribute k v ->
-                    if k == name then
-                        Just v
-
-                    else
-                        findFloatAttribute name xs
-
-                _ ->
-                    findFloatAttribute name xs
-
-
+-}
 findBoolAttribute : String -> List Attribute -> Maybe Bool
 findBoolAttribute name attributes =
     case attributes of
@@ -82,6 +59,39 @@ findBoolAttribute name attributes =
                     findBoolAttribute name xs
 
 
+{-| Find the first FloatAttribute that has the name provided and return Just that value. If no
+attribute exists, return Nothing.
+
+    findFloatAttribute "foo" [ FloatAttribute "foo" 1.1, StringAttribute "foo2" "bar2" ]
+    --> Just 1.1
+
+-}
+findFloatAttribute : String -> List Attribute -> Maybe Float
+findFloatAttribute name attributes =
+    case attributes of
+        [] ->
+            Nothing
+
+        x :: xs ->
+            case x of
+                FloatAttribute k v ->
+                    if k == name then
+                        Just v
+
+                    else
+                        findFloatAttribute name xs
+
+                _ ->
+                    findFloatAttribute name xs
+
+
+{-| Find the first StringAttribute that has the name provided and return Just that value. If no
+attribute exists, return Nothing.
+
+    findStringAttribute "foo2" [ FloatAttribute "foo" 1.1, StringAttribute "foo2" "bar2" ]
+    --> Just "bar2"
+
+-}
 findStringAttribute : String -> List Attribute -> Maybe String
 findStringAttribute name attributes =
     case attributes of
@@ -101,6 +111,13 @@ findStringAttribute name attributes =
                     findStringAttribute name xs
 
 
+{-| Find the first IntegerAttribute that has the name provided and return Just that value. If no
+attribute exists, return Nothing.
+
+    findIntegerAttribute "foo" [ IntegerAttribute "foo" 1, StringAttribute "foo2" "bar2" ]
+    --> Just 1
+
+-}
 findIntegerAttribute : String -> List Attribute -> Maybe Int
 findIntegerAttribute name attributes =
     case attributes of
@@ -120,6 +137,13 @@ findIntegerAttribute name attributes =
                     findIntegerAttribute name xs
 
 
+{-| Replaces all BoolAttributes that have the name provided in the list,
+or add it to the beginning of the list if no pre existing BoolAttribute exists.
+
+    replaceOrAddBoolAttribute "foo" True [ BoolAttribute "foo" False, StringAttribute "foo2" "bar2" ]
+    --> [ BoolAttribute "foo" True, StringAttribute "foo2" "bar2" ]
+
+-}
 replaceOrAddBoolAttribute : String -> Bool -> List Attribute -> List Attribute
 replaceOrAddBoolAttribute name value attributes =
     case findStringAttribute name attributes of
@@ -143,6 +167,13 @@ replaceOrAddBoolAttribute name value attributes =
                 attributes
 
 
+{-| Replaces all StringAttributes that have the name provided in the list,
+or add it to the beginning of the list if no pre existing StringAttribute exists.
+
+    replaceOrAddStringAttribute "foo2" "bar3" [ BoolAttribute "foo" False, StringAttribute "foo2" "bar2" ]
+    --> [ BoolAttribute "foo" False, StringAttribute "foo2" "bar3" ]
+
+-}
 replaceOrAddStringAttribute : String -> String -> List Attribute -> List Attribute
 replaceOrAddStringAttribute name value attributes =
     case findStringAttribute name attributes of
@@ -156,6 +187,66 @@ replaceOrAddStringAttribute name value attributes =
                         StringAttribute k v ->
                             if k == name then
                                 StringAttribute name value
+
+                            else
+                                x
+
+                        _ ->
+                            x
+                )
+                attributes
+
+
+{-| Replaces all IntegerAttributes that have the name provided in the list,
+or add it to the beginning of the list if no pre existing IntegerAttribute exists.
+
+    replaceOrAddIntegerAttribute "foo" 2 [ IntegerAttribute "foo" 1, StringAttribute "foo2" "bar2" ]
+    --> [ IntegerAttribute "foo" 2, StringAttribute "foo2" "bar2" ]
+
+-}
+replaceOrAddIntegerAttribute : String -> Int -> List Attribute -> List Attribute
+replaceOrAddIntegerAttribute name value attributes =
+    case findStringAttribute name attributes of
+        Nothing ->
+            IntegerAttribute name value :: attributes
+
+        Just _ ->
+            List.map
+                (\x ->
+                    case x of
+                        IntegerAttribute k v ->
+                            if k == name then
+                                IntegerAttribute name value
+
+                            else
+                                x
+
+                        _ ->
+                            x
+                )
+                attributes
+
+
+{-| Replaces all FloatAttributes that have the name provided in the list,
+or add it to the beginning of the list if no pre existing FloatAttribute exists.
+
+    replaceOrAddFloatAttribute "foo" 2.2 [ FloatAttribute "foo" 1.1, StringAttribute "foo2" "bar2" ]
+    --> [ FloatAttribute "foo" 2.2, StringAttribute "foo2" "bar2" ]
+
+-}
+replaceOrAddFloatAttribute : String -> Float -> List Attribute -> List Attribute
+replaceOrAddFloatAttribute name value attributes =
+    case findStringAttribute name attributes of
+        Nothing ->
+            FloatAttribute name value :: attributes
+
+        Just _ ->
+            List.map
+                (\x ->
+                    case x of
+                        FloatAttribute k v ->
+                            if k == name then
+                                FloatAttribute name value
 
                             else
                                 x

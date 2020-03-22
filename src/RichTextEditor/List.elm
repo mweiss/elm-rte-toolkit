@@ -80,8 +80,8 @@ import RichTextEditor.Node
     exposing
         ( concatMap
         , findAncestor
-        , findLastPath
         , joinBlocks
+        , last
         , nodeAt
         , replace
         , replaceWithFragment
@@ -467,7 +467,7 @@ isEndOfListItem definition selection root =
             Just ( path, node ) ->
                 let
                     ( lastPath, lastNode ) =
-                        findLastPath node
+                        last node
                 in
                 if anchorNode selection /= path ++ lastPath then
                     False

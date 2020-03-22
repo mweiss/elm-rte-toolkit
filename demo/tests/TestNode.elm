@@ -28,36 +28,9 @@ import RichTextEditor.Model.Node
         , textLeafWithText
         , withText
         )
-import RichTextEditor.Node
-    exposing
-        ( allRange
-        , anyRange
-        , concatMap
-        , findAncestor
-        , findBackwardFrom
-        , findBackwardFromExclusive
-        , findForwardFrom
-        , findForwardFromExclusive
-        , findTextBlockNodeAncestor
-        , foldl
-        , foldr
-        , indexedFoldl
-        , indexedFoldr
-        , indexedMap
-        , isSelectable
-        , map
-        , next
-        , nodeAt
-        , previous
-        , removeInRange
-        , removeNodeAndEmptyParents
-        , replace
-        , replaceWithFragment
-        , splitBlockAtPathAndOffset
-        , splitTextLeaf
-        )
+import RichTextEditor.Node exposing (allRange, anyRange, concatMap, findAncestor, findBackwardFrom, findBackwardFromExclusive, findForwardFrom, findForwardFromExclusive, findTextBlockNodeAncestor, foldl, foldlRange, foldr, foldrRange, indexedFoldl, indexedFoldr, indexedMap, insertAfter, insertBefore, isSelectable, joinBlocks, last, map, next, nodeAt, previous, removeInRange, removeNodeAndEmptyParents, replace, replaceWithFragment, splitBlockAtPathAndOffset, splitTextLeaf)
 import RichTextEditor.NodePath exposing (toString)
-import RichTextEditor.Specs exposing (doc, image, paragraph)
+import RichTextEditor.Specs exposing (doc, horizontalRule, image, paragraph)
 import Set
 import Test exposing (Test, describe, test)
 
@@ -699,4 +672,216 @@ testSplitTextLeaf =
                     )
                 <|
                     splitTextLeaf 3 (emptyTextLeafParameters |> withText "sample1")
+        ]
+
+
+hrNode : BlockNode
+hrNode =
+    blockNode
+        (elementParameters horizontalRule [] Set.empty)
+        Leaf
+
+
+testFindLastPath : Test
+testFindLastPath =
+    describe "Tests that findLastPath works as expected"
+        [ test "If this is a leaf node, it should return the root path" <|
+            \_ ->
+                Expect.equal ( [], Block hrNode ) (last hrNode)
+        , test "If this is a node with inline children, it should return the last path correctly" <|
+            \_ ->
+                Expect.equal ( [ 1 ], Inline textNode2 ) (last pNode)
+        , test "If this is a node with block children, it should return the last path correctly" <|
+            \_ ->
+                Expect.equal ( [ 0, 1 ], Inline textNode2 ) (last rootNode)
+        ]
+
+
+testFoldlRange : Test
+testFoldlRange =
+    describe "Tests that foldlRange works as expected"
+        [ test "Test that a range query works correctly" <|
+            \_ -> Expect.equal [ "sample2", "sample1", "paragraph" ] (foldlRange [ 0 ] [ 0, 1 ] (\x -> nodeNameOrTextValue [] x) [] rootNode)
+        , test "Test that something outside of range does nothing" <|
+            \_ -> Expect.equal [] (foldlRange [ 1 ] [ 1, 1 ] (\x -> nodeNameOrTextValue [] x) [] rootNode)
+        , test "Test that an invalid range does nothing" <|
+            \_ -> Expect.equal [] (foldlRange [ 1 ] [ 0 ] (\x -> nodeNameOrTextValue [] x) [] rootNode)
+        ]
+
+
+testFoldrRange : Test
+testFoldrRange =
+    describe "Tests that foldrRange works as expected"
+        [ test "Test that a range query works correctly" <|
+            \_ -> Expect.equal [ "paragraph", "sample1", "sample2" ] (foldrRange [ 0 ] [ 0, 1 ] (\x -> nodeNameOrTextValue [] x) [] rootNode)
+        , test "Test that something outside of range does nothing" <|
+            \_ -> Expect.equal [] (foldrRange [ 1 ] [ 1, 1 ] (\x -> nodeNameOrTextValue [] x) [] rootNode)
+        , test "Test that an invalid range does nothing" <|
+            \_ -> Expect.equal [] (foldrRange [ 1 ] [ 0 ] (\x -> nodeNameOrTextValue [] x) [] rootNode)
+        ]
+
+
+inlineInsertFragment =
+    InlineLeafFragment (Array.fromList [ textNode1, textNode2 ])
+
+
+blockInsertFragment =
+    BlockNodeFragment (Array.fromList [ hrNode ])
+
+
+expectedInsertBeforeBlock : BlockNode
+expectedInsertBeforeBlock =
+    blockNode
+        (elementParameters doc [] Set.empty)
+        (blockArray <| Array.fromList [ hrNode, pNode ])
+
+
+expectedInsertBeforeInline : BlockNode
+expectedInsertBeforeInline =
+    blockNode
+        (elementParameters doc [] Set.empty)
+        (blockArray <| Array.fromList [ pNodeExpectedBeforeInline ])
+
+
+pNodeExpectedBeforeInline : BlockNode
+pNodeExpectedBeforeInline =
+    blockNode
+        (elementParameters paragraph [] Set.empty)
+        (inlineLeafArray <|
+            Array.fromList [ textNode1, textNode2, textNode1, textNode2 ]
+        )
+
+
+testInsertBefore : Test
+testInsertBefore =
+    describe "Tests that insertBefore works as expected"
+        [ test "Make sure that we can insert an inline fragment" <|
+            \_ ->
+                Expect.equal (Ok expectedInsertBeforeInline)
+                    (insertBefore [ 0, 0 ] inlineInsertFragment rootNode)
+        , test "Make sure that we can insert a block fragment" <|
+            \_ ->
+                Expect.equal (Ok expectedInsertBeforeBlock)
+                    (insertBefore [ 0 ] blockInsertFragment rootNode)
+        , test "Invalid paths should result in an error" <|
+            \_ ->
+                Expect.equal
+                    (Err "There is no node at this path")
+                    (insertBefore [ 0, 9 ] inlineInsertFragment rootNode)
+        , test "Trying to insert a block fragment into an inline array should result in an error" <|
+            \_ ->
+                Expect.equal
+                    (Err "I cannot insert a block node fragment into an inline leaf fragment")
+                    (insertBefore [ 0, 0 ] blockInsertFragment rootNode)
+        , test "Trying to insert an inline fragment into an block array should result in an error" <|
+            \_ ->
+                Expect.equal
+                    (Err "I cannot insert an inline leaf fragment fragment into an block node fragment")
+                    (insertBefore [ 0 ] inlineInsertFragment rootNode)
+        ]
+
+
+expectedInsertAfterBlock : BlockNode
+expectedInsertAfterBlock =
+    blockNode
+        (elementParameters doc [] Set.empty)
+        (blockArray <| Array.fromList [ pNode, hrNode ])
+
+
+expectedInsertAfterInline : BlockNode
+expectedInsertAfterInline =
+    blockNode
+        (elementParameters doc [] Set.empty)
+        (blockArray <| Array.fromList [ pNodeExpectedAfterInline ])
+
+
+pNodeExpectedAfterInline : BlockNode
+pNodeExpectedAfterInline =
+    blockNode
+        (elementParameters paragraph [] Set.empty)
+        (inlineLeafArray <|
+            Array.fromList [ textNode1, textNode1, textNode2, textNode2 ]
+        )
+
+
+testInsertAfter : Test
+testInsertAfter =
+    describe "Tests that insertAfter works as expected"
+        [ test "Make sure that we can insert an inline fragment" <|
+            \_ ->
+                Expect.equal (Ok expectedInsertAfterInline)
+                    (insertAfter [ 0, 0 ] inlineInsertFragment rootNode)
+        , test "Make sure that we can insert a block fragment" <|
+            \_ ->
+                Expect.equal (Ok expectedInsertAfterBlock)
+                    (insertAfter [ 0 ] blockInsertFragment rootNode)
+        , test "Invalid paths should result in an error" <|
+            \_ ->
+                Expect.equal
+                    (Err "There is no node at this path")
+                    (insertAfter [ 0, 9 ] inlineInsertFragment rootNode)
+        , test "Trying to insert a block fragment into an inline array should result in an error" <|
+            \_ ->
+                Expect.equal
+                    (Err "I cannot insert a block node fragment into an inline leaf fragment")
+                    (insertAfter [ 0, 0 ] blockInsertFragment rootNode)
+        , test "Trying to insert an inline fragment into an block array should result in an error" <|
+            \_ ->
+                Expect.equal
+                    (Err "I cannot insert an inline leaf fragment fragment into an block node fragment")
+                    (insertAfter [ 0 ] inlineInsertFragment rootNode)
+        ]
+
+
+pNodeReverse : BlockNode
+pNodeReverse =
+    blockNode
+        (elementParameters paragraph [] Set.empty)
+        (inlineLeafArray <|
+            Array.fromList [ textNode2, textNode1 ]
+        )
+
+
+pNodeExpectedJoin : BlockNode
+pNodeExpectedJoin =
+    blockNode
+        (elementParameters paragraph [] Set.empty)
+        (inlineLeafArray <|
+            Array.fromList [ textNode1, textNode2, textNode2, textNode1 ]
+        )
+
+
+rootWithReversePNode : BlockNode
+rootWithReversePNode =
+    blockNode
+        (elementParameters doc [] Set.empty)
+        (blockArray <|
+            Array.fromList [ pNodeReverse ]
+        )
+
+
+rootAfterJoin : BlockNode
+rootAfterJoin =
+    blockNode
+        (elementParameters doc [] Set.empty)
+        (blockArray <|
+            Array.fromList [ pNode, pNodeReverse ]
+        )
+
+
+testJoinBlocks : Test
+testJoinBlocks =
+    describe "Tests that joinBlocks works as expected"
+        [ test "Make sure that joining two blocks with inline content works as expected" <|
+            \_ ->
+                Expect.equal (Just pNodeExpectedJoin) (joinBlocks pNode pNodeReverse)
+        , test "Make sure that joining two blocks with block content works as expected" <|
+            \_ ->
+                Expect.equal (Just rootAfterJoin) (joinBlocks rootNode rootWithReversePNode)
+        , test "Joining a block with a leaf should result in nothing" <|
+            \_ ->
+                Expect.equal Nothing (joinBlocks hrNode rootNode)
+        , test "Joining block children with inline children should result in nothing" <|
+            \_ ->
+                Expect.equal Nothing (joinBlocks pNode rootNode)
         ]

@@ -9,7 +9,6 @@ module RichTextEditor.Node exposing
     , findClosestBlockPath
     , findForwardFrom
     , findForwardFromExclusive
-    , findLastPath
     , findTextBlockNodeAncestor
     , foldl
     , foldlRange
@@ -19,8 +18,10 @@ module RichTextEditor.Node exposing
     , indexedFoldr
     , indexedMap
     , insertAfter
+    , insertBefore
     , isSelectable
     , joinBlocks
+    , last
     , map
     , next
     , nodeAt
@@ -61,8 +62,8 @@ import RichTextEditor.NodePath exposing (parent)
 import Set
 
 
-findLastPath : BlockNode -> ( Path, Node )
-findLastPath node =
+last : BlockNode -> ( Path, Node )
+last node =
     case childNodes node of
         BlockChildren a ->
             let
@@ -79,7 +80,7 @@ findLastPath node =
                 Just b ->
                     let
                         ( p, n ) =
-                            findLastPath b
+                            last b
                     in
                     ( lastIndex :: p, n )
 
@@ -126,7 +127,7 @@ previous path node =
                         Just b ->
                             let
                                 ( p, n ) =
-                                    findLastPath b
+                                    last b
                             in
                             Just ( prevIndex :: p, n )
 
@@ -1174,7 +1175,7 @@ insertAfter : Path -> Fragment -> BlockNode -> Result String BlockNode
 insertAfter path fragment root =
     case nodeAt path root of
         Nothing ->
-            Err "There is no node at this path, so I cannot insert after it"
+            Err "There is no node at this path"
 
         Just node ->
             case node of
@@ -1196,6 +1197,39 @@ insertAfter path fragment root =
                             let
                                 newFragment =
                                     BlockNodeFragment <| Array.fromList (bn :: Array.toList a)
+                            in
+                            replaceWithFragment path newFragment root
+
+                        InlineLeafFragment _ ->
+                            Err "I cannot insert an inline leaf fragment fragment into an block node fragment"
+
+
+insertBefore : Path -> Fragment -> BlockNode -> Result String BlockNode
+insertBefore path fragment root =
+    case nodeAt path root of
+        Nothing ->
+            Err "There is no node at this path"
+
+        Just node ->
+            case node of
+                Inline il ->
+                    case fragment of
+                        InlineLeafFragment a ->
+                            let
+                                newFragment =
+                                    InlineLeafFragment <| Array.push il a
+                            in
+                            replaceWithFragment path newFragment root
+
+                        BlockNodeFragment _ ->
+                            Err "I cannot insert a block node fragment into an inline leaf fragment"
+
+                Block bn ->
+                    case fragment of
+                        BlockNodeFragment a ->
+                            let
+                                newFragment =
+                                    BlockNodeFragment <| Array.push bn a
                             in
                             replaceWithFragment path newFragment root
 
