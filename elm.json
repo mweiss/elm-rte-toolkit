@@ -6,7 +6,8 @@
     "version": "1.0.0",
     "exposed-modules": [
         "RichTextEditor.Model.Attribute",
-        "RichTextEditor.Model.Annotations"
+        "RichTextEditor.Model.Annotations",
+        "RichTextEditor.Model.Keys"
     ],
     "elm-version": "0.19.1 <= v < 0.20.0",
     "dependencies": {

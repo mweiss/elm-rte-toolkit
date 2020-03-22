@@ -161,7 +161,12 @@ namedCommandListFromKeyboardEvent shortKey event map =
                             v
 
                 Just v ->
-                    v
+                    case Dict.get mapping contents.keyMap of
+                        Nothing ->
+                            v
+
+                        Just v2 ->
+                            v ++ v2
 
 
 {-| A command map holds a map of key combination and input events to actions that should be taken.

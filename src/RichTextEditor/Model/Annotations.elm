@@ -1,6 +1,11 @@
 module RichTextEditor.Model.Annotations exposing (selection, selectable, lift)
 
-{-| This module contains common constants used as node annotations.
+{-| This module contains common constants used as node annotations. Annotations can be added to
+elements and text to keep track of position when doing a complex transform like a lift or join,
+as well as add flags to a node that you can use to effect behavior, like if something is selectable.
+
+    newElement =
+        element |> Element.withAnnotations (Set.singleton selection)
 
 @docs selection, selectable, lift
 
