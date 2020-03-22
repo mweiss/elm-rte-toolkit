@@ -51,10 +51,8 @@ import RichTextEditor.Model.Node
         ( BlockArray
         , BlockNode
         , ChildNodes(..)
-        , ElementParameters
-        , Fragment(..)
+        , Element
         , InlineLeaf(..)
-        , Node(..)
         , Path
         , blockArray
         , blockNode
@@ -78,7 +76,9 @@ import RichTextEditor.Model.Selection
 import RichTextEditor.Model.State as State exposing (root, withRoot, withSelection)
 import RichTextEditor.Node
     exposing
-        ( concatMap
+        ( Fragment(..)
+        , Node(..)
+        , concatMap
         , findAncestor
         , joinBlocks
         , last
@@ -107,7 +107,7 @@ type ListDefinition
 
 
 type alias ListDefinitionContents =
-    { ordered : ElementParameters, unordered : ElementParameters, item : ElementParameters }
+    { ordered : Element, unordered : Element, item : Element }
 
 
 commandBindings : ListDefinition -> CommandMap
@@ -143,21 +143,21 @@ defaultListDefinition =
         }
 
 
-item : ListDefinition -> ElementParameters
+item : ListDefinition -> Element
 item definition =
     case definition of
         ListDefinition c ->
             c.item
 
 
-ordered : ListDefinition -> ElementParameters
+ordered : ListDefinition -> Element
 ordered definition =
     case definition of
         ListDefinition c ->
             c.ordered
 
 
-unordered : ListDefinition -> ElementParameters
+unordered : ListDefinition -> Element
 unordered definition =
     case definition of
         ListDefinition c ->
@@ -185,7 +185,7 @@ wrap definition type_ editorState =
         editorState
 
 
-findListItemAncestor : ElementParameters -> Path -> BlockNode -> Maybe ( Path, BlockNode )
+findListItemAncestor : Element -> Path -> BlockNode -> Maybe ( Path, BlockNode )
 findListItemAncestor parameters =
     findAncestor (\n -> nameFromElementParameters (elementParametersFromBlockNode n) == nameFromElementParameters parameters)
 

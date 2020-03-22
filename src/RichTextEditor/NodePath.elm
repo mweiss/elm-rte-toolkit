@@ -25,7 +25,7 @@ import RichTextEditor.Model.Node
     exposing
         ( BlockNode
         , ChildNodes(..)
-        , ElementParameters
+        , Element
         , InlineLeaf
         , InlineLeafTree(..)
         , Path
@@ -294,7 +294,7 @@ pathToChildContentsFromMark mark =
 {- Helper method to determine the path to the child contents from an element editor node -}
 
 
-pathToChildContentsFromElementParameters : ElementParameters -> Maybe Path
+pathToChildContentsFromElementParameters : Element -> Maybe Path
 pathToChildContentsFromElementParameters parameters =
     let
         nodeDefinition =
@@ -347,8 +347,8 @@ toString nodePath =
 
 
 parent : Path -> Path
-parent path =
-    List.take (List.length path - 1) path
+parent =
+    RichTextEditor.Model.Node.parent
 
 
 commonAncestor : Path -> Path -> Path

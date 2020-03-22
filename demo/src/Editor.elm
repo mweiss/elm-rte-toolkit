@@ -30,7 +30,6 @@ import RichTextEditor.Model.Node
         ( BlockNode
         , ChildNodes(..)
         , InlineLeaf(..)
-        , Node(..)
         , blockArray
         , blockNode
         , elementParameters
@@ -42,7 +41,7 @@ import RichTextEditor.Model.Node
 import RichTextEditor.Model.Selection exposing (anchorNode, focusNode, normalize)
 import RichTextEditor.Model.Spec exposing (Spec)
 import RichTextEditor.Model.State as State exposing (State)
-import RichTextEditor.Node exposing (anyRange)
+import RichTextEditor.Node exposing (Node(..), anyRange)
 import RichTextEditor.Spec exposing (markOrderFromSpec)
 import RichTextEditor.Specs
     exposing

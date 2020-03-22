@@ -4,20 +4,20 @@ import Array exposing (Array)
 import RichTextEditor.Model.HtmlNode exposing (HtmlNode(..))
 import RichTextEditor.Model.Internal.Spec exposing (NodeDefinition)
 import RichTextEditor.Model.Mark exposing (Mark)
-import RichTextEditor.Model.Node exposing (ElementParameters, elementParameters)
+import RichTextEditor.Model.Node exposing (Element, elementParameters)
 import RichTextEditor.Model.Spec exposing (Spec, blockNodeContentType, emptySpec, inlineLeafContentType, markDefinition, nodeDefinition, textBlockContentType, withMarkDefinitions, withNodeDefinitions)
 import RichTextEditor.Spec exposing (defaultElementToHtml, defaultHtmlToElement, defaultHtmlToMark)
 import Set
 
 
-codeBlockToHtmlNode : ElementParameters -> Array HtmlNode -> HtmlNode
+codeBlockToHtmlNode : Element -> Array HtmlNode -> HtmlNode
 codeBlockToHtmlNode _ children =
     ElementNode "pre"
         []
         (Array.fromList [ ElementNode "code" [] children ])
 
 
-crazyBlockToHtmlNode : ElementParameters -> Array HtmlNode -> HtmlNode
+crazyBlockToHtmlNode : Element -> Array HtmlNode -> HtmlNode
 crazyBlockToHtmlNode _ children =
     ElementNode "div"
         []
@@ -29,7 +29,7 @@ crazyBlockToHtmlNode _ children =
             ]
 
 
-htmlNodeToCrazyBlock : NodeDefinition -> HtmlNode -> Maybe ( ElementParameters, Array HtmlNode )
+htmlNodeToCrazyBlock : NodeDefinition -> HtmlNode -> Maybe ( Element, Array HtmlNode )
 htmlNodeToCrazyBlock def node =
     case node of
         ElementNode name _ children ->
@@ -53,7 +53,7 @@ htmlNodeToCrazyBlock def node =
             Nothing
 
 
-htmlNodeToCodeBlock : NodeDefinition -> HtmlNode -> Maybe ( ElementParameters, Array HtmlNode )
+htmlNodeToCodeBlock : NodeDefinition -> HtmlNode -> Maybe ( Element, Array HtmlNode )
 htmlNodeToCodeBlock def node =
     case node of
         ElementNode name _ children ->

@@ -26,8 +26,7 @@ import RichTextEditor.Model.HtmlNode exposing (HtmlNode(..))
 import RichTextEditor.Model.Node
     exposing
         ( BlockNode
-        , ElementParameters
-        , Node(..)
+        , Element
         , Path
         , attributesFromElementParameters
         , blockArray
@@ -52,7 +51,7 @@ import RichTextEditor.Model.Spec
         , withNodeDefinitions
         )
 import RichTextEditor.Model.State as State exposing (State, withRoot)
-import RichTextEditor.Node as Node exposing (nodeAt)
+import RichTextEditor.Node as Node exposing (Node(..), nodeAt)
 import RichTextEditor.Spec exposing (defaultHtmlToElement)
 import Session exposing (Session)
 import Set
@@ -251,7 +250,7 @@ decorations =
         |> addElementDecoration "todo_item" toggleCheckboxDecoration
 
 
-toggleCheckboxDecoration : Path -> ElementParameters -> Path -> List (Html.Attribute Msg)
+toggleCheckboxDecoration : Path -> Element -> Path -> List (Html.Attribute Msg)
 toggleCheckboxDecoration editorNodePath elementParameters p =
     let
         checked =

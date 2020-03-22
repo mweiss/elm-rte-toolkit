@@ -19,9 +19,7 @@ import RichTextEditor.Model.Node
     exposing
         ( BlockNode
         , ChildNodes(..)
-        , Fragment(..)
         , InlineLeaf(..)
-        , Node(..)
         , blockNode
         , childNodes
         , elementParametersFromBlockNode
@@ -41,7 +39,9 @@ import RichTextEditor.Model.Spec exposing (Spec)
 import RichTextEditor.Model.State as State exposing (withRoot, withSelection)
 import RichTextEditor.Node
     exposing
-        ( findTextBlockNodeAncestor
+        ( Fragment(..)
+        , Node(..)
+        , findTextBlockNodeAncestor
         , insertAfter
         , nodeAt
         , replaceWithFragment

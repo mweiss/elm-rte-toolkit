@@ -14,7 +14,7 @@ module RichTextEditor.Model.Decorations exposing
 import Dict exposing (Dict)
 import Html
 import RichTextEditor.Model.Mark exposing (Mark)
-import RichTextEditor.Model.Node exposing (ElementParameters, Path)
+import RichTextEditor.Model.Node exposing (Element, Path)
 
 
 type Decorations msg
@@ -61,7 +61,7 @@ withElementDecorators elements d =
 
 
 type alias ElementDecoratorFunction msg =
-    Path -> ElementParameters -> Path -> List (Html.Attribute msg)
+    Path -> Element -> Path -> List (Html.Attribute msg)
 
 
 type alias MarkDecoratorFunction msg =

@@ -7,7 +7,7 @@ import RichTextEditor.Model.Node
     exposing
         ( BlockNode
         , ChildNodes(..)
-        , ElementParameters
+        , Element
         , InlineLeaf(..)
         , InlineLeafTree(..)
         , childNodes
@@ -40,7 +40,7 @@ markToHtmlNode mark children =
 
 {-| Renders element parameters to their HtmlNode representation.
 -}
-elementToHtmlNode : ElementParameters -> Array HtmlNode -> HtmlNode
+elementToHtmlNode : Element -> Array HtmlNode -> HtmlNode
 elementToHtmlNode parameters children =
     let
         nodeDefinition =

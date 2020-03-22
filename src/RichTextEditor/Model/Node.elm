@@ -2,14 +2,12 @@ module RichTextEditor.Model.Node exposing
     ( BlockArray
     , BlockNode
     , ChildNodes(..)
-    , ElementParameters
-    , Fragment(..)
+    , Element
     , InlineLeaf(..)
     , InlineLeafArray
     , InlineLeafParameters
     , InlineLeafTree(..)
     , MarkNodeContents
-    , Node(..)
     , Path
     , TextLeafParameters
     , annotationsFromBlockNode
@@ -45,6 +43,7 @@ module RichTextEditor.Model.Node exposing
     , marksFromTextLeafParameters
     , marksToMarkNodeList
     , nameFromElementParameters
+    , parent
     , reverseLookupFromInlineArray
     , text
     , textLeaf
@@ -74,61 +73,51 @@ type alias Path =
     List Int
 
 
-type Node
-    = Block BlockNode
-    | Inline InlineLeaf
+type alias Element =
+    Spec.Element
 
 
-type Fragment
-    = BlockNodeFragment (Array BlockNode)
-    | InlineLeafFragment (Array InlineLeaf)
-
-
-type alias ElementParameters =
-    Spec.ElementParameters
-
-
-annotationsFromElementParameters : ElementParameters -> Set String
+annotationsFromElementParameters : Element -> Set String
 annotationsFromElementParameters =
     Spec.annotationsFromElementParameters
 
 
-attributesFromElementParameters : ElementParameters -> List Attribute
+attributesFromElementParameters : Element -> List Attribute
 attributesFromElementParameters =
     Spec.attributesFromElementParameters
 
 
-definitionFromElementParameters : ElementParameters -> NodeDefinition
+definitionFromElementParameters : Element -> NodeDefinition
 definitionFromElementParameters =
     Spec.definitionFromElementParameters
 
 
-nameFromElementParameters : ElementParameters -> String
+nameFromElementParameters : Element -> String
 nameFromElementParameters ele =
     nameFromNodeDefinition (definitionFromElementParameters ele)
 
 
-elementParameters : NodeDefinition -> List Attribute -> Set String -> ElementParameters
+elementParameters : NodeDefinition -> List Attribute -> Set String -> Element
 elementParameters =
     Spec.elementParameters
 
 
-elementParametersWithAnnotations : Set String -> ElementParameters -> ElementParameters
+elementParametersWithAnnotations : Set String -> Element -> Element
 elementParametersWithAnnotations =
     Spec.elementParametersWithAnnotations
 
 
-elementParametersWithAttributes : List Attribute -> ElementParameters -> ElementParameters
+elementParametersWithAttributes : List Attribute -> Element -> Element
 elementParametersWithAttributes =
     Spec.elementParametersWithAttributes
 
 
-elementParametersWithDefinition : NodeDefinition -> ElementParameters -> ElementParameters
+elementParametersWithDefinition : NodeDefinition -> Element -> Element
 elementParametersWithDefinition =
     Spec.elementParametersWithDefinition
 
 
-blockNodeWithElementParameters : ElementParameters -> BlockNode -> BlockNode
+blockNodeWithElementParameters : Element -> BlockNode -> BlockNode
 blockNodeWithElementParameters parameters node =
     case node of
         BlockNode c ->
@@ -148,12 +137,12 @@ type BlockNode
 
 
 type alias BlockNodeContents =
-    { parameters : ElementParameters
+    { parameters : Element
     , childNodes : ChildNodes
     }
 
 
-blockNode : ElementParameters -> ChildNodes -> BlockNode
+blockNode : Element -> ChildNodes -> BlockNode
 blockNode parameters cn =
     BlockNode { parameters = parameters, childNodes = cn }
 
@@ -165,14 +154,14 @@ withChildNodes cn node =
             BlockNode { n | childNodes = cn }
 
 
-elementParametersFromBlockNode : BlockNode -> ElementParameters
+elementParametersFromBlockNode : BlockNode -> Element
 elementParametersFromBlockNode node =
     case node of
         BlockNode n ->
             n.parameters
 
 
-comparableElementParameters : ElementParameters -> ( String, List Attribute, Set String )
+comparableElementParameters : Element -> ( String, List Attribute, Set String )
 comparableElementParameters p =
     ( nameFromElementParameters p
     , attributesFromElementParameters p
@@ -256,7 +245,7 @@ type InlineLeafParameters
 
 type alias InlineLeafParametersContents =
     { marks : List Mark
-    , parameters : ElementParameters
+    , parameters : Element
     }
 
 
@@ -267,19 +256,19 @@ marksFromInlineLeafParameters parameters =
             c.marks
 
 
-elementParametersFromInlineLeafParameters : InlineLeafParameters -> ElementParameters
+elementParametersFromInlineLeafParameters : InlineLeafParameters -> Element
 elementParametersFromInlineLeafParameters parameters =
     case parameters of
         InlineLeafParameters c ->
             c.parameters
 
 
-inlineLeafParameters : ElementParameters -> List Mark -> InlineLeafParameters
+inlineLeafParameters : Element -> List Mark -> InlineLeafParameters
 inlineLeafParameters parameters marks =
     InlineLeafParameters { parameters = parameters, marks = marks }
 
 
-inlineLeafParametersWithElementParameters : ElementParameters -> InlineLeafParameters -> InlineLeafParameters
+inlineLeafParametersWithElementParameters : Element -> InlineLeafParameters -> InlineLeafParameters
 inlineLeafParametersWithElementParameters eparams iparams =
     case iparams of
         InlineLeafParameters c ->
@@ -544,7 +533,7 @@ isSameBlockNode bn1 bn2 =
         isSameChildNodes (childNodes bn1) (childNodes bn2)
 
 
-inlineLeaf : ElementParameters -> List Mark -> InlineLeaf
+inlineLeaf : Element -> List Mark -> InlineLeaf
 inlineLeaf parameters mark =
     InlineLeaf (inlineLeafParameters parameters mark)
 
@@ -556,3 +545,8 @@ textLeaf s marks =
             |> withText s
             |> textLeafParametersWithMarks marks
         )
+
+
+parent : Path -> Path
+parent path =
+    List.take (List.length path - 1) path

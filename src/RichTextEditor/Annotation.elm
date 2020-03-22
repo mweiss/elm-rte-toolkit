@@ -13,9 +13,8 @@ module RichTextEditor.Annotation exposing
 import RichTextEditor.Model.Node
     exposing
         ( BlockNode
-        , ElementParameters
+        , Element
         , InlineLeaf(..)
-        , Node(..)
         , Path
         , annotationsFromElementParameters
         , annotationsFromTextLeafParameters
@@ -26,7 +25,7 @@ import RichTextEditor.Model.Node
         , inlineLeafParametersWithElementParameters
         , textLeafParametersWithAnnotations
         )
-import RichTextEditor.Node exposing (indexedFoldl, map, nodeAt, replace)
+import RichTextEditor.Node exposing (Node(..), indexedFoldl, map, nodeAt, replace)
 import Set exposing (Set)
 
 
@@ -60,7 +59,7 @@ add =
     toggle Set.insert
 
 
-toggleElementParameters : (String -> Set String -> Set String) -> String -> ElementParameters -> ElementParameters
+toggleElementParameters : (String -> Set String -> Set String) -> String -> Element -> Element
 toggleElementParameters func annotation parameters =
     let
         annotations =

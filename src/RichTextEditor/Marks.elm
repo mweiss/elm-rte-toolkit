@@ -11,14 +11,13 @@ import RichTextEditor.Model.Node
     exposing
         ( BlockNode
         , InlineLeaf(..)
-        , Node(..)
         , Path
         , inlineLeafParametersWithMarks
         , marksFromInlineLeafParameters
         , marksFromTextLeafParameters
         , textLeafParametersWithMarks
         )
-import RichTextEditor.Node exposing (nodeAt, replace)
+import RichTextEditor.Node exposing (Node(..), nodeAt, replace)
 
 
 hasMarkWithName : String -> List Mark -> Bool

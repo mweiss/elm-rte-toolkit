@@ -20,51 +20,51 @@ type alias ElementParametersContents =
     }
 
 
-type ElementParameters
+type Element
     = ElementParameters ElementParametersContents
 
 
-elementParameters : NodeDefinition -> List Attribute -> Set String -> ElementParameters
+elementParameters : NodeDefinition -> List Attribute -> Set String -> Element
 elementParameters def attrs annotations =
     ElementParameters { definition = def, attributes = attrs, annotations = annotations }
 
 
-definitionFromElementParameters : ElementParameters -> NodeDefinition
+definitionFromElementParameters : Element -> NodeDefinition
 definitionFromElementParameters parameters =
     case parameters of
         ElementParameters c ->
             c.definition
 
 
-attributesFromElementParameters : ElementParameters -> List Attribute
+attributesFromElementParameters : Element -> List Attribute
 attributesFromElementParameters parameters =
     case parameters of
         ElementParameters c ->
             c.attributes
 
 
-annotationsFromElementParameters : ElementParameters -> Set String
+annotationsFromElementParameters : Element -> Set String
 annotationsFromElementParameters parameters =
     case parameters of
         ElementParameters c ->
             c.annotations
 
 
-elementParametersWithAnnotations : Set String -> ElementParameters -> ElementParameters
+elementParametersWithAnnotations : Set String -> Element -> Element
 elementParametersWithAnnotations annotations parameters =
     case parameters of
         ElementParameters c ->
             ElementParameters <| { c | annotations = annotations }
 
 
-elementParametersWithDefinition : NodeDefinition -> ElementParameters -> ElementParameters
+elementParametersWithDefinition : NodeDefinition -> Element -> Element
 elementParametersWithDefinition d parameters =
     case parameters of
         ElementParameters c ->
             ElementParameters <| { c | definition = d }
 
 
-elementParametersWithAttributes : List Attribute -> ElementParameters -> ElementParameters
+elementParametersWithAttributes : List Attribute -> Element -> Element
 elementParametersWithAttributes attrs parameters =
     case parameters of
         ElementParameters c ->
@@ -118,11 +118,11 @@ type alias HtmlToMark =
 
 
 type alias ElementToHtml =
-    ElementParameters -> Array HtmlNode -> HtmlNode
+    Element -> Array HtmlNode -> HtmlNode
 
 
 type alias HtmlToElement =
-    NodeDefinition -> HtmlNode -> Maybe ( ElementParameters, Array HtmlNode )
+    NodeDefinition -> HtmlNode -> Maybe ( Element, Array HtmlNode )
 
 
 type NodeDefinition

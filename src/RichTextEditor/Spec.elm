@@ -29,8 +29,7 @@ import RichTextEditor.Model.Node
     exposing
         ( BlockNode
         , ChildNodes(..)
-        , ElementParameters
-        , Fragment(..)
+        , Element
         , InlineLeaf(..)
         , attributesFromElementParameters
         , blockArray
@@ -64,6 +63,7 @@ import RichTextEditor.Model.Spec
         , nodeDefinitions
         )
 import RichTextEditor.Model.State as State exposing (State)
+import RichTextEditor.Node exposing (Fragment(..))
 import Set exposing (Set)
 
 
@@ -72,7 +72,7 @@ childNodesPlaceholder =
         [ ElementNode "__child_node_marker__" [] Array.empty ]
 
 
-defaultElementToHtml : String -> ElementParameters -> Array HtmlNode -> HtmlNode
+defaultElementToHtml : String -> Element -> Array HtmlNode -> HtmlNode
 defaultElementToHtml tagName elementParameters children =
     ElementNode tagName
         (List.filterMap
@@ -89,7 +89,7 @@ defaultElementToHtml tagName elementParameters children =
         children
 
 
-defaultHtmlToElement : String -> NodeDefinition -> HtmlNode -> Maybe ( ElementParameters, Array HtmlNode )
+defaultHtmlToElement : String -> NodeDefinition -> HtmlNode -> Maybe ( Element, Array HtmlNode )
 defaultHtmlToElement htmlTag def node =
     case node of
         ElementNode name _ children ->

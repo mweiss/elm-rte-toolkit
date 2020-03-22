@@ -55,10 +55,9 @@ import RichTextEditor.Model.Node
     exposing
         ( BlockNode
         , ChildNodes(..)
-        , ElementParameters
+        , Element
         , InlineLeaf(..)
         , InlineLeafTree(..)
-        , Node(..)
         , Path
         , blockArray
         , childNodes
@@ -91,7 +90,7 @@ import RichTextEditor.Model.Spec
         , toHtmlNodeFromNodeDefinition
         )
 import RichTextEditor.Model.State as State exposing (State, withRoot, withSelection)
-import RichTextEditor.Node exposing (nodeAt)
+import RichTextEditor.Node exposing (Node(..), nodeAt)
 import RichTextEditor.NodePath as NodePath exposing (toString)
 import RichTextEditor.Selection exposing (annotateSelection, domToEditor, editorToDom)
 import RichTextEditor.Spec exposing (childNodesPlaceholder)
@@ -661,7 +660,7 @@ viewMark decorations backwardsNodePath mark children =
     renderHtmlNode node decorators children []
 
 
-viewElement : Decorations msg -> ElementParameters -> Path -> Array (Html msg) -> Html msg
+viewElement : Decorations msg -> Element -> Path -> Array (Html msg) -> Html msg
 viewElement decorations elementParameters backwardsNodePath children =
     let
         definition =

@@ -27,8 +27,7 @@ import RichTextEditor.Model.Node
     exposing
         ( BlockNode
         , ChildNodes(..)
-        , ElementParameters
-        , Node(..)
+        , Element
         , Path
         , attributesFromElementParameters
         , blockArray
@@ -58,7 +57,7 @@ import RichTextEditor.Model.Spec
         , withNodeDefinitions
         )
 import RichTextEditor.Model.State as State exposing (State, withRoot)
-import RichTextEditor.Node as Node exposing (nodeAt)
+import RichTextEditor.Node as Node exposing (Node(..), nodeAt)
 import RichTextEditor.Specs as MarkdownSpec exposing (doc, paragraph)
 import Session exposing (Session)
 import Set
@@ -536,7 +535,7 @@ htmlNodeToImage def node =
             Nothing
 
 
-preventKeyDownPropagationDecoration : Path -> ElementParameters -> Path -> List (Html.Attribute EditorMsg)
+preventKeyDownPropagationDecoration : Path -> Element -> Path -> List (Html.Attribute EditorMsg)
 preventKeyDownPropagationDecoration editorNodePath elementParameters elementPath =
     if elementPath == [] then
         selectableDecoration InternalMsg editorNodePath elementParameters elementPath

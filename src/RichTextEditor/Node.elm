@@ -1,5 +1,7 @@
 module RichTextEditor.Node exposing
-    ( Iterator
+    ( Fragment(..)
+    , Iterator
+    , Node(..)
     , allRange
     , anyRange
     , concatMap
@@ -41,9 +43,7 @@ import RichTextEditor.Model.Node
     exposing
         ( BlockNode
         , ChildNodes(..)
-        , Fragment(..)
         , InlineLeaf(..)
-        , Node(..)
         , Path
         , TextLeafParameters
         , annotationsFromElementParameters
@@ -54,12 +54,22 @@ import RichTextEditor.Model.Node
         , fromBlockArray
         , fromInlineArray
         , inlineLeafArray
+        , parent
         , text
         , withChildNodes
         , withText
         )
-import RichTextEditor.NodePath exposing (parent)
 import Set
+
+
+type Node
+    = Block BlockNode
+    | Inline InlineLeaf
+
+
+type Fragment
+    = BlockNodeFragment (Array BlockNode)
+    | InlineLeafFragment (Array InlineLeaf)
 
 
 last : BlockNode -> ( Path, Node )

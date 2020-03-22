@@ -83,10 +83,8 @@ import RichTextEditor.Model.Node
         ( BlockArray
         , BlockNode
         , ChildNodes(..)
-        , ElementParameters
-        , Fragment(..)
+        , Element
         , InlineLeaf(..)
-        , Node(..)
         , Path
         , annotationsFromBlockNode
         , blockArray
@@ -124,7 +122,9 @@ import RichTextEditor.Model.Selection
 import RichTextEditor.Model.State as State exposing (State, withRoot, withSelection)
 import RichTextEditor.Node
     exposing
-        ( allRange
+        ( Fragment(..)
+        , Node(..)
+        , allRange
         , concatMap
         , findBackwardFromExclusive
         , findClosestBlockPath
@@ -1265,7 +1265,7 @@ toggleMarkOnInlineNodes markOrder mark action editorState =
                     )
 
 
-toggleBlock : List String -> ElementParameters -> ElementParameters -> Transform
+toggleBlock : List String -> Element -> Element -> Transform
 toggleBlock allowedBlocks onParams offParams editorState =
     case State.selection editorState of
         Nothing ->
@@ -1338,7 +1338,7 @@ toggleBlock allowedBlocks onParams offParams editorState =
             Ok (editorState |> withRoot newRoot)
 
 
-wrap : (BlockNode -> BlockNode) -> ElementParameters -> Transform
+wrap : (BlockNode -> BlockNode) -> Element -> Transform
 wrap contentsMapFunc elementParameters editorState =
     case State.selection editorState of
         Nothing ->
@@ -1700,7 +1700,7 @@ isEmptyTextBlock node =
             False
 
 
-splitBlockHeaderToNewParagraph : List String -> ElementParameters -> Transform
+splitBlockHeaderToNewParagraph : List String -> Element -> Transform
 splitBlockHeaderToNewParagraph headerElements paragraphElement editorState =
     case splitTextBlock editorState of
         Err s ->

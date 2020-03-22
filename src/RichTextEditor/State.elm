@@ -9,7 +9,6 @@ import RichTextEditor.Model.Node
         , ChildNodes(..)
         , InlineLeaf(..)
         , InlineLeafArray
-        , Node(..)
         , Path
         , annotationsFromTextLeafParameters
         , childNodes
@@ -30,7 +29,7 @@ import RichTextEditor.Model.Selection
         , rangeSelection
         )
 import RichTextEditor.Model.State as State exposing (State, withRoot, withSelection)
-import RichTextEditor.Node exposing (findTextBlockNodeAncestor, map)
+import RichTextEditor.Node exposing (Node(..), findTextBlockNodeAncestor, map)
 import RichTextEditor.Selection exposing (annotateSelection, clearSelectionAnnotations)
 import Set
 

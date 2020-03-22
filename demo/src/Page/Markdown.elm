@@ -22,7 +22,7 @@ import RichTextEditor.Model.Node as Node
     exposing
         ( BlockNode
         , ChildNodes(..)
-        , ElementParameters
+        , Element
         , InlineLeaf(..)
         , InlineLeafTree(..)
         , attributesFromElementParameters
@@ -400,7 +400,7 @@ rootToMarkdown node =
     blockChildrenToMarkdown children
 
 
-imageToMarkdown : ElementParameters -> Result String Inline
+imageToMarkdown : Element -> Result String Inline
 imageToMarkdown parameters =
     let
         attributes =
@@ -520,7 +520,7 @@ textFromChildNodes cn =
             ""
 
 
-headingToMarkdown : ElementParameters -> ChildNodes -> Result String Block
+headingToMarkdown : Element -> ChildNodes -> Result String Block
 headingToMarkdown p cn =
     let
         attributes =
@@ -541,7 +541,7 @@ codeBlockToMarkdown cn =
     Ok <| M.CodeBlock M.Indented t
 
 
-listToMarkdown : M.ListType -> ElementParameters -> ChildNodes -> Result String Block
+listToMarkdown : M.ListType -> Element -> ChildNodes -> Result String Block
 listToMarkdown type_ parameters cn =
     let
         delimiter =
