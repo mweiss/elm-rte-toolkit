@@ -30,26 +30,9 @@ import RichTextEditor.Model.Command exposing (NamedCommand, NamedCommandList, tr
 import RichTextEditor.Model.Constants exposing (zeroWidthSpace)
 import RichTextEditor.Model.Decorations exposing (Decorations, elementDecorators, markDecorators)
 import RichTextEditor.Model.DomNode exposing (DomNode(..))
-import RichTextEditor.Model.Editor
-    exposing
-        ( Editor
-        , InternalEditorMsg(..)
-        , Tagger
-        , bufferedEditorState
-        , completeRerenderCount
-        , forceCompleteRerender
-        , forceRerender
-        , forceReselection
-        , isComposing
-        , renderCount
-        , selectionCount
-        , state
-        , withBufferedEditorState
-        , withComposing
-        , withState
-        )
+import RichTextEditor.Model.Editor exposing (Editor, InternalEditorMsg(..), Tagger, bufferedEditorState, completeRerenderCount, forceCompleteRerender, forceRerender, forceReselection, isComposing, renderCount, selectionCount, state, withBufferedEditorState, withComposing, withShortKey, withState)
 import RichTextEditor.Model.Element as Element exposing (Element)
-import RichTextEditor.Model.Event exposing (EditorChange, PasteEvent, TextChange)
+import RichTextEditor.Model.Event exposing (EditorChange, InitEvent, PasteEvent, TextChange)
 import RichTextEditor.Model.HtmlNode exposing (HtmlNode(..))
 import RichTextEditor.Model.InlineElement as InlineElement
 import RichTextEditor.Model.Mark as Mark exposing (Mark)
@@ -137,6 +120,14 @@ update msg editor =
 
         CutEvent ->
             handleCut editor
+
+        Init e ->
+            handleInitEvent e editor
+
+
+handleInitEvent : InitEvent -> Editor -> Editor
+handleInitEvent initEvent editor =
+    editor |> withShortKey initEvent.shortKey
 
 
 handleCut : Editor -> Editor
@@ -364,6 +355,14 @@ pasteWithDataDecoder =
             (D.at [ "detail", "html" ] D.string)
 
 
+initDecoder : D.Decoder InternalEditorMsg
+initDecoder =
+    D.map Init <|
+        D.map
+            InitEvent
+            (D.at [ "detail", "shortKey" ] D.string)
+
+
 onCompositionStart : (InternalEditorMsg -> msg) -> Html.Attribute msg
 onCompositionStart msgFunc =
     Html.Events.on "compositionstart" (D.map msgFunc (D.succeed CompositionStart))
@@ -382,6 +381,11 @@ onPasteWithData msgFunc =
 onCut : (InternalEditorMsg -> msg) -> Html.Attribute msg
 onCut msgFunc =
     Html.Events.on "cut" (D.map msgFunc (D.succeed CutEvent))
+
+
+onInit : (InternalEditorMsg -> msg) -> Html.Attribute msg
+onInit msgFunc =
+    Html.Events.on "editorinit" (D.map msgFunc initDecoder)
 
 
 onEditorSelectionChange : (InternalEditorMsg -> msg) -> Html.Attribute msg
@@ -576,6 +580,7 @@ view tagger decorations editor =
         , onCompositionEnd tagger
         , onPasteWithData tagger
         , onCut tagger
+        , onInit tagger
         ]
         [ ( String.fromInt (completeRerenderCount editor)
           , Html.Keyed.node "div"

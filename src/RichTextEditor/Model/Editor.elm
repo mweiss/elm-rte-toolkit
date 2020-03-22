@@ -1,8 +1,9 @@
 module RichTextEditor.Model.Editor exposing (..)
 
 import RichTextEditor.Model.Command exposing (CommandMap, emptyCommandMap)
-import RichTextEditor.Model.Event exposing (EditorChange, InputEvent, KeyboardEvent, PasteEvent)
+import RichTextEditor.Model.Event exposing (EditorChange, InitEvent, InputEvent, KeyboardEvent, PasteEvent)
 import RichTextEditor.Model.History exposing (History, emptyHistory)
+import RichTextEditor.Model.Keys exposing (meta)
 import RichTextEditor.Model.Selection exposing (Selection)
 import RichTextEditor.Model.Spec exposing (Spec)
 import RichTextEditor.Model.State exposing (State)
@@ -23,6 +24,7 @@ type alias EditorContents =
     { state : State
     , renderCount : Int
     , selectionCount : Int
+    , shortKey : String
     , completeRerenderCount : Int
     , isComposing : Bool
     , bufferedEditorState : Maybe State
@@ -44,6 +46,7 @@ editor iSpec iState =
         , bufferedEditorState = Nothing
         , completeRerenderCount = 0
         , selectionCount = 0
+        , shortKey = meta
         , isComposing = False
         , commandMap = emptyCommandMap
         , spec = iSpec
@@ -63,6 +66,7 @@ type InternalEditorMsg
     | CompositionEnd
     | PasteWithDataEvent PasteEvent
     | CutEvent
+    | Init InitEvent
 
 
 completeRerenderCount : Editor -> Int
@@ -149,6 +153,13 @@ history e =
             c.history
 
 
+shortKey : Editor -> String
+shortKey e =
+    case e of
+        Editor c ->
+            c.shortKey
+
+
 withHistory : History -> Editor -> Editor
 withHistory h e =
     case e of
@@ -161,6 +172,13 @@ withCommandMap m e =
     case e of
         Editor c ->
             Editor { c | commandMap = m }
+
+
+withShortKey : String -> Editor -> Editor
+withShortKey key e =
+    case e of
+        Editor c ->
+            Editor { c | shortKey = key }
 
 
 forceRerender : Editor -> Editor

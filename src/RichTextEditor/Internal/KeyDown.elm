@@ -3,7 +3,7 @@ module RichTextEditor.Internal.KeyDown exposing (..)
 import Json.Decode as D
 import RichTextEditor.Internal.Editor exposing (applyNamedCommandList)
 import RichTextEditor.Model.Command exposing (namedCommandListFromKeyboardEvent)
-import RichTextEditor.Model.Editor exposing (Editor, InternalEditorMsg(..), Tagger, commandMap)
+import RichTextEditor.Model.Editor exposing (Editor, InternalEditorMsg(..), Tagger, commandMap, shortKey)
 import RichTextEditor.Model.Event exposing (KeyboardEvent)
 
 
@@ -49,7 +49,7 @@ handleKeyDownEvent : Editor -> KeyboardEvent -> Result String Editor
 handleKeyDownEvent editor event =
     let
         namedCommandList =
-            namedCommandListFromKeyboardEvent event (commandMap editor)
+            namedCommandListFromKeyboardEvent (shortKey editor) event (commandMap editor)
     in
     applyNamedCommandList namedCommandList editor
 

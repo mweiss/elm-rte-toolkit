@@ -39,3 +39,8 @@ backspace =
 delete : String
 delete =
     "Delete"
+
+
+short : String
+short =
+    "Short"

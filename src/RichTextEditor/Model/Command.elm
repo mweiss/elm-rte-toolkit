@@ -22,7 +22,7 @@ module RichTextEditor.Model.Command exposing
 
 import Dict exposing (Dict)
 import RichTextEditor.Model.Event exposing (InputEvent, KeyboardEvent)
-import RichTextEditor.Model.Keys exposing (alt, ctrl, meta, shift)
+import RichTextEditor.Model.Keys exposing (alt, ctrl, meta, shift, short)
 import RichTextEditor.Model.State exposing (State)
 
 
@@ -132,12 +132,36 @@ addAltKey keyboardEvent keys =
         keys
 
 
-namedCommandListFromKeyboardEvent : KeyboardEvent -> CommandMap -> NamedCommandList
-namedCommandListFromKeyboardEvent event map =
+namedCommandListFromKeyboardEvent : String -> KeyboardEvent -> CommandMap -> NamedCommandList
+namedCommandListFromKeyboardEvent shortKey event map =
     case map of
         CommandMap contents ->
-            Maybe.withDefault (contents.defaultKeyCommand event)
-                (Dict.get (keyboardEventToDictKey event) contents.keyMap)
+            let
+                mapping =
+                    keyboardEventToDictKey event
+
+                shortKeyReplaced =
+                    List.map
+                        (\v ->
+                            if v == shortKey then
+                                short
+
+                            else
+                                v
+                        )
+                        mapping
+            in
+            case Dict.get shortKeyReplaced contents.keyMap of
+                Nothing ->
+                    case Dict.get mapping contents.keyMap of
+                        Nothing ->
+                            contents.defaultKeyCommand event
+
+                        Just v ->
+                            v
+
+                Just v ->
+                    v
 
 
 {-| A command map holds a map of key combination and input events to actions that should be taken.

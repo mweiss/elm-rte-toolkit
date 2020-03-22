@@ -201,11 +201,14 @@ class ElmEditor extends HTMLElement {
         this.mutationObserverCallback = this.mutationObserverCallback.bind(this);
         this.pasteCallback = this.pasteCallback.bind(this);
         this._observer = new MutationObserver(this.mutationObserverCallback);
-        this.addEventListener("paste", this.pasteCallback)
+        this.addEventListener("paste", this.pasteCallback);
+        this.dispatchInit = this.dispatchInit.bind(this)
+
     }
 
     connectedCallback() {
         this._observer.observe(this,  { characterDataOldValue: true, attributeOldValue: false, attributes: false, childList: true, subtree: true, characterData: true });
+        this.initInterval = setInterval(this.dispatchInit, 1000)
     }
 
     disconnectedCallback() {
@@ -264,6 +267,20 @@ class ElmEditor extends HTMLElement {
         });
         this.dispatchEvent(event);
     };
+
+    dispatchInit() {
+        if (!this.isConnected) {
+            return;
+        }
+        const isMacLike = /(Mac|iPhone|iPod|iPad)/i.test(navigator.platform);
+        let event = new CustomEvent("editorinit", {
+            detail: {
+                shortKey: isMacLike ? "Meta" : "Ctrl"
+            }
+        });
+        this.dispatchEvent(event);
+        clearInterval(this.initInterval)
+    }
 }
 
 customElements.define('elm-editor', ElmEditor);

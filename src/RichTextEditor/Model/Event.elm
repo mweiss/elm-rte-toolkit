@@ -42,6 +42,11 @@ type alias PasteEvent =
     }
 
 
+type alias InitEvent =
+    { shortKey : String
+    }
+
+
 {-|
 
     A represents a text change at the given path in a editor node or DOM tree.

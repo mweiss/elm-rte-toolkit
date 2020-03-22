@@ -69,16 +69,7 @@ import RichTextEditor.Model.Command
 import RichTextEditor.Model.Element as Element exposing (Element, element)
 import RichTextEditor.Model.Event exposing (InputEvent, KeyboardEvent)
 import RichTextEditor.Model.InlineElement as InlineElement exposing (inlineElement)
-import RichTextEditor.Model.Keys
-    exposing
-        ( alt
-        , backspace
-        , delete
-        , enter
-        , meta
-        , return
-        , shift
-        )
+import RichTextEditor.Model.Keys exposing (alt, backspace, delete, enter, meta, return, shift, short)
 import RichTextEditor.Model.Mark as Mark exposing (Mark, MarkOrder, ToggleAction(..), toggle)
 import RichTextEditor.Model.Node
     exposing
@@ -190,11 +181,11 @@ defaultCommandBindings =
             (deleteCommands ++ [ ( "deleteText", transformCommand deleteText ) ])
         |> set [ inputEvent "deleteWordForward", key [ alt, delete ] ]
             (deleteCommands ++ [ ( "deleteWord", transformCommand deleteWord ) ])
-        |> set [ key [ meta, "a" ] ]
+        |> set [ key [ short, "a" ] ]
             [ ( "selectAll", transformCommand selectAll ) ]
-        |> set [ key [ meta, "z" ] ]
+        |> set [ key [ short, "z" ] ]
             [ ( "undo", internalCommand Undo ) ]
-        |> set [ key [ meta, shift, "z" ] ]
+        |> set [ key [ short, shift, "z" ] ]
             [ ( "redo", internalCommand Redo ) ]
         |> withDefaultKeyCommand defaultKeyCommand
         |> withDefaultInputEventCommand defaultInputEventCommand
