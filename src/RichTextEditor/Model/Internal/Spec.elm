@@ -24,8 +24,8 @@ type Element
     = ElementParameters ElementParametersContents
 
 
-elementParameters : NodeDefinition -> List Attribute -> Set String -> Element
-elementParameters def attrs annotations =
+element : NodeDefinition -> List Attribute -> Set String -> Element
+element def attrs annotations =
     ElementParameters { definition = def, attributes = attrs, annotations = annotations }
 
 
@@ -50,22 +50,22 @@ annotationsFromElement parameters =
             c.annotations
 
 
-elementParametersWithAnnotations : Set String -> Element -> Element
-elementParametersWithAnnotations annotations parameters =
+elementWithAnnotations : Set String -> Element -> Element
+elementWithAnnotations annotations parameters =
     case parameters of
         ElementParameters c ->
             ElementParameters <| { c | annotations = annotations }
 
 
-elementParametersWithDefinition : NodeDefinition -> Element -> Element
-elementParametersWithDefinition d parameters =
+elementWithDefinition : NodeDefinition -> Element -> Element
+elementWithDefinition d parameters =
     case parameters of
         ElementParameters c ->
             ElementParameters <| { c | definition = d }
 
 
-elementParametersWithAttributes : List Attribute -> Element -> Element
-elementParametersWithAttributes attrs parameters =
+elementWithAttributes : List Attribute -> Element -> Element
+elementWithAttributes attrs parameters =
     case parameters of
         ElementParameters c ->
             ElementParameters <| { c | attributes = attrs }

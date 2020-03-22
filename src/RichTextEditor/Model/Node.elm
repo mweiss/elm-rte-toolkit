@@ -99,22 +99,22 @@ nameFromElement ele =
 
 element : NodeDefinition -> List Attribute -> Set String -> Element
 element =
-    Spec.elementParameters
+    Spec.element
 
 
 elementWithAnnotations : Set String -> Element -> Element
 elementWithAnnotations =
-    Spec.elementParametersWithAnnotations
+    Spec.elementWithAnnotations
 
 
 elementWithAttributes : List Attribute -> Element -> Element
 elementWithAttributes =
-    Spec.elementParametersWithAttributes
+    Spec.elementWithAttributes
 
 
 elementWithDefinition : NodeDefinition -> Element -> Element
 elementWithDefinition =
-    Spec.elementParametersWithDefinition
+    Spec.elementWithDefinition
 
 
 blockNodeWithElement : Element -> BlockNode -> BlockNode
