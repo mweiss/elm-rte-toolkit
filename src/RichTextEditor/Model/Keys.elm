@@ -1,41 +1,41 @@
 module RichTextEditor.Model.Keys exposing (..)
 
 
-altKey : String
-altKey =
+alt : String
+alt =
     "Alt"
 
 
-metaKey : String
-metaKey =
+meta : String
+meta =
     "Meta"
 
 
-ctrlKey : String
-ctrlKey =
+ctrl : String
+ctrl =
     "Ctrl"
 
 
-shiftKey : String
-shiftKey =
+shift : String
+shift =
     "Shift"
 
 
-returnKey : String
-returnKey =
+return : String
+return =
     "Return"
 
 
-enterKey : String
-enterKey =
+enter : String
+enter =
     "Enter"
 
 
-backspaceKey : String
-backspaceKey =
+backspace : String
+backspace =
     "Backspace"
 
 
-deleteKey : String
-deleteKey =
+delete : String
+delete =
     "Delete"

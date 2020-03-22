@@ -24,7 +24,7 @@ import RichTextEditor.Model.Command as Command exposing (inputEvent, key, set, t
 import RichTextEditor.Model.Decorations exposing (Decorations, addElementDecoration, emptyDecorations)
 import RichTextEditor.Model.Editor exposing (Editor, editor, spec, state, withCommandMap)
 import RichTextEditor.Model.Element exposing (element)
-import RichTextEditor.Model.Keys exposing (enterKey, returnKey)
+import RichTextEditor.Model.Keys exposing (enter, return)
 import RichTextEditor.Model.Mark as Mark exposing (ToggleAction(..), mark)
 import RichTextEditor.Model.Node
     exposing
@@ -104,7 +104,7 @@ commandBindings =
     Command.combine
         listCommandBindings
         (Commands.defaultCommandBindings
-            |> set [ inputEvent "insertParagraph", key [ enterKey ], key [ returnKey ] ]
+            |> set [ inputEvent "insertParagraph", key [ enter ], key [ return ] ]
                 [ ( "liftEmpty", transformCommand <| liftEmpty )
                 , ( "splitBlockHeaderToNewParagraph"
                   , transformCommand <|

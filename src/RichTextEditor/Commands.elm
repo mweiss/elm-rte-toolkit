@@ -71,13 +71,13 @@ import RichTextEditor.Model.Event exposing (InputEvent, KeyboardEvent)
 import RichTextEditor.Model.InlineElement as InlineElement exposing (inlineElement)
 import RichTextEditor.Model.Keys
     exposing
-        ( altKey
-        , backspaceKey
-        , deleteKey
-        , enterKey
-        , metaKey
-        , returnKey
-        , shiftKey
+        ( alt
+        , backspace
+        , delete
+        , enter
+        , meta
+        , return
+        , shift
         )
 import RichTextEditor.Model.Mark as Mark exposing (Mark, MarkOrder, ToggleAction(..), toggle)
 import RichTextEditor.Model.Node
@@ -178,23 +178,23 @@ deleteCommands =
 defaultCommandBindings =
     emptyCommandMap
         |> set
-            [ inputEvent "insertLineBreak", key [ shiftKey, enterKey ], key [ shiftKey, enterKey ] ]
+            [ inputEvent "insertLineBreak", key [ shift, enter ], key [ shift, enter ] ]
             [ ( "insertLineBreak", transformCommand insertLineBreak ) ]
-        |> set [ inputEvent "insertParagraph", key [ enterKey ], key [ returnKey ] ]
+        |> set [ inputEvent "insertParagraph", key [ enter ], key [ return ] ]
             [ ( "liftEmpty", transformCommand liftEmpty ), ( "splitTextBlock", transformCommand splitTextBlock ) ]
-        |> set [ inputEvent "deleteContentBackward", key [ backspaceKey ] ]
+        |> set [ inputEvent "deleteContentBackward", key [ backspace ] ]
             (backspaceCommands ++ [ ( "backspaceText", transformCommand backspaceText ) ])
-        |> set [ inputEvent "deleteWordBackward", key [ altKey, backspaceKey ] ]
+        |> set [ inputEvent "deleteWordBackward", key [ alt, backspace ] ]
             (backspaceCommands ++ [ ( "backspaceWord", transformCommand backspaceWord ) ])
-        |> set [ inputEvent "deleteContentForward", key [ deleteKey ] ]
+        |> set [ inputEvent "deleteContentForward", key [ delete ] ]
             (deleteCommands ++ [ ( "deleteText", transformCommand deleteText ) ])
-        |> set [ inputEvent "deleteWordForward", key [ altKey, deleteKey ] ]
+        |> set [ inputEvent "deleteWordForward", key [ alt, delete ] ]
             (deleteCommands ++ [ ( "deleteWord", transformCommand deleteWord ) ])
-        |> set [ key [ metaKey, "a" ] ]
+        |> set [ key [ meta, "a" ] ]
             [ ( "selectAll", transformCommand selectAll ) ]
-        |> set [ key [ metaKey, "z" ] ]
+        |> set [ key [ meta, "z" ] ]
             [ ( "undo", internalCommand Undo ) ]
-        |> set [ key [ metaKey, shiftKey, "z" ] ]
+        |> set [ key [ meta, shift, "z" ] ]
             [ ( "redo", internalCommand Redo ) ]
         |> withDefaultKeyCommand defaultKeyCommand
         |> withDefaultInputEventCommand defaultInputEventCommand

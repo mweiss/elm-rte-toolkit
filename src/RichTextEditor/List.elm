@@ -41,11 +41,11 @@ import RichTextEditor.Model.Command
 import RichTextEditor.Model.Element as Element exposing (Element, element)
 import RichTextEditor.Model.Keys
     exposing
-        ( altKey
-        , backspaceKey
-        , deleteKey
-        , enterKey
-        , returnKey
+        ( alt
+        , backspace
+        , delete
+        , enter
+        , return
         )
 import RichTextEditor.Model.Node
     exposing
@@ -118,17 +118,17 @@ commandBindings definition =
             joinForward definition
     in
     emptyCommandMap
-        |> set [ inputEvent "insertParagraph", key [ enterKey ], key [ returnKey ] ]
+        |> set [ inputEvent "insertParagraph", key [ enter ], key [ return ] ]
             [ ( "liftEmptyListItem", transformCommand <| liftEmpty definition )
             , ( "splitListItem", transformCommand <| split definition )
             ]
-        |> set [ inputEvent "deleteContentBackward", key [ backspaceKey ] ]
+        |> set [ inputEvent "deleteContentBackward", key [ backspace ] ]
             [ ( "joinListBackward", transformCommand <| backspaceCommand ) ]
-        |> set [ inputEvent "deleteContentForward", key [ deleteKey ] ]
+        |> set [ inputEvent "deleteContentForward", key [ delete ] ]
             [ ( "joinListForward", transformCommand <| deleteCommand ) ]
-        |> set [ inputEvent "deleteWordBackward", key [ altKey, backspaceKey ] ]
+        |> set [ inputEvent "deleteWordBackward", key [ alt, backspace ] ]
             [ ( "joinListBackward", transformCommand <| backspaceCommand ) ]
-        |> set [ inputEvent "deleteWordForward", key [ altKey, deleteKey ] ]
+        |> set [ inputEvent "deleteWordForward", key [ alt, delete ] ]
             [ ( "joinListForward", transformCommand <| deleteCommand ) ]
 
 

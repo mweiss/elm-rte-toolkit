@@ -22,7 +22,7 @@ module RichTextEditor.Model.Command exposing
 
 import Dict exposing (Dict)
 import RichTextEditor.Model.Event exposing (InputEvent, KeyboardEvent)
-import RichTextEditor.Model.Keys exposing (altKey, ctrlKey, metaKey, shiftKey)
+import RichTextEditor.Model.Keys exposing (alt, ctrl, meta, shift)
 import RichTextEditor.Model.State exposing (State)
 
 
@@ -99,7 +99,7 @@ keyboardEventToDictKey keyboardEvent =
 addShiftKey : KeyboardEvent -> List String -> List String
 addShiftKey keyboardEvent keys =
     if keyboardEvent.shiftKey then
-        shiftKey :: keys
+        shift :: keys
 
     else
         keys
@@ -108,7 +108,7 @@ addShiftKey keyboardEvent keys =
 addMetaKey : KeyboardEvent -> List String -> List String
 addMetaKey keyboardEvent keys =
     if keyboardEvent.metaKey then
-        metaKey :: keys
+        meta :: keys
 
     else
         keys
@@ -117,7 +117,7 @@ addMetaKey keyboardEvent keys =
 addCtrlKey : KeyboardEvent -> List String -> List String
 addCtrlKey keyboardEvent keys =
     if keyboardEvent.ctrlKey then
-        ctrlKey :: keys
+        ctrl :: keys
 
     else
         keys
@@ -126,7 +126,7 @@ addCtrlKey keyboardEvent keys =
 addAltKey : KeyboardEvent -> List String -> List String
 addAltKey keyboardEvent keys =
     if keyboardEvent.altKey then
-        altKey :: keys
+        alt :: keys
 
     else
         keys
