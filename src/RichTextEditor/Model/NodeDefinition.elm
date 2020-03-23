@@ -1,96 +1,202 @@
 module RichTextEditor.Model.NodeDefinition exposing
-    ( ContentType
-    , ElementToHtml
-    , HtmlToElement
-    , NodeDefinition
-    , blockLeaf
-    , blockNode
-    , contentType
-    , fromHtmlNode
-    , group
-    , inlineLeaf
-    , name
-    , nodeDefinition
-    , textBlock
-    , toHtmlNode
+    ( NodeDefinition, nodeDefinition, ElementToHtml, HtmlToElement, name, group, contentType, fromHtmlNode, toHtmlNode
+    , ContentType, blockLeaf, inlineLeaf, blockNode, textBlock
     )
+
+{-| A NodeDefinition describes how to serialize/deserialize an editor node, as well as the children a
+node can have.
+
+
+# Node definition
+
+@docs NodeDefinition, nodeDefinition, ElementToHtml, HtmlToElement, name, group, contentType, fromHtmlNode, toHtmlNode
+
+
+# Content type
+
+@docs ContentType, blockLeaf, inlineLeaf, blockNode, textBlock
+
+-}
 
 import RichTextEditor.Model.Internal.Spec exposing (ContentType(..))
 import Set
 
 
+{-| Describes what type of node this is, as well as what children a node can contain. It can be one
+of four values:
+
+  - `inlineLeaf`: An inline element, like an inline image or hard break.
+  - `blockLeaf`: A block which does not allow children, like a horizontal rule.
+  - `blockNode`: A block with block children, like a blockquote, list, or table.
+  - `textBlock`: A block with inline children, like a paragraph or heading.
+
+-}
 type alias ContentType =
     RichTextEditor.Model.Internal.Spec.ContentType
 
 
+{-| A `NodeDefinition` contains information on how to serialize/deserialize an editor node,
+as well as describes what type of node and what children the node can have. Note that NodeDefinitions
+have function values, so using `(==)` is not advised.
+-}
 type alias NodeDefinition =
     RichTextEditor.Model.Internal.Spec.NodeDefinition
 
 
+{-| Type alias for defining an element serialization function `Element` -> `Array HtmlNode` -> `HtmlNode`
+
+    paragraphToHtml : ElementToHtml
+    paragraphToHtml _ children =
+        ElementNode "p" [] children
+
+Note that when defining serialization functions, children should NOT be modified in any way, otherwise
+it will potentially break the selection and rendering logic. This is because we pass in a placeholder
+to partially serialize a document in some parts of the package.
+
+-}
 type alias ElementToHtml =
     RichTextEditor.Model.Internal.Spec.ElementToHtml
 
 
+{-| Type alias for defining an element deserialization function: `NodeDefinition` -> `HtmlNode` -> `Maybe ( Element, Array HtmlNode )`
+
+    htmlToParagraph : HtmlToElement
+    htmlToParagraph definition node =
+        case node of
+            ElementNode name _ children ->
+                if name == "p" then
+                    Just <| ( element definition [] Set.empty, children )
+
+                else
+                    Nothing
+
+            _ ->
+                Nothing
+
+-}
 type alias HtmlToElement =
     RichTextEditor.Model.Internal.Spec.HtmlToElement
 
 
+{-| Defines a node. The arguments are as follows:
+
+  - `node name` is the unique name of this type of node, usually something like "paragraph" or "heading"
+
+  - `group` is the group this node belongs to. Commonly, this value will be 'block' or 'inline'
+    This is used when validating the document and can be useful if you're defining complicated block structures
+    like a table or list. For example, for a markdown list, there is a 'list\_item' group, and ordered lists
+    and unordered lists only accept children that are part of the 'list\_item' group. The root
+    node must be of group 'root'.
+
+  - `content type` describes what type of node this is, namely a block with block children, a block leaf,
+    a block with inline children, or an inline leaf element.
+
+  - `serialization function` converts an element into html. This is used when rendering the document
+    as well as selection and DOM validation logic.
+
+  - `deserialization function` converts html to an element. Currently, this is only used for paste
+    event, but could potentially be used more generally in the future to interpret content editable
+    changes.
+
+```
+-- Define a paragraph node
+paragraph =
+    nodeDefinition
+        "paragraph"
+        "block"
+        (textBlock [ "inline" ])
+        paragraphToHtml
+        htmlToParagraph
+```
+
+-}
 nodeDefinition : String -> String -> ContentType -> ElementToHtml -> HtmlToElement -> NodeDefinition
-nodeDefinition n g c toHtml fromHtml =
+nodeDefinition name_ group_ contentType_ toHtml fromHtml =
     RichTextEditor.Model.Internal.Spec.NodeDefinition
-        { name = n
-        , group = g
+        { name = name_
+        , group = group_
         , toHtmlNode = toHtml
-        , contentType = c
+        , contentType = contentType_
         , fromHtmlNode = fromHtml
         }
 
 
+{-| The name of this node
+
+    name paragraph
+    --> "paragraph"
+
+-}
 name : NodeDefinition -> String
-name d =
-    case d of
+name definition_ =
+    case definition_ of
         RichTextEditor.Model.Internal.Spec.NodeDefinition c ->
             c.name
 
 
+{-| The group this node belongs to
+
+    group paragraph
+    --> "inline"
+
+-}
 group : NodeDefinition -> String
-group d =
-    case d of
+group definition_ =
+    case definition_ of
         RichTextEditor.Model.Internal.Spec.NodeDefinition c ->
             c.group
 
 
+{-| The serialization function for this node. This should be called internally by the editor code
+to determine selection, render the editor, and validate the DOM.
+-}
 toHtmlNode : NodeDefinition -> ElementToHtml
-toHtmlNode d =
-    case d of
+toHtmlNode definition_ =
+    case definition_ of
         RichTextEditor.Model.Internal.Spec.NodeDefinition c ->
             c.toHtmlNode
 
 
+{-| The deserialization function for this node. This is used for things like a paste event to
+derive editor nodes from HTML content.
+-}
 fromHtmlNode : NodeDefinition -> HtmlToElement
-fromHtmlNode d =
-    case d of
+fromHtmlNode definition_ =
+    case definition_ of
         RichTextEditor.Model.Internal.Spec.NodeDefinition c ->
             c.fromHtmlNode
 
 
+{-| Describes what type of node this is and what children it can have.
+-}
 contentType : NodeDefinition -> ContentType
-contentType d =
-    case d of
+contentType definition_ =
+    case definition_ of
         RichTextEditor.Model.Internal.Spec.NodeDefinition c ->
             c.contentType
 
 
+{-| An inline leaf is an InlineElement like an image or a breaking line.
+-}
 inlineLeaf : ContentType
 inlineLeaf =
     InlineLeafNodeType
 
 
+{-| A block leaf is a Block that does not allow child nodes, like a horizontal rule.
+-}
 blockLeaf : ContentType
 blockLeaf =
     BlockLeafNodeType
 
 
+{-| A block node is a Block that has other block children, like a blockquote or list. The
+argument is the group or name of the nodes that it allows as children.
+
+    blockNode [ "list_item" ]
+    --> A content type for a node that only accepts child nodes who are blocks and whose is name or group is list_items.
+
+-}
 blockNode : List String -> ContentType
 blockNode allowedGroups =
     BlockNodeType <|
@@ -101,6 +207,13 @@ blockNode allowedGroups =
             Just <| Set.fromList allowedGroups
 
 
+{-| A text block node is a Block that has inline children, like a header or paragraph. The
+argument is the group or name of the nodes that it allows as children.
+
+    textBlock [ "inline" ]
+    --> A content type for a node that only accepts child nodes who are in the "inline" group
+
+-}
 textBlock : List String -> ContentType
 textBlock allowedGroups =
     TextBlockNodeType <|
