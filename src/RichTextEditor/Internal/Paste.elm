@@ -48,7 +48,7 @@ import RichTextEditor.Node
         , replaceWithFragment
         , splitTextLeaf
         )
-import RichTextEditor.NodePath exposing (parent)
+import RichTextEditor.Path exposing (parent)
 import RichTextEditor.Selection
     exposing
         ( annotateSelection

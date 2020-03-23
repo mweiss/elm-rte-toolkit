@@ -24,7 +24,7 @@ import RichTextEditor.Model.Selection
         , rangeSelection
         )
 import RichTextEditor.Model.Spec exposing (Spec)
-import RichTextEditor.NodePath as Path
+import RichTextEditor.Path as Path
 
 
 domToEditor : Spec -> Block -> Selection -> Maybe Selection

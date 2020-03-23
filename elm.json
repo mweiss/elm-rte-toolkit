@@ -8,6 +8,7 @@
         "RichTextEditor.Model.Attribute",
         "RichTextEditor.Model.Annotations",
         "RichTextEditor.Model.Constants",
+        "RichTextEditor.Model.Element",
         "RichTextEditor.Model.Event",
         "RichTextEditor.Model.Keys",
         "RichTextEditor.Model.Mark",

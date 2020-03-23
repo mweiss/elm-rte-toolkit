@@ -43,7 +43,7 @@ import RichTextEditor.Node
         , splitBlockAtPathAndOffset
         , splitTextLeaf
         )
-import RichTextEditor.NodePath exposing (toString)
+import RichTextEditor.Path exposing (toString)
 import RichTextEditor.Specs exposing (doc, horizontalRule, image, paragraph)
 import Set
 import Test exposing (Test, describe, test)

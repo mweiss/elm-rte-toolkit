@@ -1,15 +1,9 @@
-module RichTextEditor.Model.Element exposing
-    ( Element
-    , annotations
-    , attributes
-    , comparableElement
-    , element
-    , name
-    , withAnnotations
-    , withAttributes
-    )
+module RichTextEditor.Model.Element exposing (Element, element, annotations, attributes, name, withAnnotations, withAttributes)
 
 {-| An element represents the parameters of any non-text node.
+
+@docs Element, element, annotations, attributes, name, withAnnotations, withAttributes
+
 -}
 
 import RichTextEditor.Model.Attribute exposing (Attribute)
@@ -31,14 +25,14 @@ type alias Element =
     elements require a node definition, it's still safe to use (==) because the function arguments
     are not stored.
 
-  - `attributes` are a list of attributes, for example [StringAttribute 'src' 'logo.svg']
+  - `attributes` are a list of attributes
 
   - `annotations` is a set of annotations. Annotations are used to set flags on nodes for transforms
     or labeling purposes.
 
 ```
     element header [IntegerAttribute "level" 1] Set.empty
-    --> creates a header element
+    --> creates a header (h1) element
 ```
 
 -}
@@ -47,34 +41,56 @@ element =
     Internal.element
 
 
+{-| Annotations from an element
+
+    annotations (element horizontal_rule [] (Set.singleton selectable))
+    --> Set [ selectable ]
+
+-}
 annotations : Element -> Set String
 annotations =
     Internal.annotationsFromElement
 
 
+{-| Attributes from an element
+
+    attributes (element image [StringAttribute "src" "logo.svg"] Set.empty)
+    --> [StringAttribute "src" "logo.svg"]
+
+-}
 attributes : Element -> List Attribute
 attributes =
     Internal.attributesFromElement
 
 
+{-| Name from an element
+
+    name (element image [StringAttribute "src" "logo.svg"] Set.empty)
+    --> "image"
+
+-}
 name : Element -> String
 name =
     Internal.nameFromElement
 
 
+{-| An element with the annotations changed to the given set
+
+    element <| withAnnotations (Set.singleton selectable)
+    --> an element with the annotations changed to the singleton selectable set
+
+-}
 withAnnotations : Set String -> Element -> Element
 withAnnotations =
     Internal.elementWithAnnotations
 
 
+{-| An element with the attributes changed to the given list
+
+    element <| withAnnotations [StringAttribute "src" "logo.svg"]
+    --> an element with the attributes changed to the list provided
+
+-}
 withAttributes : List Attribute -> Element -> Element
 withAttributes =
     Internal.elementWithAttributes
-
-
-comparableElement : Element -> ( String, List Attribute, Set String )
-comparableElement p =
-    ( name p
-    , attributes p
-    , annotations p
-    )

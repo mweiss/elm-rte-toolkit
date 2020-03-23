@@ -69,7 +69,7 @@ import RichTextEditor.Model.Spec exposing (Spec)
 import RichTextEditor.Model.State as State exposing (State, withRoot, withSelection)
 import RichTextEditor.Model.Text as Text
 import RichTextEditor.Node exposing (Node(..), nodeAt)
-import RichTextEditor.NodePath as NodePath exposing (toString)
+import RichTextEditor.Path as NodePath exposing (toString)
 import RichTextEditor.Selection exposing (annotateSelection, domToEditor, editorToDom)
 
 

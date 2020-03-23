@@ -1,4 +1,4 @@
-module RichTextEditor.NodePath exposing
+module RichTextEditor.Path exposing
     ( commonAncestor
     , decrement
     , domToEditor

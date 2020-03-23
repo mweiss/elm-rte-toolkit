@@ -6,7 +6,7 @@ import RichTextEditor.Model.Element exposing (element)
 import RichTextEditor.Model.Mark exposing (mark)
 import RichTextEditor.Model.Node exposing (Inline(..), blockNode, inlineChildren, plainText)
 import RichTextEditor.Model.Text as Text exposing (withText)
-import RichTextEditor.NodePath
+import RichTextEditor.Path
     exposing
         ( commonAncestor
         , decrement

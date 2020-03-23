@@ -129,7 +129,7 @@ import RichTextEditor.Node
         , splitBlockAtPathAndOffset
         , splitTextLeaf
         )
-import RichTextEditor.NodePath as NodePath
+import RichTextEditor.Path as NodePath
     exposing
         ( commonAncestor
         , decrement
@@ -1271,8 +1271,7 @@ toggleBlock allowedBlocks onParams offParams editorState =
                         (\node ->
                             case node of
                                 Block bn ->
-                                    Element.comparableElement (elementFromBlockNode bn)
-                                        == Element.comparableElement onParams
+                                    elementFromBlockNode bn == onParams
 
                                 _ ->
                                     True

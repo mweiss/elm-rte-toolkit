@@ -84,7 +84,7 @@ import RichTextEditor.Node
         , replace
         , replaceWithFragment
         )
-import RichTextEditor.NodePath exposing (commonAncestor, decrement, increment)
+import RichTextEditor.Path exposing (commonAncestor, decrement, increment)
 import RichTextEditor.Selection
     exposing
         ( annotateSelection
