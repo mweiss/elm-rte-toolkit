@@ -20,7 +20,6 @@ import RichTextEditor.Model.Editor
         ( Editor
         , InternalEditorMsg
         , Tagger
-        , withCommandMap
         )
 import RichTextEditor.Model.Element as Element exposing (Element, element)
 import RichTextEditor.Model.HtmlNode exposing (HtmlNode(..))
@@ -68,7 +67,7 @@ view model =
         , p []
             [ text """This example shows how you can create a specification from scratch"""
             ]
-        , Editor.view InternalMsg decorations model.editor
+        , Editor.view InternalMsg decorations commandBindings todoSpec model.editor
         , p []
             [ text "You can see the code for this example in the "
             , a
@@ -104,8 +103,7 @@ init : Session -> ( Model, Cmd Msg )
 init session =
     ( { session = session
       , editor =
-            RichTextEditor.Model.Editor.editor todoSpec initialState
-                |> withCommandMap commandBindings
+            RichTextEditor.Model.Editor.editor initialState
       }
     , Cmd.none
     )
@@ -119,7 +117,7 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         InternalMsg editorMsg ->
-            ( { model | editor = Editor.update editorMsg model.editor }, Cmd.none )
+            ( { model | editor = Editor.update commandBindings todoSpec editorMsg model.editor }, Cmd.none )
 
         ToggleCheckedTodoItem path value ->
             ( handleTodoListChecked path value model, Cmd.none )
@@ -266,6 +264,7 @@ handleTodoListChecked path value model =
                             path
                             value
                     )
+                    todoSpec
                     model.editor
                 )
     }

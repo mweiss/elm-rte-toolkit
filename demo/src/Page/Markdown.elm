@@ -136,7 +136,7 @@ markdownOrEditorView model =
     let
         editor =
             if model.editorType == WYSIWYG then
-                Html.map EditorMsg (Editor.view model.editor)
+                Html.map EditorMsg (Editor.view Editor.decorations Editor.commandBindings customMarkdownSpec model.editor)
 
             else
                 markdownTextArea model
@@ -221,7 +221,7 @@ update msg model =
         EditorMsg editorMsg ->
             let
                 ( e, _ ) =
-                    Editor.update editorMsg model.editor
+                    Editor.update Editor.commandBindings customMarkdownSpec editorMsg model.editor
             in
             ( { model | editor = e }, Cmd.none )
 
@@ -307,7 +307,6 @@ initializeEditor state =
     let
         initialEditor =
             Editor.init state
-                MarkdownSpec.markdown
     in
     { initialEditor | styles = [ Bold ] }
 

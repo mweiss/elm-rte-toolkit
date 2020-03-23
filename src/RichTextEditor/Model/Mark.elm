@@ -3,7 +3,6 @@ module RichTextEditor.Model.Mark exposing
     , MarkOrder(..)
     , ToggleAction(..)
     , attributes
-    , definition
     , mark
     , name
     , sort
@@ -34,14 +33,9 @@ attributes =
     attributesFromMark
 
 
-definition : Mark -> MarkDefinition
-definition =
-    Spec.definitionFromMark
-
-
 name : Mark -> String
-name m =
-    MarkDefinition.name (definition m)
+name =
+    Spec.nameFromMark
 
 
 type MarkOrder

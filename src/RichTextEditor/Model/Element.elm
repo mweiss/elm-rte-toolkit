@@ -3,12 +3,10 @@ module RichTextEditor.Model.Element exposing
     , annotations
     , attributes
     , comparableElement
-    , definition
     , element
     , name
     , withAnnotations
     , withAttributes
-    , withDefinition
     )
 
 {-| An element represents the parameters of any non-text node.
@@ -16,7 +14,7 @@ module RichTextEditor.Model.Element exposing
 
 import RichTextEditor.Model.Attribute exposing (Attribute)
 import RichTextEditor.Model.Internal.Spec as Spec
-import RichTextEditor.Model.NodeDefinition as NodeDefinition exposing (NodeDefinition)
+import RichTextEditor.Model.NodeDefinition exposing (NodeDefinition)
 import Set exposing (Set)
 
 
@@ -57,14 +55,9 @@ attributes =
     Spec.attributesFromElement
 
 
-definition : Element -> NodeDefinition
-definition =
-    Spec.definitionFromElement
-
-
 name : Element -> String
-name ele =
-    NodeDefinition.name (definition ele)
+name =
+    Spec.nameFromElement
 
 
 withAnnotations : Set String -> Element -> Element
@@ -75,11 +68,6 @@ withAnnotations =
 withAttributes : List Attribute -> Element -> Element
 withAttributes =
     Spec.elementWithAttributes
-
-
-withDefinition : NodeDefinition -> Element -> Element
-withDefinition =
-    Spec.elementWithDefinition
 
 
 comparableElement : Element -> ( String, List Attribute, Set String )

@@ -20,9 +20,9 @@ import RichTextEditor.Editor as Editor exposing (applyCommand, applyNamedCommand
 import RichTextEditor.List exposing (ListType, defaultListDefinition)
 import RichTextEditor.Model.Annotations exposing (selectable)
 import RichTextEditor.Model.Attribute exposing (Attribute(..))
-import RichTextEditor.Model.Command as Command exposing (inputEvent, key, set, transformCommand)
+import RichTextEditor.Model.Command as Command exposing (CommandMap, inputEvent, key, set, transformCommand)
 import RichTextEditor.Model.Decorations exposing (Decorations, addElementDecoration, emptyDecorations)
-import RichTextEditor.Model.Editor exposing (Editor, editor, spec, state, withCommandMap)
+import RichTextEditor.Model.Editor exposing (Editor, editor, state)
 import RichTextEditor.Model.Element exposing (element)
 import RichTextEditor.Model.Keys exposing (enter, return)
 import RichTextEditor.Model.Mark as Mark exposing (ToggleAction(..), mark)
@@ -70,7 +70,6 @@ type alias EditorMsg =
 
 type alias Model =
     { editor : Editor
-    , decorations : Decorations EditorMsg
     , styles : List Style
     , insertLinkModal : InsertLinkModal
     , insertImageModal : InsertImageModal
@@ -122,10 +121,9 @@ decorations =
             emptyDecorations
 
 
-initEditor : Spec -> State -> Editor
-initEditor spec iState =
-    editor spec iState
-        |> withCommandMap commandBindings
+initEditor : State -> Editor
+initEditor iState =
+    editor iState
 
 
 initInsertLinkModal : InsertLinkModal
@@ -138,10 +136,9 @@ initInsertImageModal =
     { visible = False, src = "", alt = "", editorState = Nothing }
 
 
-init : State -> Spec -> Model
-init iState spec =
-    { editor = initEditor spec iState
-    , decorations = decorations
+init : State -> Model
+init iState =
+    { editor = initEditor iState
     , styles = [ Bold, Italic ]
     , insertImageModal = initInsertImageModal
     , insertLinkModal = initInsertLinkModal
@@ -156,8 +153,8 @@ type alias Msg =
     EditorMsg
 
 
-handleShowInsertLinkModal : Model -> Model
-handleShowInsertLinkModal model =
+handleShowInsertLinkModal : Spec -> Model -> Model
+handleShowInsertLinkModal spec model =
     let
         insertLinkModal =
             model.insertLinkModal
@@ -191,7 +188,7 @@ handleShowInsertLinkModal model =
             if hasLink then
                 let
                     markOrder =
-                        markOrderFromSpec (spec model.editor)
+                        markOrderFromSpec spec
 
                     linkMark =
                         mark link [ StringAttribute "src" "" ]
@@ -203,6 +200,7 @@ handleShowInsertLinkModal model =
                                 , transformCommand <|
                                     Commands.toggleMarkOnInlineNodes markOrder linkMark Remove
                                 )
+                                spec
                                 model.editor
                 in
                 { model | editor = newEditor }
@@ -217,8 +215,8 @@ handleShowInsertLinkModal model =
                 }
 
 
-handleInsertLink : Model -> Model
-handleInsertLink model =
+handleInsertLink : Spec -> Model -> Model
+handleInsertLink spec model =
     let
         insertLinkModal =
             model.insertLinkModal
@@ -236,7 +234,7 @@ handleInsertLink model =
                             ]
 
                         markOrder =
-                            markOrderFromSpec (spec model.editor)
+                            markOrderFromSpec spec
 
                         linkMark =
                             mark link attributes
@@ -247,6 +245,7 @@ handleInsertLink model =
                             , transformCommand <|
                                 Commands.toggleMarkOnInlineNodes markOrder linkMark Add
                             )
+                            spec
                             model.editor
     in
     { model
@@ -261,8 +260,8 @@ handleInsertLink model =
     }
 
 
-handleInsertImage : Model -> Model
-handleInsertImage model =
+handleInsertImage : Spec -> Model -> Model
+handleInsertImage spec model =
     let
         insertImageModal =
             model.insertImageModal
@@ -290,6 +289,7 @@ handleInsertImage model =
                             , transformCommand <|
                                 Commands.insertInlineElement img
                             )
+                            spec
                             model.editor
     in
     { model
@@ -304,8 +304,8 @@ handleInsertImage model =
     }
 
 
-handleToggleStyle : Style -> Model -> Model
-handleToggleStyle style model =
+handleToggleStyle : Style -> Spec -> Model -> Model
+handleToggleStyle style spec model =
     let
         markDef =
             case style of
@@ -325,7 +325,7 @@ handleToggleStyle style model =
                     underline
 
         markOrder =
-            markOrderFromSpec (spec model.editor)
+            markOrderFromSpec spec
     in
     { model
         | editor =
@@ -335,25 +335,26 @@ handleToggleStyle style model =
                     , transformCommand <|
                         toggleMarkOnInlineNodes markOrder (mark markDef []) Flip
                     )
+                    spec
                     model.editor
                 )
     }
 
 
-update : Msg -> Model -> ( Model, Cmd Msg )
-update msg model =
+update : CommandMap -> Spec -> Msg -> Model -> ( Model, Cmd Msg )
+update commandMap spec msg model =
     case msg of
         InternalMsg internalEditorMsg ->
-            ( { model | editor = Editor.update internalEditorMsg model.editor }, Cmd.none )
+            ( { model | editor = Editor.update commandMap spec internalEditorMsg model.editor }, Cmd.none )
 
         ToggleStyle style ->
-            ( handleToggleStyle style model, Cmd.none )
+            ( handleToggleStyle style spec model, Cmd.none )
 
         ShowInsertLinkModal ->
-            ( handleShowInsertLinkModal model, Cmd.none )
+            ( handleShowInsertLinkModal spec model, Cmd.none )
 
         InsertLink ->
-            ( handleInsertLink model, Cmd.none )
+            ( handleInsertLink spec model, Cmd.none )
 
         UpdateLinkHref href ->
             ( handleUpdateLinkHref href model, Cmd.none )
@@ -365,7 +366,7 @@ update msg model =
             ( handleShowInsertImageModal model, Cmd.none )
 
         InsertImage ->
-            ( handleInsertImage model, Cmd.none )
+            ( handleInsertImage spec model, Cmd.none )
 
         UpdateImageSrc src ->
             ( handleUpdateImageSrc src model, Cmd.none )
@@ -374,19 +375,19 @@ update msg model =
             ( handleUpdateImageAlt alt model, Cmd.none )
 
         WrapInBlockQuote ->
-            ( handleWrapBlockNode model, Cmd.none )
+            ( handleWrapBlockNode spec model, Cmd.none )
 
         InsertHorizontalRule ->
-            ( handleInsertHorizontalRule model, Cmd.none )
+            ( handleInsertHorizontalRule spec model, Cmd.none )
 
         LiftOutOfBlock ->
-            ( handleLiftBlock model, Cmd.none )
+            ( handleLiftBlock spec model, Cmd.none )
 
         ToggleBlock block ->
-            ( handleToggleBlock block model, Cmd.none )
+            ( handleToggleBlock spec block model, Cmd.none )
 
         WrapInList listType ->
-            ( handleWrapInList listType model, Cmd.none )
+            ( handleWrapInList spec listType model, Cmd.none )
 
         Noop ->
             ( model, Cmd.none )
@@ -395,8 +396,8 @@ update msg model =
             ( model, Cmd.none )
 
 
-handleLiftBlock : Model -> Model
-handleLiftBlock model =
+handleLiftBlock : Spec -> Model -> Model
+handleLiftBlock spec model =
     { model
         | editor =
             Result.withDefault model.editor
@@ -408,22 +409,23 @@ handleLiftBlock model =
                       , transformCommand <| lift
                       )
                     ]
+                    spec
                     model.editor
                 )
     }
 
 
-handleWrapInList : ListType -> Model -> Model
-handleWrapInList listType model =
+handleWrapInList : Spec -> ListType -> Model -> Model
+handleWrapInList spec listType model =
     { model
         | editor =
             Result.withDefault model.editor
-                (applyCommand ( "wrapList", transformCommand <| RichTextEditor.List.wrap defaultListDefinition listType ) model.editor)
+                (applyCommand ( "wrapList", transformCommand <| RichTextEditor.List.wrap defaultListDefinition listType ) spec model.editor)
     }
 
 
-handleToggleBlock : String -> Model -> Model
-handleToggleBlock block model =
+handleToggleBlock : Spec -> String -> Model -> Model
+handleToggleBlock spec block model =
     let
         onParams =
             if block == "Code block" then
@@ -451,13 +453,14 @@ handleToggleBlock block model =
                     ( "toggleBlock"
                     , transformCommand <| toggleBlock [ "heading", "code_block", "paragraph" ] onParams offParams
                     )
+                    spec
                     model.editor
                 )
     }
 
 
-handleWrapBlockNode : Model -> Model
-handleWrapBlockNode model =
+handleWrapBlockNode : Spec -> Model -> Model
+handleWrapBlockNode spec model =
     { model
         | editor =
             Result.withDefault model.editor
@@ -468,13 +471,14 @@ handleWrapBlockNode model =
                             (\n -> n)
                             (element blockquote [] Set.empty)
                     )
+                    spec
                     model.editor
                 )
     }
 
 
-handleInsertHorizontalRule : Model -> Model
-handleInsertHorizontalRule model =
+handleInsertHorizontalRule : Spec -> Model -> Model
+handleInsertHorizontalRule spec model =
     { model
         | editor =
             Result.withDefault model.editor
@@ -491,6 +495,7 @@ handleInsertHorizontalRule model =
                                 Leaf
                             )
                     )
+                    spec
                     model.editor
                 )
     }
@@ -551,11 +556,11 @@ handleUpdateLinkHref href model =
 ---- VIEW ----
 
 
-view : Model -> Html Msg
-view model =
+view : Decorations Msg -> CommandMap -> Spec -> Model -> Html Msg
+view decorations_ commandMap spec model =
     div [ Html.Attributes.class "editor-container" ]
         [ Controls.editorControlPanel model.styles model.editor
-        , Editor.view InternalMsg model.decorations model.editor
+        , Editor.view InternalMsg decorations_ commandMap spec model.editor
         , Controls.renderInsertLinkModal model.insertLinkModal
         , Controls.renderInsertImageModal model.insertImageModal
         ]

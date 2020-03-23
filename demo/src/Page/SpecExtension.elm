@@ -127,8 +127,8 @@ handleUpdateCaption caption model =
     { model | insertCaptionedImageModal = { insertImageModal | caption = caption } }
 
 
-handleInsertCaptionedImage : Model -> Model
-handleInsertCaptionedImage model =
+handleInsertCaptionedImage : Spec -> Model -> Model
+handleInsertCaptionedImage spec model =
     let
         insertImageModal =
             model.insertCaptionedImageModal
@@ -160,6 +160,7 @@ handleInsertCaptionedImage model =
                             , transformCommand <|
                                 Commands.insertBlockNode img
                             )
+                            spec
                             model.editor.editor
     in
     { model
@@ -231,7 +232,7 @@ view model =
             [ text """This example shows how you can extend a specification"""
             ]
         , captionedImageView model
-        , Html.map EditorMsg (Editor.view model.editor)
+        , Html.map EditorMsg (Editor.view newDecorations Editor.commandBindings customSpec model.editor)
         , p []
             [ text "You can see the code for this example in the "
             , a
@@ -291,19 +292,19 @@ initialState =
     State.state docInitNode Nothing
 
 
+newDecorations =
+    Editor.decorations |> addElementDecoration "captioned_image" preventKeyDownPropagationDecoration
+
+
 init : Session -> ( Model, Cmd Msg )
 init session =
     let
         editor =
-            Editor.init initialState customSpec
-
-        newDecorations =
-            Editor.decorations |> addElementDecoration "captioned_image" preventKeyDownPropagationDecoration
+            Editor.init initialState
 
         newEditor =
             { editor
-                | decorations = newDecorations
-                , styles = [ Bold, Italic, Strikethrough, Underline ]
+                | styles = [ Bold, Italic, Strikethrough, Underline ]
             }
     in
     ( { session = session
@@ -331,7 +332,7 @@ update msg model =
                 _ ->
                     let
                         ( e, _ ) =
-                            Editor.update editorMsg model.editor
+                            Editor.update Editor.commandBindings customSpec editorMsg model.editor
                     in
                     ( { model | editor = e }, Cmd.none )
 
@@ -348,7 +349,7 @@ update msg model =
             ( handleUpdateCaption s model, Cmd.none )
 
         InsertCaptionedImage ->
-            ( handleInsertCaptionedImage model, Cmd.none )
+            ( handleInsertCaptionedImage customSpec model, Cmd.none )
 
         _ ->
             ( model, Cmd.none )
@@ -410,6 +411,7 @@ handleCaptionedImageText path value model =
                             path
                             value
                     )
+                    customSpec
                     model.editor
                 )
     }

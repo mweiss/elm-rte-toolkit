@@ -2,24 +2,25 @@ module RichTextEditor.Internal.KeyDown exposing (..)
 
 import Json.Decode as D
 import RichTextEditor.Internal.Editor exposing (applyNamedCommandList)
-import RichTextEditor.Model.Command exposing (namedCommandListFromKeyboardEvent)
-import RichTextEditor.Model.Editor exposing (Editor, InternalEditorMsg(..), Tagger, commandMap, shortKey)
+import RichTextEditor.Model.Command exposing (CommandMap, namedCommandListFromKeyboardEvent)
+import RichTextEditor.Model.Editor exposing (Editor, InternalEditorMsg(..), Tagger, shortKey)
 import RichTextEditor.Model.Event exposing (KeyboardEvent)
+import RichTextEditor.Model.Spec exposing (Spec)
 
 
-preventDefaultOn : Editor -> InternalEditorMsg -> ( InternalEditorMsg, Bool )
-preventDefaultOn editor msg =
+preventDefaultOn : CommandMap -> Spec -> Editor -> InternalEditorMsg -> ( InternalEditorMsg, Bool )
+preventDefaultOn commandMap spec editor msg =
     case msg of
         KeyDownEvent key ->
-            ( msg, shouldPreventDefault editor key )
+            ( msg, shouldPreventDefault commandMap spec editor key )
 
         _ ->
             ( msg, False )
 
 
-shouldPreventDefault : Editor -> KeyboardEvent -> Bool
-shouldPreventDefault editor keyboardEvent =
-    case handleKeyDownEvent editor keyboardEvent of
+shouldPreventDefault : CommandMap -> Spec -> Editor -> KeyboardEvent -> Bool
+shouldPreventDefault comamndMap spec editor keyboardEvent =
+    case handleKeyDownEvent comamndMap spec editor keyboardEvent of
         Err _ ->
             False
 
@@ -27,9 +28,9 @@ shouldPreventDefault editor keyboardEvent =
             True
 
 
-preventDefaultOnKeyDownDecoder : Tagger msg -> Editor -> D.Decoder ( msg, Bool )
-preventDefaultOnKeyDownDecoder tagger editor =
-    D.map (\( i, b ) -> ( tagger i, b )) (D.map (preventDefaultOn editor) keyDownDecoder)
+preventDefaultOnKeyDownDecoder : Tagger msg -> CommandMap -> Spec -> Editor -> D.Decoder ( msg, Bool )
+preventDefaultOnKeyDownDecoder tagger commandMap spec editor =
+    D.map (\( i, b ) -> ( tagger i, b )) (D.map (preventDefaultOn commandMap spec editor) keyDownDecoder)
 
 
 keyDownDecoder : D.Decoder InternalEditorMsg
@@ -45,15 +46,15 @@ keyDownDecoder =
             (D.oneOf [ D.field "isComposing" D.bool, D.succeed False ])
 
 
-handleKeyDownEvent : Editor -> KeyboardEvent -> Result String Editor
-handleKeyDownEvent editor event =
+handleKeyDownEvent : CommandMap -> Spec -> Editor -> KeyboardEvent -> Result String Editor
+handleKeyDownEvent commandMap spec editor event =
     let
         namedCommandList =
-            namedCommandListFromKeyboardEvent (shortKey editor) event (commandMap editor)
+            namedCommandListFromKeyboardEvent (shortKey editor) event commandMap
     in
-    applyNamedCommandList namedCommandList editor
+    applyNamedCommandList namedCommandList spec editor
 
 
-handleKeyDown : KeyboardEvent -> Editor -> Editor
-handleKeyDown keyboardEvent editor =
-    Result.withDefault editor <| handleKeyDownEvent editor keyboardEvent
+handleKeyDown : KeyboardEvent -> CommandMap -> Spec -> Editor -> Editor
+handleKeyDown keyboardEvent commandMap spec editor =
+    Result.withDefault editor <| handleKeyDownEvent commandMap spec editor keyboardEvent

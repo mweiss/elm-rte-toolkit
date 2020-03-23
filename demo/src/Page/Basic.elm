@@ -31,7 +31,7 @@ view model =
                     In this example, we use the default spec to create an editor which supports
                     things like headers, lists, as well as links and images."""
             ]
-        , Html.map EditorMsg (Editor.view model.editor)
+        , Html.map EditorMsg (Editor.view Editor.decorations Editor.commandBindings MarkdownSpec.markdown model.editor)
         , p []
             [ text "You can see the code for this example in the "
             , a
@@ -47,7 +47,7 @@ view model =
 init : Session -> ( Model, Cmd Msg )
 init session =
     ( { session = session
-      , editor = Editor.init Editor.initialState MarkdownSpec.markdown
+      , editor = Editor.init Editor.initialState
       }
     , Cmd.none
     )
@@ -59,7 +59,7 @@ update msg model =
         EditorMsg editorMsg ->
             let
                 ( e, _ ) =
-                    Editor.update editorMsg model.editor
+                    Editor.update Editor.commandBindings MarkdownSpec.markdown editorMsg model.editor
             in
             ( { model | editor = e }, Cmd.none )
 

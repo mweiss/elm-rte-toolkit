@@ -18,6 +18,7 @@ import RichTextEditor.Model.Editor
         , withState
         )
 import RichTextEditor.Model.History exposing (contents, fromContents)
+import RichTextEditor.Model.Spec exposing (Spec)
 import RichTextEditor.Model.State exposing (State, isSame)
 import RichTextEditor.Spec exposing (validate)
 import RichTextEditor.State exposing (reduceEditorState)
@@ -113,14 +114,14 @@ updateEditorState action newState editor =
     editor |> withState newState |> withHistory (fromContents newHistory)
 
 
-applyCommand : NamedCommand -> Editor -> Result String Editor
-applyCommand ( name, command ) editor =
+applyCommand : NamedCommand -> Spec -> Editor -> Result String Editor
+applyCommand ( name, command ) spec editor =
     case command of
         InternalCommand action ->
             applyInternalCommand action editor
 
         TransformCommand transform ->
-            case transform (state editor) |> Result.andThen validate of
+            case transform (state editor) |> Result.andThen (validate spec) of
                 Err s ->
                     Err s
 
@@ -132,14 +133,14 @@ applyCommand ( name, command ) editor =
                     Ok <| forceReselection (updateEditorState name reducedState editor)
 
 
-applyCommandNoForceSelection : NamedCommand -> Editor -> Result String Editor
-applyCommandNoForceSelection ( name, command ) editor =
+applyCommandNoForceSelection : NamedCommand -> Spec -> Editor -> Result String Editor
+applyCommandNoForceSelection ( name, command ) spec editor =
     case command of
         InternalCommand action ->
             applyInternalCommand action editor
 
         TransformCommand transform ->
-            case transform (state editor) |> Result.andThen validate of
+            case transform (state editor) |> Result.andThen (validate spec) of
                 Err s ->
                     Err s
 
@@ -151,13 +152,13 @@ applyCommandNoForceSelection ( name, command ) editor =
                     Ok <| updateEditorState name reducedState editor
 
 
-applyNamedCommandList : NamedCommandList -> Editor -> Result String Editor
-applyNamedCommandList list editor =
+applyNamedCommandList : NamedCommandList -> Spec -> Editor -> Result String Editor
+applyNamedCommandList list spec editor =
     List.foldl
         (\cmd result ->
             case result of
                 Err _ ->
-                    case applyCommand cmd editor of
+                    case applyCommand cmd spec editor of
                         Err s2 ->
                             Err s2
 

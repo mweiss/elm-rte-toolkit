@@ -44,14 +44,14 @@ view model =
     , content =
         [ h1 [ class "main-header" ]
             [ text "Elm package for building rich text editors" ]
-        , Html.map EditorMsg (Editor.view model.editor)
+        , Html.map EditorMsg (Editor.view Editor.decorations Editor.commandBindings Specs.markdown model.editor)
         ]
     }
 
 
 init : Session -> ( Model, Cmd Msg )
 init session =
-    ( { session = session, editor = Editor.init initialState Specs.markdown }, Cmd.none )
+    ( { session = session, editor = Editor.init initialState }, Cmd.none )
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -60,7 +60,7 @@ update msg model =
         EditorMsg editorMsg ->
             let
                 ( e, _ ) =
-                    Editor.update editorMsg model.editor
+                    Editor.update Editor.commandBindings Specs.markdown editorMsg model.editor
             in
             ( { model | editor = e }, Cmd.none )
 

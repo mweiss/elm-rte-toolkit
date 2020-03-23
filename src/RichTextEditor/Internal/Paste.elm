@@ -13,7 +13,7 @@ import RichTextEditor.Commands
 import RichTextEditor.Internal.Editor exposing (applyNamedCommandList)
 import RichTextEditor.Model.Command exposing (Transform, transformCommand)
 import RichTextEditor.Model.Constants exposing (zeroWidthSpace)
-import RichTextEditor.Model.Editor exposing (Editor, spec)
+import RichTextEditor.Model.Editor exposing (Editor)
 import RichTextEditor.Model.Event exposing (PasteEvent)
 import RichTextEditor.Model.Node
     exposing
@@ -57,15 +57,15 @@ import RichTextEditor.Selection
 import RichTextEditor.Spec exposing (htmlToElementArray)
 
 
-handlePaste : PasteEvent -> Editor -> Editor
-handlePaste event editor =
+handlePaste : PasteEvent -> Spec -> Editor -> Editor
+handlePaste event spec editor =
     let
         commandArray =
-            [ ( "pasteHtml", transformCommand <| pasteHtml (spec editor) event.html )
+            [ ( "pasteHtml", transformCommand <| pasteHtml spec event.html )
             , ( "pasteText", transformCommand <| pasteText event.text )
             ]
     in
-    Result.withDefault editor (applyNamedCommandList commandArray editor)
+    Result.withDefault editor (applyNamedCommandList commandArray spec editor)
 
 
 pasteText : String -> Transform

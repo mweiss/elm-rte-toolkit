@@ -5,7 +5,9 @@ module RichTextEditor.Spec exposing
     , defaultHtmlToMark
     , defaultMarkToHtml
     , htmlToElementArray
+    , markDefinitionWithDefault
     , markOrderFromSpec
+    , nodeDefinitionWithDefault
     , validate
     )
 
@@ -27,13 +29,12 @@ import RichTextEditor.Model.Mark as Mark
         , mark
         , toggle
         )
-import RichTextEditor.Model.MarkDefinition as MarkDefinition exposing (MarkDefinition)
+import RichTextEditor.Model.MarkDefinition as MarkDefinition exposing (MarkDefinition, markDefinition)
 import RichTextEditor.Model.Node as Node
     exposing
         ( Block
         , Children(..)
         , Inline(..)
-        , blockNode
         , childNodes
         , elementFromBlockNode
         , fromBlockArray
@@ -41,8 +42,8 @@ import RichTextEditor.Model.Node as Node
         , inlineChildren
         , toBlockArray
         )
-import RichTextEditor.Model.NodeDefinition as NodeDefinition exposing (NodeDefinition)
-import RichTextEditor.Model.Spec
+import RichTextEditor.Model.NodeDefinition as NodeDefinition exposing (NodeDefinition, blockNode, nodeDefinition)
+import RichTextEditor.Model.Spec as Spec
     exposing
         ( Spec
         , markDefinitions
@@ -57,6 +58,34 @@ import Set exposing (Set)
 childNodesPlaceholder =
     Array.fromList
         [ ElementNode "__child_node_marker__" [] Array.empty ]
+
+
+markDefinitionWithDefault : Mark -> Spec -> MarkDefinition
+markDefinitionWithDefault mark spec =
+    let
+        name =
+            Mark.name mark
+    in
+    Maybe.withDefault (defaultMarkDefinition name) (Spec.markDefinition name spec)
+
+
+nodeDefinitionWithDefault : Element -> Spec -> NodeDefinition
+nodeDefinitionWithDefault ele spec =
+    let
+        name =
+            Element.name ele
+    in
+    Maybe.withDefault (defaultNodeDefinition name) (Spec.nodeDefinition name spec)
+
+
+defaultMarkDefinition : String -> MarkDefinition
+defaultMarkDefinition name =
+    markDefinition name defaultMarkToHtml (defaultHtmlToMark name)
+
+
+defaultNodeDefinition : String -> NodeDefinition
+defaultNodeDefinition name =
+    nodeDefinition name "block" (blockNode []) (defaultElementToHtml name) (defaultHtmlToElement name)
 
 
 defaultElementToHtml : String -> Element -> Array HtmlNode -> HtmlNode
@@ -121,13 +150,13 @@ defaultMarkToHtml mark children =
         children
 
 
-validate : State -> Result String State
-validate editorState =
+validate : Spec -> State -> Result String State
+validate spec editorState =
     let
         root =
             State.root editorState
     in
-    case validateEditorBlockNode (Just <| Set.singleton "root") root of
+    case validateEditorBlockNode spec (Just <| Set.singleton "root") root of
         [] ->
             Ok editorState
 
@@ -151,8 +180,8 @@ toStringContentType contentType =
             "BlockLeafNodeType"
 
 
-validateInlineLeaf : Maybe (Set String) -> Inline -> List String
-validateInlineLeaf allowedGroups leaf =
+validateInlineLeaf : Spec -> Maybe (Set String) -> Inline -> List String
+validateInlineLeaf spec allowedGroups leaf =
     case leaf of
         Node.Text _ ->
             []
@@ -160,7 +189,7 @@ validateInlineLeaf allowedGroups leaf =
         Node.InlineElement il ->
             let
                 definition =
-                    Element.definition (InlineElement.element il)
+                    nodeDefinitionWithDefault (InlineElement.element il) spec
             in
             validateAllowedGroups allowedGroups (NodeDefinition.group definition) (NodeDefinition.name definition)
 
@@ -187,14 +216,14 @@ validateAllowedGroups allowedGroups group name =
                 ]
 
 
-validateEditorBlockNode : Maybe (Set String) -> Block -> List String
-validateEditorBlockNode allowedGroups node =
+validateEditorBlockNode : Spec -> Maybe (Set String) -> Block -> List String
+validateEditorBlockNode spec allowedGroups node =
     let
         parameters =
             elementFromBlockNode node
 
         definition =
-            Element.definition parameters
+            nodeDefinitionWithDefault parameters spec
     in
     let
         allowedGroupsErrors =
@@ -213,7 +242,7 @@ validateEditorBlockNode allowedGroups node =
                 case contentType of
                     BlockNodeType groups ->
                         List.concatMap
-                            (validateEditorBlockNode groups)
+                            (validateEditorBlockNode spec groups)
                             (Array.toList (toBlockArray ba))
 
                     _ ->
@@ -224,7 +253,7 @@ validateEditorBlockNode allowedGroups node =
             InlineChildren la ->
                 case contentType of
                     TextBlockNodeType groups ->
-                        List.concatMap (validateInlineLeaf groups) (Array.toList (inlineArray la))
+                        List.concatMap (validateInlineLeaf spec groups) (Array.toList (inlineArray la))
 
                     _ ->
                         [ "I was expecting textblock content type, but instead I got " ++ toStringContentType contentType ]
@@ -333,7 +362,7 @@ htmlNodeToEditorFragment spec marks node =
                                 Err s
 
                             Ok childNodes ->
-                                Ok <| BlockNodeFragment <| Array.fromList [ blockNode element childNodes ]
+                                Ok <| BlockNodeFragment <| Array.fromList [ Node.blockNode element childNodes ]
 
                 Nothing ->
                     case htmlNodeToMark spec node of

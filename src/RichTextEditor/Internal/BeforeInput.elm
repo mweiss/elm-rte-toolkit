@@ -2,31 +2,31 @@ module RichTextEditor.Internal.BeforeInput exposing (..)
 
 import Json.Decode as D
 import RichTextEditor.Internal.Editor exposing (applyNamedCommandList)
-import RichTextEditor.Model.Command exposing (namedCommandListFromInputEvent)
+import RichTextEditor.Model.Command exposing (CommandMap, namedCommandListFromInputEvent)
 import RichTextEditor.Model.Editor
     exposing
         ( Editor
         , InternalEditorMsg(..)
         , Tagger
-        , commandMap
         , forceRerender
         )
 import RichTextEditor.Model.Event exposing (InputEvent)
+import RichTextEditor.Model.Spec exposing (Spec)
 
 
-preventDefaultOn : Editor -> InternalEditorMsg -> ( InternalEditorMsg, Bool )
-preventDefaultOn editor msg =
+preventDefaultOn : CommandMap -> Spec -> Editor -> InternalEditorMsg -> ( InternalEditorMsg, Bool )
+preventDefaultOn commandMap spec editor msg =
     case msg of
         BeforeInputEvent inputEvent ->
-            ( msg, shouldPreventDefault editor inputEvent )
+            ( msg, shouldPreventDefault commandMap spec editor inputEvent )
 
         _ ->
             ( msg, False )
 
 
-shouldPreventDefault : Editor -> InputEvent -> Bool
-shouldPreventDefault editor inputEvent =
-    case handleInputEvent editor inputEvent of
+shouldPreventDefault : CommandMap -> Spec -> Editor -> InputEvent -> Bool
+shouldPreventDefault commandMap spec editor inputEvent =
+    case handleInputEvent commandMap spec editor inputEvent of
         Err _ ->
             False
 
@@ -34,9 +34,9 @@ shouldPreventDefault editor inputEvent =
             True
 
 
-preventDefaultOnBeforeInputDecoder : Tagger msg -> Editor -> D.Decoder ( msg, Bool )
-preventDefaultOnBeforeInputDecoder tagger editor =
-    D.map (\( i, b ) -> ( tagger i, b )) (D.map (preventDefaultOn editor) beforeInputDecoder)
+preventDefaultOnBeforeInputDecoder : Tagger msg -> CommandMap -> Spec -> Editor -> D.Decoder ( msg, Bool )
+preventDefaultOnBeforeInputDecoder tagger commandMap spec editor =
+    D.map (\( i, b ) -> ( tagger i, b )) (D.map (preventDefaultOn commandMap spec editor) beforeInputDecoder)
 
 
 beforeInputDecoder : D.Decoder InternalEditorMsg
@@ -49,18 +49,18 @@ beforeInputDecoder =
         )
 
 
-handleInputEvent : Editor -> InputEvent -> Result String Editor
-handleInputEvent editor inputEvent =
+handleInputEvent : CommandMap -> Spec -> Editor -> InputEvent -> Result String Editor
+handleInputEvent commandMap spec editor inputEvent =
     let
         namedCommandList =
-            namedCommandListFromInputEvent inputEvent (commandMap editor)
+            namedCommandListFromInputEvent inputEvent commandMap
     in
-    applyNamedCommandList namedCommandList editor
+    applyNamedCommandList namedCommandList spec editor
 
 
-handleBeforeInput : InputEvent -> Editor -> Editor
-handleBeforeInput inputEvent editor =
-    case handleInputEvent editor inputEvent of
+handleBeforeInput : InputEvent -> CommandMap -> Spec -> Editor -> Editor
+handleBeforeInput inputEvent commandMap spec editor =
+    case handleInputEvent commandMap spec editor inputEvent of
         Err _ ->
             editor
 

@@ -5,7 +5,9 @@ import RichTextEditor.Model.Element exposing (Element, element)
 import RichTextEditor.Model.HtmlNode exposing (HtmlNode(..))
 import RichTextEditor.Model.Internal.Spec exposing (NodeDefinition)
 import RichTextEditor.Model.Mark exposing (Mark)
-import RichTextEditor.Model.Spec exposing (Spec, blockNodeContentType, emptySpec, inlineLeafContentType, markDefinition, nodeDefinition, textBlockContentType, withMarkDefinitions, withNodeDefinitions)
+import RichTextEditor.Model.MarkDefinition exposing (markDefinition)
+import RichTextEditor.Model.NodeDefinition exposing (blockNode, inlineLeaf, nodeDefinition, textBlock)
+import RichTextEditor.Model.Spec exposing (Spec, emptySpec, withMarkDefinitions, withNodeDefinitions)
 import RichTextEditor.Spec exposing (defaultElementToHtml, defaultHtmlToElement, defaultHtmlToMark)
 import Set
 
@@ -91,7 +93,7 @@ codeBlock =
     nodeDefinition
         "code_block"
         "block"
-        (blockNodeContentType [])
+        (blockNode [])
         codeBlockToHtmlNode
         htmlNodeToCodeBlock
 
@@ -100,7 +102,7 @@ crazyBlock =
     nodeDefinition
         "crazy_block"
         "block"
-        (blockNodeContentType [])
+        (blockNode [])
         crazyBlockToHtmlNode
         htmlNodeToCrazyBlock
 
@@ -109,7 +111,7 @@ paragraph =
     nodeDefinition
         "paragraph"
         "block"
-        (textBlockContentType [])
+        (textBlock [])
         (defaultElementToHtml "p")
         (defaultHtmlToElement "p")
 
@@ -118,7 +120,7 @@ image =
     nodeDefinition
         "image"
         "inline"
-        inlineLeafContentType
+        inlineLeaf
         (defaultElementToHtml "img")
         (defaultHtmlToElement "img")
 

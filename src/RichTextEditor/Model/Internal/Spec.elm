@@ -14,7 +14,7 @@ type ContentType
 
 
 type alias ElementParametersContents =
-    { definition : NodeDefinition
+    { name : String
     , attributes : List Attribute
     , annotations : Set String
     }
@@ -26,14 +26,16 @@ type Element
 
 element : NodeDefinition -> List Attribute -> Set String -> Element
 element def attrs annotations =
-    ElementParameters { definition = def, attributes = attrs, annotations = annotations }
+    case def of
+        NodeDefinition d ->
+            ElementParameters { name = d.name, attributes = attrs, annotations = annotations }
 
 
-definitionFromElement : Element -> NodeDefinition
-definitionFromElement parameters =
+nameFromElement : Element -> String
+nameFromElement parameters =
     case parameters of
         ElementParameters c ->
-            c.definition
+            c.name
 
 
 attributesFromElement : Element -> List Attribute
@@ -57,13 +59,6 @@ elementWithAnnotations annotations parameters =
             ElementParameters <| { c | annotations = annotations }
 
 
-elementWithDefinition : NodeDefinition -> Element -> Element
-elementWithDefinition d parameters =
-    case parameters of
-        ElementParameters c ->
-            ElementParameters <| { c | definition = d }
-
-
 elementWithAttributes : List Attribute -> Element -> Element
 elementWithAttributes attrs parameters =
     case parameters of
@@ -76,19 +71,21 @@ type Mark
 
 
 type alias Contents =
-    { definition : MarkDefinition, attributes : List Attribute }
+    { name : String, attributes : List Attribute }
 
 
 mark : MarkDefinition -> List Attribute -> Mark
 mark n a =
-    Mark { definition = n, attributes = a }
+    case n of
+        MarkDefinition nn ->
+            Mark { name = nn.name, attributes = a }
 
 
-definitionFromMark : Mark -> MarkDefinition
-definitionFromMark m =
+nameFromMark : Mark -> String
+nameFromMark m =
     case m of
         Mark c ->
-            c.definition
+            c.name
 
 
 attributesFromMark : Mark -> List Attribute

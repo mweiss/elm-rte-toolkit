@@ -28,8 +28,6 @@ type alias EditorContents =
     , completeRerenderCount : Int
     , isComposing : Bool
     , bufferedEditorState : Maybe State
-    , commandMap : CommandMap
-    , spec : Spec
     , history : History
     }
 
@@ -39,8 +37,8 @@ defaultDequeSize =
     64
 
 
-editor : Spec -> State -> Editor
-editor iSpec iState =
+editor : State -> Editor
+editor iState =
     Editor
         { renderCount = 0
         , bufferedEditorState = Nothing
@@ -48,8 +46,6 @@ editor iSpec iState =
         , selectionCount = 0
         , shortKey = meta
         , isComposing = False
-        , commandMap = emptyCommandMap
-        , spec = iSpec
         , state = iState
         , history = emptyHistory defaultDequeSize
         }
@@ -132,20 +128,6 @@ withState s e =
             Editor { c | state = s }
 
 
-commandMap : Editor -> CommandMap
-commandMap e =
-    case e of
-        Editor c ->
-            c.commandMap
-
-
-spec : Editor -> Spec
-spec e =
-    case e of
-        Editor c ->
-            c.spec
-
-
 history : Editor -> History
 history e =
     case e of
@@ -165,13 +147,6 @@ withHistory h e =
     case e of
         Editor c ->
             Editor { c | history = h }
-
-
-withCommandMap : CommandMap -> Editor -> Editor
-withCommandMap m e =
-    case e of
-        Editor c ->
-            Editor { c | commandMap = m }
 
 
 withShortKey : String -> Editor -> Editor

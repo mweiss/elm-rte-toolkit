@@ -23,17 +23,18 @@ import RichTextEditor.Model.Selection
         , focusOffset
         , rangeSelection
         )
+import RichTextEditor.Model.Spec exposing (Spec)
 import RichTextEditor.NodePath as Path
 
 
-domToEditor : Block -> Selection -> Maybe Selection
-domToEditor =
-    transformSelection Path.domToEditor
+domToEditor : Spec -> Block -> Selection -> Maybe Selection
+domToEditor spec =
+    transformSelection (Path.domToEditor spec)
 
 
-editorToDom : Block -> Selection -> Maybe Selection
-editorToDom =
-    transformSelection Path.editorToDom
+editorToDom : Spec -> Block -> Selection -> Maybe Selection
+editorToDom spec =
+    transformSelection (Path.editorToDom spec)
 
 
 transformSelection : (Block -> Path -> Maybe Path) -> Block -> Selection -> Maybe Selection

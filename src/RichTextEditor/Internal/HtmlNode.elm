@@ -19,48 +19,50 @@ import RichTextEditor.Model.Node
         , toBlockArray
         )
 import RichTextEditor.Model.NodeDefinition as NodeDefinition
+import RichTextEditor.Model.Spec exposing (Spec)
 import RichTextEditor.Model.Text exposing (text)
+import RichTextEditor.Spec exposing (markDefinitionWithDefault, nodeDefinitionWithDefault)
 
 
 {-| Renders marks to their HtmlNode representation.
 -}
-markToHtmlNode : Mark -> Array HtmlNode -> HtmlNode
-markToHtmlNode mark children =
+markToHtmlNode : Spec -> Mark -> Array HtmlNode -> HtmlNode
+markToHtmlNode spec mark children =
     let
         markDefinition =
-            Mark.definition mark
+            markDefinitionWithDefault mark spec
     in
     MarkDefinition.toHtmlNode markDefinition mark children
 
 
 {-| Renders element parameters to their HtmlNode representation.
 -}
-elementToHtmlNode : Element -> Array HtmlNode -> HtmlNode
-elementToHtmlNode parameters children =
+elementToHtmlNode : Spec -> Element -> Array HtmlNode -> HtmlNode
+elementToHtmlNode spec parameters children =
     let
         nodeDefinition =
-            Element.definition parameters
+            nodeDefinitionWithDefault parameters spec
     in
     NodeDefinition.toHtmlNode nodeDefinition parameters children
 
 
 {-| Renders element block nodes to their HtmlNode representation.
 -}
-editorBlockNodeToHtmlNode : Block -> HtmlNode
-editorBlockNodeToHtmlNode node =
-    elementToHtmlNode (elementFromBlockNode node) (childNodesToHtmlNode (childNodes node))
+editorBlockNodeToHtmlNode : Spec -> Block -> HtmlNode
+editorBlockNodeToHtmlNode spec node =
+    elementToHtmlNode spec (elementFromBlockNode node) (childNodesToHtmlNode spec (childNodes node))
 
 
 {-| Renders child nodes to their HtmlNode representation.
 -}
-childNodesToHtmlNode : Children -> Array HtmlNode
-childNodesToHtmlNode childNodes =
+childNodesToHtmlNode : Spec -> Children -> Array HtmlNode
+childNodesToHtmlNode spec childNodes =
     case childNodes of
         BlockChildren blockArray ->
-            Array.map editorBlockNodeToHtmlNode (toBlockArray blockArray)
+            Array.map (editorBlockNodeToHtmlNode spec) (toBlockArray blockArray)
 
         InlineChildren inlineLeafArray ->
-            Array.map (editorInlineLeafTreeToHtmlNode (inlineArray inlineLeafArray)) (inlineTree inlineLeafArray)
+            Array.map (editorInlineLeafTreeToHtmlNode spec (inlineArray inlineLeafArray)) (inlineTree inlineLeafArray)
 
         Leaf ->
             Array.empty
@@ -78,8 +80,8 @@ errorNode =
     ElementNode "div" [ ( "class", "rte-error" ) ] Array.empty
 
 
-editorInlineLeafTreeToHtmlNode : Array Inline -> InlineTree -> HtmlNode
-editorInlineLeafTreeToHtmlNode array tree =
+editorInlineLeafTreeToHtmlNode : Spec -> Array Inline -> InlineTree -> HtmlNode
+editorInlineLeafTreeToHtmlNode spec array tree =
     case tree of
         LeafNode i ->
             case Array.get i array of
@@ -87,19 +89,19 @@ editorInlineLeafTreeToHtmlNode array tree =
                     errorNode
 
                 Just l ->
-                    editorInlineLeafToHtmlNode l
+                    editorInlineLeafToHtmlNode spec l
 
         MarkNode n ->
-            markToHtmlNode n.mark (Array.map (editorInlineLeafTreeToHtmlNode array) n.children)
+            markToHtmlNode spec n.mark (Array.map (editorInlineLeafTreeToHtmlNode spec array) n.children)
 
 
 {-| Renders inline leaf nodes to their HtmlNode representation.
 -}
-editorInlineLeafToHtmlNode : Inline -> HtmlNode
-editorInlineLeafToHtmlNode node =
+editorInlineLeafToHtmlNode : Spec -> Inline -> HtmlNode
+editorInlineLeafToHtmlNode spec node =
     case node of
         Text contents ->
             textToHtmlNode (text contents)
 
         InlineElement l ->
-            elementToHtmlNode (element l) Array.empty
+            elementToHtmlNode spec (element l) Array.empty
