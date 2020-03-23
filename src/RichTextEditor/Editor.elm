@@ -23,7 +23,7 @@ import RichTextEditor.Internal.DomNode
         , findTextChanges
         )
 import RichTextEditor.Internal.Editor
-import RichTextEditor.Internal.HtmlNode exposing (editorBlockNodeToHtmlNode)
+import RichTextEditor.Internal.HtmlNode exposing (childNodesPlaceholder, editorBlockNodeToHtmlNode)
 import RichTextEditor.Internal.KeyDown as KeyDown
 import RichTextEditor.Internal.Paste as Paste
 import RichTextEditor.Model.Command exposing (CommandMap, NamedCommand, NamedCommandList, transformCommand)
@@ -64,13 +64,12 @@ import RichTextEditor.Model.Selection
         , isCollapsed
         , rangeSelection
         )
-import RichTextEditor.Model.Spec exposing (Spec)
+import RichTextEditor.Model.Spec exposing (Spec, markDefinitionWithDefault, nodeDefinitionWithDefault)
 import RichTextEditor.Model.State as State exposing (State, withRoot, withSelection)
 import RichTextEditor.Model.Text as Text
 import RichTextEditor.Node exposing (Node(..), nodeAt)
 import RichTextEditor.NodePath as NodePath exposing (toString)
 import RichTextEditor.Selection exposing (annotateSelection, domToEditor, editorToDom)
-import RichTextEditor.Spec exposing (childNodesPlaceholder, markDefinitionWithDefault, nodeDefinitionWithDefault)
 
 
 updateSelection : Maybe Selection -> Bool -> Spec -> Editor -> Editor

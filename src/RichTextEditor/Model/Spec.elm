@@ -2,26 +2,32 @@ module RichTextEditor.Model.Spec exposing
     ( Spec
     , emptySpec
     , markDefinition
+    , markDefinitionWithDefault
     , markDefinitions
     , nodeDefinition
+    , nodeDefinitionWithDefault
     , nodeDefinitions
     , withMarkDefinitions
     , withNodeDefinitions
     )
 
 import Dict exposing (Dict)
-import RichTextEditor.Model.Internal.Spec
+import RichTextEditor.Model.Internal.Model
     exposing
         ( ContentType(..)
+        , Element
         , ElementToHtml
         , HtmlToElement
         , HtmlToMark
+        , Mark
         , MarkDefinition(..)
         , MarkToHtml
         , NodeDefinition(..)
+        , nameFromElement
+        , nameFromMark
         )
-import RichTextEditor.Model.MarkDefinition as MarkDefinition
-import RichTextEditor.Model.NodeDefinition as NodeDefinition
+import RichTextEditor.Model.MarkDefinition as MarkDefinition exposing (defaultMarkDefinition)
+import RichTextEditor.Model.NodeDefinition as NodeDefinition exposing (defaultNodeDefinition)
 
 
 type Spec
@@ -88,3 +94,21 @@ type alias SpecContents =
     , nodes : List NodeDefinition
     , nameToNode : Dict String NodeDefinition
     }
+
+
+markDefinitionWithDefault : Mark -> Spec -> MarkDefinition
+markDefinitionWithDefault mark spec =
+    let
+        name =
+            nameFromMark mark
+    in
+    Maybe.withDefault (defaultMarkDefinition name) (markDefinition name spec)
+
+
+nodeDefinitionWithDefault : Element -> Spec -> NodeDefinition
+nodeDefinitionWithDefault ele spec =
+    let
+        name =
+            nameFromElement ele
+    in
+    Maybe.withDefault (defaultNodeDefinition name) (nodeDefinition name spec)

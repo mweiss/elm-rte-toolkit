@@ -6,9 +6,9 @@ import RichTextEditor.Model.MarkDefinition
         ( HtmlToMark
         , MarkDefinition
         , MarkToHtml
+        , defaultHtmlToMark
         , markDefinition
         )
-import RichTextEditor.Spec exposing (defaultHtmlToMark)
 
 
 underline : MarkDefinition

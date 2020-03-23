@@ -1,6 +1,7 @@
 module RichTextEditor.Model.NodeDefinition exposing
     ( NodeDefinition, nodeDefinition, ElementToHtml, HtmlToElement, name, group, contentType, fromHtmlNode, toHtmlNode
     , ContentType, blockLeaf, inlineLeaf, blockNode, textBlock
+    , defaultElementToHtml, defaultHtmlToElement, defaultNodeDefinition
     )
 
 {-| A NodeDefinition describes how to serialize/deserialize an editor node, as well as the children a
@@ -18,7 +19,9 @@ node can have.
 
 -}
 
-import RichTextEditor.Model.Internal.Spec exposing (ContentType(..))
+import RichTextEditor.Model.Attribute exposing (Attribute(..))
+import RichTextEditor.Model.HtmlNode exposing (HtmlNode(..))
+import RichTextEditor.Model.Internal.Model as Model exposing (ContentType(..))
 import Set
 
 
@@ -32,14 +35,14 @@ of four values:
 
 -}
 type alias ContentType =
-    RichTextEditor.Model.Internal.Spec.ContentType
+    Model.ContentType
 
 
 {-| A `NodeDefinition` contains information on how to serialize/deserialize an editor node,
 as well as describes what type of node and what children the node can have.
 -}
 type alias NodeDefinition =
-    RichTextEditor.Model.Internal.Spec.NodeDefinition
+    Model.NodeDefinition
 
 
 {-| Type alias for defining an element serialization function `Element` -> `Array HtmlNode` -> `HtmlNode`
@@ -54,7 +57,7 @@ to partially serialize a document in some parts of the package.
 
 -}
 type alias ElementToHtml =
-    RichTextEditor.Model.Internal.Spec.ElementToHtml
+    Model.ElementToHtml
 
 
 {-| Type alias for defining an element deserialization function: `NodeDefinition` -> `HtmlNode` -> `Maybe ( Element, Array HtmlNode )`
@@ -74,7 +77,7 @@ type alias ElementToHtml =
 
 -}
 type alias HtmlToElement =
-    RichTextEditor.Model.Internal.Spec.HtmlToElement
+    Model.HtmlToElement
 
 
 {-| Defines a node. The arguments are as follows:
@@ -111,7 +114,7 @@ paragraph =
 -}
 nodeDefinition : String -> String -> ContentType -> ElementToHtml -> HtmlToElement -> NodeDefinition
 nodeDefinition name_ group_ contentType_ toHtml fromHtml =
-    RichTextEditor.Model.Internal.Spec.NodeDefinition
+    Model.NodeDefinition
         { name = name_
         , group = group_
         , toHtmlNode = toHtml
@@ -129,7 +132,7 @@ nodeDefinition name_ group_ contentType_ toHtml fromHtml =
 name : NodeDefinition -> String
 name definition_ =
     case definition_ of
-        RichTextEditor.Model.Internal.Spec.NodeDefinition c ->
+        Model.NodeDefinition c ->
             c.name
 
 
@@ -142,7 +145,7 @@ name definition_ =
 group : NodeDefinition -> String
 group definition_ =
     case definition_ of
-        RichTextEditor.Model.Internal.Spec.NodeDefinition c ->
+        Model.NodeDefinition c ->
             c.group
 
 
@@ -152,7 +155,7 @@ to determine selection, render the editor, and validate the DOM.
 toHtmlNode : NodeDefinition -> ElementToHtml
 toHtmlNode definition_ =
     case definition_ of
-        RichTextEditor.Model.Internal.Spec.NodeDefinition c ->
+        Model.NodeDefinition c ->
             c.toHtmlNode
 
 
@@ -162,7 +165,7 @@ derive editor nodes from HTML content.
 fromHtmlNode : NodeDefinition -> HtmlToElement
 fromHtmlNode definition_ =
     case definition_ of
-        RichTextEditor.Model.Internal.Spec.NodeDefinition c ->
+        Model.NodeDefinition c ->
             c.fromHtmlNode
 
 
@@ -171,7 +174,7 @@ fromHtmlNode definition_ =
 contentType : NodeDefinition -> ContentType
 contentType definition_ =
     case definition_ of
-        RichTextEditor.Model.Internal.Spec.NodeDefinition c ->
+        Model.NodeDefinition c ->
             c.contentType
 
 
@@ -221,3 +224,39 @@ textBlock allowedGroups =
 
         else
             Just <| Set.fromList allowedGroups
+
+
+defaultNodeDefinition : String -> NodeDefinition
+defaultNodeDefinition name_ =
+    nodeDefinition name_ "block" (blockNode []) (defaultElementToHtml name_) (defaultHtmlToElement name_)
+
+
+defaultElementToHtml : String -> ElementToHtml
+defaultElementToHtml tagName elementParameters children =
+    ElementNode tagName
+        (List.filterMap
+            (\attr ->
+                case attr of
+                    StringAttribute k v ->
+                        Just ( k, v )
+
+                    _ ->
+                        Nothing
+            )
+            (Model.attributesFromElement elementParameters)
+        )
+        children
+
+
+defaultHtmlToElement : String -> HtmlToElement
+defaultHtmlToElement htmlTag def node =
+    case node of
+        ElementNode name_ _ children ->
+            if name_ == htmlTag then
+                Just ( Model.element def [] Set.empty, children )
+
+            else
+                Nothing
+
+        _ ->
+            Nothing

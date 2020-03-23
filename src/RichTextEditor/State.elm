@@ -1,20 +1,12 @@
-module RichTextEditor.State exposing (reduceEditorState)
+module RichTextEditor.State exposing (reduceEditorState, validate)
 
 import Array exposing (Array)
 import List.Extra
 import RichTextEditor.Model.Annotations exposing (selection)
-import RichTextEditor.Model.Node
-    exposing
-        ( Block
-        , Children(..)
-        , Inline(..)
-        , InlineChildren
-        , Path
-        , childNodes
-        , inlineArray
-        , inlineChildren
-        , withChildNodes
-        )
+import RichTextEditor.Model.InlineElement as InlineElement
+import RichTextEditor.Model.Internal.Model exposing (ContentType(..), toStringContentType)
+import RichTextEditor.Model.Node as Node exposing (Block, Children(..), Inline(..), InlineChildren, Path, childNodes, elementFromBlockNode, inlineArray, inlineChildren, toBlockArray, withChildNodes)
+import RichTextEditor.Model.NodeDefinition as NodeDefinition
 import RichTextEditor.Model.Selection
     exposing
         ( anchorNode
@@ -23,11 +15,12 @@ import RichTextEditor.Model.Selection
         , focusOffset
         , rangeSelection
         )
+import RichTextEditor.Model.Spec exposing (Spec, nodeDefinitionWithDefault)
 import RichTextEditor.Model.State as State exposing (State, withRoot, withSelection)
 import RichTextEditor.Model.Text as Text exposing (text, withText)
 import RichTextEditor.Node exposing (Node(..), findTextBlockNodeAncestor, map)
 import RichTextEditor.Selection exposing (annotateSelection, clearSelectionAnnotations)
-import Set
+import Set exposing (Set)
 
 
 removeExtraEmptyTextLeaves : List Inline -> List Inline
@@ -254,3 +247,105 @@ childOffset leaves offset =
                 leaves
     in
     ( newIndex, newOffset )
+
+
+validate : Spec -> State -> Result String State
+validate spec editorState =
+    let
+        root =
+            State.root editorState
+    in
+    case validateEditorBlockNode spec (Just <| Set.singleton "root") root of
+        [] ->
+            Ok editorState
+
+        result ->
+            Err <| String.join ", " result
+
+
+validateInlineLeaf : Spec -> Maybe (Set String) -> Inline -> List String
+validateInlineLeaf spec allowedGroups leaf =
+    case leaf of
+        Node.Text _ ->
+            []
+
+        Node.InlineElement il ->
+            let
+                definition =
+                    nodeDefinitionWithDefault (InlineElement.element il) spec
+            in
+            validateAllowedGroups allowedGroups (NodeDefinition.group definition) (NodeDefinition.name definition)
+
+
+validateAllowedGroups : Maybe (Set String) -> String -> String -> List String
+validateAllowedGroups allowedGroups group name =
+    case allowedGroups of
+        Nothing ->
+            []
+
+        Just groups ->
+            if Set.member group groups then
+                []
+
+            else if Set.member name groups then
+                []
+
+            else
+                [ "Group "
+                    ++ group
+                    ++ " is not in allowed groups {"
+                    ++ String.join ", " (Set.toList groups)
+                    ++ "}"
+                ]
+
+
+validateEditorBlockNode : Spec -> Maybe (Set String) -> Block -> List String
+validateEditorBlockNode spec allowedGroups node =
+    let
+        parameters =
+            elementFromBlockNode node
+
+        definition =
+            nodeDefinitionWithDefault parameters spec
+    in
+    let
+        allowedGroupsErrors =
+            validateAllowedGroups allowedGroups (NodeDefinition.group definition) (NodeDefinition.name definition)
+    in
+    if not <| List.isEmpty allowedGroupsErrors then
+        allowedGroupsErrors
+
+    else
+        let
+            contentType =
+                NodeDefinition.contentType definition
+        in
+        case childNodes node of
+            BlockChildren ba ->
+                case contentType of
+                    BlockNodeType groups ->
+                        List.concatMap
+                            (validateEditorBlockNode spec groups)
+                            (Array.toList (toBlockArray ba))
+
+                    _ ->
+                        [ "I was expecting textblock content type, but instead I got "
+                            ++ toStringContentType contentType
+                        ]
+
+            InlineChildren la ->
+                case contentType of
+                    TextBlockNodeType groups ->
+                        List.concatMap (validateInlineLeaf spec groups) (Array.toList (inlineArray la))
+
+                    _ ->
+                        [ "I was expecting textblock content type, but instead I got " ++ toStringContentType contentType ]
+
+            Leaf ->
+                if contentType == NodeDefinition.blockLeaf then
+                    []
+
+                else
+                    [ "I was expecting leaf blockleaf content type, but instead I got "
+                        ++ toStringContentType contentType
+                    ]

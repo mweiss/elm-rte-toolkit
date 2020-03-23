@@ -34,7 +34,14 @@ import RichTextEditor.Model.Node
         , plainText
         , withElement
         )
-import RichTextEditor.Model.NodeDefinition as NodeDefinition exposing (ElementToHtml, HtmlToElement, NodeDefinition, nodeDefinition)
+import RichTextEditor.Model.NodeDefinition as NodeDefinition
+    exposing
+        ( ElementToHtml
+        , HtmlToElement
+        , NodeDefinition
+        , defaultHtmlToElement
+        , nodeDefinition
+        )
 import RichTextEditor.Model.Spec
     exposing
         ( emptySpec
@@ -42,7 +49,6 @@ import RichTextEditor.Model.Spec
         )
 import RichTextEditor.Model.State as State exposing (State, withRoot)
 import RichTextEditor.Node as Node exposing (Node(..), nodeAt)
-import RichTextEditor.Spec exposing (defaultHtmlToElement)
 import Session exposing (Session)
 import Set
 

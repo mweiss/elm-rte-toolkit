@@ -20,8 +20,7 @@ import RichTextEditor.Model.Editor
 import RichTextEditor.Model.History exposing (contents, fromContents)
 import RichTextEditor.Model.Spec exposing (Spec)
 import RichTextEditor.Model.State exposing (State)
-import RichTextEditor.Spec exposing (validate)
-import RichTextEditor.State exposing (reduceEditorState)
+import RichTextEditor.State exposing (reduceEditorState, validate)
 
 
 applyInternalCommand : InternalAction -> Editor -> Result String Editor

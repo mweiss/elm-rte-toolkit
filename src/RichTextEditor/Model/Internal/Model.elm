@@ -1,4 +1,7 @@
-module RichTextEditor.Model.Internal.Spec exposing (..)
+module RichTextEditor.Model.Internal.Model exposing (..)
+
+{-| Internal module for various entities to keep records private and avoid dependency loops.
+-}
 
 import Array exposing (Array)
 import RichTextEditor.Model.Attribute exposing (Attribute)
@@ -141,3 +144,19 @@ type alias NodeDefinitionContents =
     , contentType : ContentType
     , fromHtmlNode : HtmlToElement
     }
+
+
+toStringContentType : ContentType -> String
+toStringContentType contentType =
+    case contentType of
+        TextBlockNodeType _ ->
+            "TextBlockNodeType"
+
+        InlineLeafNodeType ->
+            "InlineLeafNodeType"
+
+        BlockNodeType _ ->
+            "BlockNodeType"
+
+        BlockLeafNodeType ->
+            "BlockLeafNodeType"

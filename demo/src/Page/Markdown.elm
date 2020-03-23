@@ -19,7 +19,7 @@ import RichTextEditor.Model.Attribute
 import RichTextEditor.Model.Editor exposing (state)
 import RichTextEditor.Model.Element as Element exposing (Element, element)
 import RichTextEditor.Model.InlineElement as InlineElement
-import RichTextEditor.Model.Mark as Mark exposing (Mark, MarkOrder)
+import RichTextEditor.Model.Mark as Mark exposing (Mark, MarkOrder, markOrderFromSpec)
 import RichTextEditor.Model.Node
     exposing
         ( Block
@@ -41,7 +41,6 @@ import RichTextEditor.Model.Node
 import RichTextEditor.Model.Spec exposing (Spec, withMarkDefinitions)
 import RichTextEditor.Model.State as State exposing (State)
 import RichTextEditor.Model.Text as Text
-import RichTextEditor.Spec exposing (markOrderFromSpec)
 import RichTextEditor.Specs as MarkdownSpec
     exposing
         ( blockquote

@@ -1,9 +1,10 @@
 module RichTextEditor.Model.Mark exposing
     ( Mark
-    , MarkOrder(..)
+    , MarkOrder
     , ToggleAction(..)
     , attributes
     , mark
+    , markOrderFromSpec
     , name
     , sort
     , toggle
@@ -15,17 +16,18 @@ information when rendering a node (like color, font, and link information).
 
 import Dict exposing (Dict)
 import RichTextEditor.Model.Attribute exposing (Attribute)
-import RichTextEditor.Model.Internal.Spec as Spec exposing (MarkDefinition, attributesFromMark)
+import RichTextEditor.Model.Internal.Model as Model exposing (MarkDefinition, attributesFromMark)
 import RichTextEditor.Model.MarkDefinition as MarkDefinition
+import RichTextEditor.Model.Spec exposing (Spec, markDefinitions)
 
 
 type alias Mark =
-    Spec.Mark
+    Model.Mark
 
 
 mark : MarkDefinition -> List Attribute -> Mark
 mark =
-    Spec.mark
+    Model.mark
 
 
 attributes : Mark -> List Attribute
@@ -35,7 +37,7 @@ attributes =
 
 name : Mark -> String
 name =
-    Spec.nameFromMark
+    Model.nameFromMark
 
 
 type MarkOrder
@@ -92,3 +94,8 @@ toggle toggleAction order mark_ marks =
                     x
             )
             marks
+
+
+markOrderFromSpec : Spec -> MarkOrder
+markOrderFromSpec spec =
+    MarkOrder <| Dict.fromList (List.indexedMap (\i m -> ( MarkDefinition.name m, i )) (markDefinitions spec))

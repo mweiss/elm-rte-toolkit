@@ -11,6 +11,7 @@ import RichTextEditor.Commands
         , splitTextBlock
         )
 import RichTextEditor.Internal.Editor exposing (applyNamedCommandList)
+import RichTextEditor.Internal.Spec exposing (htmlToElementArray)
 import RichTextEditor.Model.Command exposing (Transform, transformCommand)
 import RichTextEditor.Model.Constants exposing (zeroWidthSpace)
 import RichTextEditor.Model.Editor exposing (Editor)
@@ -54,7 +55,6 @@ import RichTextEditor.Selection
         , clearSelectionAnnotations
         , selectionFromAnnotations
         )
-import RichTextEditor.Spec exposing (htmlToElementArray)
 
 
 handlePaste : PasteEvent -> Spec -> Editor -> Editor

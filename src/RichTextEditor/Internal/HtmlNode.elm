@@ -19,9 +19,13 @@ import RichTextEditor.Model.Node
         , toBlockArray
         )
 import RichTextEditor.Model.NodeDefinition as NodeDefinition
-import RichTextEditor.Model.Spec exposing (Spec)
+import RichTextEditor.Model.Spec exposing (Spec, markDefinitionWithDefault, nodeDefinitionWithDefault)
 import RichTextEditor.Model.Text exposing (text)
-import RichTextEditor.Spec exposing (markDefinitionWithDefault, nodeDefinitionWithDefault)
+
+
+childNodesPlaceholder =
+    Array.fromList
+        [ ElementNode "__child_node_marker__" [] Array.empty ]
 
 
 {-| Renders marks to their HtmlNode representation.

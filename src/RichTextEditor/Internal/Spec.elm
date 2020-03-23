@@ -1,271 +1,36 @@
-module RichTextEditor.Spec exposing
-    ( childNodesPlaceholder
-    , defaultElementToHtml
-    , defaultHtmlToElement
-    , defaultHtmlToMark
-    , defaultMarkToHtml
-    , htmlToElementArray
-    , markDefinitionWithDefault
-    , markOrderFromSpec
-    , nodeDefinitionWithDefault
-    , validate
-    )
+module RichTextEditor.Internal.Spec exposing (htmlToElementArray)
 
 import Array exposing (Array)
-import Dict exposing (Dict)
 import Html.Parser as Html exposing (Node(..))
 import Result exposing (Result)
-import RichTextEditor.Model.Attribute exposing (Attribute(..))
 import RichTextEditor.Model.Constants exposing (zeroWidthSpace)
-import RichTextEditor.Model.Element as Element exposing (Element, element)
 import RichTextEditor.Model.HtmlNode exposing (HtmlNode(..))
-import RichTextEditor.Model.InlineElement as InlineElement exposing (inlineElement)
-import RichTextEditor.Model.Internal.Spec exposing (ContentType(..))
-import RichTextEditor.Model.Mark as Mark
+import RichTextEditor.Model.InlineElement exposing (inlineElement)
+import RichTextEditor.Model.Internal.Model exposing (ContentType(..))
+import RichTextEditor.Model.Mark
     exposing
         ( Mark
         , MarkOrder(..)
         , ToggleAction(..)
         , mark
+        , markOrderFromSpec
         , toggle
         )
-import RichTextEditor.Model.MarkDefinition as MarkDefinition exposing (MarkDefinition, markDefinition)
+import RichTextEditor.Model.MarkDefinition as MarkDefinition exposing (MarkDefinition)
 import RichTextEditor.Model.Node as Node
     exposing
         ( Block
         , Children(..)
         , Inline(..)
         , childNodes
-        , elementFromBlockNode
         , fromBlockArray
-        , inlineArray
         , inlineChildren
-        , toBlockArray
         )
 import RichTextEditor.Model.NodeDefinition as NodeDefinition exposing (NodeDefinition, blockNode, nodeDefinition)
-import RichTextEditor.Model.Spec as Spec
-    exposing
-        ( Spec
-        , markDefinitions
-        , nodeDefinitions
-        )
-import RichTextEditor.Model.State as State exposing (State)
+import RichTextEditor.Model.Spec as Spec exposing (Spec, markDefinitions, nodeDefinitions)
 import RichTextEditor.Model.Text as Text
 import RichTextEditor.Node exposing (Fragment(..))
 import Set exposing (Set)
-
-
-childNodesPlaceholder =
-    Array.fromList
-        [ ElementNode "__child_node_marker__" [] Array.empty ]
-
-
-markDefinitionWithDefault : Mark -> Spec -> MarkDefinition
-markDefinitionWithDefault mark spec =
-    let
-        name =
-            Mark.name mark
-    in
-    Maybe.withDefault (defaultMarkDefinition name) (Spec.markDefinition name spec)
-
-
-nodeDefinitionWithDefault : Element -> Spec -> NodeDefinition
-nodeDefinitionWithDefault ele spec =
-    let
-        name =
-            Element.name ele
-    in
-    Maybe.withDefault (defaultNodeDefinition name) (Spec.nodeDefinition name spec)
-
-
-defaultMarkDefinition : String -> MarkDefinition
-defaultMarkDefinition name =
-    markDefinition name defaultMarkToHtml (defaultHtmlToMark name)
-
-
-defaultNodeDefinition : String -> NodeDefinition
-defaultNodeDefinition name =
-    nodeDefinition name "block" (blockNode []) (defaultElementToHtml name) (defaultHtmlToElement name)
-
-
-defaultElementToHtml : String -> Element -> Array HtmlNode -> HtmlNode
-defaultElementToHtml tagName elementParameters children =
-    ElementNode tagName
-        (List.filterMap
-            (\attr ->
-                case attr of
-                    StringAttribute k v ->
-                        Just ( k, v )
-
-                    _ ->
-                        Nothing
-            )
-            (Element.attributes elementParameters)
-        )
-        children
-
-
-defaultHtmlToElement : String -> NodeDefinition -> HtmlNode -> Maybe ( Element, Array HtmlNode )
-defaultHtmlToElement htmlTag def node =
-    case node of
-        ElementNode name _ children ->
-            if name == htmlTag then
-                Just ( element def [] Set.empty, children )
-
-            else
-                Nothing
-
-        _ ->
-            Nothing
-
-
-defaultHtmlToMark : String -> MarkDefinition -> HtmlNode -> Maybe ( Mark, Array HtmlNode )
-defaultHtmlToMark htmlTag def node =
-    case node of
-        ElementNode name _ children ->
-            if name == htmlTag then
-                Just ( mark def [], children )
-
-            else
-                Nothing
-
-        _ ->
-            Nothing
-
-
-defaultMarkToHtml : Mark -> Array HtmlNode -> HtmlNode
-defaultMarkToHtml mark children =
-    ElementNode (Mark.name mark)
-        (List.filterMap
-            (\attr ->
-                case attr of
-                    StringAttribute k v ->
-                        Just ( k, v )
-
-                    _ ->
-                        Nothing
-            )
-            (Mark.attributes mark)
-        )
-        children
-
-
-validate : Spec -> State -> Result String State
-validate spec editorState =
-    let
-        root =
-            State.root editorState
-    in
-    case validateEditorBlockNode spec (Just <| Set.singleton "root") root of
-        [] ->
-            Ok editorState
-
-        result ->
-            Err <| String.join ", " result
-
-
-toStringContentType : ContentType -> String
-toStringContentType contentType =
-    case contentType of
-        TextBlockNodeType _ ->
-            "TextBlockNodeType"
-
-        InlineLeafNodeType ->
-            "InlineLeafNodeType"
-
-        BlockNodeType _ ->
-            "BlockNodeType"
-
-        BlockLeafNodeType ->
-            "BlockLeafNodeType"
-
-
-validateInlineLeaf : Spec -> Maybe (Set String) -> Inline -> List String
-validateInlineLeaf spec allowedGroups leaf =
-    case leaf of
-        Node.Text _ ->
-            []
-
-        Node.InlineElement il ->
-            let
-                definition =
-                    nodeDefinitionWithDefault (InlineElement.element il) spec
-            in
-            validateAllowedGroups allowedGroups (NodeDefinition.group definition) (NodeDefinition.name definition)
-
-
-validateAllowedGroups : Maybe (Set String) -> String -> String -> List String
-validateAllowedGroups allowedGroups group name =
-    case allowedGroups of
-        Nothing ->
-            []
-
-        Just groups ->
-            if Set.member group groups then
-                []
-
-            else if Set.member name groups then
-                []
-
-            else
-                [ "Group "
-                    ++ group
-                    ++ " is not in allowed groups {"
-                    ++ String.join ", " (Set.toList groups)
-                    ++ "}"
-                ]
-
-
-validateEditorBlockNode : Spec -> Maybe (Set String) -> Block -> List String
-validateEditorBlockNode spec allowedGroups node =
-    let
-        parameters =
-            elementFromBlockNode node
-
-        definition =
-            nodeDefinitionWithDefault parameters spec
-    in
-    let
-        allowedGroupsErrors =
-            validateAllowedGroups allowedGroups (NodeDefinition.group definition) (NodeDefinition.name definition)
-    in
-    if not <| List.isEmpty allowedGroupsErrors then
-        allowedGroupsErrors
-
-    else
-        let
-            contentType =
-                NodeDefinition.contentType definition
-        in
-        case childNodes node of
-            BlockChildren ba ->
-                case contentType of
-                    BlockNodeType groups ->
-                        List.concatMap
-                            (validateEditorBlockNode spec groups)
-                            (Array.toList (toBlockArray ba))
-
-                    _ ->
-                        [ "I was expecting textblock content type, but instead I got "
-                            ++ toStringContentType contentType
-                        ]
-
-            InlineChildren la ->
-                case contentType of
-                    TextBlockNodeType groups ->
-                        List.concatMap (validateInlineLeaf spec groups) (Array.toList (inlineArray la))
-
-                    _ ->
-                        [ "I was expecting textblock content type, but instead I got " ++ toStringContentType contentType ]
-
-            Leaf ->
-                if contentType == NodeDefinition.blockLeaf then
-                    []
-
-                else
-                    [ "I was expecting leaf blockleaf content type, but instead I got "
-                        ++ toStringContentType contentType
-                    ]
 
 
 resultFilterMap : (a -> Result c b) -> Array a -> Array b
@@ -537,8 +302,3 @@ nodeListToHtmlNodeArray nodeList =
                         []
             )
             nodeList
-
-
-markOrderFromSpec : Spec -> MarkOrder
-markOrderFromSpec spec =
-    MarkOrder <| Dict.fromList (List.indexedMap (\i m -> ( MarkDefinition.name m, i )) (markDefinitions spec))

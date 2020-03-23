@@ -1,4 +1,7 @@
-module RichTextEditor.Model.MarkDefinition exposing (MarkDefinition, markDefinition, MarkToHtml, HtmlToMark, name, toHtmlNode, fromHtmlNode)
+module RichTextEditor.Model.MarkDefinition exposing
+    ( MarkDefinition, markDefinition, MarkToHtml, HtmlToMark, name, toHtmlNode, fromHtmlNode
+    , defaultHtmlToMark, defaultMarkDefinition, defaultMarkToHtml
+    )
 
 {-| A mark definition describes how to encode and decode a mark.
 
@@ -6,13 +9,15 @@ module RichTextEditor.Model.MarkDefinition exposing (MarkDefinition, markDefinit
 
 -}
 
-import RichTextEditor.Model.Internal.Spec
+import RichTextEditor.Model.Attribute exposing (Attribute(..))
+import RichTextEditor.Model.HtmlNode exposing (HtmlNode(..))
+import RichTextEditor.Model.Internal.Model as Model
 
 
 {-| A mark definition defines how a mark is encoded an decoded.
 -}
 type alias MarkDefinition =
-    RichTextEditor.Model.Internal.Spec.MarkDefinition
+    Model.MarkDefinition
 
 
 {-| Type alias for a mark encoding function: `Mark -> Array HtmlNode -> HtmlNode`
@@ -23,7 +28,7 @@ type alias MarkDefinition =
 
 -}
 type alias MarkToHtml =
-    RichTextEditor.Model.Internal.Spec.MarkToHtml
+    Model.MarkToHtml
 
 
 {-| Type alias for a mark decoding function: `MarkDefinition -> HtmlNode -> Maybe ( Mark, Array HtmlNode )`
@@ -43,7 +48,7 @@ type alias MarkToHtml =
 
 -}
 type alias HtmlToMark =
-    RichTextEditor.Model.Internal.Spec.HtmlToMark
+    Model.HtmlToMark
 
 
 {-| Defines a mark. The arguments are as follows:
@@ -65,7 +70,7 @@ type alias HtmlToMark =
 -}
 markDefinition : String -> MarkToHtml -> HtmlToMark -> MarkDefinition
 markDefinition name_ toHtml fromHtml =
-    RichTextEditor.Model.Internal.Spec.MarkDefinition
+    Model.MarkDefinition
         { name = name_
         , toHtmlNode = toHtml
         , fromHtmlNode = fromHtml
@@ -81,7 +86,7 @@ markDefinition name_ toHtml fromHtml =
 name : MarkDefinition -> String
 name definition_ =
     case definition_ of
-        RichTextEditor.Model.Internal.Spec.MarkDefinition c ->
+        Model.MarkDefinition c ->
             c.name
 
 
@@ -90,7 +95,7 @@ name definition_ =
 toHtmlNode : MarkDefinition -> MarkToHtml
 toHtmlNode definition_ =
     case definition_ of
-        RichTextEditor.Model.Internal.Spec.MarkDefinition c ->
+        Model.MarkDefinition c ->
             c.toHtmlNode
 
 
@@ -99,5 +104,41 @@ toHtmlNode definition_ =
 fromHtmlNode : MarkDefinition -> HtmlToMark
 fromHtmlNode definition_ =
     case definition_ of
-        RichTextEditor.Model.Internal.Spec.MarkDefinition c ->
+        Model.MarkDefinition c ->
             c.fromHtmlNode
+
+
+defaultMarkDefinition : String -> MarkDefinition
+defaultMarkDefinition name_ =
+    markDefinition name_ defaultMarkToHtml (defaultHtmlToMark name_)
+
+
+defaultHtmlToMark : String -> HtmlToMark
+defaultHtmlToMark htmlTag def node =
+    case node of
+        ElementNode name_ _ children ->
+            if name_ == htmlTag then
+                Just ( Model.mark def [], children )
+
+            else
+                Nothing
+
+        _ ->
+            Nothing
+
+
+defaultMarkToHtml : MarkToHtml
+defaultMarkToHtml mark_ children =
+    ElementNode (Model.nameFromMark mark_)
+        (List.filterMap
+            (\attr ->
+                case attr of
+                    StringAttribute k v ->
+                        Just ( k, v )
+
+                    _ ->
+                        Nothing
+            )
+            (Model.attributesFromMark mark_)
+        )
+        children

@@ -25,7 +25,7 @@ import RichTextEditor.Model.Decorations exposing (Decorations, addElementDecorat
 import RichTextEditor.Model.Editor exposing (Editor, editor, state)
 import RichTextEditor.Model.Element exposing (element)
 import RichTextEditor.Model.Keys exposing (enter, return)
-import RichTextEditor.Model.Mark as Mark exposing (ToggleAction(..), mark)
+import RichTextEditor.Model.Mark as Mark exposing (ToggleAction(..), mark, markOrderFromSpec)
 import RichTextEditor.Model.Node
     exposing
         ( Block
@@ -42,7 +42,6 @@ import RichTextEditor.Model.Selection exposing (anchorNode, focusNode, normalize
 import RichTextEditor.Model.Spec exposing (Spec)
 import RichTextEditor.Model.State as State exposing (State)
 import RichTextEditor.Node exposing (Node(..), anyRange)
-import RichTextEditor.Spec exposing (markOrderFromSpec)
 import RichTextEditor.Specs
     exposing
         ( blockquote

@@ -28,6 +28,7 @@ import RichTextEditor.Model.MarkDefinition
         ( HtmlToMark
         , MarkDefinition
         , MarkToHtml
+        , defaultHtmlToMark
         , markDefinition
         )
 import RichTextEditor.Model.NodeDefinition
@@ -37,6 +38,8 @@ import RichTextEditor.Model.NodeDefinition
         , NodeDefinition
         , blockLeaf
         , blockNode
+        , defaultElementToHtml
+        , defaultHtmlToElement
         , inlineLeaf
         , nodeDefinition
         , textBlock
@@ -48,7 +51,6 @@ import RichTextEditor.Model.Spec
         , withMarkDefinitions
         , withNodeDefinitions
         )
-import RichTextEditor.Spec exposing (defaultElementToHtml, defaultHtmlToElement, defaultHtmlToMark)
 import Set
 
 
