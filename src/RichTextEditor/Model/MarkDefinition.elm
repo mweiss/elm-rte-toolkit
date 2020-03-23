@@ -11,7 +11,7 @@ module RichTextEditor.Model.MarkDefinition exposing
 @docs MarkDefinition, markDefinition, MarkToHtml, HtmlToMark, name, toHtmlNode, fromHtmlNode
 
 
-# Defaults (use with caution)
+# Struts
 
 @docs defaultMarkDefinition, defaultMarkToHtml, defaultHtmlToMark
 

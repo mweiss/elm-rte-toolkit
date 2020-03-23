@@ -10,6 +10,7 @@
         "RichTextEditor.Model.Constants",
         "RichTextEditor.Model.Event",
         "RichTextEditor.Model.Keys",
+        "RichTextEditor.Model.Mark",
         "RichTextEditor.Model.MarkDefinition",
         "RichTextEditor.Model.NodeDefinition"
     ],

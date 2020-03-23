@@ -1,7 +1,7 @@
 module RichTextEditor.Model.NodeDefinition exposing
     ( NodeDefinition, nodeDefinition, ElementToHtml, HtmlToElement, name, group, contentType, fromHtmlNode, toHtmlNode
     , ContentType, blockLeaf, inlineLeaf, blockNode, textBlock
-    , defaultElementToHtml, defaultHtmlToElement, defaultNodeDefinition
+    , defaultNodeDefinition, defaultElementToHtml, defaultHtmlToElement
     )
 
 {-| A NodeDefinition describes how to serialize/deserialize an editor node, as well as the children a
@@ -18,9 +18,9 @@ node can have.
 @docs ContentType, blockLeaf, inlineLeaf, blockNode, textBlock
 
 
-# Defaults (use with caution)
+# Struts
 
-@docs defaultElementToHtml, defaultHtmlToElement, defaultNodeDefinition
+@docs defaultNodeDefinition, defaultElementToHtml, defaultHtmlToElement
 
 -}
 

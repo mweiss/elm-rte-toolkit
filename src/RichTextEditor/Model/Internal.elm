@@ -110,6 +110,13 @@ attributesFromMark m =
             c.attributes
 
 
+markWithAttributes : List Attribute -> Mark -> Mark
+markWithAttributes attributes_ m =
+    case m of
+        Mark c ->
+            Mark { c | attributes = attributes_ }
+
+
 type MarkDefinition
     = MarkDefinition MarkDefinitionContents
 
