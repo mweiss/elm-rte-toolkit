@@ -16,18 +16,18 @@ information when rendering a node (like color, font, and link information).
 
 import Dict exposing (Dict)
 import RichTextEditor.Model.Attribute exposing (Attribute)
-import RichTextEditor.Model.Internal.Model as Model exposing (MarkDefinition, attributesFromMark)
+import RichTextEditor.Model.Internal as Internal exposing (MarkDefinition, attributesFromMark)
 import RichTextEditor.Model.MarkDefinition as MarkDefinition
 import RichTextEditor.Model.Spec exposing (Spec, markDefinitions)
 
 
 type alias Mark =
-    Model.Mark
+    Internal.Mark
 
 
 mark : MarkDefinition -> List Attribute -> Mark
 mark =
-    Model.mark
+    Internal.mark
 
 
 attributes : Mark -> List Attribute
@@ -37,7 +37,7 @@ attributes =
 
 name : Mark -> String
 name =
-    Model.nameFromMark
+    Internal.nameFromMark
 
 
 type MarkOrder

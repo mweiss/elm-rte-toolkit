@@ -13,7 +13,7 @@ module RichTextEditor.Model.Element exposing
 -}
 
 import RichTextEditor.Model.Attribute exposing (Attribute)
-import RichTextEditor.Model.Internal.Model as Model
+import RichTextEditor.Model.Internal as Internal
 import RichTextEditor.Model.NodeDefinition exposing (NodeDefinition)
 import Set exposing (Set)
 
@@ -22,7 +22,7 @@ import Set exposing (Set)
 a list of attributes, and a set of annotations.
 -}
 type alias Element =
-    Model.Element
+    Internal.Element
 
 
 {-| Creates an element. The arguments are as follows:
@@ -44,32 +44,32 @@ type alias Element =
 -}
 element : NodeDefinition -> List Attribute -> Set String -> Element
 element =
-    Model.element
+    Internal.element
 
 
 annotations : Element -> Set String
 annotations =
-    Model.annotationsFromElement
+    Internal.annotationsFromElement
 
 
 attributes : Element -> List Attribute
 attributes =
-    Model.attributesFromElement
+    Internal.attributesFromElement
 
 
 name : Element -> String
 name =
-    Model.nameFromElement
+    Internal.nameFromElement
 
 
 withAnnotations : Set String -> Element -> Element
 withAnnotations =
-    Model.elementWithAnnotations
+    Internal.elementWithAnnotations
 
 
 withAttributes : List Attribute -> Element -> Element
 withAttributes =
-    Model.elementWithAttributes
+    Internal.elementWithAttributes
 
 
 comparableElement : Element -> ( String, List Attribute, Set String )

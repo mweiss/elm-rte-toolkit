@@ -11,13 +11,13 @@ module RichTextEditor.Model.MarkDefinition exposing
 
 import RichTextEditor.Model.Attribute exposing (Attribute(..))
 import RichTextEditor.Model.HtmlNode exposing (HtmlNode(..))
-import RichTextEditor.Model.Internal.Model as Model
+import RichTextEditor.Model.Internal as Internal
 
 
 {-| A mark definition defines how a mark is encoded an decoded.
 -}
 type alias MarkDefinition =
-    Model.MarkDefinition
+    Internal.MarkDefinition
 
 
 {-| Type alias for a mark encoding function: `Mark -> Array HtmlNode -> HtmlNode`
@@ -28,7 +28,7 @@ type alias MarkDefinition =
 
 -}
 type alias MarkToHtml =
-    Model.MarkToHtml
+    Internal.MarkToHtml
 
 
 {-| Type alias for a mark decoding function: `MarkDefinition -> HtmlNode -> Maybe ( Mark, Array HtmlNode )`
@@ -48,7 +48,7 @@ type alias MarkToHtml =
 
 -}
 type alias HtmlToMark =
-    Model.HtmlToMark
+    Internal.HtmlToMark
 
 
 {-| Defines a mark. The arguments are as follows:
@@ -70,7 +70,7 @@ type alias HtmlToMark =
 -}
 markDefinition : String -> MarkToHtml -> HtmlToMark -> MarkDefinition
 markDefinition name_ toHtml fromHtml =
-    Model.MarkDefinition
+    Internal.MarkDefinition
         { name = name_
         , toHtmlNode = toHtml
         , fromHtmlNode = fromHtml
@@ -86,7 +86,7 @@ markDefinition name_ toHtml fromHtml =
 name : MarkDefinition -> String
 name definition_ =
     case definition_ of
-        Model.MarkDefinition c ->
+        Internal.MarkDefinition c ->
             c.name
 
 
@@ -95,7 +95,7 @@ name definition_ =
 toHtmlNode : MarkDefinition -> MarkToHtml
 toHtmlNode definition_ =
     case definition_ of
-        Model.MarkDefinition c ->
+        Internal.MarkDefinition c ->
             c.toHtmlNode
 
 
@@ -104,7 +104,7 @@ toHtmlNode definition_ =
 fromHtmlNode : MarkDefinition -> HtmlToMark
 fromHtmlNode definition_ =
     case definition_ of
-        Model.MarkDefinition c ->
+        Internal.MarkDefinition c ->
             c.fromHtmlNode
 
 
@@ -118,7 +118,7 @@ defaultHtmlToMark htmlTag def node =
     case node of
         ElementNode name_ _ children ->
             if name_ == htmlTag then
-                Just ( Model.mark def [], children )
+                Just ( Internal.mark def [], children )
 
             else
                 Nothing
@@ -129,7 +129,7 @@ defaultHtmlToMark htmlTag def node =
 
 defaultMarkToHtml : MarkToHtml
 defaultMarkToHtml mark_ children =
-    ElementNode (Model.nameFromMark mark_)
+    ElementNode (Internal.nameFromMark mark_)
         (List.filterMap
             (\attr ->
                 case attr of
@@ -139,6 +139,6 @@ defaultMarkToHtml mark_ children =
                     _ ->
                         Nothing
             )
-            (Model.attributesFromMark mark_)
+            (Internal.attributesFromMark mark_)
         )
         children

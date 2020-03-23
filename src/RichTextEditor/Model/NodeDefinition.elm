@@ -21,7 +21,7 @@ node can have.
 
 import RichTextEditor.Model.Attribute exposing (Attribute(..))
 import RichTextEditor.Model.HtmlNode exposing (HtmlNode(..))
-import RichTextEditor.Model.Internal.Model as Model exposing (ContentType(..))
+import RichTextEditor.Model.Internal as Internal exposing (ContentType(..))
 import Set
 
 
@@ -35,14 +35,14 @@ of four values:
 
 -}
 type alias ContentType =
-    Model.ContentType
+    Internal.ContentType
 
 
 {-| A `NodeDefinition` contains information on how to serialize/deserialize an editor node,
 as well as describes what type of node and what children the node can have.
 -}
 type alias NodeDefinition =
-    Model.NodeDefinition
+    Internal.NodeDefinition
 
 
 {-| Type alias for defining an element serialization function `Element` -> `Array HtmlNode` -> `HtmlNode`
@@ -57,7 +57,7 @@ to partially serialize a document in some parts of the package.
 
 -}
 type alias ElementToHtml =
-    Model.ElementToHtml
+    Internal.ElementToHtml
 
 
 {-| Type alias for defining an element deserialization function: `NodeDefinition` -> `HtmlNode` -> `Maybe ( Element, Array HtmlNode )`
@@ -77,7 +77,7 @@ type alias ElementToHtml =
 
 -}
 type alias HtmlToElement =
-    Model.HtmlToElement
+    Internal.HtmlToElement
 
 
 {-| Defines a node. The arguments are as follows:
@@ -114,7 +114,7 @@ paragraph =
 -}
 nodeDefinition : String -> String -> ContentType -> ElementToHtml -> HtmlToElement -> NodeDefinition
 nodeDefinition name_ group_ contentType_ toHtml fromHtml =
-    Model.NodeDefinition
+    Internal.NodeDefinition
         { name = name_
         , group = group_
         , toHtmlNode = toHtml
@@ -132,7 +132,7 @@ nodeDefinition name_ group_ contentType_ toHtml fromHtml =
 name : NodeDefinition -> String
 name definition_ =
     case definition_ of
-        Model.NodeDefinition c ->
+        Internal.NodeDefinition c ->
             c.name
 
 
@@ -145,7 +145,7 @@ name definition_ =
 group : NodeDefinition -> String
 group definition_ =
     case definition_ of
-        Model.NodeDefinition c ->
+        Internal.NodeDefinition c ->
             c.group
 
 
@@ -155,7 +155,7 @@ to determine selection, render the editor, and validate the DOM.
 toHtmlNode : NodeDefinition -> ElementToHtml
 toHtmlNode definition_ =
     case definition_ of
-        Model.NodeDefinition c ->
+        Internal.NodeDefinition c ->
             c.toHtmlNode
 
 
@@ -165,7 +165,7 @@ derive editor nodes from HTML content.
 fromHtmlNode : NodeDefinition -> HtmlToElement
 fromHtmlNode definition_ =
     case definition_ of
-        Model.NodeDefinition c ->
+        Internal.NodeDefinition c ->
             c.fromHtmlNode
 
 
@@ -174,7 +174,7 @@ fromHtmlNode definition_ =
 contentType : NodeDefinition -> ContentType
 contentType definition_ =
     case definition_ of
-        Model.NodeDefinition c ->
+        Internal.NodeDefinition c ->
             c.contentType
 
 
@@ -243,7 +243,7 @@ defaultElementToHtml tagName elementParameters children =
                     _ ->
                         Nothing
             )
-            (Model.attributesFromElement elementParameters)
+            (Internal.attributesFromElement elementParameters)
         )
         children
 
@@ -253,7 +253,7 @@ defaultHtmlToElement htmlTag def node =
     case node of
         ElementNode name_ _ children ->
             if name_ == htmlTag then
-                Just ( Model.element def [] Set.empty, children )
+                Just ( Internal.element def [] Set.empty, children )
 
             else
                 Nothing

@@ -12,7 +12,7 @@ module RichTextEditor.Model.Spec exposing
     )
 
 import Dict exposing (Dict)
-import RichTextEditor.Model.Internal.Model
+import RichTextEditor.Model.Internal
     exposing
         ( ContentType(..)
         , Element

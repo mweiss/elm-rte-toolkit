@@ -1,4 +1,4 @@
-module RichTextEditor.Model.Internal.Model exposing (..)
+module RichTextEditor.Model.Internal exposing (..)
 
 {-| Internal module for various entities to keep records private and avoid dependency loops.
 -}

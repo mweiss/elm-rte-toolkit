@@ -6,7 +6,7 @@ import Result exposing (Result)
 import RichTextEditor.Model.Constants exposing (zeroWidthSpace)
 import RichTextEditor.Model.HtmlNode exposing (HtmlNode(..))
 import RichTextEditor.Model.InlineElement exposing (inlineElement)
-import RichTextEditor.Model.Internal.Model exposing (ContentType(..))
+import RichTextEditor.Model.Internal exposing (ContentType(..))
 import RichTextEditor.Model.Mark
     exposing
         ( Mark

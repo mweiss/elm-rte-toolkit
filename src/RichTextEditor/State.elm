@@ -4,7 +4,7 @@ import Array exposing (Array)
 import List.Extra
 import RichTextEditor.Model.Annotations exposing (selection)
 import RichTextEditor.Model.InlineElement as InlineElement
-import RichTextEditor.Model.Internal.Model exposing (ContentType(..), toStringContentType)
+import RichTextEditor.Model.Internal exposing (ContentType(..), toStringContentType)
 import RichTextEditor.Model.Node as Node exposing (Block, Children(..), Inline(..), InlineChildren, Path, childNodes, elementFromBlockNode, inlineArray, inlineChildren, toBlockArray, withChildNodes)
 import RichTextEditor.Model.NodeDefinition as NodeDefinition
 import RichTextEditor.Model.Selection
