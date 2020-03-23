@@ -1,6 +1,7 @@
 module RichTextEditor.Internal.HtmlNode exposing (..)
 
 import Array exposing (Array)
+import RichTextEditor.Internal.Spec exposing (markDefinitionWithDefault, nodeDefinitionWithDefault)
 import RichTextEditor.Model.Element as Element exposing (Element)
 import RichTextEditor.Model.HtmlNode exposing (HtmlNode(..))
 import RichTextEditor.Model.InlineElement exposing (element)
@@ -19,7 +20,7 @@ import RichTextEditor.Model.Node
         , toBlockArray
         )
 import RichTextEditor.Model.NodeDefinition as NodeDefinition
-import RichTextEditor.Model.Spec exposing (Spec, markDefinitionWithDefault, nodeDefinitionWithDefault)
+import RichTextEditor.Model.Spec exposing (Spec)
 import RichTextEditor.Model.Text exposing (text)
 
 

@@ -49,6 +49,7 @@ import RichTextEditor.Model.Spec
         )
 import RichTextEditor.Model.State as State exposing (State, withRoot)
 import RichTextEditor.Node as Node exposing (Node(..), nodeAt)
+import RichTextEditor.Specs exposing (hardBreak)
 import Session exposing (Session)
 import Set
 
@@ -322,4 +323,4 @@ updateTodoListItem path value state =
 
 todoSpec =
     emptySpec
-        |> withNodeDefinitions [ todoList, item ]
+        |> withNodeDefinitions [ todoList, item, hardBreak ]

@@ -10,12 +10,16 @@ import Set exposing (Set)
 
 
 {-| Implementation note:
-We only store the name in element parameters and marks because we want to follow the Elm architecture
-and not store functions in the model.
-The benefits of this is that it avoids serialization issues with the debugger and potential runtime errors on (==).
-The tradeoff to not storing the serialization functions directly in the model is an extra dictionary lookup for each node
-everytime we want to get the definition, as well as a somewhat more annoying API where functions need an extra spec argument
-so we can lookup the definition.
+
+We only store the name in element parameters and marks because we want to follow the Elm
+architecture and not store functions in the model.
+
+The benefits of this is that it avoids serialization issues with the debugger and potential
+runtime errors on (==). The tradeoff to not storing the serialization functions directly in the
+model is an extra dictionary lookup for each node everytime we want to get the definition, as
+well as a somewhat more annoying API where functions need an extra spec argument so we can lookup
+the definition.
+
 -}
 type ContentType
     = BlockNodeType (Maybe (Set String))

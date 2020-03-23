@@ -1,11 +1,19 @@
 module RichTextEditor.Model.MarkDefinition exposing
     ( MarkDefinition, markDefinition, MarkToHtml, HtmlToMark, name, toHtmlNode, fromHtmlNode
-    , defaultHtmlToMark, defaultMarkDefinition, defaultMarkToHtml
+    , defaultMarkDefinition, defaultMarkToHtml, defaultHtmlToMark
     )
 
 {-| A mark definition describes how to encode and decode a mark.
 
+
+# Mark
+
 @docs MarkDefinition, markDefinition, MarkToHtml, HtmlToMark, name, toHtmlNode, fromHtmlNode
+
+
+# Defaults (use with caution)
+
+@docs defaultMarkDefinition, defaultMarkToHtml, defaultHtmlToMark
 
 -}
 
@@ -108,25 +116,20 @@ fromHtmlNode definition_ =
             c.fromHtmlNode
 
 
+{-| Creates a mark definition which assumes the name of the mark is the same as the name of the
+html node.
+
+    defaultMarkDefinition "b"
+    --> definition which encodes to <b>...</b> and decodes from "<b>...</b>"
+
+-}
 defaultMarkDefinition : String -> MarkDefinition
 defaultMarkDefinition name_ =
     markDefinition name_ defaultMarkToHtml (defaultHtmlToMark name_)
 
 
-defaultHtmlToMark : String -> HtmlToMark
-defaultHtmlToMark htmlTag def node =
-    case node of
-        ElementNode name_ _ children ->
-            if name_ == htmlTag then
-                Just ( Internal.mark def [], children )
-
-            else
-                Nothing
-
-        _ ->
-            Nothing
-
-
+{-| Creates an `MarkToHtml` function that will encode a mark to html with the same name as the mark.
+-}
 defaultMarkToHtml : MarkToHtml
 defaultMarkToHtml mark_ children =
     ElementNode (Internal.nameFromMark mark_)
@@ -142,3 +145,23 @@ defaultMarkToHtml mark_ children =
             (Internal.attributesFromMark mark_)
         )
         children
+
+
+{-| Creates an `HtmlToMark` function that will decode a mark from the tag name specified.
+
+    defaultHtmlToMark "b"
+    --> returns a function which decodes from "<b>...</b>"
+
+-}
+defaultHtmlToMark : String -> HtmlToMark
+defaultHtmlToMark htmlTag def node =
+    case node of
+        ElementNode name_ _ children ->
+            if name_ == htmlTag then
+                Just ( Internal.mark def [], children )
+
+            else
+                Nothing
+
+        _ ->
+            Nothing

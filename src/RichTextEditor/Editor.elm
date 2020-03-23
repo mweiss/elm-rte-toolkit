@@ -26,6 +26,7 @@ import RichTextEditor.Internal.Editor
 import RichTextEditor.Internal.HtmlNode exposing (childNodesPlaceholder, editorBlockNodeToHtmlNode)
 import RichTextEditor.Internal.KeyDown as KeyDown
 import RichTextEditor.Internal.Paste as Paste
+import RichTextEditor.Internal.Spec exposing (markDefinitionWithDefault, nodeDefinitionWithDefault)
 import RichTextEditor.Model.Command exposing (CommandMap, NamedCommand, NamedCommandList, transformCommand)
 import RichTextEditor.Model.Constants exposing (zeroWidthSpace)
 import RichTextEditor.Model.Decorations exposing (Decorations, elementDecorators, markDecorators)
@@ -64,7 +65,7 @@ import RichTextEditor.Model.Selection
         , isCollapsed
         , rangeSelection
         )
-import RichTextEditor.Model.Spec exposing (Spec, markDefinitionWithDefault, nodeDefinitionWithDefault)
+import RichTextEditor.Model.Spec exposing (Spec)
 import RichTextEditor.Model.State as State exposing (State, withRoot, withSelection)
 import RichTextEditor.Model.Text as Text
 import RichTextEditor.Node exposing (Node(..), nodeAt)

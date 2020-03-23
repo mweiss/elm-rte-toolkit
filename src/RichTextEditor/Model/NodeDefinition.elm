@@ -17,6 +17,11 @@ node can have.
 
 @docs ContentType, blockLeaf, inlineLeaf, blockNode, textBlock
 
+
+# Defaults (use with caution)
+
+@docs defaultElementToHtml, defaultHtmlToElement, defaultNodeDefinition
+
 -}
 
 import RichTextEditor.Model.Attribute exposing (Attribute(..))
@@ -226,11 +231,25 @@ textBlock allowedGroups =
             Just <| Set.fromList allowedGroups
 
 
-defaultNodeDefinition : String -> NodeDefinition
-defaultNodeDefinition name_ =
-    nodeDefinition name_ "block" (blockNode []) (defaultElementToHtml name_) (defaultHtmlToElement name_)
+{-| Creates a node definition which assumes the name of the editor node is the same as the name of the
+html node.
+
+    defaultNodeDefinition "p" "block" (textBlock [])
+    --> definition which encodes to <p>...</p> and decodes from "<p>...</p>"
+
+-}
+defaultNodeDefinition : String -> String -> ContentType -> NodeDefinition
+defaultNodeDefinition name_ group_ contentType_ =
+    nodeDefinition name_ group_ contentType_ (defaultElementToHtml name_) (defaultHtmlToElement name_)
 
 
+{-| Creates an `ElementToHtml` function that will encode a node to the tag specified. Any
+string attributes are converted to attributes on the node
+
+    defaultElementToHtml "p"
+    --> returns a function which encodes to "<p>...</p>"
+
+-}
 defaultElementToHtml : String -> ElementToHtml
 defaultElementToHtml tagName elementParameters children =
     ElementNode tagName
@@ -248,6 +267,12 @@ defaultElementToHtml tagName elementParameters children =
         children
 
 
+{-| Creates an `HtmlToElement` function that will decode a node from tag specified.
+
+    defaultHtmlToElement "p"
+    --> returns a function which decodes from "<p>...</p>"
+
+-}
 defaultHtmlToElement : String -> HtmlToElement
 defaultHtmlToElement htmlTag def node =
     case node of

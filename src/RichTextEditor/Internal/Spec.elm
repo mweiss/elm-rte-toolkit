@@ -1,12 +1,13 @@
-module RichTextEditor.Internal.Spec exposing (htmlToElementArray)
+module RichTextEditor.Internal.Spec exposing (htmlToElementArray, markDefinitionWithDefault, nodeDefinitionWithDefault)
 
 import Array exposing (Array)
 import Html.Parser as Html exposing (Node(..))
 import Result exposing (Result)
 import RichTextEditor.Model.Constants exposing (zeroWidthSpace)
+import RichTextEditor.Model.Element exposing (Element)
 import RichTextEditor.Model.HtmlNode exposing (HtmlNode(..))
 import RichTextEditor.Model.InlineElement exposing (inlineElement)
-import RichTextEditor.Model.Internal exposing (ContentType(..))
+import RichTextEditor.Model.Internal exposing (ContentType(..), nameFromElement, nameFromMark)
 import RichTextEditor.Model.Mark
     exposing
         ( Mark
@@ -16,7 +17,7 @@ import RichTextEditor.Model.Mark
         , markOrderFromSpec
         , toggle
         )
-import RichTextEditor.Model.MarkDefinition as MarkDefinition exposing (MarkDefinition)
+import RichTextEditor.Model.MarkDefinition as MarkDefinition exposing (MarkDefinition, defaultMarkDefinition)
 import RichTextEditor.Model.Node as Node
     exposing
         ( Block
@@ -26,11 +27,10 @@ import RichTextEditor.Model.Node as Node
         , fromBlockArray
         , inlineChildren
         )
-import RichTextEditor.Model.NodeDefinition as NodeDefinition exposing (NodeDefinition, blockNode, nodeDefinition)
-import RichTextEditor.Model.Spec as Spec exposing (Spec, markDefinitions, nodeDefinitions)
+import RichTextEditor.Model.NodeDefinition as NodeDefinition exposing (NodeDefinition, blockNode, defaultNodeDefinition)
+import RichTextEditor.Model.Spec exposing (Spec, markDefinition, markDefinitions, nodeDefinition, nodeDefinitions)
 import RichTextEditor.Model.Text as Text
 import RichTextEditor.Node exposing (Fragment(..))
-import Set exposing (Set)
 
 
 resultFilterMap : (a -> Result c b) -> Array a -> Array b
@@ -302,3 +302,21 @@ nodeListToHtmlNodeArray nodeList =
                         []
             )
             nodeList
+
+
+markDefinitionWithDefault : Mark -> Spec -> MarkDefinition
+markDefinitionWithDefault mark spec =
+    let
+        name =
+            nameFromMark mark
+    in
+    Maybe.withDefault (defaultMarkDefinition name) (markDefinition name spec)
+
+
+nodeDefinitionWithDefault : Element -> Spec -> NodeDefinition
+nodeDefinitionWithDefault ele spec =
+    let
+        name =
+            nameFromElement ele
+    in
+    Maybe.withDefault (defaultNodeDefinition name "block" (blockNode [])) (nodeDefinition name spec)
