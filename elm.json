@@ -7,8 +7,10 @@
     "exposed-modules": [
         "RichTextEditor.Model.Attribute",
         "RichTextEditor.Model.Annotations",
+        "RichTextEditor.Model.Constants",
         "RichTextEditor.Model.Event",
         "RichTextEditor.Model.Keys",
+        "RichTextEditor.Model.MarkDefinition",
         "RichTextEditor.Model.NodeDefinition"
     ],
     "elm-version": "0.19.1 <= v < 0.20.0",

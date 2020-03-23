@@ -36,8 +36,7 @@ type alias ContentType =
 
 
 {-| A `NodeDefinition` contains information on how to serialize/deserialize an editor node,
-as well as describes what type of node and what children the node can have. Note that NodeDefinitions
-have function values, so using `(==)` is not advised.
+as well as describes what type of node and what children the node can have.
 -}
 type alias NodeDefinition =
     RichTextEditor.Model.Internal.Spec.NodeDefinition
@@ -92,7 +91,7 @@ type alias HtmlToElement =
     a block with inline children, or an inline leaf element.
 
   - `serialization function` converts an element into html. This is used when rendering the document
-    as well as selection and DOM validation logic.
+    as well as path translation and DOM validation logic.
 
   - `deserialization function` converts html to an element. Currently, this is only used for paste
     event, but could potentially be used more generally in the future to interpret content editable
@@ -121,7 +120,7 @@ nodeDefinition name_ group_ contentType_ toHtml fromHtml =
         }
 
 
-{-| The name of this node
+{-| The name of the node this node definition defines.
 
     name paragraph
     --> "paragraph"
