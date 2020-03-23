@@ -1,7 +1,6 @@
 module RichTextEditor.Model.Text exposing
     ( Text
     , annotations
-    , comparableMarks
     , empty
     , marks
     , text
@@ -14,8 +13,7 @@ module RichTextEditor.Model.Text exposing
 are marks and text.
 -}
 
-import RichTextEditor.Model.Attribute exposing (Attribute)
-import RichTextEditor.Model.Mark exposing (Mark, attributes, name)
+import RichTextEditor.Model.Mark exposing (Mark)
 import Set exposing (Set)
 
 
@@ -75,8 +73,3 @@ withMarks m parameters =
     case parameters of
         Text c ->
             Text { c | marks = m }
-
-
-comparableMarks : Text -> List ( String, List Attribute )
-comparableMarks parameters =
-    List.map (\m -> ( name m, attributes m )) (marks parameters)

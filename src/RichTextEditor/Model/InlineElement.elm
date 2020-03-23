@@ -1,7 +1,6 @@
 module RichTextEditor.Model.InlineElement exposing
     ( InlineElement
     , InlineElementContents
-    , comparableMarks
     , element
     , inlineElement
     , marks
@@ -9,9 +8,8 @@ module RichTextEditor.Model.InlineElement exposing
     , withMarks
     )
 
-import RichTextEditor.Model.Attribute exposing (Attribute)
 import RichTextEditor.Model.Element exposing (Element)
-import RichTextEditor.Model.Mark exposing (Mark, attributes, name)
+import RichTextEditor.Model.Mark exposing (Mark)
 
 
 type InlineElement
@@ -55,8 +53,3 @@ withMarks m iparams =
     case iparams of
         InlineElement c ->
             InlineElement { c | marks = m }
-
-
-comparableMarks : InlineElement -> List ( String, List Attribute )
-comparableMarks parameters =
-    List.map (\m -> ( name m, attributes m )) (marks parameters)

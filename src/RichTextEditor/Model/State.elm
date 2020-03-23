@@ -1,6 +1,5 @@
 module RichTextEditor.Model.State exposing
     ( State
-    , isSame
     , root
     , selection
     , state
@@ -12,7 +11,7 @@ module RichTextEditor.Model.State exposing
 track of and manipulate the contents of the editor.
 -}
 
-import RichTextEditor.Model.Node exposing (Block, isSameBlock)
+import RichTextEditor.Model.Node exposing (Block)
 import RichTextEditor.Model.Selection exposing (Selection)
 
 
@@ -57,8 +56,3 @@ withRoot node st =
     case st of
         State s ->
             State { s | root = node }
-
-
-isSame : State -> State -> Bool
-isSame s1 s2 =
-    isSameBlock (root s1) (root s2) && selection s1 == selection s2

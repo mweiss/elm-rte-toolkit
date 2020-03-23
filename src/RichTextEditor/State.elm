@@ -13,7 +13,6 @@ import RichTextEditor.Model.Node
         , childNodes
         , inlineArray
         , inlineChildren
-        , isSameBlock
         , withChildNodes
         )
 import RichTextEditor.Model.Selection
@@ -75,7 +74,7 @@ mergeSimilarInlineLeaves inlineLeaves =
                 Text xL ->
                     case y of
                         Text yL ->
-                            if Text.comparableMarks xL == Text.comparableMarks yL then
+                            if xL == yL then
                                 mergeSimilarInlineLeaves (Text (xL |> withText (text xL ++ text yL)) :: xs)
 
                             else
@@ -164,7 +163,7 @@ translatePath old new path offset =
                     ( path, offset )
 
                 Just ( _, newN ) ->
-                    if isSameBlock oldN newN then
+                    if oldN == newN then
                         ( path, offset )
 
                     else

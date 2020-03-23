@@ -19,7 +19,7 @@ import RichTextEditor.Model.Editor
         )
 import RichTextEditor.Model.History exposing (contents, fromContents)
 import RichTextEditor.Model.Spec exposing (Spec)
-import RichTextEditor.Model.State exposing (State, isSame)
+import RichTextEditor.Model.State exposing (State)
 import RichTextEditor.Spec exposing (validate)
 import RichTextEditor.State exposing (reduceEditorState)
 
@@ -45,7 +45,7 @@ findNextState editorState undoDeque =
             ( Nothing, rest )
 
         Just ( _, state ) ->
-            if not <| isSame state editorState then
+            if state /= editorState then
                 ( Just state, rest )
 
             else

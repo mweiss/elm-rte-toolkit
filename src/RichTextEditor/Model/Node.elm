@@ -15,9 +15,6 @@ module RichTextEditor.Model.Node exposing
     , inlineChildren
     , inlineElement
     , inlineTree
-    , isSameBlock
-    , isSameChildren
-    , isSameInline
     , markedText
     , marksFromInline
     , marksToMarkNodeList
@@ -254,90 +251,6 @@ marksToMarkNodeListRec indexedMarkLists =
                 )
             <|
                 List.map (\( i, a ) -> ( i, ( List.head a, List.drop 1 a ) )) indexedMarkLists
-
-
-isSameInline : Inline -> Inline -> Bool
-isSameInline i1 i2 =
-    case i1 of
-        InlineElement il1 ->
-            case i2 of
-                InlineElement il2 ->
-                    InlineElement.comparableMarks il1
-                        == InlineElement.comparableMarks il2
-                        && Element.comparableElement (InlineElement.element il1)
-                        == Element.comparableElement (InlineElement.element il2)
-
-                _ ->
-                    False
-
-        Text tl1 ->
-            case i2 of
-                Text tl2 ->
-                    Text.comparableMarks tl1
-                        == Text.comparableMarks tl2
-                        && Text.text tl1
-                        == Text.text tl2
-
-                _ ->
-                    False
-
-
-isSameChildren : Children -> Children -> Bool
-isSameChildren cn1 cn2 =
-    case cn1 of
-        BlockChildren c1 ->
-            case cn2 of
-                BlockChildren c2 ->
-                    List.all (\( b1, b2 ) -> isSameBlock b1 b2)
-                        (Array.toList
-                            (Array.map2
-                                Tuple.pair
-                                (toBlockArray c1)
-                                (toBlockArray c2)
-                            )
-                        )
-
-                _ ->
-                    False
-
-        InlineChildren c1 ->
-            case cn2 of
-                InlineChildren c2 ->
-                    List.all (\( i1, i2 ) -> isSameInline i1 i2)
-                        (Array.toList
-                            (Array.map2
-                                Tuple.pair
-                                (inlineArray c1)
-                                (inlineArray c2)
-                            )
-                        )
-
-                _ ->
-                    False
-
-        Leaf ->
-            case cn2 of
-                Leaf ->
-                    True
-
-                _ ->
-                    False
-
-
-isSameBlock : Block -> Block -> Bool
-isSameBlock bn1 bn2 =
-    let
-        e1 =
-            Element.comparableElement <| elementFromBlockNode bn1
-
-        e2 =
-            Element.comparableElement <| elementFromBlockNode bn2
-    in
-    if e1 /= e2 then
-        False
-
-    else
-        isSameChildren (childNodes bn1) (childNodes bn2)
 
 
 inlineElement : Element -> List Mark -> Inline
