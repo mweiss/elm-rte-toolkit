@@ -32,7 +32,7 @@ import RichTextEditor.Model.Selection
     exposing
         ( anchorNode
         , anchorOffset
-        , caretSelection
+        , caret
         , focusOffset
         , isCollapsed
         )
@@ -194,7 +194,7 @@ pasteInlineArray inlineFragment editorState =
                                                                     (State.root editorState)
 
                                                             newSelection =
-                                                                caretSelection (path ++ [ index + Array.length inlineFragment + 1 ]) 0
+                                                                caret (path ++ [ index + Array.length inlineFragment + 1 ]) 0
                                                         in
                                                         case replaceResult of
                                                             Err s ->
@@ -213,7 +213,7 @@ pasteInlineArray inlineFragment editorState =
                                                                 replaceWithFragment (anchorNode selection) (InlineLeafFragment inlineFragment) (State.root editorState)
 
                                                             newSelection =
-                                                                caretSelection (path ++ [ index + Array.length inlineFragment - 1 ]) 0
+                                                                caret (path ++ [ index + Array.length inlineFragment - 1 ]) 0
                                                         in
                                                         case replaceResult of
                                                             Err s ->
@@ -274,7 +274,7 @@ pasteBlockArray blockFragment editorState =
                                                     Just index ->
                                                         let
                                                             newSelection =
-                                                                caretSelection (parentPath ++ [ index + Array.length blockFragment - 1 ]) 0
+                                                                caret (parentPath ++ [ index + Array.length blockFragment - 1 ]) 0
                                                         in
                                                         Ok
                                                             (editorState
@@ -313,7 +313,7 @@ pasteBlockArray blockFragment editorState =
                                                                                 (addNodesEditorState
                                                                                     |> withSelection
                                                                                         (Just <|
-                                                                                            caretSelection
+                                                                                            caret
                                                                                                 (anchorNode selection)
                                                                                                 (anchorOffset selection)
                                                                                         )

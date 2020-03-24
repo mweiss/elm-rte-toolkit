@@ -92,13 +92,13 @@ import RichTextEditor.Model.Selection
         ( Selection
         , anchorNode
         , anchorOffset
-        , caretSelection
+        , caret
         , focusNode
         , focusOffset
         , isCollapsed
         , normalize
-        , rangeSelection
-        , singleNodeRangeSelection
+        , range
+        , singleNodeRange
         )
 import RichTextEditor.Model.State as State exposing (State, withRoot, withSelection)
 import RichTextEditor.Model.Text as Text
@@ -273,7 +273,7 @@ insertTextAtSelection s editorState =
                                                         |> withRoot newRoot
                                                         |> withSelection
                                                             (Just <|
-                                                                caretSelection
+                                                                caret
                                                                     (anchorNode selection)
                                                                     (anchorOffset selection + 1)
                                                             )
@@ -318,12 +318,12 @@ joinBackward editorState =
                                                     newSelection =
                                                         case leaf of
                                                             Text tl ->
-                                                                caretSelection
+                                                                caret
                                                                     (p ++ [ Array.length array - 1 ])
                                                                     (String.length (Text.text tl))
 
                                                             InlineElement _ ->
-                                                                caretSelection
+                                                                caret
                                                                     (p ++ [ Array.length array - 1 ])
                                                                     0
                                                 in
@@ -522,7 +522,7 @@ removeRangeSelection editorState =
                         Ok newRoot ->
                             let
                                 newSelection =
-                                    caretSelection (anchorNode normalizedSelection) (anchorOffset normalizedSelection)
+                                    caret (anchorNode normalizedSelection) (anchorOffset normalizedSelection)
                             in
                             Ok
                                 (editorState
@@ -574,7 +574,7 @@ removeRangeSelection editorState =
                                                 removedStart
 
                                         newSelection =
-                                            caretSelection
+                                            caret
                                                 (anchorNode normalizedSelection)
                                                 (anchorOffset normalizedSelection)
 
@@ -648,7 +648,7 @@ insertInlineElement leaf editorState =
                                                                 Nothing
 
                                                             Just ( p, _ ) ->
-                                                                Just (caretSelection p 0)
+                                                                Just (caret p 0)
                                                 in
                                                 Ok
                                                     (editorState
@@ -687,7 +687,7 @@ insertInlineElement leaf editorState =
                                                                 Nothing
 
                                                             Just ( p, _ ) ->
-                                                                Just (caretSelection p 0)
+                                                                Just (caret p 0)
                                                 in
                                                 Ok
                                                     (editorState
@@ -744,7 +744,7 @@ splitBlock ancestorFunc editorState =
                                                 increment textBlockPath ++ [ 0 ]
 
                                             newSelection =
-                                                caretSelection newSelectionPath 0
+                                                caret newSelectionPath 0
                                         in
                                         Ok
                                             (editorState
@@ -853,7 +853,7 @@ removeSelectedLeafElement editorState =
                                             _ ->
                                                 0
                                 in
-                                Just (caretSelection p offset)
+                                Just (caret p offset)
                 in
                 Ok
                     (editorState
@@ -889,7 +889,7 @@ backspaceText editorState =
                        { editorState
                            | selection =
                                Just <|
-                                   singleNodeRangeSelection
+                                   singleNodeRange
                                        (anchorNode selection)
                                        ((anchorOffset selection) - 1)
                                        (anchorOffset selection)
@@ -933,7 +933,7 @@ backspaceText editorState =
                                                 Ok newRoot ->
                                                     let
                                                         newSelection =
-                                                            caretSelection (anchorNode selection) 0
+                                                            caret (anchorNode selection) 0
                                                     in
                                                     Ok
                                                         (editorState
@@ -956,7 +956,7 @@ backspaceText editorState =
                                                                             String.length (Text.text previousTextLeaf)
 
                                                                         newSelection =
-                                                                            singleNodeRangeSelection previousPath l (max 0 (l - 1))
+                                                                            singleNodeRange previousPath l (max 0 (l - 1))
                                                                     in
                                                                     removeRangeSelection
                                                                         (editorState
@@ -1078,7 +1078,7 @@ toggleMarkSingleInlineNode markOrder mark action editorState =
                                             increment (anchorNode normalizedSelection)
 
                                     newSelection =
-                                        singleNodeRangeSelection
+                                        singleNodeRange
                                             path
                                             0
                                             (focusOffset normalizedSelection - anchorOffset normalizedSelection)
@@ -1174,7 +1174,7 @@ toggleMarkOnInlineNodes markOrder mark action editorState =
                                     |> withRoot betweenRoot
                                     |> withSelection
                                         (Just
-                                            (singleNodeRangeSelection
+                                            (singleNodeRange
                                                 (focusNode normalizedSelection)
                                                 0
                                                 (focusOffset normalizedSelection)
@@ -1207,7 +1207,7 @@ toggleMarkOnInlineNodes markOrder mark action editorState =
                                                 (modifiedEndNodeEditorState
                                                     |> withSelection
                                                         (Just
-                                                            (singleNodeRangeSelection
+                                                            (singleNodeRange
                                                                 (anchorNode normalizedSelection)
                                                                 (anchorOffset normalizedSelection)
                                                                 focusOffset
@@ -1225,7 +1225,7 @@ toggleMarkOnInlineNodes markOrder mark action editorState =
                         parent (anchorNode normalizedSelection) == parent (focusNode normalizedSelection)
 
                     newSelection =
-                        rangeSelection
+                        range
                             (if incrementAnchorOffset then
                                 increment (anchorNode normalizedSelection)
 
@@ -1493,7 +1493,7 @@ selectAll editorState =
         Just ( first, last ) ->
             Ok
                 (editorState
-                    |> withSelection (Just <| rangeSelection first 0 last lastOffset)
+                    |> withSelection (Just <| range first 0 last lastOffset)
                 )
 
 
@@ -1780,7 +1780,7 @@ insertBlockNode node editorState =
                                         let
                                             newSelection =
                                                 if isSelectable (Block node) then
-                                                    caretSelection (increment (anchorNode selection)) 0
+                                                    caret (increment (anchorNode selection)) 0
 
                                                 else
                                                     selection
@@ -1847,7 +1847,7 @@ insertBlockNodeBeforeSelection node editorState =
                                         let
                                             newSelection =
                                                 if isSelectable (Block node) then
-                                                    Just <| caretSelection closestBlockPath 0
+                                                    Just <| caret closestBlockPath 0
 
                                                 else
                                                     selectionFromAnnotations
@@ -1905,7 +1905,7 @@ backspaceInlineElement editorState =
                                             Ok newRoot ->
                                                 Ok
                                                     (editorState
-                                                        |> withSelection (Just <| caretSelection decrementedPath 0)
+                                                        |> withSelection (Just <| caret decrementedPath 0)
                                                         |> withRoot newRoot
                                                     )
 
@@ -2120,7 +2120,7 @@ backspaceWord editorState =
                                                     lastIndex - (relativeLastIndex - newGroupIndex)
 
                                                 newSelection =
-                                                    rangeSelection
+                                                    range
                                                         (p ++ [ newIndex ])
                                                         newOffset
                                                         (anchorNode selection)
@@ -2200,7 +2200,7 @@ deleteText editorState =
                                                                 Text _ ->
                                                                     let
                                                                         newSelection =
-                                                                            singleNodeRangeSelection nextPath 0 1
+                                                                            singleNodeRange nextPath 0 1
                                                                     in
                                                                     removeRangeSelection
                                                                         (editorState
@@ -2413,7 +2413,7 @@ deleteWord editorState =
                                                     lastIndex - (relativeLastIndex - newGroupIndex)
 
                                                 newSelection =
-                                                    rangeSelection
+                                                    range
                                                         (p ++ [ newIndex ])
                                                         newOffset
                                                         (anchorNode selection)

@@ -21,7 +21,7 @@ import RichTextEditor.Model.Selection
         , anchorOffset
         , focusNode
         , focusOffset
-        , rangeSelection
+        , range
         )
 import RichTextEditor.Model.Spec exposing (Spec)
 import RichTextEditor.Path as Path
@@ -49,7 +49,7 @@ transformSelection transformation node selection =
                     Nothing
 
                 Just fn ->
-                    Just <| rangeSelection an (anchorOffset selection) fn (focusOffset selection)
+                    Just <| range an (anchorOffset selection) fn (focusOffset selection)
 
 
 annotateSelection : Selection -> Block -> Block
@@ -74,7 +74,7 @@ selectionFromAnnotations node anchorOffset focusOffset =
             Nothing
 
         Just ( start, end ) ->
-            Just (rangeSelection start anchorOffset end focusOffset)
+            Just (range start anchorOffset end focusOffset)
 
 
 findNodeRangeFromSelectionAnnotations : Block -> Maybe ( Path, Path )

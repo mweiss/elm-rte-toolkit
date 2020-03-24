@@ -63,7 +63,7 @@ import RichTextEditor.Model.Selection
         , focusNode
         , focusOffset
         , isCollapsed
-        , rangeSelection
+        , range
         )
 import RichTextEditor.Model.Spec exposing (Spec)
 import RichTextEditor.Model.State as State exposing (State, withRoot, withSelection)
@@ -332,7 +332,7 @@ onEditorChange msgFunc =
 selectionDecoder : D.Decoder (Maybe Selection)
 selectionDecoder =
     D.maybe
-        (D.map4 rangeSelection
+        (D.map4 range
             (D.at [ "anchorNode" ] (D.list D.int))
             (D.at [ "anchorOffset" ] D.int)
             (D.at [ "focusNode" ] (D.list D.int))

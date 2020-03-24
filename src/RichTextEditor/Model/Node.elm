@@ -9,7 +9,7 @@ module RichTextEditor.Model.Node exposing
 
 An editor consists of two types of nodes, block and inline. Block nodes are used to represent
 hierarchical structures like blockquotes, tables and nested lists. Inline nodes are used to
-represent flat structures, like text.
+represent flat structures, like text, inline images, and hard breaks.
 
 
 # Block
@@ -80,7 +80,7 @@ type alias BlockNodeContents =
 
 ```
 block
-    (element paragraph [] Set.empty)
+    (Element.element paragraph [] Set.empty)
     (inlineChildren <| Array.fromList [ plainText "some text" ])
 ```
 
@@ -203,8 +203,8 @@ type alias InlineLeafArrayContents =
     { array : Array Inline, tree : Array InlineTree, reverseLookup : Array Path }
 
 
-{-| An inline tree is a nested structure of an inline array. Because marks can span
-multiple inline nodes, inline content is still somewhat hierarchical. When rendering or
+{-| An inline tree is the nested structure of an inline array. Because mark when rendered can span
+multiple inline nodes, inline content is still technically hierarchical. When rendering or
 parsing, it can be useful to see this information as a tree instead of an array.
 
   - `MarkNode` node that represents a mark and its inline children

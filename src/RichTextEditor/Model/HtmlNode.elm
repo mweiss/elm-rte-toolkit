@@ -1,8 +1,7 @@
 module RichTextEditor.Model.HtmlNode exposing (HtmlNode(..), HtmlAttribute)
 
-{-| `HtmlNode` is used to determine how to render the editor. We don't use the regular VirtualDOM library
-because we can't inspect a node after it has been created. Note that we also don't allow text nodes
-in the definition because this type is just for the structural content of the editor.
+{-| `HtmlNode` is used to determine how to render the editor. We don't use the built in Html library
+because we can't inspect a node after it has been created.
 
 @docs HtmlNode, HtmlAttribute
 

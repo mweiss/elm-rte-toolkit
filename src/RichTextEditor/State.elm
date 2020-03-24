@@ -14,7 +14,7 @@ import RichTextEditor.Model.Selection
         , anchorOffset
         , focusNode
         , focusOffset
-        , rangeSelection
+        , range
         )
 import RichTextEditor.Model.Spec exposing (Spec)
 import RichTextEditor.Model.State as State exposing (State, withRoot, withSelection)
@@ -142,7 +142,7 @@ reduceEditorState editorState =
             in
             editorState
                 |> withRoot reducedRoot
-                |> withSelection (Just <| rangeSelection aP aO fP fO)
+                |> withSelection (Just <| range aP aO fP fO)
 
 
 translatePath : Block -> Block -> Path -> Int -> ( Path, Int )

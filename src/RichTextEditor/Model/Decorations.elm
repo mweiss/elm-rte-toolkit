@@ -30,7 +30,7 @@ import RichTextEditor.Model.Mark exposing (Mark)
 import RichTextEditor.Model.MarkDefinition as MarkDefinition exposing (MarkDefinition)
 import RichTextEditor.Model.Node exposing (Path)
 import RichTextEditor.Model.NodeDefinition as NodeDefinition exposing (NodeDefinition)
-import RichTextEditor.Model.Selection exposing (caretSelection)
+import RichTextEditor.Model.Selection exposing (caret)
 import Set
 
 
@@ -210,6 +210,6 @@ selectableDecoration tagger editorNodePath elementParameters _ =
     )
         ++ [ Html.Events.onClick
                 (tagger <|
-                    SelectionEvent (Just (caretSelection editorNodePath 0)) False
+                    SelectionEvent (Just (caret editorNodePath 0)) False
                 )
            ]
