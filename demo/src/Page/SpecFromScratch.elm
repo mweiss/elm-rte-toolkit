@@ -143,7 +143,7 @@ subscriptions model =
 
 todoList : NodeDefinition
 todoList =
-    nodeDefinition "todo_list" "root" (NodeDefinition.blockNode [ "items" ]) todoListToHtml htmlToTodoList
+    nodeDefinition { name = "todo_list", group = "root", contentType = NodeDefinition.blockNode [ "items" ], toHtmlNode = todoListToHtml, fromHtmlNode = htmlToTodoList }
 
 
 todoListToHtml : ElementToHtml
@@ -160,7 +160,13 @@ htmlToTodoList =
 
 item : NodeDefinition
 item =
-    nodeDefinition "todo_item" "items" (NodeDefinition.textBlock [ "inline" ]) itemToHtml htmlToItem
+    nodeDefinition
+        { name = "todo_item"
+        , group = "items"
+        , contentType = NodeDefinition.textBlock [ "inline" ]
+        , toHtmlNode = itemToHtml
+        , fromHtmlNode = htmlToItem
+        }
 
 
 itemToHtml : ElementToHtml

@@ -117,15 +117,17 @@ paragraph =
 ```
 
 -}
-nodeDefinition : String -> String -> ContentType -> ElementToHtml -> HtmlToElement -> NodeDefinition
-nodeDefinition name_ group_ contentType_ toHtml fromHtml =
+nodeDefinition :
+    { name : String
+    , group : String
+    , contentType : ContentType
+    , toHtmlNode : ElementToHtml
+    , fromHtmlNode : HtmlToElement
+    }
+    -> NodeDefinition
+nodeDefinition contents =
     Internal.NodeDefinition
-        { name = name_
-        , group = group_
-        , toHtmlNode = toHtml
-        , contentType = contentType_
-        , fromHtmlNode = fromHtml
-        }
+        contents
 
 
 {-| The name of the node this node definition defines.
@@ -240,7 +242,13 @@ html node.
 -}
 defaultNodeDefinition : String -> String -> ContentType -> NodeDefinition
 defaultNodeDefinition name_ group_ contentType_ =
-    nodeDefinition name_ group_ contentType_ (defaultElementToHtml name_) (defaultHtmlToElement name_)
+    nodeDefinition
+        { name = name_
+        , group = group_
+        , contentType = contentType_
+        , toHtmlNode = defaultElementToHtml name_
+        , fromHtmlNode = defaultHtmlToElement name_
+        }
 
 
 {-| Creates an `ElementToHtml` function that will encode a node to the tag specified. Any

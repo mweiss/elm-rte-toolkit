@@ -76,13 +76,15 @@ type alias HtmlToMark =
 ```
 
 -}
-markDefinition : String -> MarkToHtml -> HtmlToMark -> MarkDefinition
-markDefinition name_ toHtml fromHtml =
+markDefinition :
+    { name : String
+    , toHtmlNode : MarkToHtml
+    , fromHtmlNode : HtmlToMark
+    }
+    -> MarkDefinition
+markDefinition contents =
     Internal.MarkDefinition
-        { name = name_
-        , toHtmlNode = toHtml
-        , fromHtmlNode = fromHtml
-        }
+        contents
 
 
 {-| Name of the mark this mark definition defines.
@@ -125,7 +127,11 @@ html node.
 -}
 defaultMarkDefinition : String -> MarkDefinition
 defaultMarkDefinition name_ =
-    markDefinition name_ defaultMarkToHtml (defaultHtmlToMark name_)
+    markDefinition
+        { name = name_
+        , toHtmlNode = defaultMarkToHtml
+        , fromHtmlNode = defaultHtmlToMark name_
+        }
 
 
 {-| Creates an `MarkToHtml` function that will encode a mark to html with the same name as the mark.

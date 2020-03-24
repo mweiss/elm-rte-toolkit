@@ -427,7 +427,13 @@ subscriptions model =
 
 captionedImage : NodeDefinition
 captionedImage =
-    nodeDefinition "captioned_image" "block" blockLeaf imageToHtmlNode htmlNodeToImage
+    nodeDefinition
+        { name = "captioned_image"
+        , group = "block"
+        , contentType = blockLeaf
+        , toHtmlNode = imageToHtmlNode
+        , fromHtmlNode = htmlNodeToImage
+        }
 
 
 imageToHtmlNode : ElementToHtml

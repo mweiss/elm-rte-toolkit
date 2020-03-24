@@ -2,7 +2,7 @@ module RichTextEditor.Model.Command exposing
     ( Command(..), transform, internal, InternalAction(..), NamedCommand, NamedCommandList
     , CommandMap, CommandBinding, key, inputEvent, emptyCommandMap, set, withDefaultInputEventCommand, withDefaultKeyCommand, defaultKeyCommand, defaultInputEventCommand, combine
     , Transform
-    , namedCommandListFromInputEvent, namedCommandListFromKeyboardEvent
+    , namedCommandListFromInputEvent, namedCommandListFromKeyboardEvent, InputEvent, KeyboardEvent
     )
 
 {-| This module contains types relating to defining transforms, commands and command maps
@@ -25,13 +25,12 @@ module RichTextEditor.Model.Command exposing
 
 # Event
 
-@docs namedCommandListFromInputEvent, namedCommandListFromKeyboardEvent
+@docs namedCommandListFromInputEvent, namedCommandListFromKeyboardEvent, InputEvent, KeyboardEvent
 
 -}
 
 import Dict exposing (Dict)
 import List.Extra
-import RichTextEditor.Internal.Model.Event exposing (InputEvent, KeyboardEvent)
 import RichTextEditor.Model.Keys exposing (alt, ctrl, meta, shift, short)
 import RichTextEditor.Model.State exposing (State)
 
@@ -135,6 +134,25 @@ that if a key command succeeds, the input command should not be triggered.
 -}
 type CommandMap
     = CommandMap CommandMapContents
+
+
+{-| The attributes parsed from an input event.
+-}
+type alias InputEvent =
+    { data : Maybe String, isComposing : Bool, inputType : String }
+
+
+{-| The attributes parsed from a keyboard event.
+-}
+type alias KeyboardEvent =
+    { keyCode : Int
+    , key : String
+    , altKey : Bool
+    , metaKey : Bool
+    , ctrlKey : Bool
+    , shiftKey : Bool
+    , isComposing : Bool
+    }
 
 
 {-| Derives a named command list from an input event.

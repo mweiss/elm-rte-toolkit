@@ -56,7 +56,13 @@ import Set
 
 doc : NodeDefinition
 doc =
-    nodeDefinition "doc" "root" (blockNode [ "block" ]) docToHtml htmlToDoc
+    nodeDefinition
+        { name = "doc"
+        , group = "root"
+        , contentType = blockNode [ "block" ]
+        , toHtmlNode = docToHtml
+        , fromHtmlNode = htmlToDoc
+        }
 
 
 docToHtml : ElementToHtml
@@ -82,7 +88,13 @@ htmlToDoc definition node =
 
 paragraph : NodeDefinition
 paragraph =
-    nodeDefinition "paragraph" "block" (textBlock [ "inline" ]) paragraphToHtml htmlToParagraph
+    nodeDefinition
+        { name = "paragraph"
+        , group = "block"
+        , contentType = textBlock [ "inline" ]
+        , toHtmlNode = paragraphToHtml
+        , fromHtmlNode = htmlToParagraph
+        }
 
 
 paragraphToHtml : ElementToHtml
@@ -106,7 +118,13 @@ htmlToParagraph definition node =
 
 blockquote : NodeDefinition
 blockquote =
-    nodeDefinition "blockquote" "block" (blockNode [ "block" ]) blockquoteToHtml htmlToBlockquote
+    nodeDefinition
+        { name = "blockquote"
+        , group = "block"
+        , contentType = blockNode [ "block" ]
+        , toHtmlNode = blockquoteToHtml
+        , fromHtmlNode = htmlToBlockquote
+        }
 
 
 blockquoteToHtml : ElementToHtml
@@ -121,7 +139,13 @@ htmlToBlockquote =
 
 horizontalRule : NodeDefinition
 horizontalRule =
-    nodeDefinition "horizontal_rule" "block" blockLeaf horizontalRuleToHtml htmlToHorizontalRule
+    nodeDefinition
+        { name = "horizontal_rule"
+        , group = "block"
+        , contentType = blockLeaf
+        , toHtmlNode = horizontalRuleToHtml
+        , fromHtmlNode = htmlToHorizontalRule
+        }
 
 
 horizontalRuleToHtml : ElementToHtml
@@ -145,7 +169,13 @@ htmlToHorizontalRule def node =
 
 heading : NodeDefinition
 heading =
-    nodeDefinition "heading" "block" (textBlock [ "inline" ]) headingToHtml htmlToHeading
+    nodeDefinition
+        { name = "heading"
+        , group = "block"
+        , contentType = textBlock [ "inline" ]
+        , toHtmlNode = headingToHtml
+        , fromHtmlNode = htmlToHeading
+        }
 
 
 headingToHtml : ElementToHtml
@@ -204,11 +234,12 @@ htmlToHeading def node =
 codeBlock : NodeDefinition
 codeBlock =
     nodeDefinition
-        "code_block"
-        "block"
-        (textBlock [ "text", "hard_break" ])
-        codeBlockToHtmlNode
-        htmlNodeToCodeBlock
+        { name = "code_block"
+        , group = "block"
+        , contentType = textBlock [ "text", "hard_break" ]
+        , toHtmlNode = codeBlockToHtmlNode
+        , fromHtmlNode = htmlNodeToCodeBlock
+        }
 
 
 codeBlockToHtmlNode : ElementToHtml
@@ -244,7 +275,13 @@ htmlNodeToCodeBlock def node =
 
 image : NodeDefinition
 image =
-    nodeDefinition "image" "inline" inlineLeaf imageToHtmlNode htmlNodeToImage
+    nodeDefinition
+        { name = "image"
+        , group = "inline"
+        , contentType = inlineLeaf
+        , toHtmlNode = imageToHtmlNode
+        , fromHtmlNode = htmlNodeToImage
+        }
 
 
 imageToHtmlNode : ElementToHtml
@@ -308,7 +345,13 @@ htmlNodeToImage def node =
 
 hardBreak : NodeDefinition
 hardBreak =
-    nodeDefinition "hard_break" "inline" inlineLeaf hardBreakToHtml htmlToHardBreak
+    nodeDefinition
+        { name = "hard_break"
+        , group = "inline"
+        , contentType = inlineLeaf
+        , toHtmlNode = hardBreakToHtml
+        , fromHtmlNode = htmlToHardBreak
+        }
 
 
 hardBreakToHtml : ElementToHtml
@@ -342,11 +385,12 @@ filterAttributesToHtml attrs =
 orderedList : NodeDefinition
 orderedList =
     nodeDefinition
-        "ordered_list"
-        "block"
-        (blockNode [ "list_item" ])
-        orderedListToHtml
-        htmlToOrderedList
+        { name = "ordered_list"
+        , group = "block"
+        , contentType = blockNode [ "list_item" ]
+        , toHtmlNode = orderedListToHtml
+        , fromHtmlNode = htmlToOrderedList
+        }
 
 
 orderedListToHtml : ElementToHtml
@@ -362,11 +406,12 @@ htmlToOrderedList =
 unorderedList : NodeDefinition
 unorderedList =
     nodeDefinition
-        "unordered_list"
-        "block"
-        (blockNode [ "list_item" ])
-        unorderedListToHtml
-        htmlToUnorderedList
+        { name = "unordered_list"
+        , group = "block"
+        , contentType = blockNode [ "list_item" ]
+        , toHtmlNode = unorderedListToHtml
+        , fromHtmlNode = htmlToUnorderedList
+        }
 
 
 unorderedListToHtml : ElementToHtml
@@ -382,11 +427,12 @@ htmlToUnorderedList =
 listItem : NodeDefinition
 listItem =
     nodeDefinition
-        "list_item"
-        "list_item"
-        (blockNode [ "block" ])
-        listItemToHtml
-        htmlToListItem
+        { name = "list_item"
+        , group = "list_item"
+        , contentType = blockNode [ "block" ]
+        , toHtmlNode = listItemToHtml
+        , fromHtmlNode = htmlToListItem
+        }
 
 
 listItemToHtml : ElementToHtml
@@ -405,7 +451,7 @@ htmlToListItem =
 
 link : MarkDefinition
 link =
-    markDefinition "link" linkToHtmlNode htmlNodeToLink
+    markDefinition { name = "link", toHtmlNode = linkToHtmlNode, fromHtmlNode = htmlNodeToLink }
 
 
 linkToHtmlNode : MarkToHtml
@@ -463,7 +509,7 @@ htmlNodeToLink def node =
 
 bold : MarkDefinition
 bold =
-    markDefinition "bold" boldToHtmlNode htmlNodeToBold
+    markDefinition { name = "bold", toHtmlNode = boldToHtmlNode, fromHtmlNode = htmlNodeToBold }
 
 
 boldToHtmlNode : MarkToHtml
@@ -478,7 +524,11 @@ htmlNodeToBold =
 
 italic : MarkDefinition
 italic =
-    markDefinition "italic" italicToHtmlNode htmlNodeToItalic
+    markDefinition
+        { name = "italic"
+        , toHtmlNode = italicToHtmlNode
+        , fromHtmlNode = htmlNodeToItalic
+        }
 
 
 italicToHtmlNode : MarkToHtml
@@ -493,7 +543,7 @@ htmlNodeToItalic =
 
 code : MarkDefinition
 code =
-    markDefinition "code" codeToHtmlNode htmlNodeToCode
+    markDefinition { name = "code", toHtmlNode = codeToHtmlNode, fromHtmlNode = htmlNodeToCode }
 
 
 codeToHtmlNode : MarkToHtml

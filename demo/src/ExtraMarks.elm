@@ -13,7 +13,11 @@ import RichTextEditor.Model.MarkDefinition
 
 underline : MarkDefinition
 underline =
-    markDefinition "underline" underlineToHtmlNode htmlNodeToUnderline
+    markDefinition
+        { name = "underline"
+        , toHtmlNode = underlineToHtmlNode
+        , fromHtmlNode = htmlNodeToUnderline
+        }
 
 
 underlineToHtmlNode : MarkToHtml
@@ -28,7 +32,11 @@ htmlNodeToUnderline =
 
 strikethrough : MarkDefinition
 strikethrough =
-    markDefinition "strikethrough" strikethroughToHtmlNode htmlNodeToStrikethrough
+    markDefinition
+        { name = "strikethrough"
+        , toHtmlNode = strikethroughToHtmlNode
+        , fromHtmlNode = htmlNodeToStrikethrough
+        }
 
 
 strikethroughToHtmlNode : MarkToHtml
