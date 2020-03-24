@@ -10,11 +10,13 @@
         "RichTextEditor.Model.Decorations",
         "RichTextEditor.Model.Element",
         "RichTextEditor.Model.Event",
+        "RichTextEditor.Model.HtmlNode",
         "RichTextEditor.Model.Keys",
         "RichTextEditor.Model.Mark",
         "RichTextEditor.Model.MarkDefinition",
         "RichTextEditor.Model.Node",
-        "RichTextEditor.Model.NodeDefinition"
+        "RichTextEditor.Model.NodeDefinition",
+        "RichTextEditor.Model.Text"
     ],
     "elm-version": "0.19.1 <= v < 0.20.0",
     "dependencies": {

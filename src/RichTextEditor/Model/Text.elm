@@ -1,22 +1,17 @@
-module RichTextEditor.Model.Text exposing
-    ( Text
-    , annotations
-    , empty
-    , marks
-    , text
-    , withAnnotations
-    , withMarks
-    , withText
-    )
+module RichTextEditor.Model.Text exposing (Text, empty, text, marks, annotations, withText, withMarks, withAnnotations)
 
-{-| TextNodeContents represents the attributes that can be in a text node. The core attributes
-are marks and text.
+{-| `Text` represents an editor text node and associated mark and annotation metadata.
+
+@docs Text, empty, text, marks, annotations, withText, withMarks, withAnnotations
+
 -}
 
 import RichTextEditor.Model.Mark exposing (Mark)
 import Set exposing (Set)
 
 
+{-| `Text` represents an editor text node and associated mark and annotation metadata.
+-}
 type Text
     = Text TextContents
 
@@ -28,11 +23,15 @@ type alias TextContents =
     }
 
 
+{-| empty `Text`
+-}
 empty : Text
 empty =
     Text { text = "", marks = [], annotations = Set.empty }
 
 
+{-| marks from `Text`
+-}
 marks : Text -> List Mark
 marks parameters =
     case parameters of
@@ -40,6 +39,8 @@ marks parameters =
             c.marks
 
 
+{-| annotations from `Text`
+-}
 annotations : Text -> Set String
 annotations parameters =
     case parameters of
@@ -47,6 +48,8 @@ annotations parameters =
             c.annotations
 
 
+{-| text from `Text`
+-}
 text : Text -> String
 text parameters =
     case parameters of
@@ -54,6 +57,8 @@ text parameters =
             c.text
 
 
+{-| `Text` with the given text
+-}
 withText : String -> Text -> Text
 withText s parameters =
     case parameters of
@@ -61,6 +66,8 @@ withText s parameters =
             Text { c | text = s }
 
 
+{-| `Text` with the given annotations
+-}
 withAnnotations : Set String -> Text -> Text
 withAnnotations ann parameters =
     case parameters of
@@ -68,6 +75,8 @@ withAnnotations ann parameters =
             Text { c | annotations = ann }
 
 
+{-| `Text` with the given marks
+-}
 withMarks : List Mark -> Text -> Text
 withMarks m parameters =
     case parameters of
