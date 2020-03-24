@@ -12,7 +12,7 @@ import Array.Extra
 import Json.Decode as D
 import Json.Decode.Extra as DE
 import RichTextEditor.Internal.Constants exposing (zeroWidthSpace)
-import RichTextEditor.Model.Event exposing (TextChange)
+import RichTextEditor.Internal.Model.Event exposing (TextChange)
 import RichTextEditor.Model.HtmlNode exposing (HtmlNode(..))
 import RichTextEditor.Model.Node exposing (Path)
 

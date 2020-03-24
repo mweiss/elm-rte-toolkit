@@ -1,10 +1,7 @@
-module RichTextEditor.Model.Event exposing (EditorChange, InitEvent, InputEvent, KeyboardEvent, PasteEvent, TextChange)
+module RichTextEditor.Internal.Model.Event exposing (EditorChange, InitEvent, InputEvent, KeyboardEvent, PasteEvent, TextChange)
 
 {-| This module holds the records used for decoded events like input, keyboard, as well
 as a few custom events.
-
-@docs EditorChange, InitEvent, InputEvent, KeyboardEvent, PasteEvent, TextChange
-
 -}
 
 import Json.Encode as E

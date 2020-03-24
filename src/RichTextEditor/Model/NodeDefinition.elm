@@ -24,9 +24,9 @@ node can have.
 
 -}
 
+import RichTextEditor.Internal.Model.Definitions as Internal exposing (ContentType(..))
 import RichTextEditor.Model.Attribute exposing (Attribute(..))
 import RichTextEditor.Model.HtmlNode exposing (HtmlNode(..))
-import RichTextEditor.Model.Internal as Internal exposing (ContentType(..))
 import Set
 
 

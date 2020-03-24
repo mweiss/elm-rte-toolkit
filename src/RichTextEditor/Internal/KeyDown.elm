@@ -2,9 +2,9 @@ module RichTextEditor.Internal.KeyDown exposing (..)
 
 import Json.Decode as D
 import RichTextEditor.Internal.Editor exposing (applyNamedCommandList)
+import RichTextEditor.Internal.Model.Editor exposing (Editor, Message(..), Tagger, shortKey)
+import RichTextEditor.Internal.Model.Event exposing (KeyboardEvent)
 import RichTextEditor.Model.Command exposing (CommandMap, namedCommandListFromKeyboardEvent)
-import RichTextEditor.Model.Editor exposing (Editor, Message(..), Tagger, shortKey)
-import RichTextEditor.Model.Event exposing (KeyboardEvent)
 import RichTextEditor.Model.Spec exposing (Spec)
 
 

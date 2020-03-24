@@ -27,11 +27,7 @@ import RichTextEditor.Internal.DomNode
 import RichTextEditor.Internal.Editor
 import RichTextEditor.Internal.HtmlNode exposing (childNodesPlaceholder, editorBlockNodeToHtmlNode)
 import RichTextEditor.Internal.KeyDown as KeyDown
-import RichTextEditor.Internal.Paste as Paste
-import RichTextEditor.Internal.Spec exposing (markDefinitionWithDefault, nodeDefinitionWithDefault)
-import RichTextEditor.Model.Command exposing (CommandMap, NamedCommand, NamedCommandList, transform)
-import RichTextEditor.Model.Decorations exposing (Decorations, elementDecorators, markDecorators)
-import RichTextEditor.Model.Editor
+import RichTextEditor.Internal.Model.Editor
     exposing
         ( Editor
         , Message(..)
@@ -50,8 +46,12 @@ import RichTextEditor.Model.Editor
         , withShortKey
         , withState
         )
+import RichTextEditor.Internal.Model.Event exposing (EditorChange, InitEvent, PasteEvent, TextChange)
+import RichTextEditor.Internal.Paste as Paste
+import RichTextEditor.Internal.Spec exposing (markDefinitionWithDefault, nodeDefinitionWithDefault)
+import RichTextEditor.Model.Command exposing (CommandMap, NamedCommand, NamedCommandList, transform)
+import RichTextEditor.Model.Decorations exposing (Decorations, elementDecorators, markDecorators)
 import RichTextEditor.Model.Element as Element exposing (Element)
-import RichTextEditor.Model.Event exposing (EditorChange, InitEvent, PasteEvent, TextChange)
 import RichTextEditor.Model.HtmlNode exposing (HtmlNode(..))
 import RichTextEditor.Model.InlineElement as InlineElement
 import RichTextEditor.Model.Mark as Mark exposing (Mark)

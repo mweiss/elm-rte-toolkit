@@ -19,7 +19,6 @@ import RichTextEditor.Model.Editor
     exposing
         ( Editor
         , Message
-        , Tagger
         )
 import RichTextEditor.Model.Element as Element exposing (Element, element)
 import RichTextEditor.Model.HtmlNode exposing (HtmlNode(..))

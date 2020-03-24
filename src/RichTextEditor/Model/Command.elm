@@ -31,7 +31,7 @@ module RichTextEditor.Model.Command exposing
 
 import Dict exposing (Dict)
 import List.Extra
-import RichTextEditor.Model.Event exposing (InputEvent, KeyboardEvent)
+import RichTextEditor.Internal.Model.Event exposing (InputEvent, KeyboardEvent)
 import RichTextEditor.Model.Keys exposing (alt, ctrl, meta, shift, short)
 import RichTextEditor.Model.State exposing (State)
 

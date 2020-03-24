@@ -4,10 +4,10 @@ import Array exposing (Array)
 import Html.Parser as Html exposing (Node(..))
 import Result exposing (Result)
 import RichTextEditor.Internal.Constants exposing (zeroWidthSpace)
+import RichTextEditor.Internal.Model.Definitions exposing (ContentType(..), nameFromElement, nameFromMark)
 import RichTextEditor.Model.Element exposing (Element)
 import RichTextEditor.Model.HtmlNode exposing (HtmlNode(..))
 import RichTextEditor.Model.InlineElement exposing (inlineElement)
-import RichTextEditor.Model.Internal exposing (ContentType(..), nameFromElement, nameFromMark)
 import RichTextEditor.Model.Mark
     exposing
         ( Mark

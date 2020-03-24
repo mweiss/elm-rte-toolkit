@@ -1,6 +1,7 @@
-module RichTextEditor.Model.Internal exposing (..)
+module RichTextEditor.Internal.Model.Definitions exposing (..)
 
-{-| Internal module for various entities to keep records private and avoid dependency loops.
+{-| Internal module for various entities related to definition, elements and nodes to keep records
+private and avoid dependency loops.
 -}
 
 import Array exposing (Array)

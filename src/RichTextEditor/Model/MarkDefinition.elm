@@ -17,9 +17,9 @@ module RichTextEditor.Model.MarkDefinition exposing
 
 -}
 
+import RichTextEditor.Internal.Model.Definitions as Internal
 import RichTextEditor.Model.Attribute exposing (Attribute(..))
 import RichTextEditor.Model.HtmlNode exposing (HtmlNode(..))
-import RichTextEditor.Model.Internal as Internal
 
 
 {-| A mark definition defines how a mark is encoded an decoded.

@@ -44,6 +44,7 @@ import List.Extra
 import Regex
 import RichTextEditor.Annotation as Annotation exposing (clearAnnotations)
 import RichTextEditor.Internal.DeleteWord as DeleteWord
+import RichTextEditor.Internal.Model.Event exposing (InputEvent, KeyboardEvent)
 import RichTextEditor.Marks
     exposing
         ( hasMarkWithName
@@ -66,7 +67,6 @@ import RichTextEditor.Model.Command
         , withDefaultKeyCommand
         )
 import RichTextEditor.Model.Element as Element exposing (Element)
-import RichTextEditor.Model.Event exposing (InputEvent, KeyboardEvent)
 import RichTextEditor.Model.InlineElement as InlineElement exposing (inlineElement)
 import RichTextEditor.Model.Keys exposing (alt, backspace, delete, enter, return, shift, short)
 import RichTextEditor.Model.Mark as Mark exposing (Mark, MarkOrder, ToggleAction(..), toggle)

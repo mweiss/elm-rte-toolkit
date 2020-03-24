@@ -3,9 +3,9 @@ module RichTextEditor.State exposing (reduceEditorState, validate)
 import Array exposing (Array)
 import List.Extra
 import RichTextEditor.Annotation exposing (selection)
+import RichTextEditor.Internal.Model.Definitions exposing (ContentType(..), toStringContentType)
 import RichTextEditor.Internal.Spec exposing (nodeDefinitionWithDefault)
 import RichTextEditor.Model.InlineElement as InlineElement
-import RichTextEditor.Model.Internal exposing (ContentType(..), toStringContentType)
 import RichTextEditor.Model.Node as Node exposing (Block, Children(..), Inline(..), InlineChildren, Path, childNodes, element, inlineChildren, toBlockArray, toInlineArray, withChildNodes)
 import RichTextEditor.Model.NodeDefinition as NodeDefinition
 import RichTextEditor.Model.Selection

@@ -7,7 +7,7 @@ module RichTextEditor.Model.Spec exposing (Spec, emptySpec, markDefinitions, mar
 -}
 
 import Dict exposing (Dict)
-import RichTextEditor.Model.Internal
+import RichTextEditor.Internal.Model.Definitions
     exposing
         ( ContentType(..)
         , Element

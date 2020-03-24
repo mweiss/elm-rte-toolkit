@@ -2,15 +2,15 @@ module RichTextEditor.Internal.BeforeInput exposing (..)
 
 import Json.Decode as D
 import RichTextEditor.Internal.Editor exposing (applyNamedCommandList)
-import RichTextEditor.Model.Command exposing (CommandMap, namedCommandListFromInputEvent)
-import RichTextEditor.Model.Editor
+import RichTextEditor.Internal.Model.Editor
     exposing
         ( Editor
         , Message(..)
         , Tagger
         , forceRerender
         )
-import RichTextEditor.Model.Event exposing (InputEvent)
+import RichTextEditor.Internal.Model.Event exposing (InputEvent)
+import RichTextEditor.Model.Command exposing (CommandMap, namedCommandListFromInputEvent)
 import RichTextEditor.Model.Spec exposing (Spec)
 
 
@@ -31,6 +31,9 @@ shouldPreventDefault commandMap spec editor inputEvent =
             ( ReplaceWith editor, False )
 
         Ok newEditor ->
+            -- HACK: Android has very strange behavior with regards to before input events, e.g.
+            -- prevent default doesn't actually stop the DOM from being modified, so
+            -- we're forcing a rerender if we update the editor state on a command
             ( ReplaceWith <| forceRerender newEditor, True )
 
 

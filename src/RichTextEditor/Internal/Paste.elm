@@ -12,10 +12,10 @@ import RichTextEditor.Commands
         )
 import RichTextEditor.Internal.Constants exposing (zeroWidthSpace)
 import RichTextEditor.Internal.Editor exposing (applyNamedCommandList)
+import RichTextEditor.Internal.Model.Event exposing (PasteEvent)
 import RichTextEditor.Internal.Spec exposing (htmlToElementArray)
 import RichTextEditor.Model.Command exposing (Transform, transform)
 import RichTextEditor.Model.Editor exposing (Editor)
-import RichTextEditor.Model.Event exposing (PasteEvent)
 import RichTextEditor.Model.Node
     exposing
         ( Block

@@ -6,8 +6,8 @@ module RichTextEditor.Model.Element exposing (Element, element, annotations, att
 
 -}
 
+import RichTextEditor.Internal.Model.Definitions as Internal
 import RichTextEditor.Model.Attribute exposing (Attribute)
-import RichTextEditor.Model.Internal as Internal
 import RichTextEditor.Model.NodeDefinition exposing (NodeDefinition)
 import Set exposing (Set)
 

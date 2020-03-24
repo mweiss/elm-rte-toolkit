@@ -3,11 +3,10 @@ module SimpleSpec exposing (..)
 import Array exposing (Array)
 import RichTextEditor.Model.Element exposing (Element, element)
 import RichTextEditor.Model.HtmlNode exposing (HtmlNode(..))
-import RichTextEditor.Model.Internal exposing (NodeDefinition)
 import RichTextEditor.Model.Mark exposing (Mark)
 import RichTextEditor.Model.MarkDefinition exposing (defaultHtmlToMark, markDefinition)
 import RichTextEditor.Model.NodeDefinition exposing (blockNode, defaultElementToHtml, defaultHtmlToElement, inlineLeaf, nodeDefinition, textBlock)
-import RichTextEditor.Model.Spec exposing (Spec, emptySpec, withMarkDefinitions, withNodeDefinitions)
+import RichTextEditor.Model.Spec exposing (NodeDefinition, Spec, emptySpec, withMarkDefinitions, withNodeDefinitions)
 import Set
 
 
