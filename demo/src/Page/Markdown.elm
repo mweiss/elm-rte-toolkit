@@ -10,6 +10,7 @@ import Links exposing (rteToolkit)
 import Markdown.Block as M
 import Markdown.Config as M
 import Markdown.Inline as MI
+import RichTextEditor.Config.Spec exposing (Spec, withMarkDefinitions)
 import RichTextEditor.Model.Attribute
     exposing
         ( Attribute(..)
@@ -37,7 +38,6 @@ import RichTextEditor.Model.Node as Node
         , toInlineArray
         , toInlineTree
         )
-import RichTextEditor.Model.Spec exposing (Spec, withMarkDefinitions)
 import RichTextEditor.Model.State as State exposing (State)
 import RichTextEditor.Model.Text as Text
 import RichTextEditor.Specs as MarkdownSpec

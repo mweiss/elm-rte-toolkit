@@ -1,7 +1,6 @@
 module ExtraMarks exposing (..)
 
-import RichTextEditor.Model.HtmlNode exposing (HtmlNode(..))
-import RichTextEditor.Model.MarkDefinition
+import RichTextEditor.Config.MarkDefinition
     exposing
         ( HtmlToMark
         , MarkDefinition
@@ -9,6 +8,7 @@ import RichTextEditor.Model.MarkDefinition
         , defaultHtmlToMark
         , markDefinition
         )
+import RichTextEditor.Model.HtmlNode exposing (HtmlNode(..))
 
 
 underline : MarkDefinition

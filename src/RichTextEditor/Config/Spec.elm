@@ -1,4 +1,4 @@
-module RichTextEditor.Model.Spec exposing (Spec, emptySpec, markDefinitions, markDefinition, nodeDefinitions, nodeDefinition, withMarkDefinitions, withNodeDefinitions)
+module RichTextEditor.Config.Spec exposing (Spec, emptySpec, markDefinitions, markDefinition, nodeDefinitions, nodeDefinition, withMarkDefinitions, withNodeDefinitions)
 
 {-| A spec describes what nodes and marks can be in an editor.
 
@@ -19,8 +19,6 @@ import RichTextEditor.Internal.Model.Definitions
         , MarkToHtml
         , NodeDefinition(..)
         )
-import RichTextEditor.Model.MarkDefinition as MarkDefinition
-import RichTextEditor.Model.NodeDefinition as NodeDefinition
 
 
 {-| A spec describes what nodes and marks can be in an editor. It's used internally to encode an
@@ -81,7 +79,15 @@ withMarkDefinitions marks spec =
             Spec
                 { c
                     | marks = marks
-                    , nameToMark = Dict.fromList <| List.map (\x -> ( MarkDefinition.name x, x )) marks
+                    , nameToMark =
+                        Dict.fromList <|
+                            List.map
+                                (\x ->
+                                    case x of
+                                        MarkDefinition m ->
+                                            ( m.name, x )
+                                )
+                                marks
                 }
 
 
@@ -94,7 +100,15 @@ withNodeDefinitions nodes spec =
             Spec
                 { c
                     | nodes = nodes
-                    , nameToNode = Dict.fromList <| List.map (\x -> ( NodeDefinition.name x, x )) nodes
+                    , nameToNode =
+                        Dict.fromList <|
+                            List.map
+                                (\x ->
+                                    case x of
+                                        NodeDefinition m ->
+                                            ( m.name, x )
+                                )
+                                nodes
                 }
 
 

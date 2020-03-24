@@ -1,11 +1,11 @@
 module RichTextEditor.Internal.KeyDown exposing (..)
 
 import Json.Decode as D
+import RichTextEditor.Config.Command exposing (CommandMap, namedCommandListFromKeyboardEvent)
+import RichTextEditor.Config.Spec exposing (Spec)
 import RichTextEditor.Internal.Editor exposing (applyNamedCommandList)
 import RichTextEditor.Internal.Model.Editor exposing (Editor, Message(..), Tagger, shortKey)
 import RichTextEditor.Internal.Model.Event exposing (KeyboardEvent)
-import RichTextEditor.Model.Command exposing (CommandMap, namedCommandListFromKeyboardEvent)
-import RichTextEditor.Model.Spec exposing (Spec)
 
 
 preventDefaultOn : CommandMap -> Spec -> Editor -> Message -> ( Message, Bool )

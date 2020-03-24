@@ -25,9 +25,9 @@ module RichTextEditor.Internal.Model.Editor exposing
 as well as the messages used to update the editor's internal state.
 -}
 
+import RichTextEditor.Config.Keys exposing (meta)
 import RichTextEditor.Internal.Model.Event exposing (EditorChange, InitEvent, InputEvent, KeyboardEvent, PasteEvent)
 import RichTextEditor.Model.History exposing (History, emptyHistory)
-import RichTextEditor.Model.Keys exposing (meta)
 import RichTextEditor.Model.Selection exposing (Selection)
 import RichTextEditor.Model.State exposing (State)
 

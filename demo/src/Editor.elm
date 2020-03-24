@@ -16,14 +16,15 @@ import RichTextEditor.Commands as Commands
         , toggleMarkOnInlineNodes
         , wrap
         )
+import RichTextEditor.Config.Command as Command exposing (CommandMap, inputEvent, key, set, transform)
+import RichTextEditor.Config.Decorations exposing (Decorations, addElementDecoration, emptyDecorations, selectableDecoration)
+import RichTextEditor.Config.Keys exposing (enter, return)
+import RichTextEditor.Config.Spec exposing (Spec)
 import RichTextEditor.Editor as Editor exposing (applyCommand, applyNamedCommandList)
 import RichTextEditor.List exposing (ListType, defaultListDefinition)
 import RichTextEditor.Model.Attribute exposing (Attribute(..))
-import RichTextEditor.Model.Command as Command exposing (CommandMap, inputEvent, key, set, transform)
-import RichTextEditor.Model.Decorations exposing (Decorations, addElementDecoration, emptyDecorations, selectableDecoration)
 import RichTextEditor.Model.Editor exposing (Editor, editor, state)
 import RichTextEditor.Model.Element exposing (element)
-import RichTextEditor.Model.Keys exposing (enter, return)
 import RichTextEditor.Model.Mark as Mark exposing (ToggleAction(..), mark, markOrderFromSpec)
 import RichTextEditor.Model.Node
     exposing
@@ -38,7 +39,6 @@ import RichTextEditor.Model.Node
         , plainText
         )
 import RichTextEditor.Model.Selection exposing (anchorNode, focusNode, normalize)
-import RichTextEditor.Model.Spec exposing (Spec)
 import RichTextEditor.Model.State as State exposing (State)
 import RichTextEditor.Node exposing (Node(..), anyRange)
 import RichTextEditor.Specs

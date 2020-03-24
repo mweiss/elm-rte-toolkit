@@ -27,7 +27,7 @@ import RichTextEditor.Commands
         ( isEmptyTextBlock
         , liftConcatMapFunc
         )
-import RichTextEditor.Model.Command
+import RichTextEditor.Config.Command
     exposing
         ( CommandMap
         , Transform
@@ -37,8 +37,7 @@ import RichTextEditor.Model.Command
         , set
         , transform
         )
-import RichTextEditor.Model.Element as Element exposing (Element, element)
-import RichTextEditor.Model.Keys
+import RichTextEditor.Config.Keys
     exposing
         ( alt
         , backspace
@@ -46,6 +45,7 @@ import RichTextEditor.Model.Keys
         , enter
         , return
         )
+import RichTextEditor.Model.Element as Element exposing (Element, element)
 import RichTextEditor.Model.Node as Node
     exposing
         ( Block

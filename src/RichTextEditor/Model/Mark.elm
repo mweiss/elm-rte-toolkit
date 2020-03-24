@@ -24,10 +24,9 @@ module RichTextEditor.Model.Mark exposing
 -}
 
 import Dict exposing (Dict)
-import RichTextEditor.Internal.Model.Definitions as Internal exposing (MarkDefinition, attributesFromMark)
+import RichTextEditor.Config.Spec exposing (Spec, markDefinitions)
+import RichTextEditor.Internal.Model.Definitions as Internal exposing (MarkDefinition(..), attributesFromMark)
 import RichTextEditor.Model.Attribute exposing (Attribute)
-import RichTextEditor.Model.MarkDefinition as MarkDefinition
-import RichTextEditor.Model.Spec exposing (Spec, markDefinitions)
 
 
 {-| A mark is a piece of information defined by a `MarkDefinition` that can be attached to an inline node,
@@ -188,4 +187,13 @@ toggle toggleAction order mark_ marks =
 -}
 markOrderFromSpec : Spec -> MarkOrder
 markOrderFromSpec spec =
-    MarkOrder <| Dict.fromList (List.indexedMap (\i m -> ( MarkDefinition.name m, i )) (markDefinitions spec))
+    MarkOrder <|
+        Dict.fromList
+            (List.indexedMap
+                (\i m ->
+                    case m of
+                        MarkDefinition md ->
+                            ( md.name, i )
+                )
+                (markDefinitions spec)
+            )

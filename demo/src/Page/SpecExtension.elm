@@ -11,6 +11,24 @@ import Json.Decode as D
 import Links exposing (rteToolkit)
 import RichTextEditor.Annotation exposing (selectable)
 import RichTextEditor.Commands as Commands
+import RichTextEditor.Config.Command exposing (Transform, transform)
+import RichTextEditor.Config.Decorations exposing (addElementDecoration, selectableDecoration)
+import RichTextEditor.Config.NodeDefinition
+    exposing
+        ( ElementToHtml
+        , HtmlToElement
+        , NodeDefinition
+        , blockLeaf
+        , nodeDefinition
+        )
+import RichTextEditor.Config.Spec
+    exposing
+        ( Spec
+        , markDefinitions
+        , nodeDefinitions
+        , withMarkDefinitions
+        , withNodeDefinitions
+        )
 import RichTextEditor.Editor exposing (applyCommand, applyCommandNoForceSelection)
 import RichTextEditor.Model.Attribute
     exposing
@@ -18,8 +36,6 @@ import RichTextEditor.Model.Attribute
         , findStringAttribute
         , replaceOrAddStringAttribute
         )
-import RichTextEditor.Model.Command exposing (Transform, transform)
-import RichTextEditor.Model.Decorations exposing (addElementDecoration, selectableDecoration)
 import RichTextEditor.Model.Editor
 import RichTextEditor.Model.Element as Element exposing (Element, element)
 import RichTextEditor.Model.HtmlNode exposing (HtmlNode(..))
@@ -33,22 +49,6 @@ import RichTextEditor.Model.Node as Node
         , inlineChildren
         , plainText
         , withElement
-        )
-import RichTextEditor.Model.NodeDefinition
-    exposing
-        ( ElementToHtml
-        , HtmlToElement
-        , NodeDefinition
-        , blockLeaf
-        , nodeDefinition
-        )
-import RichTextEditor.Model.Spec
-    exposing
-        ( Spec
-        , markDefinitions
-        , nodeDefinitions
-        , withMarkDefinitions
-        , withNodeDefinitions
         )
 import RichTextEditor.Model.State as State exposing (State, withRoot)
 import RichTextEditor.Node as Node exposing (Node(..), nodeAt)

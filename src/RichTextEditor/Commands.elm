@@ -43,14 +43,7 @@ import Array.Extra
 import List.Extra
 import Regex
 import RichTextEditor.Annotation as Annotation exposing (clearAnnotations)
-import RichTextEditor.Internal.DeleteWord as DeleteWord
-import RichTextEditor.Internal.Model.Event exposing (InputEvent, KeyboardEvent)
-import RichTextEditor.Marks
-    exposing
-        ( hasMarkWithName
-        , toggleMark
-        )
-import RichTextEditor.Model.Command
+import RichTextEditor.Config.Command
     exposing
         ( CommandBinding
         , CommandMap
@@ -66,9 +59,16 @@ import RichTextEditor.Model.Command
         , withDefaultInputEventCommand
         , withDefaultKeyCommand
         )
+import RichTextEditor.Config.Keys exposing (alt, backspace, delete, enter, return, shift, short)
+import RichTextEditor.Internal.DeleteWord as DeleteWord
+import RichTextEditor.Internal.Model.Event exposing (InputEvent, KeyboardEvent)
+import RichTextEditor.Marks
+    exposing
+        ( hasMarkWithName
+        , toggleMark
+        )
 import RichTextEditor.Model.Element as Element exposing (Element)
 import RichTextEditor.Model.InlineElement as InlineElement exposing (inlineElement)
-import RichTextEditor.Model.Keys exposing (alt, backspace, delete, enter, return, shift, short)
 import RichTextEditor.Model.Mark as Mark exposing (Mark, MarkOrder, ToggleAction(..), toggle)
 import RichTextEditor.Model.Node as Node
     exposing

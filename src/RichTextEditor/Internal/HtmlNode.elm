@@ -1,12 +1,14 @@
 module RichTextEditor.Internal.HtmlNode exposing (..)
 
 import Array exposing (Array)
+import RichTextEditor.Config.MarkDefinition as MarkDefinition
+import RichTextEditor.Config.NodeDefinition as NodeDefinition
+import RichTextEditor.Config.Spec exposing (Spec)
 import RichTextEditor.Internal.Spec exposing (markDefinitionWithDefault, nodeDefinitionWithDefault)
 import RichTextEditor.Model.Element exposing (Element)
 import RichTextEditor.Model.HtmlNode exposing (HtmlNode(..))
 import RichTextEditor.Model.InlineElement as InlineElement
 import RichTextEditor.Model.Mark exposing (Mark)
-import RichTextEditor.Model.MarkDefinition as MarkDefinition
 import RichTextEditor.Model.Node as Node
     exposing
         ( Block
@@ -18,8 +20,6 @@ import RichTextEditor.Model.Node as Node
         , toInlineArray
         , toInlineTree
         )
-import RichTextEditor.Model.NodeDefinition as NodeDefinition
-import RichTextEditor.Model.Spec exposing (Spec)
 import RichTextEditor.Model.Text exposing (text)
 
 

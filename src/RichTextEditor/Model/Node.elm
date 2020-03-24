@@ -160,10 +160,6 @@ toBlockArray arr =
             a
 
 
-type alias MarkNodeContents =
-    { mark : Mark, children : Array InlineTree }
-
-
 {-| `InlineChildren` are child nodes that are all inline. Internally, it's represented as both
 a flat structure (which can be accessed via `inlineArray`), and a hierarchical structure
 (which can be accessed via `inlineTree`).
@@ -212,7 +208,7 @@ parsing, it can be useful to see this information as a tree instead of an array.
 
 -}
 type InlineTree
-    = MarkNode MarkNodeContents
+    = MarkNode { mark : Mark, children : Array InlineTree }
     | LeafNode Int
 
 

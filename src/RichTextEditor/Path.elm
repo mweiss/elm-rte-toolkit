@@ -19,12 +19,14 @@ module RichTextEditor.Path exposing
 
 import Array exposing (Array)
 import List.Extra
+import RichTextEditor.Config.MarkDefinition as MarkDefinition
+import RichTextEditor.Config.NodeDefinition as NodeDefinition
+import RichTextEditor.Config.Spec exposing (Spec)
 import RichTextEditor.Internal.HtmlNode exposing (childNodesPlaceholder)
 import RichTextEditor.Internal.Spec exposing (markDefinitionWithDefault, nodeDefinitionWithDefault)
 import RichTextEditor.Model.Element as Element exposing (Element)
 import RichTextEditor.Model.HtmlNode exposing (HtmlNode(..))
 import RichTextEditor.Model.Mark as Mark exposing (Mark)
-import RichTextEditor.Model.MarkDefinition as MarkDefinition
 import RichTextEditor.Model.Node
     exposing
         ( Block
@@ -39,8 +41,6 @@ import RichTextEditor.Model.Node
         , toInlineArray
         , toInlineTree
         )
-import RichTextEditor.Model.NodeDefinition as NodeDefinition
-import RichTextEditor.Model.Spec exposing (Spec)
 
 
 domToEditorInlineLeafTree : Spec -> InlineTree -> Path -> Maybe Path

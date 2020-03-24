@@ -1,4 +1,4 @@
-module RichTextEditor.Model.Command exposing
+module RichTextEditor.Config.Command exposing
     ( Command(..), transform, internal, InternalAction(..), NamedCommand, NamedCommandList
     , CommandMap, CommandBinding, key, inputEvent, emptyCommandMap, set, withDefaultInputEventCommand, withDefaultKeyCommand, defaultKeyCommand, defaultInputEventCommand, combine
     , Transform
@@ -31,7 +31,7 @@ module RichTextEditor.Model.Command exposing
 
 import Dict exposing (Dict)
 import List.Extra
-import RichTextEditor.Model.Keys exposing (alt, ctrl, meta, shift, short)
+import RichTextEditor.Config.Keys exposing (alt, ctrl, meta, shift, short)
 import RichTextEditor.Model.State exposing (State)
 
 

@@ -15,6 +15,11 @@ import Html.Events
 import Html.Keyed
 import Json.Decode as D
 import RichTextEditor.Commands exposing (removeRangeSelection)
+import RichTextEditor.Config.Command exposing (CommandMap, NamedCommand, NamedCommandList, transform)
+import RichTextEditor.Config.Decorations exposing (Decorations, elementDecorators, markDecorators)
+import RichTextEditor.Config.MarkDefinition as MarkDefinition
+import RichTextEditor.Config.NodeDefinition as NodeDefinition
+import RichTextEditor.Config.Spec exposing (Spec)
 import RichTextEditor.Internal.BeforeInput as BeforeInput
 import RichTextEditor.Internal.Constants exposing (zeroWidthSpace)
 import RichTextEditor.Internal.DomNode
@@ -49,13 +54,10 @@ import RichTextEditor.Internal.Model.Editor
 import RichTextEditor.Internal.Model.Event exposing (EditorChange, InitEvent, PasteEvent, TextChange)
 import RichTextEditor.Internal.Paste as Paste
 import RichTextEditor.Internal.Spec exposing (markDefinitionWithDefault, nodeDefinitionWithDefault)
-import RichTextEditor.Model.Command exposing (CommandMap, NamedCommand, NamedCommandList, transform)
-import RichTextEditor.Model.Decorations exposing (Decorations, elementDecorators, markDecorators)
 import RichTextEditor.Model.Element as Element exposing (Element)
 import RichTextEditor.Model.HtmlNode exposing (HtmlNode(..))
 import RichTextEditor.Model.InlineElement as InlineElement
 import RichTextEditor.Model.Mark as Mark exposing (Mark)
-import RichTextEditor.Model.MarkDefinition as MarkDefinition
 import RichTextEditor.Model.Node
     exposing
         ( Block
@@ -72,7 +74,6 @@ import RichTextEditor.Model.Node
         , toInlineTree
         , withChildNodes
         )
-import RichTextEditor.Model.NodeDefinition as NodeDefinition
 import RichTextEditor.Model.Selection
     exposing
         ( Selection
@@ -83,7 +84,6 @@ import RichTextEditor.Model.Selection
         , isCollapsed
         , range
         )
-import RichTextEditor.Model.Spec exposing (Spec)
 import RichTextEditor.Model.State as State exposing (State, withRoot, withSelection)
 import RichTextEditor.Model.Text as Text
 import RichTextEditor.Node exposing (Node(..), nodeAt)

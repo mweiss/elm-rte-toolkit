@@ -3,6 +3,9 @@ module RichTextEditor.Internal.Spec exposing (htmlToElementArray, markDefinition
 import Array exposing (Array)
 import Html.Parser as Html exposing (Node(..))
 import Result exposing (Result)
+import RichTextEditor.Config.MarkDefinition as MarkDefinition exposing (MarkDefinition, defaultMarkDefinition)
+import RichTextEditor.Config.NodeDefinition as NodeDefinition exposing (NodeDefinition, blockNode, defaultNodeDefinition)
+import RichTextEditor.Config.Spec exposing (Spec, markDefinition, markDefinitions, nodeDefinition, nodeDefinitions)
 import RichTextEditor.Internal.Constants exposing (zeroWidthSpace)
 import RichTextEditor.Internal.Model.Definitions exposing (ContentType(..), nameFromElement, nameFromMark)
 import RichTextEditor.Model.Element exposing (Element)
@@ -17,7 +20,6 @@ import RichTextEditor.Model.Mark
         , markOrderFromSpec
         , toggle
         )
-import RichTextEditor.Model.MarkDefinition as MarkDefinition exposing (MarkDefinition, defaultMarkDefinition)
 import RichTextEditor.Model.Node as Node
     exposing
         ( Block
@@ -27,8 +29,6 @@ import RichTextEditor.Model.Node as Node
         , childNodes
         , inlineChildren
         )
-import RichTextEditor.Model.NodeDefinition as NodeDefinition exposing (NodeDefinition, blockNode, defaultNodeDefinition)
-import RichTextEditor.Model.Spec exposing (Spec, markDefinition, markDefinitions, nodeDefinition, nodeDefinitions)
 import RichTextEditor.Model.Text as Text
 import RichTextEditor.Node exposing (Fragment(..))
 

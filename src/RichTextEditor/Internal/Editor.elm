@@ -1,6 +1,14 @@
 module RichTextEditor.Internal.Editor exposing (..)
 
 import BoundedDeque exposing (BoundedDeque)
+import RichTextEditor.Config.Command
+    exposing
+        ( Command(..)
+        , InternalAction(..)
+        , NamedCommand
+        , NamedCommandList
+        )
+import RichTextEditor.Config.Spec exposing (Spec)
 import RichTextEditor.Internal.Model.Editor
     exposing
         ( Editor
@@ -10,15 +18,7 @@ import RichTextEditor.Internal.Model.Editor
         , withHistory
         , withState
         )
-import RichTextEditor.Model.Command
-    exposing
-        ( Command(..)
-        , InternalAction(..)
-        , NamedCommand
-        , NamedCommandList
-        )
 import RichTextEditor.Model.History exposing (contents, fromContents)
-import RichTextEditor.Model.Spec exposing (Spec)
 import RichTextEditor.Model.State exposing (State)
 import RichTextEditor.State exposing (reduceEditorState, validate)
 

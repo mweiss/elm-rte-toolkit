@@ -10,11 +10,12 @@ import RichTextEditor.Commands
         , removeRangeSelection
         , splitTextBlock
         )
+import RichTextEditor.Config.Command exposing (Transform, transform)
+import RichTextEditor.Config.Spec exposing (Spec)
 import RichTextEditor.Internal.Constants exposing (zeroWidthSpace)
 import RichTextEditor.Internal.Editor exposing (applyNamedCommandList)
 import RichTextEditor.Internal.Model.Event exposing (PasteEvent)
 import RichTextEditor.Internal.Spec exposing (htmlToElementArray)
-import RichTextEditor.Model.Command exposing (Transform, transform)
 import RichTextEditor.Model.Editor exposing (Editor)
 import RichTextEditor.Model.Node
     exposing
@@ -36,7 +37,6 @@ import RichTextEditor.Model.Selection
         , focusOffset
         , isCollapsed
         )
-import RichTextEditor.Model.Spec exposing (Spec)
 import RichTextEditor.Model.State as State exposing (withRoot, withSelection)
 import RichTextEditor.Node
     exposing

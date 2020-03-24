@@ -1,4 +1,4 @@
-module RichTextEditor.Model.Keys exposing (short, alt, meta, ctrl, shift, return, enter, backspace, delete)
+module RichTextEditor.Config.Keys exposing (short, alt, meta, ctrl, shift, return, enter, backspace, delete)
 
 {-| This module contains String constants related to defining keyboard commands.
 
@@ -12,7 +12,7 @@ to meta on the mac/iOS and control on other platforms.
 -}
 short : String
 short =
-    "Short"
+    "__Short__"
 
 
 {-| Alt key

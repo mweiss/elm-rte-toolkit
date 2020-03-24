@@ -1,4 +1,4 @@
-module RichTextEditor.Model.NodeDefinition exposing
+module RichTextEditor.Config.NodeDefinition exposing
     ( NodeDefinition, nodeDefinition, ElementToHtml, HtmlToElement, name, group, contentType, fromHtmlNode, toHtmlNode
     , ContentType, blockLeaf, inlineLeaf, blockNode, textBlock
     , defaultNodeDefinition, defaultElementToHtml, defaultHtmlToElement
@@ -24,8 +24,10 @@ node can have.
 
 -}
 
+import Array exposing (Array)
 import RichTextEditor.Internal.Model.Definitions as Internal exposing (ContentType(..))
 import RichTextEditor.Model.Attribute exposing (Attribute(..))
+import RichTextEditor.Model.Element exposing (Element)
 import RichTextEditor.Model.HtmlNode exposing (HtmlNode(..))
 import Set
 
@@ -62,7 +64,7 @@ to partially serialize a document in some parts of the package.
 
 -}
 type alias ElementToHtml =
-    Internal.ElementToHtml
+    Element -> Array HtmlNode -> HtmlNode
 
 
 {-| Type alias for defining an element deserialization function: `NodeDefinition` -> `HtmlNode` -> `Maybe ( Element, Array HtmlNode )`
@@ -82,12 +84,12 @@ type alias ElementToHtml =
 
 -}
 type alias HtmlToElement =
-    Internal.HtmlToElement
+    NodeDefinition -> HtmlNode -> Maybe ( Element, Array HtmlNode )
 
 
 {-| Defines a node. The arguments are as follows:
 
-  - `node name` is the unique name of this type of node, usually something like "paragraph" or "heading"
+  - `name` is the unique name of this type of node, usually something like "paragraph" or "heading"
 
   - `group` is the group this node belongs to. Commonly, this value will be 'block' or 'inline'
     This is used when validating the document and can be useful if you're defining complicated block structures
@@ -95,13 +97,13 @@ type alias HtmlToElement =
     and unordered lists only accept children that are part of the 'list\_item' group. The root
     node must be of group 'root'.
 
-  - `content type` describes what type of node this is, namely a block with block children, a block leaf,
+  - `contentType` describes what type of node this is, namely a block with block children, a block leaf,
     a block with inline children, or an inline leaf element.
 
-  - `serialization function` converts an element into html. This is used when rendering the document
+  - `toHtmlNode` converts an element into html. This is used when rendering the document
     as well as path translation and DOM validation logic.
 
-  - `deserialization function` converts html to an element. Currently, this is only used for paste
+  - `fromHtmlNode` converts html to an element. Currently, this is only used for paste
     event, but could potentially be used more generally in the future to interpret content editable
     changes.
 
@@ -109,11 +111,12 @@ type alias HtmlToElement =
 -- Define a paragraph node
 paragraph =
     nodeDefinition
-        "paragraph"
-        "block"
-        (textBlock [ "inline" ])
-        paragraphToHtml
-        htmlToParagraph
+        { name = "paragraph"
+        , group = "block"
+        , contentType = textBlock [ "inline" ]
+        , toHtmlNode = paragraphToHtml
+        , fromHtmlNode = htmlToParagraph
+        }
 ```
 
 -}

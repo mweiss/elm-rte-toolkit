@@ -13,6 +13,7 @@ import RichTextEditor.Annotation
         , findPathsWithAnnotation
         , selection
         )
+import RichTextEditor.Config.Spec exposing (Spec)
 import RichTextEditor.Model.Node exposing (Block, Path)
 import RichTextEditor.Model.Selection
     exposing
@@ -23,7 +24,6 @@ import RichTextEditor.Model.Selection
         , focusOffset
         , range
         )
-import RichTextEditor.Model.Spec exposing (Spec)
 import RichTextEditor.Path as Path
 
 

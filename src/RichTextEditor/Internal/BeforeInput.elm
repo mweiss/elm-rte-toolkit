@@ -1,6 +1,8 @@
 module RichTextEditor.Internal.BeforeInput exposing (..)
 
 import Json.Decode as D
+import RichTextEditor.Config.Command exposing (CommandMap, namedCommandListFromInputEvent)
+import RichTextEditor.Config.Spec exposing (Spec)
 import RichTextEditor.Internal.Editor exposing (applyNamedCommandList)
 import RichTextEditor.Internal.Model.Editor
     exposing
@@ -10,8 +12,6 @@ import RichTextEditor.Internal.Model.Editor
         , forceRerender
         )
 import RichTextEditor.Internal.Model.Event exposing (InputEvent)
-import RichTextEditor.Model.Command exposing (CommandMap, namedCommandListFromInputEvent)
-import RichTextEditor.Model.Spec exposing (Spec)
 
 
 preventDefaultOn : CommandMap -> Spec -> Editor -> Message -> ( Message, Bool )

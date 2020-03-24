@@ -1,4 +1,4 @@
-module RichTextEditor.Model.Decorations exposing
+module RichTextEditor.Config.Decorations exposing
     ( Decorations, ElementDecoratorFunction, MarkDecoratorFunction, emptyDecorations, elementDecorators, markDecorators, withMarkDecorators, withElementDecorators
     , addElementDecoration, addMarkDecoration, selectableDecoration
     )
@@ -23,13 +23,13 @@ import Dict exposing (Dict)
 import Html
 import Html.Attributes
 import Html.Events
+import RichTextEditor.Config.MarkDefinition as MarkDefinition exposing (MarkDefinition)
+import RichTextEditor.Config.NodeDefinition as NodeDefinition exposing (NodeDefinition)
 import RichTextEditor.Internal.Constants exposing (selection)
 import RichTextEditor.Internal.Model.Editor exposing (Message(..), Tagger)
 import RichTextEditor.Model.Element exposing (Element, annotations)
 import RichTextEditor.Model.Mark exposing (Mark)
-import RichTextEditor.Model.MarkDefinition as MarkDefinition exposing (MarkDefinition)
 import RichTextEditor.Model.Node exposing (Path)
-import RichTextEditor.Model.NodeDefinition as NodeDefinition exposing (NodeDefinition)
 import RichTextEditor.Model.Selection exposing (caret)
 import Set
 

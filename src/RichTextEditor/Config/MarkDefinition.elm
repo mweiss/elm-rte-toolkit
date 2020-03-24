@@ -1,4 +1,4 @@
-module RichTextEditor.Model.MarkDefinition exposing
+module RichTextEditor.Config.MarkDefinition exposing
     ( MarkDefinition, markDefinition, MarkToHtml, HtmlToMark, name, toHtmlNode, fromHtmlNode
     , defaultMarkDefinition, defaultMarkToHtml, defaultHtmlToMark
     )
@@ -17,9 +17,11 @@ module RichTextEditor.Model.MarkDefinition exposing
 
 -}
 
+import Array exposing (Array)
 import RichTextEditor.Internal.Model.Definitions as Internal
 import RichTextEditor.Model.Attribute exposing (Attribute(..))
 import RichTextEditor.Model.HtmlNode exposing (HtmlNode(..))
+import RichTextEditor.Model.Mark exposing (Mark)
 
 
 {-| A mark definition defines how a mark is encoded an decoded.
@@ -28,7 +30,7 @@ type alias MarkDefinition =
     Internal.MarkDefinition
 
 
-{-| Type alias for a mark encoding function: `Mark -> Array HtmlNode -> HtmlNode`
+{-| Type alias for a mark encoding function
 
     codeToHtmlNode : MarkToHtml
     codeToHtmlNode _ children =
@@ -36,10 +38,10 @@ type alias MarkDefinition =
 
 -}
 type alias MarkToHtml =
-    Internal.MarkToHtml
+    Mark -> Array HtmlNode -> HtmlNode
 
 
-{-| Type alias for a mark decoding function: `MarkDefinition -> HtmlNode -> Maybe ( Mark, Array HtmlNode )`
+{-| Type alias for a mark decoding function
 
     htmlNodeToCode : HtmlToMark
     htmlNodeToCode definition node =
@@ -56,23 +58,23 @@ type alias MarkToHtml =
 
 -}
 type alias HtmlToMark =
-    Internal.HtmlToMark
+    MarkDefinition -> HtmlNode -> Maybe ( Mark, Array HtmlNode )
 
 
 {-| Defines a mark. The arguments are as follows:
 
   - `name` - The unique name for this mark. This should be something like 'bold' or 'link'.
 
-  - `encode function` - The function that converts the mark to html. This is used in rendering,
+  - `toHtmlNode` - The function that converts the mark to html. This is used in rendering,
     DOM validation, and path translation.
 
-  - `decode function` - The function that converts html to marks. This is used in things
+  - `fromHtmlNode` - The function that converts html to marks. This is used in things
     like paste to determine the editor nodes from html.
 
 ```
     code : MarkDefinition
     code =
-        markDefinition "code" codeToHtmlNode htmlNodeToCode
+        markDefinition {name="code", toHtmlNode=codeToHtmlNode, fromHtmlNode=htmlNodeToCode}
 ```
 
 -}

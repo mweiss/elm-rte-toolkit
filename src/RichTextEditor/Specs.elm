@@ -19,11 +19,7 @@ module RichTextEditor.Specs exposing
 
 import Array exposing (Array)
 import RichTextEditor.Annotation exposing (selectable)
-import RichTextEditor.Model.Attribute exposing (Attribute(..), findIntegerAttribute, findStringAttribute)
-import RichTextEditor.Model.Element exposing (attributes, element)
-import RichTextEditor.Model.HtmlNode exposing (HtmlNode(..))
-import RichTextEditor.Model.Mark as Mark exposing (mark)
-import RichTextEditor.Model.MarkDefinition
+import RichTextEditor.Config.MarkDefinition
     exposing
         ( HtmlToMark
         , MarkDefinition
@@ -31,7 +27,7 @@ import RichTextEditor.Model.MarkDefinition
         , defaultHtmlToMark
         , markDefinition
         )
-import RichTextEditor.Model.NodeDefinition
+import RichTextEditor.Config.NodeDefinition
     exposing
         ( ElementToHtml
         , HtmlToElement
@@ -44,13 +40,17 @@ import RichTextEditor.Model.NodeDefinition
         , nodeDefinition
         , textBlock
         )
-import RichTextEditor.Model.Spec
+import RichTextEditor.Config.Spec
     exposing
         ( Spec
         , emptySpec
         , withMarkDefinitions
         , withNodeDefinitions
         )
+import RichTextEditor.Model.Attribute exposing (Attribute(..), findIntegerAttribute, findStringAttribute)
+import RichTextEditor.Model.Element exposing (attributes, element)
+import RichTextEditor.Model.HtmlNode exposing (HtmlNode(..))
+import RichTextEditor.Model.Mark as Mark exposing (mark)
 import Set
 
 
