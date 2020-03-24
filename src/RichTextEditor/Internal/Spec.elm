@@ -23,8 +23,8 @@ import RichTextEditor.Model.Node as Node
         ( Block
         , Children(..)
         , Inline(..)
+        , blockChildren
         , childNodes
-        , fromBlockArray
         , inlineChildren
         )
 import RichTextEditor.Model.NodeDefinition as NodeDefinition exposing (NodeDefinition, blockNode, defaultNodeDefinition)
@@ -223,7 +223,7 @@ arrayToChildNodes contentType results =
                     BlockNodeFragment bnf ->
                         case contentType of
                             BlockNodeType _ ->
-                                Ok <| fromBlockArray bnf
+                                Ok <| blockChildren bnf
 
                             _ ->
                                 Err "I received a block node fragment, but the node I parsed doesn't accept this child type"

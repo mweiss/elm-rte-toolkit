@@ -11,7 +11,7 @@ import RichTextEditor.Model.Node
         ( Block
         , Inline(..)
         , block
-        , fromBlockArray
+        , blockChildren
         , inlineChildren
         , plainText
         )
@@ -86,7 +86,7 @@ initNode : Block
 initNode =
     block
         (element doc [] Set.empty)
-        (fromBlockArray (Array.fromList [ initialEditorNode ]))
+        (blockChildren (Array.fromList [ initialEditorNode ]))
 
 
 initialEditorNode : Block

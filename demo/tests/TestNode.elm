@@ -5,7 +5,7 @@ import Expect
 import RichTextEditor.Annotation exposing (selectable)
 import RichTextEditor.Model.Element as Element exposing (element)
 import RichTextEditor.Model.InlineElement as InlineElement
-import RichTextEditor.Model.Node exposing (Block, Children(..), Inline(..), Path, block, elementFromBlockNode, fromBlockArray, inlineChildren, inlineElement, plainText, withElement)
+import RichTextEditor.Model.Node as Node exposing (Block, Children(..), Inline(..), Path, block, blockChildren, element, inlineChildren, inlineElement, plainText, withElement)
 import RichTextEditor.Model.Text as Text exposing (text, withText)
 import RichTextEditor.Node
     exposing
@@ -53,7 +53,7 @@ rootNode : Block
 rootNode =
     block
         (element doc [] Set.empty)
-        (fromBlockArray <| Array.fromList [ pNode ])
+        (blockChildren <| Array.fromList [ pNode ])
 
 
 pNode : Block
@@ -107,7 +107,7 @@ nodeNameOrTextValue : Path -> Node -> List String -> List String
 nodeNameOrTextValue _ node list =
     (case node of
         Block bn ->
-            Element.name (elementFromBlockNode bn)
+            Element.name (Node.element bn)
 
         Inline il ->
             case il of
@@ -178,7 +178,7 @@ setAnnotations mark node =
         Block bn ->
             let
                 params =
-                    elementFromBlockNode bn
+                    Node.element bn
             in
             Block (bn |> withElement (params |> Element.withAnnotations annotations))
 
@@ -216,7 +216,7 @@ addPathAnnotation path node =
 rootNodeWithPathAnnotation =
     block
         (element doc [] (Set.fromList [ "" ]))
-        (fromBlockArray <|
+        (blockChildren <|
             Array.fromList [ pHtmlNodeWithPathAnnotation ]
         )
 
@@ -258,7 +258,7 @@ testIndexedMap =
 rootNodeWithSameAnnotation =
     block
         (element doc [] (Set.fromList [ dummyAnnotation ]))
-        (fromBlockArray <|
+        (blockChildren <|
             Array.fromList [ pHtmlNodeWithSameAnnotation ]
         )
 
@@ -317,7 +317,7 @@ testFindAncestor =
                 Expect.equal
                     (Just ( [], rootNode ))
                     (findAncestor
-                        (\n -> Element.name (elementFromBlockNode n) == "doc")
+                        (\n -> Element.name (Node.element n) == "doc")
                         [ 0, 0 ]
                         rootNode
                     )
@@ -333,7 +333,7 @@ findNodeWithName : String -> Path -> Node -> Bool
 findNodeWithName name _ node =
     case node of
         Block bn ->
-            Element.name (elementFromBlockNode bn) == name
+            Element.name (Node.element bn) == name
 
         Inline il ->
             case il of
@@ -463,7 +463,7 @@ testPrevious =
 removedRootNode =
     block
         (element doc [] Set.empty)
-        (fromBlockArray <|
+        (blockChildren <|
             Array.fromList [ removedPHtmlNode ]
         )
 
@@ -479,7 +479,7 @@ removedPHtmlNode =
 removedRootAll =
     block
         (element doc [] Set.empty)
-        (fromBlockArray Array.empty)
+        (blockChildren Array.empty)
 
 
 removedPHtmlNodeAll =
@@ -491,7 +491,7 @@ removedPHtmlNodeAll =
 removedRootNodeRemovedPNodeAll =
     block
         (element doc [] Set.empty)
-        (fromBlockArray <|
+        (blockChildren <|
             Array.fromList [ removedPHtmlNodeAll ]
         )
 
@@ -527,7 +527,7 @@ testRemoveInRange =
 replaceRootPNode =
     block
         (element doc [] Set.empty)
-        (fromBlockArray <| Array.fromList [ replacePNode ])
+        (blockChildren <| Array.fromList [ replacePNode ])
 
 
 replacePNode =
@@ -587,7 +587,7 @@ testAnyRange =
 doubleRoot =
     block
         (element doc [] Set.empty)
-        (fromBlockArray <|
+        (blockChildren <|
             Array.fromList [ doublePNode, doublePNode ]
         )
 
@@ -747,14 +747,14 @@ expectedInsertBeforeBlock : Block
 expectedInsertBeforeBlock =
     block
         (element doc [] Set.empty)
-        (fromBlockArray <| Array.fromList [ hrNode, pNode ])
+        (blockChildren <| Array.fromList [ hrNode, pNode ])
 
 
 expectedInsertBeforeInline : Block
 expectedInsertBeforeInline =
     block
         (element doc [] Set.empty)
-        (fromBlockArray <| Array.fromList [ pNodeExpectedBeforeInline ])
+        (blockChildren <| Array.fromList [ pNodeExpectedBeforeInline ])
 
 
 pNodeExpectedBeforeInline : Block
@@ -799,14 +799,14 @@ expectedInsertAfterBlock : Block
 expectedInsertAfterBlock =
     block
         (element doc [] Set.empty)
-        (fromBlockArray <| Array.fromList [ pNode, hrNode ])
+        (blockChildren <| Array.fromList [ pNode, hrNode ])
 
 
 expectedInsertAfterInline : Block
 expectedInsertAfterInline =
     block
         (element doc [] Set.empty)
-        (fromBlockArray <| Array.fromList [ pNodeExpectedAfterInline ])
+        (blockChildren <| Array.fromList [ pNodeExpectedAfterInline ])
 
 
 pNodeExpectedAfterInline : Block
@@ -869,7 +869,7 @@ rootWithReversePNode : Block
 rootWithReversePNode =
     block
         (element doc [] Set.empty)
-        (fromBlockArray <|
+        (blockChildren <|
             Array.fromList [ pNodeReverse ]
         )
 
@@ -878,7 +878,7 @@ rootAfterJoin : Block
 rootAfterJoin =
     block
         (element doc [] Set.empty)
-        (fromBlockArray <|
+        (blockChildren <|
             Array.fromList [ pNode, pNodeReverse ]
         )
 

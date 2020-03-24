@@ -20,23 +20,22 @@ import RichTextEditor.Model.Editor exposing (state)
 import RichTextEditor.Model.Element as Element exposing (Element, element)
 import RichTextEditor.Model.InlineElement as InlineElement
 import RichTextEditor.Model.Mark as Mark exposing (Mark, MarkOrder, markOrderFromSpec)
-import RichTextEditor.Model.Node
+import RichTextEditor.Model.Node as Node
     exposing
         ( Block
         , Children(..)
         , Inline(..)
         , InlineTree(..)
         , block
+        , blockChildren
         , childNodes
-        , elementFromBlockNode
-        , fromBlockArray
-        , inlineArray
         , inlineChildren
         , inlineElement
-        , inlineTree
         , markedText
         , plainText
         , toBlockArray
+        , toInlineArray
+        , toInlineTree
         )
 import RichTextEditor.Model.Spec exposing (Spec, withMarkDefinitions)
 import RichTextEditor.Model.State as State exposing (State)
@@ -376,7 +375,7 @@ inlineChildrenToMarkdown cn =
         InlineChildren a ->
             let
                 results =
-                    List.map (inlineToMarkdown (inlineArray a)) (Array.toList (inlineTree a))
+                    List.map (inlineToMarkdown (toInlineArray a)) (Array.toList (toInlineTree a))
             in
             Result.map (List.concatMap identity) (unwrapAndFilterChildNodes results)
 
@@ -510,7 +509,7 @@ textFromChildNodes cn =
                                     else
                                         ""
                         )
-                        (inlineArray il)
+                        (toInlineArray il)
 
         _ ->
             ""
@@ -582,7 +581,7 @@ blockToMarkdown : Block -> Result String MBlock
 blockToMarkdown node =
     let
         parameters =
-            elementFromBlockNode node
+            Node.element node
 
         children =
             childNodes node
@@ -793,7 +792,7 @@ markdownToBlock md =
 markdownBlockListToBlockChildNodes : List MBlock -> Result String Children
 markdownBlockListToBlockChildNodes blocks =
     Result.map
-        (\items -> fromBlockArray (Array.fromList items))
+        (\items -> blockChildren (Array.fromList items))
         (markdownBlockListToBlockLeaves blocks)
 
 
@@ -922,7 +921,7 @@ markdownListToEditorBlock lb children =
         (\listItems ->
             block
                 (element node attributes Set.empty)
-                (fromBlockArray
+                (blockChildren
                     (Array.fromList
                         (List.map
                             (\cn ->

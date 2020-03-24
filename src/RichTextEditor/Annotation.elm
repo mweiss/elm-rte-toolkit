@@ -22,7 +22,7 @@ import RichTextEditor.Model.Node
         ( Block
         , Inline(..)
         , Path
-        , elementFromBlockNode
+        , element
         , withElement
         )
 import RichTextEditor.Model.Text as Text
@@ -99,7 +99,7 @@ toggle func annotation node =
         Block bn ->
             let
                 newParameters =
-                    toggleElementParameters func annotation (elementFromBlockNode bn)
+                    toggleElementParameters func annotation (element bn)
 
                 newBlockNode =
                     bn |> withElement newParameters
@@ -134,7 +134,7 @@ annotationsFromNode : Node -> Set String
 annotationsFromNode node =
     case node of
         Block blockNode ->
-            Element.annotations <| elementFromBlockNode blockNode
+            Element.annotations <| element blockNode
 
         Inline inlineLeaf ->
             case inlineLeaf of

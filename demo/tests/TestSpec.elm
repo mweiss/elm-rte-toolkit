@@ -9,7 +9,7 @@ import RichTextEditor.Model.Node
     exposing
         ( Inline(..)
         , block
-        , fromBlockArray
+        , blockChildren
         , inlineChildren
         , plainText
         )
@@ -95,7 +95,7 @@ expectedBlockquoteAndParagraphs =
             Array.fromList
                 [ block
                     (element blockquote [] Set.empty)
-                    (fromBlockArray twoParagraphsBlockFragment)
+                    (blockChildren twoParagraphsBlockFragment)
                 ]
         ]
 

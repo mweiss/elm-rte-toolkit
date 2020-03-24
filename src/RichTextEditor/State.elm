@@ -6,7 +6,7 @@ import RichTextEditor.Annotation exposing (selection)
 import RichTextEditor.Internal.Spec exposing (nodeDefinitionWithDefault)
 import RichTextEditor.Model.InlineElement as InlineElement
 import RichTextEditor.Model.Internal exposing (ContentType(..), toStringContentType)
-import RichTextEditor.Model.Node as Node exposing (Block, Children(..), Inline(..), InlineChildren, Path, childNodes, elementFromBlockNode, inlineArray, inlineChildren, toBlockArray, withChildNodes)
+import RichTextEditor.Model.Node as Node exposing (Block, Children(..), Inline(..), InlineChildren, Path, childNodes, element, inlineChildren, toBlockArray, toInlineArray, withChildNodes)
 import RichTextEditor.Model.NodeDefinition as NodeDefinition
 import RichTextEditor.Model.Selection
     exposing
@@ -95,7 +95,7 @@ reduceNode node =
                                         |> withChildNodes
                                             (inlineChildren <|
                                                 Array.fromList
-                                                    (mergeSimilarInlineLeaves (removeExtraEmptyTextLeaves (Array.toList (inlineArray a))))
+                                                    (mergeSimilarInlineLeaves (removeExtraEmptyTextLeaves (Array.toList (toInlineArray a))))
                                             )
                                     )
 
@@ -172,10 +172,10 @@ translatePath old new path offset =
                                             InlineChildren newA ->
                                                 let
                                                     pOff =
-                                                        parentOffset (inlineArray oldA) lastIndex offset
+                                                        parentOffset (toInlineArray oldA) lastIndex offset
 
                                                     ( cI, cO ) =
-                                                        childOffset (inlineArray newA) pOff
+                                                        childOffset (toInlineArray newA) pOff
 
                                                     newPath =
                                                         List.take (List.length path - 1) path ++ [ cI ]
@@ -304,7 +304,7 @@ validateEditorBlockNode : Spec -> Maybe (Set String) -> Block -> List String
 validateEditorBlockNode spec allowedGroups node =
     let
         parameters =
-            elementFromBlockNode node
+            element node
 
         definition =
             nodeDefinitionWithDefault parameters spec
@@ -337,7 +337,7 @@ validateEditorBlockNode spec allowedGroups node =
             InlineChildren la ->
                 case contentType of
                     TextBlockNodeType groups ->
-                        List.concatMap (validateInlineLeaf spec groups) (Array.toList (inlineArray la))
+                        List.concatMap (validateInlineLeaf spec groups) (Array.toList (toInlineArray la))
 
                     _ ->
                         [ "I was expecting textblock content type, but instead I got " ++ toStringContentType contentType ]

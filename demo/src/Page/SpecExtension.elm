@@ -23,14 +23,13 @@ import RichTextEditor.Model.Decorations exposing (addElementDecoration, selectab
 import RichTextEditor.Model.Editor
 import RichTextEditor.Model.Element as Element exposing (Element, element)
 import RichTextEditor.Model.HtmlNode exposing (HtmlNode(..))
-import RichTextEditor.Model.Node
+import RichTextEditor.Model.Node as Node
     exposing
         ( Block
         , Children(..)
         , Path
         , block
-        , elementFromBlockNode
-        , fromBlockArray
+        , blockChildren
         , inlineChildren
         , plainText
         , withElement
@@ -266,7 +265,7 @@ docInitNode : Block
 docInitNode =
     block
         (element doc [] Set.empty)
-        (fromBlockArray (Array.fromList [ initialEditorNode, initialCaptionedImage, initialEditorNode ]))
+        (blockChildren (Array.fromList [ initialEditorNode, initialCaptionedImage, initialEditorNode ]))
 
 
 initialEditorNode : Block
@@ -372,7 +371,7 @@ updateCaptionedImageText path value state =
                 Block bn ->
                     let
                         ep =
-                            elementFromBlockNode bn
+                            Node.element bn
 
                         attributes =
                             Element.attributes ep

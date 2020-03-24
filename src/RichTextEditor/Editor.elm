@@ -45,13 +45,13 @@ import RichTextEditor.Model.Node
         , Inline(..)
         , InlineTree(..)
         , Path
+        , blockChildren
         , childNodes
-        , elementFromBlockNode
-        , fromBlockArray
-        , inlineArray
+        , element
         , inlineChildren
-        , inlineTree
         , toBlockArray
+        , toInlineArray
+        , toInlineTree
         , withChildNodes
         )
 import RichTextEditor.Model.NodeDefinition as NodeDefinition
@@ -434,13 +434,13 @@ applyTextChange editorNode ( path, text ) =
                                 Just textChangeNode ->
                                     Just <|
                                         (editorNode
-                                            |> withChildNodes (fromBlockArray <| Array.set x textChangeNode a)
+                                            |> withChildNodes (blockChildren <| Array.set x textChangeNode a)
                                         )
 
                 InlineChildren array ->
                     let
                         a =
-                            inlineArray array
+                            toInlineArray array
                     in
                     if not <| List.isEmpty xs then
                         Nothing
@@ -707,14 +707,14 @@ viewEditorBlockNode : Spec -> Decorations msg -> Path -> Block -> Html msg
 viewEditorBlockNode spec decorations backwardsPath node =
     viewElement spec
         decorations
-        (elementFromBlockNode node)
+        (element node)
         backwardsPath
         (case childNodes node of
             BlockChildren l ->
                 Array.indexedMap (\i n -> viewEditorBlockNode spec decorations (i :: backwardsPath) n) (toBlockArray l)
 
             InlineChildren l ->
-                Array.map (\n -> viewInlineLeafTree spec decorations backwardsPath (inlineArray l) n) (inlineTree l)
+                Array.map (\n -> viewInlineLeafTree spec decorations backwardsPath (toInlineArray l) n) (toInlineTree l)
 
             Leaf ->
                 Array.empty

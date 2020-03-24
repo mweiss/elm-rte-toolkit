@@ -2,22 +2,21 @@ module RichTextEditor.Internal.HtmlNode exposing (..)
 
 import Array exposing (Array)
 import RichTextEditor.Internal.Spec exposing (markDefinitionWithDefault, nodeDefinitionWithDefault)
-import RichTextEditor.Model.Element as Element exposing (Element)
+import RichTextEditor.Model.Element exposing (Element)
 import RichTextEditor.Model.HtmlNode exposing (HtmlNode(..))
-import RichTextEditor.Model.InlineElement exposing (element)
-import RichTextEditor.Model.Mark as Mark exposing (Mark)
+import RichTextEditor.Model.InlineElement as InlineElement
+import RichTextEditor.Model.Mark exposing (Mark)
 import RichTextEditor.Model.MarkDefinition as MarkDefinition
-import RichTextEditor.Model.Node
+import RichTextEditor.Model.Node as Node
     exposing
         ( Block
         , Children(..)
         , Inline(..)
         , InlineTree(..)
         , childNodes
-        , elementFromBlockNode
-        , inlineArray
-        , inlineTree
         , toBlockArray
+        , toInlineArray
+        , toInlineTree
         )
 import RichTextEditor.Model.NodeDefinition as NodeDefinition
 import RichTextEditor.Model.Spec exposing (Spec)
@@ -55,7 +54,7 @@ elementToHtmlNode spec parameters children =
 -}
 editorBlockNodeToHtmlNode : Spec -> Block -> HtmlNode
 editorBlockNodeToHtmlNode spec node =
-    elementToHtmlNode spec (elementFromBlockNode node) (childNodesToHtmlNode spec (childNodes node))
+    elementToHtmlNode spec (Node.element node) (childNodesToHtmlNode spec (childNodes node))
 
 
 {-| Renders child nodes to their HtmlNode representation.
@@ -67,7 +66,7 @@ childNodesToHtmlNode spec childNodes =
             Array.map (editorBlockNodeToHtmlNode spec) (toBlockArray blockArray)
 
         InlineChildren inlineLeafArray ->
-            Array.map (editorInlineLeafTreeToHtmlNode spec (inlineArray inlineLeafArray)) (inlineTree inlineLeafArray)
+            Array.map (editorInlineLeafTreeToHtmlNode spec (toInlineArray inlineLeafArray)) (toInlineTree inlineLeafArray)
 
         Leaf ->
             Array.empty
@@ -109,4 +108,4 @@ editorInlineLeafToHtmlNode spec node =
             textToHtmlNode (text contents)
 
         InlineElement l ->
-            elementToHtmlNode spec (element l) Array.empty
+            elementToHtmlNode spec (InlineElement.element l) Array.empty

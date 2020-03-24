@@ -33,11 +33,11 @@ import RichTextEditor.Model.Node
         , InlineTree(..)
         , Path
         , childNodes
-        , elementFromBlockNode
-        , inlineArray
-        , inlineTree
+        , element
         , reverseLookup
         , toBlockArray
+        , toInlineArray
+        , toInlineTree
         )
 import RichTextEditor.Model.NodeDefinition as NodeDefinition
 import RichTextEditor.Model.Spec exposing (Spec)
@@ -86,7 +86,7 @@ domToEditor spec node path =
     else
         let
             parameters =
-                elementFromBlockNode node
+                element node
 
             nodeDefinition =
                 nodeDefinitionWithDefault parameters spec
@@ -119,7 +119,7 @@ domToEditor spec node path =
                                                 Just (i :: p)
 
                             InlineChildren l ->
-                                case Array.get i (inlineTree l) of
+                                case Array.get i (toInlineTree l) of
                                     Nothing ->
                                         Nothing
 
@@ -142,7 +142,7 @@ editorToDom spec node path =
             Just []
 
         x :: xs ->
-            case pathToChildContentsFromElementParameters spec (elementFromBlockNode node) of
+            case pathToChildContentsFromElementParameters spec (element node) of
                 Nothing ->
                     Nothing
 
@@ -170,8 +170,8 @@ editorToDom spec node path =
                                     case
                                         pathToChildContentsFromInlineTreePath
                                             spec
-                                            (inlineArray l)
-                                            (inlineTree l)
+                                            (toInlineArray l)
+                                            (toInlineTree l)
                                             inlineTreePath
                                     of
                                         Nothing ->

@@ -23,10 +23,10 @@ import RichTextEditor.Model.Node
         , Inline(..)
         , block
         , childNodes
-        , elementFromBlockNode
-        , inlineArray
+        , element
         , inlineChildren
         , plainText
+        , toInlineArray
         )
 import RichTextEditor.Model.Selection
     exposing
@@ -96,7 +96,7 @@ pasteText text editorState =
                                 newLines =
                                     List.map
                                         (\line ->
-                                            block (elementFromBlockNode tbNode)
+                                            block (element tbNode)
                                                 (inlineChildren <|
                                                     Array.fromList
                                                         [ plainText line
@@ -174,7 +174,7 @@ pasteInlineArray inlineFragment editorState =
                                         Err "Invalid state, somehow the anchor node is the root node"
 
                                     Just index ->
-                                        case Array.get index (inlineArray a) of
+                                        case Array.get index (toInlineArray a) of
                                             Nothing ->
                                                 Err "Invalid anchor node path"
 

@@ -46,7 +46,7 @@ import RichTextEditor.Model.Keys
         , enter
         , return
         )
-import RichTextEditor.Model.Node
+import RichTextEditor.Model.Node as Node
     exposing
         ( Block
         , BlockChildren
@@ -54,9 +54,8 @@ import RichTextEditor.Model.Node
         , Inline(..)
         , Path
         , block
+        , blockChildren
         , childNodes
-        , elementFromBlockNode
-        , fromBlockArray
         , toBlockArray
         )
 import RichTextEditor.Model.Selection
@@ -165,7 +164,7 @@ addListItem : ListDefinition -> Block -> Block
 addListItem definition node =
     block
         (item definition)
-        (fromBlockArray <|
+        (blockChildren <|
             Array.fromList [ node ]
         )
 
@@ -184,7 +183,7 @@ wrap definition type_ editorState =
 
 findListItemAncestor : Element -> Path -> Block -> Maybe ( Path, Block )
 findListItemAncestor parameters =
-    findAncestor (\n -> Element.name (elementFromBlockNode n) == Element.name parameters)
+    findAncestor (\n -> Element.name (Node.element n) == Element.name parameters)
 
 
 split : ListDefinition -> Transform
@@ -201,7 +200,7 @@ isListNode definition node =
         Block bn ->
             let
                 bnName =
-                    Element.name (elementFromBlockNode bn)
+                    Element.name (Node.element bn)
             in
             bnName
                 == Element.name (ordered definition)

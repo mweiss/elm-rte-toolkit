@@ -13,8 +13,8 @@ import RichTextEditor.Model.Mark as Mark
 import RichTextEditor.Model.Node
     exposing
         ( Path
-        , elementFromBlockNode
-        , marksFromInline
+        , element
+        , marks
         )
 import RichTextEditor.Model.Selection exposing (anchorNode, focusNode, normalize)
 import RichTextEditor.Model.State as State exposing (State)
@@ -274,13 +274,13 @@ accumulateControlState node controlState =
         Block n ->
             { controlState
                 | nodes =
-                    Set.insert (Element.name (elementFromBlockNode n)) controlState.nodes
+                    Set.insert (Element.name (element n)) controlState.nodes
             }
 
         Inline inline ->
             let
                 names =
-                    List.map Mark.name (marksFromInline inline)
+                    List.map Mark.name (marks inline)
             in
             { controlState | hasInline = True, marks = Set.union (Set.fromList names) controlState.marks }
 

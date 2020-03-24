@@ -23,13 +23,12 @@ import RichTextEditor.Model.Editor
         )
 import RichTextEditor.Model.Element as Element exposing (Element, element)
 import RichTextEditor.Model.HtmlNode exposing (HtmlNode(..))
-import RichTextEditor.Model.Node
+import RichTextEditor.Model.Node as Node
     exposing
         ( Block
         , Path
         , block
-        , elementFromBlockNode
-        , fromBlockArray
+        , blockChildren
         , inlineChildren
         , plainText
         , withElement
@@ -91,7 +90,7 @@ todoInitNode : Block
 todoInitNode =
     block
         (element todoList [] Set.empty)
-        (fromBlockArray (Array.fromList [ initialTodoNode "Item 1", initialTodoNode "Item 2" ]))
+        (blockChildren (Array.fromList [ initialTodoNode "Item 1", initialTodoNode "Item 2" ]))
 
 
 initialTodoNode : String -> Block
@@ -295,7 +294,7 @@ updateTodoListItem path value state =
                 Block bn ->
                     let
                         ep =
-                            elementFromBlockNode bn
+                            Node.element bn
 
                         attributes =
                             Element.attributes ep

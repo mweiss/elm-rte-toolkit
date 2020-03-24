@@ -65,12 +65,12 @@ import RichTextEditor.Model.Command
         , withDefaultInputEventCommand
         , withDefaultKeyCommand
         )
-import RichTextEditor.Model.Element as Element exposing (Element, element)
+import RichTextEditor.Model.Element as Element exposing (Element)
 import RichTextEditor.Model.Event exposing (InputEvent, KeyboardEvent)
 import RichTextEditor.Model.InlineElement as InlineElement exposing (inlineElement)
-import RichTextEditor.Model.Keys exposing (alt, backspace, delete, enter, meta, return, shift, short)
+import RichTextEditor.Model.Keys exposing (alt, backspace, delete, enter, return, shift, short)
 import RichTextEditor.Model.Mark as Mark exposing (Mark, MarkOrder, ToggleAction(..), toggle)
-import RichTextEditor.Model.Node
+import RichTextEditor.Model.Node as Node
     exposing
         ( Block
         , BlockChildren
@@ -78,13 +78,12 @@ import RichTextEditor.Model.Node
         , Inline(..)
         , Path
         , block
+        , blockChildren
         , childNodes
-        , elementFromBlockNode
-        , fromBlockArray
-        , inlineArray
         , inlineChildren
-        , marksFromInline
+        , marks
         , toBlockArray
+        , toInlineArray
         , withChildNodes
         , withElement
         )
@@ -308,7 +307,7 @@ joinBackward editorState =
                                     InlineChildren a ->
                                         let
                                             array =
-                                                inlineArray a
+                                                toInlineArray a
                                         in
                                         case Array.get (Array.length array - 1) array of
                                             Nothing ->
@@ -355,7 +354,7 @@ selectionIsBeginningOfTextBlock selection root =
                                 False
 
                             Just i ->
-                                if i /= 0 || Array.isEmpty (inlineArray a) then
+                                if i /= 0 || Array.isEmpty (toInlineArray a) then
                                     False
 
                                 else
@@ -383,11 +382,11 @@ selectionIsEndOfTextBlock selection root =
                                 False
 
                             Just i ->
-                                if i /= Array.length (inlineArray a) - 1 then
+                                if i /= Array.length (toInlineArray a) - 1 then
                                     False
 
                                 else
-                                    case Array.get i (inlineArray a) of
+                                    case Array.get i (toInlineArray a) of
                                         Nothing ->
                                             False
 
@@ -604,7 +603,7 @@ removeRangeSelection editorState =
 insertLineBreak : Transform
 insertLineBreak =
     insertInlineElement
-        (InlineElement (inlineElement (element hardBreak [] Set.empty) []))
+        (InlineElement (inlineElement (Element.element hardBreak [] Set.empty) []))
 
 
 insertInlineElement : Inline -> Transform
@@ -975,7 +974,7 @@ isBlockOrInlineNodeWithMark : String -> Node -> Bool
 isBlockOrInlineNodeWithMark markName node =
     case node of
         Inline il ->
-            hasMarkWithName markName (marksFromInline il)
+            hasMarkWithName markName (marks il)
 
         _ ->
             True
@@ -1008,7 +1007,7 @@ toggleMarkSingleInlineNode markOrder mark action editorState =
                             Inline il ->
                                 let
                                     newMarks =
-                                        toggle action markOrder mark (marksFromInline il)
+                                        toggle action markOrder mark (marks il)
 
                                     leaves =
                                         case il of
@@ -1270,7 +1269,7 @@ toggleBlock allowedBlocks onParams offParams editorState =
                         (\node ->
                             case node of
                                 Block bn ->
-                                    elementFromBlockNode bn == onParams
+                                    Node.element bn == onParams
 
                                 _ ->
                                     True
@@ -1298,7 +1297,7 @@ toggleBlock allowedBlocks onParams offParams editorState =
                                         Block bn ->
                                             let
                                                 p =
-                                                    elementFromBlockNode bn
+                                                    Node.element bn
                                             in
                                             if List.member (Element.name p) allowedBlocks then
                                                 Block (bn |> withElement newParams)
@@ -1353,7 +1352,7 @@ wrap contentsMapFunc elementParameters editorState =
                             newChildren =
                                 case node of
                                     Block bn ->
-                                        fromBlockArray (Array.map contentsMapFunc (Array.fromList [ bn ]))
+                                        blockChildren (Array.map contentsMapFunc (Array.fromList [ bn ]))
 
                                     Inline il ->
                                         inlineChildren (Array.fromList [ il ])
@@ -1400,7 +1399,7 @@ wrap contentsMapFunc elementParameters editorState =
                                                         let
                                                             newChildNode =
                                                                 block elementParameters
-                                                                    (fromBlockArray <|
+                                                                    (blockChildren <|
                                                                         Array.map
                                                                             contentsMapFunc
                                                                             (Array.slice childAnchorIndex
@@ -1410,7 +1409,7 @@ wrap contentsMapFunc elementParameters editorState =
                                                                     )
 
                                                             newBlockArray =
-                                                                fromBlockArray <|
+                                                                blockChildren <|
                                                                     Array.append
                                                                         (Array.append
                                                                             (Array.Extra.sliceUntil
@@ -1548,7 +1547,7 @@ addLiftMarkToBlocksInSelection selection root =
 
 annotationsFromBlockNode : Block -> Set String
 annotationsFromBlockNode node =
-    Element.annotations <| elementFromBlockNode node
+    Element.annotations <| Node.element node
 
 
 liftConcatMapFunc : Node -> List Node
@@ -1583,7 +1582,7 @@ liftConcatMapFunc node =
                                     n :: l
 
                                 else
-                                    [ bn |> withChildNodes (fromBlockArray (Array.fromList <| n :: l)) ]
+                                    [ bn |> withChildNodes (blockChildren (Array.fromList <| n :: l)) ]
                             )
                             groupedBlockNodes
 
@@ -1663,7 +1662,7 @@ isEmptyTextBlock node =
                 InlineChildren a ->
                     let
                         array =
-                            inlineArray a
+                            toInlineArray a
                     in
                     case Array.get 0 array of
                         Nothing ->
@@ -1718,7 +1717,7 @@ splitBlockHeaderToNewParagraph headerElements paragraphElement editorState =
                                     Block bn ->
                                         let
                                             parameters =
-                                                elementFromBlockNode bn
+                                                Node.element bn
                                         in
                                         if
                                             List.member
@@ -2046,7 +2045,7 @@ backspaceWord editorState =
                                         -- group text nodes together
                                         List.Extra.groupWhile
                                             groupSameTypeInlineLeaf
-                                            (Array.toList (inlineArray arr))
+                                            (Array.toList (toInlineArray arr))
                                 in
                                 case List.Extra.last (anchorNode selection) of
                                     Nothing ->
@@ -2339,7 +2338,7 @@ deleteWord editorState =
                                     groupedLeaves =
                                         List.Extra.groupWhile
                                             groupSameTypeInlineLeaf
-                                            (Array.toList (inlineArray arr))
+                                            (Array.toList (toInlineArray arr))
                                 in
                                 case List.Extra.last (anchorNode selection) of
                                     Nothing ->

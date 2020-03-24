@@ -31,10 +31,10 @@ import RichTextEditor.Model.Node
         , Children(..)
         , Inline(..)
         , block
-        , fromBlockArray
+        , blockChildren
         , inlineChildren
         , inlineElement
-        , marksFromInline
+        , marks
         , plainText
         )
 import RichTextEditor.Model.Selection exposing (anchorNode, focusNode, normalize)
@@ -78,7 +78,7 @@ docInitNode : Block
 docInitNode =
     block
         (element doc [] Set.empty)
-        (fromBlockArray (Array.fromList [ initialEditorNode ]))
+        (blockChildren (Array.fromList [ initialEditorNode ]))
 
 
 initialEditorNode : Block
@@ -174,7 +174,7 @@ handleShowInsertLinkModal spec model =
                         (\n ->
                             case n of
                                 Inline il ->
-                                    List.any (\m -> Mark.name m == "link") (marksFromInline il)
+                                    List.any (\m -> Mark.name m == "link") (marks il)
 
                                 _ ->
                                     False
