@@ -11,8 +11,8 @@ import RichTextEditor.Annotation
         ( addAnnotationAtPath
         , clearAnnotations
         , findPathsWithAnnotation
+        , selection
         )
-import RichTextEditor.Model.Annotations exposing (selection)
 import RichTextEditor.Model.Node exposing (Block, Path)
 import RichTextEditor.Model.Selection
     exposing

@@ -2,7 +2,7 @@ module TestNode exposing (..)
 
 import Array
 import Expect
-import RichTextEditor.Model.Annotations exposing (selectable)
+import RichTextEditor.Annotation exposing (selectable)
 import RichTextEditor.Model.Element as Element exposing (element)
 import RichTextEditor.Model.InlineElement as InlineElement
 import RichTextEditor.Model.Node exposing (Block, Children(..), Inline(..), Path, blockNode, elementFromBlockNode, fromBlockArray, inlineChildren, inlineElement, plainText, withElement)

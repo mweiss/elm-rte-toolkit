@@ -14,7 +14,6 @@ module RichTextEditor.Model.Command exposing
     , namedCommandListFromInputEvent
     , namedCommandListFromKeyboardEvent
     , set
-    , stack
     , transformCommand
     , withDefaultInputEventCommand
     , withDefaultKeyCommand
@@ -253,47 +252,9 @@ combine m1 m2 =
                                 map2.inputEventTypeMap
                                 map1.inputEventTypeMap
                         , keyMap = Dict.foldl compose map2.keyMap map1.keyMap
-                        , defaultKeyCommand =
-                            if map1.defaultKeyCommand == emptyFunction then
-                                map2.defaultKeyCommand
-
-                            else
-                                map1.defaultKeyCommand
-                        , defaultInputEventCommand =
-                            if map1.defaultInputEventCommand == emptyFunction then
-                                map2.defaultInputEventCommand
-
-                            else
-                                map1.defaultInputEventCommand
+                        , defaultKeyCommand = \e -> map2.defaultKeyCommand e ++ map1.defaultKeyCommand e
+                        , defaultInputEventCommand = \e -> map2.defaultInputEventCommand e ++ map1.defaultInputEventCommand e
                         }
-
-
-stack : List CommandBinding -> NamedCommandList -> CommandMap -> CommandMap
-stack bindings list map =
-    List.foldl
-        (\binding accMap ->
-            case accMap of
-                CommandMap m ->
-                    CommandMap <|
-                        case binding of
-                            Key keys ->
-                                case Dict.get keys m.keyMap of
-                                    Nothing ->
-                                        { m | keyMap = Dict.insert keys list m.keyMap }
-
-                                    Just f ->
-                                        { m | keyMap = Dict.insert keys (list ++ f) m.keyMap }
-
-                            InputEventType type_ ->
-                                case Dict.get type_ m.inputEventTypeMap of
-                                    Nothing ->
-                                        { m | inputEventTypeMap = Dict.insert type_ list m.inputEventTypeMap }
-
-                                    Just f ->
-                                        { m | inputEventTypeMap = Dict.insert type_ (list ++ f) m.inputEventTypeMap }
-        )
-        map
-        bindings
 
 
 emptyFunction =

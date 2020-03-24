@@ -10,7 +10,7 @@ import Array
 import Array.Extra
 import Json.Decode as D
 import Json.Decode.Extra as DE
-import RichTextEditor.Model.Constants exposing (zeroWidthSpace)
+import RichTextEditor.Internal.Constants exposing (zeroWidthSpace)
 import RichTextEditor.Model.DomNode exposing (DomNode(..), DomNodeContents)
 import RichTextEditor.Model.Event exposing (TextChange)
 import RichTextEditor.Model.HtmlNode exposing (HtmlNode(..))

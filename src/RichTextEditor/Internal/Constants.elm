@@ -1,15 +1,19 @@
-module RichTextEditor.Model.Annotations exposing (selection, selectable, lift)
+module RichTextEditor.Internal.Constants exposing (zeroWidthSpace, selection, selectable, lift)
 
-{-| This module contains common constants used as node annotations. Annotations can be added to
-elements and text to keep track of position when doing a complex transform like a lift or join,
-as well as add flags to a node that you can use to effect behavior, like if something is selectable.
+{-| Miscellaneous constants used throughout the code
 
-    newElement =
-        element |> Element.withAnnotations (Set.singleton selection)
-
-@docs selection, selectable, lift
+@docs zeroWidthSpace, selection, selectable, lift
 
 -}
+
+
+{-| A string representing the unicode character for a zero width space. Browsers remove empty
+text nodes, so in order to keep the expected DOM structure and the real DOM structure consistent,
+we use zero width spaces for empty html text nodes.
+-}
+zeroWidthSpace : String
+zeroWidthSpace =
+    "\u{200B}"
 
 
 {-| Represents that a node is currently selected. This annotation is transient, e.g. it

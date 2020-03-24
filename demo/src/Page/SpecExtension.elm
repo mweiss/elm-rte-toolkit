@@ -9,10 +9,10 @@ import Html.Attributes exposing (href, title)
 import Html.Events exposing (onClick)
 import Json.Decode as D
 import Links exposing (rteToolkit)
+import RichTextEditor.Annotation exposing (selectable)
 import RichTextEditor.Commands as Commands
 import RichTextEditor.Decorations exposing (selectableDecoration)
 import RichTextEditor.Editor exposing (applyCommand, applyCommandNoForceSelection)
-import RichTextEditor.Model.Annotations exposing (selectable)
 import RichTextEditor.Model.Attribute
     exposing
         ( Attribute(..)

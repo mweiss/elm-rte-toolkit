@@ -3,7 +3,7 @@ module RichTextEditor.Decorations exposing (selectableDecoration)
 import Html
 import Html.Attributes
 import Html.Events
-import RichTextEditor.Model.Annotations exposing (selection)
+import RichTextEditor.Internal.Constants exposing (selection)
 import RichTextEditor.Model.Editor
     exposing
         ( InternalEditorMsg(..)

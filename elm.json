@@ -6,8 +6,6 @@
     "version": "1.0.0",
     "exposed-modules": [
         "RichTextEditor.Model.Attribute",
-        "RichTextEditor.Model.Annotations",
-        "RichTextEditor.Model.Constants",
         "RichTextEditor.Model.Element",
         "RichTextEditor.Model.Event",
         "RichTextEditor.Model.Keys",

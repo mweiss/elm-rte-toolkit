@@ -1,4 +1,4 @@
-module TestModel exposing (..)
+module Model.TestNode exposing (..)
 
 import Array
 import Expect

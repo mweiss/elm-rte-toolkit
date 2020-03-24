@@ -5,6 +5,7 @@ import Controls exposing (EditorMsg(..), InsertImageModal, InsertLinkModal, Styl
 import ExtraMarks exposing (strikethrough, underline)
 import Html exposing (Html, div)
 import Html.Attributes
+import RichTextEditor.Annotation exposing (selectable)
 import RichTextEditor.Commands as Commands
     exposing
         ( insertBlockNode
@@ -18,7 +19,6 @@ import RichTextEditor.Commands as Commands
 import RichTextEditor.Decorations exposing (selectableDecoration)
 import RichTextEditor.Editor as Editor exposing (applyCommand, applyNamedCommandList)
 import RichTextEditor.List exposing (ListType, defaultListDefinition)
-import RichTextEditor.Model.Annotations exposing (selectable)
 import RichTextEditor.Model.Attribute exposing (Attribute(..))
 import RichTextEditor.Model.Command as Command exposing (CommandMap, inputEvent, key, set, transformCommand)
 import RichTextEditor.Model.Decorations exposing (Decorations, addElementDecoration, emptyDecorations)

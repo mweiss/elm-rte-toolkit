@@ -1,15 +1,20 @@
 module RichTextEditor.Annotation exposing
-    ( add
-    , addAnnotationAtPath
-    , clearAnnotations
-    , findPathsWithAnnotation
-    , getAnnotationsFromNode
-    , remove
-    , removeAnnotationAtPath
-    , toggle
-    , toggleElementParameters
+    ( selection, selectable, lift
+    , add, addAnnotationAtPath, annotationsFromNode, clearAnnotations, findPathsWithAnnotation, remove, removeAnnotationAtPath, toggle, toggleElementParameters
     )
 
+{-| This module contains common constants used as node annotations. Annotations can be added to
+elements and text to keep track of position when doing a complex transform like a lift or join,
+as well as add flags to a node that you can use to effect behavior, like if something is selectable.
+
+    newElement =
+        element |> Element.withAnnotations (Set.singleton selection)
+
+@docs selection, selectable, lift
+
+-}
+
+import RichTextEditor.Internal.Constants as Constants
 import RichTextEditor.Model.Element as Element exposing (Element)
 import RichTextEditor.Model.InlineElement as InlineElement
 import RichTextEditor.Model.Node
@@ -23,6 +28,30 @@ import RichTextEditor.Model.Node
 import RichTextEditor.Model.Text as Text
 import RichTextEditor.Node exposing (Node(..), indexedFoldl, map, nodeAt, replace)
 import Set exposing (Set)
+
+
+{-| Represents that a node is currently selected. This annotation is transient, e.g. it
+should be cleared before a transform or command is complete. This annotation is also used when
+rendering to annotate a selected node for decorators.
+-}
+selection : String
+selection =
+    Constants.selection
+
+
+{-| Represents that a node is can be selected. This annotation is not transient.
+-}
+selectable : String
+selectable =
+    Constants.selectable
+
+
+{-| Represents that a node is can be selected. This annotation is transient, e.g. it should be
+cleared before a transform or command is complete.
+-}
+lift : String
+lift =
+    Constants.lift
 
 
 addAnnotationAtPath : String -> Path -> Block -> Result String Block
@@ -101,8 +130,8 @@ clearAnnotations annotation root =
             root
 
 
-getAnnotationsFromNode : Node -> Set String
-getAnnotationsFromNode node =
+annotationsFromNode : Node -> Set String
+annotationsFromNode node =
     case node of
         Block blockNode ->
             Element.annotations <| elementFromBlockNode blockNode
@@ -120,7 +149,7 @@ findPathsWithAnnotation : String -> Block -> List Path
 findPathsWithAnnotation annotation node =
     indexedFoldl
         (\path n agg ->
-            if Set.member annotation <| getAnnotationsFromNode n then
+            if Set.member annotation <| annotationsFromNode n then
                 path :: agg
 
             else

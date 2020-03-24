@@ -1,4 +1,4 @@
-module TestNodePath exposing (..)
+module TestPath exposing (..)
 
 import Array exposing (Array)
 import Expect

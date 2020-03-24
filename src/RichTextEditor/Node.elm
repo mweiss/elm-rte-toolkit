@@ -38,7 +38,7 @@ module RichTextEditor.Node exposing
 
 import Array exposing (Array)
 import Array.Extra
-import RichTextEditor.Model.Annotations exposing (selectable)
+import RichTextEditor.Internal.Constants exposing (selectable)
 import RichTextEditor.Model.Element as Element
 import RichTextEditor.Model.InlineElement as InlineElement
 import RichTextEditor.Model.Node

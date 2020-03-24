@@ -18,7 +18,7 @@ module RichTextEditor.Specs exposing
     )
 
 import Array exposing (Array)
-import RichTextEditor.Model.Annotations exposing (selectable)
+import RichTextEditor.Annotation exposing (selectable)
 import RichTextEditor.Model.Attribute exposing (Attribute(..), findIntegerAttribute, findStringAttribute)
 import RichTextEditor.Model.Element exposing (attributes, element)
 import RichTextEditor.Model.HtmlNode exposing (HtmlNode(..))

@@ -10,10 +10,10 @@ import RichTextEditor.Commands
         , removeRangeSelection
         , splitTextBlock
         )
+import RichTextEditor.Internal.Constants exposing (zeroWidthSpace)
 import RichTextEditor.Internal.Editor exposing (applyNamedCommandList)
 import RichTextEditor.Internal.Spec exposing (htmlToElementArray)
 import RichTextEditor.Model.Command exposing (Transform, transformCommand)
-import RichTextEditor.Model.Constants exposing (zeroWidthSpace)
 import RichTextEditor.Model.Editor exposing (Editor)
 import RichTextEditor.Model.Event exposing (PasteEvent)
 import RichTextEditor.Model.Node

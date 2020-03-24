@@ -42,14 +42,13 @@ import Array exposing (Array)
 import Array.Extra
 import List.Extra
 import Regex
-import RichTextEditor.Annotation exposing (clearAnnotations)
+import RichTextEditor.Annotation as Annotation exposing (clearAnnotations)
 import RichTextEditor.Internal.DeleteWord as DeleteWord
 import RichTextEditor.Marks
     exposing
         ( hasMarkWithName
         , toggleMark
         )
-import RichTextEditor.Model.Annotations as Annotations
 import RichTextEditor.Model.Command
     exposing
         ( CommandBinding
@@ -1530,7 +1529,7 @@ addLiftMarkToBlocksInSelection selection root =
                                             False
                             in
                             if addMarker then
-                                RichTextEditor.Annotation.add Annotations.lift <| Block bn
+                                Annotation.add Annotation.lift <| Block bn
 
                             else
                                 node
@@ -1569,10 +1568,10 @@ liftConcatMapFunc node =
                             List.Extra.groupWhile
                                 (\n1 n2 ->
                                     Set.member
-                                        Annotations.lift
+                                        Annotation.lift
                                         (annotationsFromBlockNode n1)
                                         == Set.member
-                                            Annotations.lift
+                                            Annotation.lift
                                             (annotationsFromBlockNode n2)
                                 )
                                 (Array.toList (toBlockArray a))
@@ -1580,7 +1579,7 @@ liftConcatMapFunc node =
                     List.map Block <|
                         List.concatMap
                             (\( n, l ) ->
-                                if Set.member Annotations.lift (annotationsFromBlockNode n) then
+                                if Set.member Annotation.lift (annotationsFromBlockNode n) then
                                     n :: l
 
                                 else
@@ -1620,7 +1619,7 @@ lift editorState =
                 (editorState
                     |> withSelection newSelection
                     |> withRoot
-                        (clearAnnotations Annotations.lift <|
+                        (clearAnnotations Annotation.lift <|
                             clearSelectionAnnotations liftedRoot
                         )
                 )

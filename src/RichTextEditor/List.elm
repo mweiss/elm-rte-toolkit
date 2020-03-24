@@ -21,13 +21,12 @@ module RichTextEditor.List exposing
 
 import Array exposing (Array)
 import List.Extra
-import RichTextEditor.Annotation exposing (clearAnnotations)
+import RichTextEditor.Annotation as Annotation exposing (clearAnnotations)
 import RichTextEditor.Commands
     exposing
         ( isEmptyTextBlock
         , liftConcatMapFunc
         )
-import RichTextEditor.Model.Annotations as Annotations
 import RichTextEditor.Model.Command
     exposing
         ( CommandMap
@@ -212,7 +211,7 @@ isListNode definition node =
 
 addLiftAnnotationAtPathAndChildren : Path -> Block -> Result String Block
 addLiftAnnotationAtPathAndChildren path root =
-    case RichTextEditor.Annotation.addAnnotationAtPath Annotations.lift path root of
+    case Annotation.addAnnotationAtPath Annotation.lift path root of
         Err s ->
             Err s
 
@@ -233,7 +232,7 @@ addLiftAnnotationAtPathAndChildren path root =
                                                     result
 
                                                 Ok n ->
-                                                    RichTextEditor.Annotation.addAnnotationAtPath Annotations.lift (path ++ [ i ]) n
+                                                    Annotation.addAnnotationAtPath Annotation.lift (path ++ [ i ]) n
                                         )
                                         (Ok newRoot)
                                         (List.range 0 (Array.length (toBlockArray ba) - 1))
@@ -324,7 +323,7 @@ lift definition editorState =
                     Ok
                         (editorState
                             |> withSelection newSelection
-                            |> withRoot (clearAnnotations Annotations.lift <| clearSelectionAnnotations liftedRoot)
+                            |> withRoot (clearAnnotations Annotation.lift <| clearSelectionAnnotations liftedRoot)
                         )
 
 

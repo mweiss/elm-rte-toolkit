@@ -117,7 +117,7 @@ sort order marks =
         MarkOrder o ->
             List.sortBy
                 (\m ->
-                    ( Maybe.withDefault 0 <| Dict.get (name m) o
+                    ( Maybe.withDefault -1 <| Dict.get (name m) o
                     , name m
                     )
                 )
