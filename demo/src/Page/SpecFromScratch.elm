@@ -18,7 +18,7 @@ import RichTextEditor.Model.Decorations exposing (addElementDecoration, emptyDec
 import RichTextEditor.Model.Editor
     exposing
         ( Editor
-        , InternalEditorMsg
+        , Message
         , Tagger
         )
 import RichTextEditor.Model.Element as Element exposing (Element, element)
@@ -60,7 +60,7 @@ type alias Model =
 
 
 type Msg
-    = InternalMsg InternalEditorMsg
+    = InternalMsg Message
     | ToggleCheckedTodoItem Path Bool
     | GotSession Session
 

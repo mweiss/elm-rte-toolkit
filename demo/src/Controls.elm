@@ -7,7 +7,7 @@ import Html.Attributes exposing (class)
 import Html.Events exposing (preventDefaultOn)
 import Json.Decode exposing (succeed)
 import RichTextEditor.List exposing (ListType(..))
-import RichTextEditor.Model.Editor exposing (Editor, InternalEditorMsg, state)
+import RichTextEditor.Model.Editor exposing (Editor, Message, state)
 import RichTextEditor.Model.Element as Element
 import RichTextEditor.Model.Mark as Mark
 import RichTextEditor.Model.Node
@@ -53,7 +53,7 @@ type Style
 
 
 type EditorMsg
-    = InternalMsg InternalEditorMsg
+    = InternalMsg Message
     | ToggleStyle Style
     | ShowInsertLinkModal
     | UpdateLinkHref String

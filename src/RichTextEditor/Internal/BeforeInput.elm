@@ -6,7 +6,7 @@ import RichTextEditor.Model.Command exposing (CommandMap, namedCommandListFromIn
 import RichTextEditor.Model.Editor
     exposing
         ( Editor
-        , InternalEditorMsg(..)
+        , Message(..)
         , Tagger
         , forceRerender
         )
@@ -14,24 +14,24 @@ import RichTextEditor.Model.Event exposing (InputEvent)
 import RichTextEditor.Model.Spec exposing (Spec)
 
 
-preventDefaultOn : CommandMap -> Spec -> Editor -> InternalEditorMsg -> ( InternalEditorMsg, Bool )
+preventDefaultOn : CommandMap -> Spec -> Editor -> Message -> ( Message, Bool )
 preventDefaultOn commandMap spec editor msg =
     case msg of
         BeforeInputEvent inputEvent ->
-            ( msg, shouldPreventDefault commandMap spec editor inputEvent )
+            shouldPreventDefault commandMap spec editor inputEvent
 
         _ ->
             ( msg, False )
 
 
-shouldPreventDefault : CommandMap -> Spec -> Editor -> InputEvent -> Bool
+shouldPreventDefault : CommandMap -> Spec -> Editor -> InputEvent -> ( Message, Bool )
 shouldPreventDefault commandMap spec editor inputEvent =
     case handleInputEvent commandMap spec editor inputEvent of
         Err _ ->
-            False
+            ( ReplaceWith editor, False )
 
-        Ok _ ->
-            True
+        Ok newEditor ->
+            ( ReplaceWith <| forceRerender newEditor, True )
 
 
 preventDefaultOnBeforeInputDecoder : Tagger msg -> CommandMap -> Spec -> Editor -> D.Decoder ( msg, Bool )
@@ -39,7 +39,7 @@ preventDefaultOnBeforeInputDecoder tagger commandMap spec editor =
     D.map (\( i, b ) -> ( tagger i, b )) (D.map (preventDefaultOn commandMap spec editor) beforeInputDecoder)
 
 
-beforeInputDecoder : D.Decoder InternalEditorMsg
+beforeInputDecoder : D.Decoder Message
 beforeInputDecoder =
     D.map BeforeInputEvent
         (D.map3 InputEvent

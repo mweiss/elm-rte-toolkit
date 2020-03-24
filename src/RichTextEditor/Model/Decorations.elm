@@ -24,7 +24,7 @@ import Html
 import Html.Attributes
 import Html.Events
 import RichTextEditor.Internal.Constants exposing (selection)
-import RichTextEditor.Model.Editor exposing (InternalEditorMsg(..), Tagger)
+import RichTextEditor.Model.Editor exposing (Message(..), Tagger)
 import RichTextEditor.Model.Element exposing (Element, annotations)
 import RichTextEditor.Model.Mark exposing (Mark)
 import RichTextEditor.Model.MarkDefinition as MarkDefinition exposing (MarkDefinition)

@@ -1,4 +1,34 @@
-module RichTextEditor.Model.Editor exposing (..)
+module RichTextEditor.Model.Editor exposing
+    ( Editor, editor, state, history, withState, withHistory
+    , Message(..), Tagger
+    , bufferedEditorState, withBufferedEditorState, shortKey, withShortKey, isComposing, withComposing
+    , completeRerenderCount, forceCompleteRerender, forceRerender, forceReselection, renderCount, selectionCount
+    )
+
+{-| This module contains the types used to model the editor, as well as the messages used to
+update the editor's internal state.
+
+
+# Editor
+
+@docs Editor, editor, state, history, withState, withHistory
+
+
+# Messages
+
+@docs Message, Tagger
+
+
+# Render attributes
+
+selectionCount, renderCount, completeRerenderCount, forceReselection, forceRerender, forceCompleteRerender
+
+
+# Internal editor attributes
+
+@docs bufferedEditorState, withBufferedEditorState, shortKey, withShortKey, isComposing, withComposing
+
+-}
 
 import RichTextEditor.Model.Event exposing (EditorChange, InitEvent, InputEvent, KeyboardEvent, PasteEvent)
 import RichTextEditor.Model.History exposing (History, emptyHistory)
@@ -8,7 +38,7 @@ import RichTextEditor.Model.State exposing (State)
 
 
 type alias Tagger msg =
-    InternalEditorMsg -> msg
+    Message -> msg
 
 
 type Editor
@@ -49,9 +79,9 @@ editor iState =
         }
 
 
-{-| The internal events that an editor has to respond to. These events should be mapped via a DecoderFunc.
+{-| The internal events that an editor has to respond to. These events should be mapped via a Tagger.
 -}
-type InternalEditorMsg
+type Message
     = SelectionEvent (Maybe Selection) Bool
     | ChangeEvent EditorChange
     | BeforeInputEvent InputEvent
@@ -60,6 +90,7 @@ type InternalEditorMsg
     | CompositionEnd
     | PasteWithDataEvent PasteEvent
     | CutEvent
+    | ReplaceWith Editor
     | Init InitEvent
 
 

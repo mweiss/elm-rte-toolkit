@@ -3,29 +3,29 @@ module RichTextEditor.Internal.KeyDown exposing (..)
 import Json.Decode as D
 import RichTextEditor.Internal.Editor exposing (applyNamedCommandList)
 import RichTextEditor.Model.Command exposing (CommandMap, namedCommandListFromKeyboardEvent)
-import RichTextEditor.Model.Editor exposing (Editor, InternalEditorMsg(..), Tagger, shortKey)
+import RichTextEditor.Model.Editor exposing (Editor, Message(..), Tagger, shortKey)
 import RichTextEditor.Model.Event exposing (KeyboardEvent)
 import RichTextEditor.Model.Spec exposing (Spec)
 
 
-preventDefaultOn : CommandMap -> Spec -> Editor -> InternalEditorMsg -> ( InternalEditorMsg, Bool )
+preventDefaultOn : CommandMap -> Spec -> Editor -> Message -> ( Message, Bool )
 preventDefaultOn commandMap spec editor msg =
     case msg of
         KeyDownEvent key ->
-            ( msg, shouldPreventDefault commandMap spec editor key )
+            shouldPreventDefault commandMap spec editor key
 
         _ ->
             ( msg, False )
 
 
-shouldPreventDefault : CommandMap -> Spec -> Editor -> KeyboardEvent -> Bool
+shouldPreventDefault : CommandMap -> Spec -> Editor -> KeyboardEvent -> ( Message, Bool )
 shouldPreventDefault comamndMap spec editor keyboardEvent =
     case handleKeyDownEvent comamndMap spec editor keyboardEvent of
         Err _ ->
-            False
+            ( ReplaceWith editor, False )
 
-        Ok _ ->
-            True
+        Ok newEditor ->
+            ( ReplaceWith newEditor, True )
 
 
 preventDefaultOnKeyDownDecoder : Tagger msg -> CommandMap -> Spec -> Editor -> D.Decoder ( msg, Bool )
@@ -33,7 +33,7 @@ preventDefaultOnKeyDownDecoder tagger commandMap spec editor =
     D.map (\( i, b ) -> ( tagger i, b )) (D.map (preventDefaultOn commandMap spec editor) keyDownDecoder)
 
 
-keyDownDecoder : D.Decoder InternalEditorMsg
+keyDownDecoder : D.Decoder Message
 keyDownDecoder =
     D.map KeyDownEvent <|
         D.map7 KeyboardEvent

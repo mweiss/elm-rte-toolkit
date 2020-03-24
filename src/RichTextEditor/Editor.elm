@@ -31,7 +31,25 @@ import RichTextEditor.Internal.Paste as Paste
 import RichTextEditor.Internal.Spec exposing (markDefinitionWithDefault, nodeDefinitionWithDefault)
 import RichTextEditor.Model.Command exposing (CommandMap, NamedCommand, NamedCommandList, transform)
 import RichTextEditor.Model.Decorations exposing (Decorations, elementDecorators, markDecorators)
-import RichTextEditor.Model.Editor exposing (Editor, InternalEditorMsg(..), Tagger, bufferedEditorState, completeRerenderCount, forceCompleteRerender, forceRerender, forceReselection, isComposing, renderCount, selectionCount, state, withBufferedEditorState, withComposing, withShortKey, withState)
+import RichTextEditor.Model.Editor
+    exposing
+        ( Editor
+        , Message(..)
+        , Tagger
+        , bufferedEditorState
+        , completeRerenderCount
+        , forceCompleteRerender
+        , forceRerender
+        , forceReselection
+        , isComposing
+        , renderCount
+        , selectionCount
+        , state
+        , withBufferedEditorState
+        , withComposing
+        , withShortKey
+        , withState
+        )
 import RichTextEditor.Model.Element as Element exposing (Element)
 import RichTextEditor.Model.Event exposing (EditorChange, InitEvent, PasteEvent, TextChange)
 import RichTextEditor.Model.HtmlNode exposing (HtmlNode(..))
@@ -95,7 +113,7 @@ updateSelection maybeSelection isDomPath spec editor =
             editor |> withState (editorState |> withSelection translatedSelection)
 
 
-update : CommandMap -> Spec -> InternalEditorMsg -> Editor -> Editor
+update : CommandMap -> Spec -> Message -> Editor -> Editor
 update commandMap spec msg editor =
     case msg of
         ChangeEvent change ->
@@ -124,6 +142,9 @@ update commandMap spec msg editor =
 
         Init e ->
             handleInitEvent e editor
+
+        ReplaceWith e ->
+            e
 
 
 handleInitEvent : InitEvent -> Editor -> Editor
@@ -309,7 +330,7 @@ needCompleteRerender root =
             Array.length cnodes /= 1
 
 
-editorChangeDecoder : D.Decoder InternalEditorMsg
+editorChangeDecoder : D.Decoder Message
 editorChangeDecoder =
     D.map ChangeEvent
         (D.map3 EditorChange
@@ -324,7 +345,7 @@ characterDataMutationsDecoder =
     D.list (D.map2 Tuple.pair (D.field "path" (D.list D.int)) (D.field "text" D.string))
 
 
-onEditorChange : (InternalEditorMsg -> msg) -> Html.Attribute msg
+onEditorChange : (Message -> msg) -> Html.Attribute msg
 onEditorChange msgFunc =
     Html.Events.on "editorchange" (D.map msgFunc editorChangeDecoder)
 
@@ -340,14 +361,14 @@ selectionDecoder =
         )
 
 
-editorSelectionChangeDecoder : D.Decoder InternalEditorMsg
+editorSelectionChangeDecoder : D.Decoder Message
 editorSelectionChangeDecoder =
     D.map2 SelectionEvent
         (D.at [ "detail" ] selectionDecoder)
         (D.succeed True)
 
 
-pasteWithDataDecoder : D.Decoder InternalEditorMsg
+pasteWithDataDecoder : D.Decoder Message
 pasteWithDataDecoder =
     D.map PasteWithDataEvent <|
         D.map2
@@ -356,7 +377,7 @@ pasteWithDataDecoder =
             (D.at [ "detail", "html" ] D.string)
 
 
-initDecoder : D.Decoder InternalEditorMsg
+initDecoder : D.Decoder Message
 initDecoder =
     D.map Init <|
         D.map
@@ -364,32 +385,32 @@ initDecoder =
             (D.at [ "detail", "shortKey" ] D.string)
 
 
-onCompositionStart : (InternalEditorMsg -> msg) -> Html.Attribute msg
+onCompositionStart : (Message -> msg) -> Html.Attribute msg
 onCompositionStart msgFunc =
     Html.Events.on "compositionstart" (D.map msgFunc (D.succeed CompositionStart))
 
 
-onCompositionEnd : (InternalEditorMsg -> msg) -> Html.Attribute msg
+onCompositionEnd : (Message -> msg) -> Html.Attribute msg
 onCompositionEnd msgFunc =
     Html.Events.on "compositionend" (D.map msgFunc (D.succeed CompositionEnd))
 
 
-onPasteWithData : (InternalEditorMsg -> msg) -> Html.Attribute msg
+onPasteWithData : (Message -> msg) -> Html.Attribute msg
 onPasteWithData msgFunc =
     Html.Events.on "pastewithdata" (D.map msgFunc pasteWithDataDecoder)
 
 
-onCut : (InternalEditorMsg -> msg) -> Html.Attribute msg
+onCut : (Message -> msg) -> Html.Attribute msg
 onCut msgFunc =
     Html.Events.on "cut" (D.map msgFunc (D.succeed CutEvent))
 
 
-onInit : (InternalEditorMsg -> msg) -> Html.Attribute msg
+onInit : (Message -> msg) -> Html.Attribute msg
 onInit msgFunc =
     Html.Events.on "editorinit" (D.map msgFunc initDecoder)
 
 
-onEditorSelectionChange : (InternalEditorMsg -> msg) -> Html.Attribute msg
+onEditorSelectionChange : (Message -> msg) -> Html.Attribute msg
 onEditorSelectionChange msgFunc =
     Html.Events.on "editorselectionchange" (D.map msgFunc editorSelectionChangeDecoder)
 
@@ -616,8 +637,8 @@ view tagger decorations commandMap spec editor =
         ]
 
 
-renderHtmlNode : HtmlNode -> List (Path -> List (Html.Attribute msg)) -> Array (Html msg) -> Path -> Html msg
-renderHtmlNode node decorators vdomChildren backwardsRelativePath =
+viewHtmlNode : HtmlNode -> List (Path -> List (Html.Attribute msg)) -> Array (Html msg) -> Path -> Html msg
+viewHtmlNode node decorators vdomChildren backwardsRelativePath =
     case node of
         ElementNode name attributes children ->
             let
@@ -627,7 +648,7 @@ renderHtmlNode node decorators vdomChildren backwardsRelativePath =
 
                     else
                         Array.indexedMap
-                            (\i n -> renderHtmlNode n decorators vdomChildren (i :: backwardsRelativePath))
+                            (\i n -> viewHtmlNode n decorators vdomChildren (i :: backwardsRelativePath))
                             children
             in
             Html.node
@@ -657,7 +678,7 @@ viewMark spec decorations backwardsNodePath mark children =
         node =
             MarkDefinition.toHtmlNode (markDefinitionWithDefault mark spec) mark childNodesPlaceholder
     in
-    renderHtmlNode node decorators children []
+    viewHtmlNode node decorators children []
 
 
 viewElement : Spec -> Decorations msg -> Element -> Path -> Array (Html msg) -> Html msg
@@ -680,7 +701,7 @@ viewElement spec decorations elementParameters backwardsNodePath children =
             List.map (\d -> d (List.reverse backwardsNodePath) elementParameters) eDecorators
 
         nodeHtml =
-            renderHtmlNode node decorators children []
+            viewHtmlNode node decorators children []
     in
     nodeHtml
 
