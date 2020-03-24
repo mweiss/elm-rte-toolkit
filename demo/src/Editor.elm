@@ -16,12 +16,11 @@ import RichTextEditor.Commands as Commands
         , toggleMarkOnInlineNodes
         , wrap
         )
-import RichTextEditor.Decorations exposing (selectableDecoration)
 import RichTextEditor.Editor as Editor exposing (applyCommand, applyNamedCommandList)
 import RichTextEditor.List exposing (ListType, defaultListDefinition)
 import RichTextEditor.Model.Attribute exposing (Attribute(..))
-import RichTextEditor.Model.Command as Command exposing (CommandMap, inputEvent, key, set, transformCommand)
-import RichTextEditor.Model.Decorations exposing (Decorations, addElementDecoration, emptyDecorations)
+import RichTextEditor.Model.Command as Command exposing (CommandMap, inputEvent, key, set, transform)
+import RichTextEditor.Model.Decorations exposing (Decorations, addElementDecoration, emptyDecorations, selectableDecoration)
 import RichTextEditor.Model.Editor exposing (Editor, editor, state)
 import RichTextEditor.Model.Element exposing (element)
 import RichTextEditor.Model.Keys exposing (enter, return)
@@ -31,7 +30,7 @@ import RichTextEditor.Model.Node
         ( Block
         , Children(..)
         , Inline(..)
-        , blockNode
+        , block
         , fromBlockArray
         , inlineChildren
         , inlineElement
@@ -77,14 +76,14 @@ type alias Model =
 
 docInitNode : Block
 docInitNode =
-    blockNode
+    block
         (element doc [] Set.empty)
         (fromBlockArray (Array.fromList [ initialEditorNode ]))
 
 
 initialEditorNode : Block
 initialEditorNode =
-    blockNode
+    block
         (element paragraph [] Set.empty)
         (inlineChildren (Array.fromList [ plainText "This is some sample text" ]))
 
@@ -103,9 +102,9 @@ commandBindings =
         listCommandBindings
         (Commands.defaultCommandBindings
             |> set [ inputEvent "insertParagraph", key [ enter ], key [ return ] ]
-                [ ( "liftEmpty", transformCommand <| liftEmpty )
+                [ ( "liftEmpty", transform <| liftEmpty )
                 , ( "splitBlockHeaderToNewParagraph"
-                  , transformCommand <|
+                  , transform <|
                         splitBlockHeaderToNewParagraph
                             [ "heading" ]
                             (element paragraph [] Set.empty)
@@ -115,9 +114,9 @@ commandBindings =
 
 
 decorations =
-    addElementDecoration "image" (selectableDecoration InternalMsg) <|
-        addElementDecoration "horizontal_rule" (selectableDecoration InternalMsg) <|
-            emptyDecorations
+    emptyDecorations
+        |> addElementDecoration image (selectableDecoration InternalMsg)
+        |> addElementDecoration horizontalRule (selectableDecoration InternalMsg)
 
 
 initEditor : State -> Editor
@@ -196,7 +195,7 @@ handleShowInsertLinkModal spec model =
                         Result.withDefault model.editor <|
                             applyCommand
                                 ( "removeLink"
-                                , transformCommand <|
+                                , transform <|
                                     Commands.toggleMarkOnInlineNodes markOrder linkMark Remove
                                 )
                                 spec
@@ -241,7 +240,7 @@ handleInsertLink spec model =
                     Result.withDefault model.editor <|
                         applyCommand
                             ( "insertLink"
-                            , transformCommand <|
+                            , transform <|
                                 Commands.toggleMarkOnInlineNodes markOrder linkMark Add
                             )
                             spec
@@ -285,7 +284,7 @@ handleInsertImage spec model =
                     Result.withDefault model.editor <|
                         applyCommand
                             ( "insertImage"
-                            , transformCommand <|
+                            , transform <|
                                 Commands.insertInlineElement img
                             )
                             spec
@@ -331,7 +330,7 @@ handleToggleStyle style spec model =
             Result.withDefault model.editor
                 (applyCommand
                     ( "toggleStyle"
-                    , transformCommand <|
+                    , transform <|
                         toggleMarkOnInlineNodes markOrder (mark markDef []) Flip
                     )
                     spec
@@ -402,10 +401,10 @@ handleLiftBlock spec model =
             Result.withDefault model.editor
                 (applyNamedCommandList
                     [ ( "liftList"
-                      , transformCommand <| RichTextEditor.List.lift defaultListDefinition
+                      , transform <| RichTextEditor.List.lift defaultListDefinition
                       )
                     , ( "lift"
-                      , transformCommand <| lift
+                      , transform <| lift
                       )
                     ]
                     spec
@@ -419,7 +418,7 @@ handleWrapInList spec listType model =
     { model
         | editor =
             Result.withDefault model.editor
-                (applyCommand ( "wrapList", transformCommand <| RichTextEditor.List.wrap defaultListDefinition listType ) spec model.editor)
+                (applyCommand ( "wrapList", transform <| RichTextEditor.List.wrap defaultListDefinition listType ) spec model.editor)
     }
 
 
@@ -450,7 +449,7 @@ handleToggleBlock spec block model =
             Result.withDefault model.editor
                 (applyCommand
                     ( "toggleBlock"
-                    , transformCommand <| toggleBlock [ "heading", "code_block", "paragraph" ] onParams offParams
+                    , transform <| toggleBlock [ "heading", "code_block", "paragraph" ] onParams offParams
                     )
                     spec
                     model.editor
@@ -465,7 +464,7 @@ handleWrapBlockNode spec model =
             Result.withDefault model.editor
                 (applyCommand
                     ( "wrapBlockquote"
-                    , transformCommand <|
+                    , transform <|
                         wrap
                             (\n -> n)
                             (element blockquote [] Set.empty)
@@ -483,9 +482,9 @@ handleInsertHorizontalRule spec model =
             Result.withDefault model.editor
                 (applyCommand
                     ( "insertHR"
-                    , transformCommand <|
+                    , transform <|
                         insertBlockNode
-                            (blockNode
+                            (block
                                 (element
                                     horizontalRule
                                     []

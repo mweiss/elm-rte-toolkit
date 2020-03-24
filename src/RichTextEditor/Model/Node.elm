@@ -7,7 +7,7 @@ module RichTextEditor.Model.Node exposing
     , InlineTree(..)
     , MarkNodeContents
     , Path
-    , blockNode
+    , block
     , childNodes
     , elementFromBlockNode
     , fromBlockArray
@@ -61,8 +61,8 @@ type alias BlockNodeContents =
     }
 
 
-blockNode : Element -> Children -> Block
-blockNode parameters cn =
+block : Element -> Children -> Block
+block parameters cn =
     Block { parameters = parameters, childNodes = cn }
 
 

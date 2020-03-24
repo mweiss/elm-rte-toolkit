@@ -1,58 +1,108 @@
 module RichTextEditor.Model.Command exposing
-    ( Command(..)
-    , CommandBinding
-    , CommandMap
-    , InternalAction(..)
-    , NamedCommand
-    , NamedCommandList
+    ( Command(..), transform, internal, InternalAction(..), NamedCommand, NamedCommandList
+    , CommandMap, CommandBinding, key, inputEvent, emptyCommandMap, set, withDefaultInputEventCommand, withDefaultKeyCommand, defaultKeyCommand, defaultInputEventCommand, combine
     , Transform
-    , combine
-    , emptyCommandMap
-    , inputEvent
-    , internalCommand
-    , key
-    , namedCommandListFromInputEvent
-    , namedCommandListFromKeyboardEvent
-    , set
-    , transformCommand
-    , withDefaultInputEventCommand
-    , withDefaultKeyCommand
+    , namedCommandListFromInputEvent, namedCommandListFromKeyboardEvent
     )
 
+{-| This module contains types relating to defining transforms, commands and command maps
+
+
+# Command
+
+@docs Command, transform, internal, InternalAction, NamedCommand, NamedCommandList
+
+
+# Command map
+
+@docs CommandMap, CommandBinding, key, inputEvent, emptyCommandMap, set, withDefaultInputEventCommand, withDefaultKeyCommand, defaultKeyCommand, defaultInputEventCommand, combine
+
+
+# Transform
+
+@docs Transform
+
+
+# Event
+
+@docs namedCommandListFromInputEvent, namedCommandListFromKeyboardEvent
+
+-}
+
 import Dict exposing (Dict)
+import List.Extra
 import RichTextEditor.Model.Event exposing (InputEvent, KeyboardEvent)
 import RichTextEditor.Model.Keys exposing (alt, ctrl, meta, shift, short)
 import RichTextEditor.Model.State exposing (State)
 
 
+{-| A `Transform` is a function that receives a state and returns a result either with a new modified state,
+or a String explaining why the transform couldn't be done. With the exception of internal commands, all commands
+are defined by one or more transforms.
+
+    removeSelection : Transform
+    removeSelection state =
+        Ok (state |> withSelection Nothing)
+
+-}
 type alias Transform =
     State -> Result String State
 
 
+{-| `InternalAction` is a fixed set of actions that require internal editor state
+to execute. For now this only includes undo and redo.
+-}
 type InternalAction
     = Undo
     | Redo
 
 
+{-| `Command` is either a transform or internal action that can be applied to an editor
+via `RichTextEditor.Editor.applyCommand`
+-}
 type Command
     = TransformCommand Transform
     | InternalCommand InternalAction
 
 
-transformCommand : Transform -> Command
-transformCommand t =
+{-| Creates a command from a transform.
+
+    transform removeSelection
+    --> A command from the removeSelection transform
+
+-}
+transform : Transform -> Command
+transform t =
     TransformCommand t
 
 
-internalCommand : InternalAction -> Command
-internalCommand i =
+{-| Creates a command from an internal action.
+
+    internal Undo
+    --> A command that will execute undo
+
+-}
+internal : InternalAction -> Command
+internal i =
     InternalCommand i
 
 
+{-| Type alias for a command with a name. Giving a command a name is useful for debugging purposes
+when debugging a chain of commands. The command name is also stored in the history, which can help
+define more advanced behavior.
+
+    ( "removeSelection", removeSelection )
+
+-}
 type alias NamedCommand =
     ( String, Command )
 
 
+{-| Type alias for a list of named commands.
+
+    [ ( "backspaceWord", backspaceWord ), ( "backspace", backspace ) ]
+
+-}
 type alias NamedCommandList =
     List NamedCommand
 
@@ -72,10 +122,23 @@ type alias InputEventTypeMap =
     Dict String NamedCommandList
 
 
+{-| A command map provides bindings between keydown/beforeinput events and a list of named commands.
+
+    emptyCommandMap
+        |> set
+            [ inputEvent "insertLineBreak", key [ shift, enter ], key [ shift, return ] ]
+            [ ( "insertLineBreak", transform insertLineBreak ) ]
+
+Note that on a successful command, preventDefault is called on the associated event. This means
+that if a key command succeeds, the input command should not be triggered.
+
+-}
 type CommandMap
     = CommandMap CommandMapContents
 
 
+{-| Derives a named command list from an input event.
+-}
 namedCommandListFromInputEvent : InputEvent -> CommandMap -> NamedCommandList
 namedCommandListFromInputEvent event map =
     case map of
@@ -131,6 +194,9 @@ addAltKey keyboardEvent keys =
         keys
 
 
+{-| Derives a named command list from a keyboard event. The first argument is the value of `shortKey`,
+a platform dependent shortcut for either Meta or Control.
+-}
 namedCommandListFromKeyboardEvent : String -> KeyboardEvent -> CommandMap -> NamedCommandList
 namedCommandListFromKeyboardEvent shortKey event map =
     case map of
@@ -182,7 +248,7 @@ type alias CommandMapContents =
 {-| A command binding can either be a key press or an input event. Note that each browser has
 varying degrees of Input Level 2 support, so relying just on input events is usually not enough to support
 all browsers. On the flip side, virtual keyboards, specifically Android virtual keyboards, can fire
-synthetic keyboard events that don't contain the key value, so for key actions on those platforms
+synthetic keyboard events that don't contain the key value, so for some actions on those platforms
 you may need rely on input events.
 -}
 type CommandBinding
@@ -190,14 +256,28 @@ type CommandBinding
     | InputEventType String
 
 
+{-| Creates an input event key given the input event type.
+-}
+inputEvent : String -> CommandBinding
 inputEvent type_ =
     InputEventType type_
 
 
+{-| Creates a key binding given a list of keys.
+-}
+key : List String -> CommandBinding
 key keys =
-    Key <| List.sort keys
+    Key <| List.sort (List.Extra.unique keys)
 
 
+{-| Returns a `CommandMap` with each command binding set to the given named command list.
+
+    emptyCommandMap
+        |> set
+            [ inputEvent "insertLineBreak", key [ shift, enter ], key [ shift, return ] ]
+            [ ( "insertLineBreak", transform insertLineBreak ) ]
+
+-}
 set : List CommandBinding -> NamedCommandList -> CommandMap -> CommandMap
 set bindings func map =
     List.foldl
@@ -215,6 +295,30 @@ set bindings func map =
         bindings
 
 
+{-| `defaultKeyCommand` is used if there are no key bindings set for a keyboard event.
+-}
+defaultKeyCommand : CommandMap -> (KeyboardEvent -> NamedCommandList)
+defaultKeyCommand map =
+    case map of
+        CommandMap m ->
+            m.defaultKeyCommand
+
+
+{-| `defaultInputEventCommand` is used if there are no input event bindings set for an input event type.
+-}
+defaultInputEventCommand : CommandMap -> (InputEvent -> NamedCommandList)
+defaultInputEventCommand map =
+    case map of
+        CommandMap m ->
+            m.defaultInputEventCommand
+
+
+{-| Returns a commandMap with the defaultKeyCommand set to the provided value.
+
+    emptyCommandMap
+        |> withDefaultKeyCommand func
+
+-}
 withDefaultKeyCommand : (KeyboardEvent -> NamedCommandList) -> CommandMap -> CommandMap
 withDefaultKeyCommand func map =
     case map of
@@ -222,6 +326,13 @@ withDefaultKeyCommand func map =
             CommandMap { m | defaultKeyCommand = func }
 
 
+{-| Returns a commandMap with the defaultKeyCommand set to the provided value. The defaultInputEventCommand
+is used if there are no key bindings set for a keyboard event.
+
+    emptyCommandMap
+        |> withDefaultInputEventCommand func
+
+-}
 withDefaultInputEventCommand : (InputEvent -> NamedCommandList) -> CommandMap -> CommandMap
 withDefaultInputEventCommand func map =
     case map of
@@ -239,6 +350,13 @@ compose k commandList d =
             Dict.insert k (commandList ++ v) d
 
 
+{-| Combines two command maps, with the second `CommandMap` commands being appended to the first
+`CommandMap`.
+
+    combine listCommandBindings defaultCommandBindings
+    --> Creates a command map that prioritizes list command bindings, then default command bindings
+
+-}
 combine : CommandMap -> CommandMap -> CommandMap
 combine m1 m2 =
     case m1 of
@@ -252,8 +370,8 @@ combine m1 m2 =
                                 map2.inputEventTypeMap
                                 map1.inputEventTypeMap
                         , keyMap = Dict.foldl compose map2.keyMap map1.keyMap
-                        , defaultKeyCommand = \e -> map2.defaultKeyCommand e ++ map1.defaultKeyCommand e
-                        , defaultInputEventCommand = \e -> map2.defaultInputEventCommand e ++ map1.defaultInputEventCommand e
+                        , defaultKeyCommand = \e -> map1.defaultKeyCommand e ++ map2.defaultKeyCommand e
+                        , defaultInputEventCommand = \e -> map1.defaultInputEventCommand e ++ map2.defaultInputEventCommand e
                         }
 
 
@@ -261,6 +379,9 @@ emptyFunction =
     \_ -> []
 
 
+{-| An empty command map
+-}
+emptyCommandMap : CommandMap
 emptyCommandMap =
     CommandMap
         { keyMap = Dict.empty

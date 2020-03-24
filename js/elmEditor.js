@@ -3,7 +3,7 @@
 const zeroWidthSpace = "\u200B";
 
 const getSelectionPath = (node, editor, offset) => {
-    let originalNode = node;
+    const originalNode = node;
     if (!node) {
         return null;
     }
@@ -163,18 +163,18 @@ class SelectionState extends HTMLElement {
     }
 
     getSelectionObject() {
-        let selection = {"selectionExists": false};
-        let selectionObj = getSelection();
+        const selection = {"selectionExists": false};
+        const selectionObj = getSelection();
         if (!selectionObj) {
             return selection
         }
-        let anchorPath = this.getSelectionPath(selectionObj.anchorNode, selectionObj.anchorOffset);
-        let focusPath = this.getSelectionPath(selectionObj.focusNode, selectionObj.focusOffset);
+        const anchorPath = this.getSelectionPath(selectionObj.anchorNode, selectionObj.anchorOffset);
+        const focusPath = this.getSelectionPath(selectionObj.focusNode, selectionObj.focusOffset);
         if (!anchorPath || !focusPath) {
             return selection
         }
-        let anchorOffset = adjustOffset(selectionObj.anchorNode, selectionObj.anchorOffset);
-        let focusOffset = adjustOffset(selectionObj.focusNode, selectionObj.focusOffset);
+        const anchorOffset = adjustOffset(selectionObj.anchorNode, selectionObj.anchorOffset);
+        const focusOffset = adjustOffset(selectionObj.focusNode, selectionObj.focusOffset);
         return {
             "selectionExists": true,
             "anchorOffset": anchorOffset,
@@ -222,7 +222,7 @@ class ElmEditor extends HTMLElement {
         const text = clipboardData.getData('text') || "";
         const html = clipboardData.getData('text/html') || "";
         // console.log('paste', text, html);
-        let newEvent = new CustomEvent("pastewithdata", {
+        const newEvent = new CustomEvent("pastewithdata", {
             detail: {
                 text: text,
                 html: html
@@ -254,11 +254,11 @@ class ElmEditor extends HTMLElement {
     }
 
     mutationObserverCallback(mutationsList, observer) {
-        let element = this.querySelector('[data-rte-main="true"]');
-        let selection = this.childNodes[1].getSelectionObject();
+        const element = this.querySelector('[data-rte-main="true"]');
+        const selection = this.childNodes[1].getSelectionObject();
 
-        let characterDataMutations = this.characterDataMutations(mutationsList);
-        let event = new CustomEvent("editorchange", {
+        const characterDataMutations = this.characterDataMutations(mutationsList);
+        const event = new CustomEvent("editorchange", {
             detail: {
                 root: element,
                 selection: selection,
@@ -273,9 +273,9 @@ class ElmEditor extends HTMLElement {
             return;
         }
         const isMacLike = /(Mac|iPhone|iPod|iPad)/i.test(navigator.platform);
-        let event = new CustomEvent("editorinit", {
+        const event = new CustomEvent("editorinit", {
             detail: {
-                shortKey: isMacLike ? "Meta" : "Ctrl"
+                shortKey: isMacLike ? "Meta" : "Control"
             }
         });
         this.dispatchEvent(event);

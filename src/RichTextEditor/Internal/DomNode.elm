@@ -1,20 +1,39 @@
 module RichTextEditor.Internal.DomNode exposing
-    ( decodeDomNode
+    ( DomNode(..)
+    , decodeDomNode
     , domElementNodeType
     , domTextNodeType
     , extractRootEditorBlockNode
     , findTextChanges
     )
 
-import Array
+import Array exposing (Array)
 import Array.Extra
 import Json.Decode as D
 import Json.Decode.Extra as DE
 import RichTextEditor.Internal.Constants exposing (zeroWidthSpace)
-import RichTextEditor.Model.DomNode exposing (DomNode(..), DomNodeContents)
 import RichTextEditor.Model.Event exposing (TextChange)
 import RichTextEditor.Model.HtmlNode exposing (HtmlNode(..))
 import RichTextEditor.Model.Node exposing (Path)
+
+
+{-| A minimal representation of DomNode. It's purpose is to validate the contents of the DOM for any
+unexpected structural changes that can happen in a contenteditable node before applying changes that may
+effect to the virtual DOM.
+-}
+type alias DomNodeContents =
+    { nodeType : Int
+    , tagName : Maybe String
+    , nodeValue : Maybe String
+    , childNodes : Maybe (Array DomNode)
+    }
+
+
+{-| A minimal representation of a DomNode. Since the structure of DomNodeContents is recursive,
+we need to define a literal type to avoid infinite recursion.
+-}
+type DomNode
+    = DomNode DomNodeContents
 
 
 {-| The DOM text node nodeType value as specified by the w3c spec [w3c spec][w3c-custom-types-text-node]

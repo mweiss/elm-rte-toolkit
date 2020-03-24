@@ -35,7 +35,7 @@ import RichTextEditor.Model.Command
         , inputEvent
         , key
         , set
-        , transformCommand
+        , transform
         )
 import RichTextEditor.Model.Element as Element exposing (Element, element)
 import RichTextEditor.Model.Keys
@@ -53,7 +53,7 @@ import RichTextEditor.Model.Node
         , Children(..)
         , Inline(..)
         , Path
-        , blockNode
+        , block
         , childNodes
         , elementFromBlockNode
         , fromBlockArray
@@ -118,17 +118,17 @@ commandBindings definition =
     in
     emptyCommandMap
         |> set [ inputEvent "insertParagraph", key [ enter ], key [ return ] ]
-            [ ( "liftEmptyListItem", transformCommand <| liftEmpty definition )
-            , ( "splitListItem", transformCommand <| split definition )
+            [ ( "liftEmptyListItem", transform <| liftEmpty definition )
+            , ( "splitListItem", transform <| split definition )
             ]
         |> set [ inputEvent "deleteContentBackward", key [ backspace ] ]
-            [ ( "joinListBackward", transformCommand <| backspaceCommand ) ]
+            [ ( "joinListBackward", transform <| backspaceCommand ) ]
         |> set [ inputEvent "deleteContentForward", key [ delete ] ]
-            [ ( "joinListForward", transformCommand <| deleteCommand ) ]
+            [ ( "joinListForward", transform <| deleteCommand ) ]
         |> set [ inputEvent "deleteWordBackward", key [ alt, backspace ] ]
-            [ ( "joinListBackward", transformCommand <| backspaceCommand ) ]
+            [ ( "joinListBackward", transform <| backspaceCommand ) ]
         |> set [ inputEvent "deleteWordForward", key [ alt, delete ] ]
-            [ ( "joinListForward", transformCommand <| deleteCommand ) ]
+            [ ( "joinListForward", transform <| deleteCommand ) ]
 
 
 defaultListDefinition : ListDefinition
@@ -163,7 +163,7 @@ unordered definition =
 
 addListItem : ListDefinition -> Block -> Block
 addListItem definition node =
-    blockNode
+    block
         (item definition)
         (fromBlockArray <|
             Array.fromList [ node ]

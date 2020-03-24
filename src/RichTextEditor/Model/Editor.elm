@@ -1,11 +1,9 @@
 module RichTextEditor.Model.Editor exposing (..)
 
-import RichTextEditor.Model.Command exposing (CommandMap, emptyCommandMap)
 import RichTextEditor.Model.Event exposing (EditorChange, InitEvent, InputEvent, KeyboardEvent, PasteEvent)
 import RichTextEditor.Model.History exposing (History, emptyHistory)
 import RichTextEditor.Model.Keys exposing (meta)
 import RichTextEditor.Model.Selection exposing (Selection)
-import RichTextEditor.Model.Spec exposing (Spec)
 import RichTextEditor.Model.State exposing (State)
 
 

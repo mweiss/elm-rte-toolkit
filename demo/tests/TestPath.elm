@@ -4,7 +4,7 @@ import Array exposing (Array)
 import Expect
 import RichTextEditor.Model.Element exposing (element)
 import RichTextEditor.Model.Mark exposing (mark)
-import RichTextEditor.Model.Node exposing (Inline(..), blockNode, inlineChildren, plainText)
+import RichTextEditor.Model.Node exposing (Inline(..), block, inlineChildren, plainText)
 import RichTextEditor.Model.Text as Text exposing (withText)
 import RichTextEditor.Path
     exposing
@@ -38,13 +38,13 @@ boldMark =
 
 
 paragraphNode =
-    blockNode
+    block
         paragraphParams
         (inlineChildren <| Array.fromList [ plainText "sample" ])
 
 
 boldParagraphNode =
-    blockNode
+    block
         paragraphParams
         (inlineChildren <|
             Array.fromList
@@ -58,7 +58,7 @@ boldParagraphNode =
 
 
 crazyBlockNode =
-    blockNode
+    block
         crazyBlockParams
         (inlineChildren <|
             Array.fromList
@@ -67,7 +67,7 @@ crazyBlockNode =
 
 
 codeBlockNode =
-    blockNode
+    block
         codeBlockParams
         (inlineChildren <| Array.fromList [ plainText "sample" ])
 

@@ -26,7 +26,7 @@ import RichTextEditor.Model.Node
         , Children(..)
         , Inline(..)
         , InlineTree(..)
-        , blockNode
+        , block
         , childNodes
         , elementFromBlockNode
         , fromBlockArray
@@ -783,7 +783,7 @@ markdownToBlock : List MBlock -> Result String Block
 markdownToBlock md =
     Result.map
         (\children ->
-            blockNode
+            block
                 (element doc [] Set.empty)
                 children
         )
@@ -896,7 +896,7 @@ markdownCodeBlockToEditorBlock cb s =
                         ]
     in
     Ok <|
-        blockNode
+        block
             (element codeBlock attributes Set.empty)
             (inlineChildren <| Array.fromList [ plainText s ])
 
@@ -920,13 +920,13 @@ markdownListToEditorBlock lb children =
     in
     Result.map
         (\listItems ->
-            blockNode
+            block
                 (element node attributes Set.empty)
                 (fromBlockArray
                     (Array.fromList
                         (List.map
                             (\cn ->
-                                blockNode
+                                block
                                     (element listItem [] Set.empty)
                                     cn
                             )
@@ -947,7 +947,7 @@ markdownInlineToParagraphBlock : List MInline -> Result String Block
 markdownInlineToParagraphBlock children =
     Result.map
         (\c ->
-            blockNode
+            block
                 (element paragraph [] Set.empty)
                 c
         )
@@ -955,24 +955,24 @@ markdownInlineToParagraphBlock children =
 
 
 markdownBlockToEditorBlock : MBlock -> Result String Block
-markdownBlockToEditorBlock block =
-    case block of
+markdownBlockToEditorBlock mblock =
+    case mblock of
         M.BlankLine s ->
             Ok <|
-                blockNode
+                block
                     (element paragraph [] Set.empty)
                     (inlineChildren <| Array.fromList [ plainText s ])
 
         M.ThematicBreak ->
             Ok <|
-                blockNode
+                block
                     (element horizontalRule [] Set.empty)
                     Leaf
 
         M.Heading _ i children ->
             Result.map
                 (\c ->
-                    blockNode
+                    block
                         (element
                             heading
                             [ IntegerAttribute "level" i ]
@@ -991,7 +991,7 @@ markdownBlockToEditorBlock block =
         M.BlockQuote children ->
             Result.map
                 (\c ->
-                    blockNode
+                    block
                         (element blockquote [] Set.empty)
                         c
                 )

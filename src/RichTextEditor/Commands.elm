@@ -58,10 +58,10 @@ import RichTextEditor.Model.Command
         , Transform
         , emptyCommandMap
         , inputEvent
-        , internalCommand
+        , internal
         , key
         , set
-        , transformCommand
+        , transform
         , withDefaultInputEventCommand
         , withDefaultKeyCommand
         )
@@ -77,7 +77,7 @@ import RichTextEditor.Model.Node
         , Children(..)
         , Inline(..)
         , Path
-        , blockNode
+        , block
         , childNodes
         , elementFromBlockNode
         , fromBlockArray
@@ -148,44 +148,44 @@ import String.Extra
 
 
 backspaceCommands =
-    [ ( "removeRangeSelection", transformCommand removeRangeSelection )
-    , ( "removeSelectedLeafElementCommand", transformCommand removeSelectedLeafElement )
-    , ( "backspaceInlineElement", transformCommand backspaceInlineElement )
-    , ( "backspaceBlockNode", transformCommand backspaceBlockNode )
-    , ( "joinBackward", transformCommand joinBackward )
+    [ ( "removeRangeSelection", transform removeRangeSelection )
+    , ( "removeSelectedLeafElementCommand", transform removeSelectedLeafElement )
+    , ( "backspaceInlineElement", transform backspaceInlineElement )
+    , ( "backspaceBlockNode", transform backspaceBlockNode )
+    , ( "joinBackward", transform joinBackward )
     ]
 
 
 deleteCommands =
-    [ ( "removeRangeSelection", transformCommand removeRangeSelection )
-    , ( "removeSelectedLeafElementCommand", transformCommand removeSelectedLeafElement )
-    , ( "deleteInlineElement", transformCommand deleteInlineElement )
-    , ( "deleteBlockNode", transformCommand deleteBlockNode )
-    , ( "joinForward", transformCommand joinForward )
+    [ ( "removeRangeSelection", transform removeRangeSelection )
+    , ( "removeSelectedLeafElementCommand", transform removeSelectedLeafElement )
+    , ( "deleteInlineElement", transform deleteInlineElement )
+    , ( "deleteBlockNode", transform deleteBlockNode )
+    , ( "joinForward", transform joinForward )
     ]
 
 
 defaultCommandBindings =
     emptyCommandMap
         |> set
-            [ inputEvent "insertLineBreak", key [ shift, enter ], key [ shift, enter ] ]
-            [ ( "insertLineBreak", transformCommand insertLineBreak ) ]
+            [ inputEvent "insertLineBreak", key [ shift, enter ], key [ shift, return ] ]
+            [ ( "insertLineBreak", transform insertLineBreak ) ]
         |> set [ inputEvent "insertParagraph", key [ enter ], key [ return ] ]
-            [ ( "liftEmpty", transformCommand liftEmpty ), ( "splitTextBlock", transformCommand splitTextBlock ) ]
+            [ ( "liftEmpty", transform liftEmpty ), ( "splitTextBlock", transform splitTextBlock ) ]
         |> set [ inputEvent "deleteContentBackward", key [ backspace ] ]
-            (backspaceCommands ++ [ ( "backspaceText", transformCommand backspaceText ) ])
+            (backspaceCommands ++ [ ( "backspaceText", transform backspaceText ) ])
         |> set [ inputEvent "deleteWordBackward", key [ alt, backspace ] ]
-            (backspaceCommands ++ [ ( "backspaceWord", transformCommand backspaceWord ) ])
+            (backspaceCommands ++ [ ( "backspaceWord", transform backspaceWord ) ])
         |> set [ inputEvent "deleteContentForward", key [ delete ] ]
-            (deleteCommands ++ [ ( "deleteText", transformCommand deleteText ) ])
+            (deleteCommands ++ [ ( "deleteText", transform deleteText ) ])
         |> set [ inputEvent "deleteWordForward", key [ alt, delete ] ]
-            (deleteCommands ++ [ ( "deleteWord", transformCommand deleteWord ) ])
+            (deleteCommands ++ [ ( "deleteWord", transform deleteWord ) ])
         |> set [ key [ short, "a" ] ]
-            [ ( "selectAll", transformCommand selectAll ) ]
+            [ ( "selectAll", transform selectAll ) ]
         |> set [ key [ short, "z" ] ]
-            [ ( "undo", internalCommand Undo ) ]
+            [ ( "undo", internal Undo ) ]
         |> set [ key [ short, shift, "z" ] ]
-            [ ( "redo", internalCommand Redo ) ]
+            [ ( "redo", internal Redo ) ]
         |> withDefaultKeyCommand defaultKeyCommand
         |> withDefaultInputEventCommand defaultInputEventCommand
 
@@ -193,7 +193,7 @@ defaultCommandBindings =
 defaultKeyCommand : KeyboardEvent -> NamedCommandList
 defaultKeyCommand event =
     if not event.altKey && not event.metaKey && not event.ctrlKey && String.length event.key == 1 then
-        [ ( "removeRangeAndInsert", transformCommand <| removeRangeSelectionAndInsert event.key ) ]
+        [ ( "removeRangeAndInsert", transform <| removeRangeSelectionAndInsert event.key ) ]
 
     else
         []
@@ -207,7 +207,7 @@ defaultInputEventCommand event =
                 []
 
             Just data ->
-                [ ( "removeRangeAndInsert", transformCommand <| removeRangeSelectionAndInsert data ) ]
+                [ ( "removeRangeAndInsert", transform <| removeRangeSelectionAndInsert data ) ]
 
     else
         []
@@ -1359,7 +1359,7 @@ wrap contentsMapFunc elementParameters editorState =
                                         inlineChildren (Array.fromList [ il ])
 
                             newNode =
-                                blockNode elementParameters newChildren
+                                block elementParameters newChildren
                         in
                         case replace ancestor (Block newNode) markedRoot of
                             Err err ->
@@ -1399,7 +1399,7 @@ wrap contentsMapFunc elementParameters editorState =
                                                     BlockChildren a ->
                                                         let
                                                             newChildNode =
-                                                                blockNode elementParameters
+                                                                block elementParameters
                                                                     (fromBlockArray <|
                                                                         Array.map
                                                                             contentsMapFunc

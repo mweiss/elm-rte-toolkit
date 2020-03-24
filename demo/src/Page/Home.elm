@@ -10,7 +10,7 @@ import RichTextEditor.Model.Node
     exposing
         ( Block
         , Inline(..)
-        , blockNode
+        , block
         , fromBlockArray
         , inlineChildren
         , plainText
@@ -84,14 +84,14 @@ subscriptions model =
 
 initNode : Block
 initNode =
-    blockNode
+    block
         (element doc [] Set.empty)
         (fromBlockArray (Array.fromList [ initialEditorNode ]))
 
 
 initialEditorNode : Block
 initialEditorNode =
-    blockNode
+    block
         (element paragraph [] Set.empty)
         (inlineChildren
             (Array.fromList

@@ -8,7 +8,7 @@ import RichTextEditor.Model.Mark exposing (mark)
 import RichTextEditor.Model.Node
     exposing
         ( Inline(..)
-        , blockNode
+        , block
         , fromBlockArray
         , inlineChildren
         , plainText
@@ -28,7 +28,7 @@ expectedOneParagraph =
     Array.fromList <|
         [ BlockNodeFragment <|
             Array.fromList
-                [ blockNode
+                [ block
                     (element paragraph [] Set.empty)
                     (inlineChildren
                         (Array.fromList
@@ -46,7 +46,7 @@ twoParagraphs =
 
 twoParagraphsBlockFragment =
     Array.fromList
-        [ blockNode
+        [ block
             (element paragraph [] Set.empty)
             (inlineChildren
                 (Array.fromList
@@ -54,7 +54,7 @@ twoParagraphsBlockFragment =
                     ]
                 )
             )
-        , blockNode
+        , block
             (element paragraph [] Set.empty)
             (inlineChildren
                 (Array.fromList
@@ -93,7 +93,7 @@ expectedBlockquoteAndParagraphs =
     Array.fromList
         [ BlockNodeFragment <|
             Array.fromList
-                [ blockNode
+                [ block
                     (element blockquote [] Set.empty)
                     (fromBlockArray twoParagraphsBlockFragment)
                 ]
@@ -116,7 +116,7 @@ expectedOneParagraphWithBold =
     Array.fromList <|
         [ BlockNodeFragment <|
             Array.fromList
-                [ blockNode
+                [ block
                     (element paragraph [] Set.empty)
                     (inlineChildren
                         (Array.fromList
@@ -136,7 +136,7 @@ expectedOneParagraphWithBoldAndItalic =
     Array.fromList <|
         [ BlockNodeFragment <|
             Array.fromList
-                [ blockNode
+                [ block
                     (element paragraph [] Set.empty)
                     (inlineChildren
                         (Array.fromList

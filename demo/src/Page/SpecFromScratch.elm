@@ -13,7 +13,7 @@ import RichTextEditor.Model.Attribute
         , findBoolAttribute
         , replaceOrAddBoolAttribute
         )
-import RichTextEditor.Model.Command exposing (Transform, transformCommand)
+import RichTextEditor.Model.Command exposing (Transform, transform)
 import RichTextEditor.Model.Decorations exposing (addElementDecoration, emptyDecorations)
 import RichTextEditor.Model.Editor
     exposing
@@ -27,7 +27,7 @@ import RichTextEditor.Model.Node
     exposing
         ( Block
         , Path
-        , blockNode
+        , block
         , elementFromBlockNode
         , fromBlockArray
         , inlineChildren
@@ -89,14 +89,14 @@ view model =
 
 todoInitNode : Block
 todoInitNode =
-    blockNode
+    block
         (element todoList [] Set.empty)
         (fromBlockArray (Array.fromList [ initialTodoNode "Item 1", initialTodoNode "Item 2" ]))
 
 
 initialTodoNode : String -> Block
 initialTodoNode s =
-    blockNode
+    block
         (element item [] Set.empty)
         (inlineChildren (Array.fromList [ plainText s ]))
 
@@ -243,7 +243,7 @@ htmlToItem def node =
 
 decorations =
     emptyDecorations
-        |> addElementDecoration "todo_item" toggleCheckboxDecoration
+        |> addElementDecoration item toggleCheckboxDecoration
 
 
 toggleCheckboxDecoration : Path -> Element -> Path -> List (Html.Attribute Msg)
@@ -266,7 +266,7 @@ handleTodoListChecked path value model =
             Result.withDefault model.editor
                 (applyCommand
                     ( "updateCaptionedImageText"
-                    , transformCommand <|
+                    , transform <|
                         updateTodoListItem
                             path
                             value

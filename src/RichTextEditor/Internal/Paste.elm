@@ -13,7 +13,7 @@ import RichTextEditor.Commands
 import RichTextEditor.Internal.Constants exposing (zeroWidthSpace)
 import RichTextEditor.Internal.Editor exposing (applyNamedCommandList)
 import RichTextEditor.Internal.Spec exposing (htmlToElementArray)
-import RichTextEditor.Model.Command exposing (Transform, transformCommand)
+import RichTextEditor.Model.Command exposing (Transform, transform)
 import RichTextEditor.Model.Editor exposing (Editor)
 import RichTextEditor.Model.Event exposing (PasteEvent)
 import RichTextEditor.Model.Node
@@ -21,7 +21,7 @@ import RichTextEditor.Model.Node
         ( Block
         , Children(..)
         , Inline(..)
-        , blockNode
+        , block
         , childNodes
         , elementFromBlockNode
         , inlineArray
@@ -61,8 +61,8 @@ handlePaste : PasteEvent -> Spec -> Editor -> Editor
 handlePaste event spec editor =
     let
         commandArray =
-            [ ( "pasteHtml", transformCommand <| pasteHtml spec event.html )
-            , ( "pasteText", transformCommand <| pasteText event.text )
+            [ ( "pasteHtml", transform <| pasteHtml spec event.html )
+            , ( "pasteText", transform <| pasteText event.text )
             ]
     in
     Result.withDefault editor (applyNamedCommandList commandArray spec editor)
@@ -96,7 +96,7 @@ pasteText text editorState =
                                 newLines =
                                     List.map
                                         (\line ->
-                                            blockNode (elementFromBlockNode tbNode)
+                                            block (elementFromBlockNode tbNode)
                                                 (inlineChildren <|
                                                     Array.fromList
                                                         [ plainText line

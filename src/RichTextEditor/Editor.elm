@@ -19,7 +19,8 @@ import RichTextEditor.Internal.BeforeInput as BeforeInput
 import RichTextEditor.Internal.Constants exposing (zeroWidthSpace)
 import RichTextEditor.Internal.DomNode
     exposing
-        ( decodeDomNode
+        ( DomNode(..)
+        , decodeDomNode
         , extractRootEditorBlockNode
         , findTextChanges
         )
@@ -28,9 +29,8 @@ import RichTextEditor.Internal.HtmlNode exposing (childNodesPlaceholder, editorB
 import RichTextEditor.Internal.KeyDown as KeyDown
 import RichTextEditor.Internal.Paste as Paste
 import RichTextEditor.Internal.Spec exposing (markDefinitionWithDefault, nodeDefinitionWithDefault)
-import RichTextEditor.Model.Command exposing (CommandMap, NamedCommand, NamedCommandList, transformCommand)
+import RichTextEditor.Model.Command exposing (CommandMap, NamedCommand, NamedCommandList, transform)
 import RichTextEditor.Model.Decorations exposing (Decorations, elementDecorators, markDecorators)
-import RichTextEditor.Model.DomNode exposing (DomNode(..))
 import RichTextEditor.Model.Editor exposing (Editor, InternalEditorMsg(..), Tagger, bufferedEditorState, completeRerenderCount, forceCompleteRerender, forceRerender, forceReselection, isComposing, renderCount, selectionCount, state, withBufferedEditorState, withComposing, withShortKey, withState)
 import RichTextEditor.Model.Element as Element exposing (Element)
 import RichTextEditor.Model.Event exposing (EditorChange, InitEvent, PasteEvent, TextChange)
@@ -133,7 +133,7 @@ handleInitEvent initEvent editor =
 
 handleCut : Spec -> Editor -> Editor
 handleCut spec editor =
-    case applyNamedCommandList [ ( "removeRangeSelection", transformCommand removeRangeSelection ) ] spec editor of
+    case applyNamedCommandList [ ( "removeRangeSelection", transform removeRangeSelection ) ] spec editor of
         Err _ ->
             editor
 

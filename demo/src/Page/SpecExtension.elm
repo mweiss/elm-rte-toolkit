@@ -11,7 +11,6 @@ import Json.Decode as D
 import Links exposing (rteToolkit)
 import RichTextEditor.Annotation exposing (selectable)
 import RichTextEditor.Commands as Commands
-import RichTextEditor.Decorations exposing (selectableDecoration)
 import RichTextEditor.Editor exposing (applyCommand, applyCommandNoForceSelection)
 import RichTextEditor.Model.Attribute
     exposing
@@ -19,8 +18,8 @@ import RichTextEditor.Model.Attribute
         , findStringAttribute
         , replaceOrAddStringAttribute
         )
-import RichTextEditor.Model.Command exposing (Transform, transformCommand)
-import RichTextEditor.Model.Decorations exposing (addElementDecoration)
+import RichTextEditor.Model.Command exposing (Transform, transform)
+import RichTextEditor.Model.Decorations exposing (addElementDecoration, selectableDecoration)
 import RichTextEditor.Model.Editor
 import RichTextEditor.Model.Element as Element exposing (Element, element)
 import RichTextEditor.Model.HtmlNode exposing (HtmlNode(..))
@@ -29,7 +28,7 @@ import RichTextEditor.Model.Node
         ( Block
         , Children(..)
         , Path
-        , blockNode
+        , block
         , elementFromBlockNode
         , fromBlockArray
         , inlineChildren
@@ -152,12 +151,12 @@ handleInsertCaptionedImage spec model =
                                 (Set.singleton selectable)
 
                         img =
-                            blockNode params Leaf
+                            block params Leaf
                     in
                     Result.withDefault model.editor.editor <|
                         applyCommand
                             ( "insertImage"
-                            , transformCommand <|
+                            , transform <|
                                 Commands.insertBlockNode img
                             )
                             spec
@@ -265,21 +264,21 @@ customSpec =
 
 docInitNode : Block
 docInitNode =
-    blockNode
+    block
         (element doc [] Set.empty)
         (fromBlockArray (Array.fromList [ initialEditorNode, initialCaptionedImage, initialEditorNode ]))
 
 
 initialEditorNode : Block
 initialEditorNode =
-    blockNode
+    block
         (element paragraph [] Set.empty)
         (inlineChildren (Array.fromList [ plainText "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum." ]))
 
 
 initialCaptionedImage : Block
 initialCaptionedImage =
-    blockNode
+    block
         (element captionedImage
             [ StringAttribute "caption" "The elm logo!", StringAttribute "src" "/logo.svg" ]
             (Set.singleton selectable)
@@ -293,7 +292,7 @@ initialState =
 
 
 newDecorations =
-    Editor.decorations |> addElementDecoration "captioned_image" preventKeyDownPropagationDecoration
+    Editor.decorations |> addElementDecoration captionedImage preventKeyDownPropagationDecoration
 
 
 init : Session -> ( Model, Cmd Msg )
@@ -406,7 +405,7 @@ handleCaptionedImageText path value model =
             Result.withDefault model.editor
                 (applyCommandNoForceSelection
                     ( "updateCaptionedImageText"
-                    , transformCommand <|
+                    , transform <|
                         updateCaptionedImageText
                             path
                             value

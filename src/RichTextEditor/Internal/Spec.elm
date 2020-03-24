@@ -127,7 +127,7 @@ htmlNodeToEditorFragment spec marks node =
                                 Err s
 
                             Ok childNodes ->
-                                Ok <| BlockNodeFragment <| Array.fromList [ Node.blockNode element childNodes ]
+                                Ok <| BlockNodeFragment <| Array.fromList [ Node.block element childNodes ]
 
                 Nothing ->
                     case htmlNodeToMark spec node of

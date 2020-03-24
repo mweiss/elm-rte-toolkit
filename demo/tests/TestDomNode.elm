@@ -2,8 +2,7 @@ module TestDomNode exposing (..)
 
 import Array
 import Expect
-import RichTextEditor.Internal.DomNode exposing (domElementNodeType, domTextNodeType, findTextChanges)
-import RichTextEditor.Model.DomNode exposing (DomNode(..))
+import RichTextEditor.Internal.DomNode exposing (DomNode(..), domElementNodeType, domTextNodeType, findTextChanges)
 import RichTextEditor.Model.HtmlNode exposing (HtmlNode(..))
 import Test exposing (Test, describe, test)
 
