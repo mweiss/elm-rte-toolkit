@@ -2,7 +2,7 @@ module RichTextEditor.State exposing (reduceEditorState, validate)
 
 import Array exposing (Array)
 import List.Extra
-import RichTextEditor.Annotation exposing (selection)
+import RichTextEditor.Annotation exposing (annotateSelection, clearSelectionAnnotations, selection)
 import RichTextEditor.Config.NodeDefinition as NodeDefinition
 import RichTextEditor.Config.Spec exposing (Spec)
 import RichTextEditor.Internal.Model.Definitions exposing (ContentType(..), toStringContentType)
@@ -20,7 +20,6 @@ import RichTextEditor.Model.Selection
 import RichTextEditor.Model.State as State exposing (State, withRoot, withSelection)
 import RichTextEditor.Model.Text as Text exposing (text, withText)
 import RichTextEditor.Node exposing (Node(..), findTextBlockNodeAncestor, map)
-import RichTextEditor.Selection exposing (annotateSelection, clearSelectionAnnotations)
 import Set exposing (Set)
 
 

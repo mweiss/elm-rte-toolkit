@@ -1,11 +1,6 @@
-module RichTextEditor.Path exposing
-    ( commonAncestor
-    , decrement
-    , domToEditor
+module RichTextEditor.Internal.Path exposing
+    ( domToEditor
     , editorToDom
-    , increment
-    , parent
-    , toString
     )
 
 {-|
@@ -184,26 +179,6 @@ editorToDom spec node path =
                             Nothing
 
 
-increment : Path -> Path
-increment np =
-    case List.Extra.last np of
-        Nothing ->
-            []
-
-        Just i ->
-            List.take (List.length np - 1) np ++ [ i + 1 ]
-
-
-decrement : Path -> Path
-decrement np =
-    case List.Extra.last np of
-        Nothing ->
-            []
-
-        Just i ->
-            List.take (List.length np - 1) np ++ [ i - 1 ]
-
-
 
 {- Helper method to traverse the give node with the node path and return
    the node path that remains after finding the child nodes placeholder.  If no
@@ -334,32 +309,3 @@ pathToChildContentsFromInlineTreePath spec array treeArray path =
 
                                         Just rest ->
                                             Just <| x :: p ++ rest
-
-
-toString : Path -> String
-toString nodePath =
-    String.join ":" <| List.map String.fromInt nodePath
-
-
-parent : Path -> Path
-parent =
-    RichTextEditor.Model.Node.parent
-
-
-commonAncestor : Path -> Path -> Path
-commonAncestor xPath yPath =
-    case xPath of
-        [] ->
-            []
-
-        x :: xs ->
-            case yPath of
-                [] ->
-                    []
-
-                y :: ys ->
-                    if x == y then
-                        x :: commonAncestor xs ys
-
-                    else
-                        []

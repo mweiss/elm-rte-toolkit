@@ -34,6 +34,7 @@ module RichTextEditor.Node exposing
     , replaceWithFragment
     , splitBlockAtPathAndOffset
     , splitTextLeaf
+    , toggleMark
     )
 
 import Array exposing (Array)
@@ -41,6 +42,7 @@ import Array.Extra
 import RichTextEditor.Internal.Constants exposing (selectable)
 import RichTextEditor.Model.Element as Element
 import RichTextEditor.Model.InlineElement as InlineElement
+import RichTextEditor.Model.Mark exposing (Mark, MarkOrder, ToggleAction, toggle)
 import RichTextEditor.Model.Node
     exposing
         ( Block
@@ -56,7 +58,7 @@ import RichTextEditor.Model.Node
         , toInlineArray
         , withChildNodes
         )
-import RichTextEditor.Model.Text exposing (Text, text, withText)
+import RichTextEditor.Model.Text as Text exposing (Text, text, withText)
 import Set
 
 
@@ -1243,3 +1245,27 @@ insertBefore path fragment root =
 
                         InlineLeafFragment _ ->
                             Err "I cannot insert an inline leaf fragment fragment into an block node fragment"
+
+
+toggleMark : ToggleAction -> MarkOrder -> Mark -> Node -> Node
+toggleMark action markOrder mark node =
+    case node of
+        Block _ ->
+            node
+
+        Inline il ->
+            Inline <|
+                case il of
+                    Text leaf ->
+                        Text <|
+                            (leaf
+                                |> Text.withMarks
+                                    (toggle action markOrder mark (Text.marks leaf))
+                            )
+
+                    InlineElement leaf ->
+                        InlineElement <|
+                            (leaf
+                                |> InlineElement.withMarks
+                                    (toggle action markOrder mark (InlineElement.marks leaf))
+                            )

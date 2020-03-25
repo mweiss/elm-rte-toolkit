@@ -3,6 +3,12 @@ module RichTextEditor.Internal.Paste exposing (..)
 import Array exposing (Array)
 import List.Extra
 import Result exposing (Result)
+import RichTextEditor.Annotation
+    exposing
+        ( annotateSelection
+        , clearSelectionAnnotations
+        , selectionFromAnnotations
+        )
 import RichTextEditor.Commands
     exposing
         ( joinBackward
@@ -26,6 +32,7 @@ import RichTextEditor.Model.Node
         , childNodes
         , element
         , inlineChildren
+        , parent
         , plainText
         , toInlineArray
         )
@@ -47,13 +54,6 @@ import RichTextEditor.Node
         , nodeAt
         , replaceWithFragment
         , splitTextLeaf
-        )
-import RichTextEditor.Path exposing (parent)
-import RichTextEditor.Selection
-    exposing
-        ( annotateSelection
-        , clearSelectionAnnotations
-        , selectionFromAnnotations
         )
 
 

@@ -21,7 +21,13 @@ module RichTextEditor.List exposing
 
 import Array exposing (Array)
 import List.Extra
-import RichTextEditor.Annotation as Annotation exposing (clearAnnotations)
+import RichTextEditor.Annotation as Annotation
+    exposing
+        ( annotateSelection
+        , clearAnnotations
+        , clearSelectionAnnotations
+        , selectionFromAnnotations
+        )
 import RichTextEditor.Commands
     exposing
         ( isEmptyTextBlock
@@ -56,6 +62,9 @@ import RichTextEditor.Model.Node as Node
         , block
         , blockChildren
         , childNodes
+        , commonAncestor
+        , decrement
+        , increment
         , toBlockArray
         )
 import RichTextEditor.Model.Selection
@@ -81,13 +90,6 @@ import RichTextEditor.Node
         , nodeAt
         , replace
         , replaceWithFragment
-        )
-import RichTextEditor.Path exposing (commonAncestor, decrement, increment)
-import RichTextEditor.Selection
-    exposing
-        ( annotateSelection
-        , clearSelectionAnnotations
-        , selectionFromAnnotations
         )
 import RichTextEditor.Specs exposing (listItem, orderedList, unorderedList)
 import Set

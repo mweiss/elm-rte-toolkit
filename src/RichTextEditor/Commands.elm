@@ -42,7 +42,13 @@ import Array exposing (Array)
 import Array.Extra
 import List.Extra
 import Regex
-import RichTextEditor.Annotation as Annotation exposing (clearAnnotations)
+import RichTextEditor.Annotation as Annotation
+    exposing
+        ( annotateSelection
+        , clearAnnotations
+        , clearSelectionAnnotations
+        , selectionFromAnnotations
+        )
 import RichTextEditor.Config.Command
     exposing
         ( CommandBinding
@@ -62,14 +68,9 @@ import RichTextEditor.Config.Command
 import RichTextEditor.Config.Keys exposing (alt, backspace, delete, enter, return, shift, short)
 import RichTextEditor.Internal.DeleteWord as DeleteWord
 import RichTextEditor.Internal.Model.Event exposing (InputEvent, KeyboardEvent)
-import RichTextEditor.Marks
-    exposing
-        ( hasMarkWithName
-        , toggleMark
-        )
 import RichTextEditor.Model.Element as Element exposing (Element)
 import RichTextEditor.Model.InlineElement as InlineElement exposing (inlineElement)
-import RichTextEditor.Model.Mark as Mark exposing (Mark, MarkOrder, ToggleAction(..), toggle)
+import RichTextEditor.Model.Mark as Mark exposing (Mark, MarkOrder, ToggleAction(..), hasMarkWithName, toggle)
 import RichTextEditor.Model.Node as Node
     exposing
         ( Block
@@ -80,10 +81,15 @@ import RichTextEditor.Model.Node as Node
         , block
         , blockChildren
         , childNodes
+        , commonAncestor
+        , decrement
+        , increment
         , inlineChildren
         , marks
+        , parent
         , toBlockArray
         , toInlineArray
+        , toString
         , withChildNodes
         , withElement
         )
@@ -126,20 +132,7 @@ import RichTextEditor.Node
         , replaceWithFragment
         , splitBlockAtPathAndOffset
         , splitTextLeaf
-        )
-import RichTextEditor.Path as NodePath
-    exposing
-        ( commonAncestor
-        , decrement
-        , increment
-        , parent
-        , toString
-        )
-import RichTextEditor.Selection
-    exposing
-        ( annotateSelection
-        , clearSelectionAnnotations
-        , selectionFromAnnotations
+        , toggleMark
         )
 import RichTextEditor.Specs exposing (hardBreak)
 import Set exposing (Set)
@@ -425,9 +418,9 @@ joinForward editorState =
                                     Nothing ->
                                         Err <|
                                             "I could not join these two blocks at"
-                                                ++ NodePath.toString p1
+                                                ++ Node.toString p1
                                                 ++ " ,"
-                                                ++ NodePath.toString p2
+                                                ++ Node.toString p2
 
                                     Just newBlock ->
                                         let

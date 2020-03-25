@@ -2,7 +2,7 @@ module RichTextEditor.Model.Node exposing
     ( Block, block, element, childNodes, withElement, withChildNodes
     , Children(..), BlockChildren, blockChildren, toBlockArray, InlineChildren, inlineChildren, toInlineArray, toInlineTree, reverseLookup, marksToMarkNodeList
     , Inline(..), InlineTree(..), inlineElement, marks, plainText, markedText
-    , Path, parent
+    , Path, parent, increment, decrement, toString, commonAncestor
     )
 
 {-| This module contains types related to the nodes in an editor.
@@ -29,7 +29,7 @@ represent flat structures, like text, inline images, and hard breaks.
 
 # Path
 
-@docs Path, parent
+@docs Path, parent, increment, decrement, toString, commonAncestor
 
 -}
 
@@ -57,6 +57,74 @@ type alias Path =
 parent : Path -> Path
 parent path =
     List.take (List.length path - 1) path
+
+
+{-| Increments the last index in a node path if one exists.
+
+    increment [0, 1]
+    --> [0, 2]
+
+-}
+increment : Path -> Path
+increment np =
+    case List.Extra.last np of
+        Nothing ->
+            []
+
+        Just i ->
+            List.take (List.length np - 1) np ++ [ i + 1 ]
+
+
+{-| Decrements the last index in a node path if one exists.
+
+    decrement [0, 0]
+    --> [0, 0]
+
+-}
+decrement : Path -> Path
+decrement np =
+    case List.Extra.last np of
+        Nothing ->
+            []
+
+        Just i ->
+            List.take (List.length np - 1) np ++ [ i - 1 ]
+
+
+{-| String representation of a path.
+
+    toString [0, 0]
+    --> "0:0"
+
+-}
+toString : Path -> String
+toString nodePath =
+    String.join ":" <| List.map String.fromInt nodePath
+
+
+{-| Returns the common ancestor of the two paths.
+
+    commonAncestor [0, 1, 2] [0, 1, 4]
+    --> [0, 1]
+
+-}
+commonAncestor : Path -> Path -> Path
+commonAncestor xPath yPath =
+    case xPath of
+        [] ->
+            []
+
+        x :: xs ->
+            case yPath of
+                [] ->
+                    []
+
+                y :: ys ->
+                    if x == y then
+                        x :: commonAncestor xs ys
+
+                    else
+                        []
 
 
 {-| A `Block` represents a block element in your document. An block can either

@@ -14,6 +14,7 @@ import Html.Attributes
 import Html.Events
 import Html.Keyed
 import Json.Decode as D
+import RichTextEditor.Annotation exposing (annotateSelection)
 import RichTextEditor.Commands exposing (removeRangeSelection)
 import RichTextEditor.Config.Command exposing (CommandMap, NamedCommand, NamedCommandList, transform)
 import RichTextEditor.Config.Decorations exposing (Decorations, elementDecorators, markDecorators)
@@ -53,6 +54,8 @@ import RichTextEditor.Internal.Model.Editor
         )
 import RichTextEditor.Internal.Model.Event exposing (EditorChange, InitEvent, PasteEvent, TextChange)
 import RichTextEditor.Internal.Paste as Paste
+import RichTextEditor.Internal.Path as NodePath
+import RichTextEditor.Internal.Selection exposing (domToEditor, editorToDom)
 import RichTextEditor.Internal.Spec exposing (markDefinitionWithDefault, nodeDefinitionWithDefault)
 import RichTextEditor.Model.Element as Element exposing (Element)
 import RichTextEditor.Model.HtmlNode exposing (HtmlNode(..))
@@ -72,6 +75,7 @@ import RichTextEditor.Model.Node
         , toBlockArray
         , toInlineArray
         , toInlineTree
+        , toString
         , withChildNodes
         )
 import RichTextEditor.Model.Selection
@@ -87,8 +91,6 @@ import RichTextEditor.Model.Selection
 import RichTextEditor.Model.State as State exposing (State, withRoot, withSelection)
 import RichTextEditor.Model.Text as Text
 import RichTextEditor.Node exposing (Node(..), nodeAt)
-import RichTextEditor.Path as NodePath exposing (toString)
-import RichTextEditor.Selection exposing (annotateSelection, domToEditor, editorToDom)
 
 
 updateSelection : Maybe Selection -> Bool -> Spec -> Editor -> Editor

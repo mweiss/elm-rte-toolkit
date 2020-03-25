@@ -2,8 +2,23 @@ module SimpleSpec exposing (..)
 
 import Array exposing (Array)
 import RichTextEditor.Config.MarkDefinition exposing (defaultHtmlToMark, markDefinition)
-import RichTextEditor.Config.NodeDefinition exposing (blockNode, defaultElementToHtml, defaultHtmlToElement, inlineLeaf, nodeDefinition, textBlock)
-import RichTextEditor.Config.Spec exposing (NodeDefinition, Spec, emptySpec, withMarkDefinitions, withNodeDefinitions)
+import RichTextEditor.Config.NodeDefinition
+    exposing
+        ( NodeDefinition
+        , blockNode
+        , defaultElementToHtml
+        , defaultHtmlToElement
+        , inlineLeaf
+        , nodeDefinition
+        , textBlock
+        )
+import RichTextEditor.Config.Spec
+    exposing
+        ( Spec
+        , emptySpec
+        , withMarkDefinitions
+        , withNodeDefinitions
+        )
 import RichTextEditor.Model.Element exposing (Element, element)
 import RichTextEditor.Model.HtmlNode exposing (HtmlNode(..))
 import RichTextEditor.Model.Mark exposing (Mark)
@@ -89,50 +104,66 @@ italicToHtmlNode _ children =
 
 codeBlock =
     nodeDefinition
-        "code_block"
-        "block"
-        (blockNode [])
-        codeBlockToHtmlNode
-        htmlNodeToCodeBlock
+        { name = "code_block"
+        , group = "block"
+        , contentType = blockNode []
+        , toHtmlNode = codeBlockToHtmlNode
+        , fromHtmlNode = htmlNodeToCodeBlock
+        }
 
 
 crazyBlock =
     nodeDefinition
-        "crazy_block"
-        "block"
-        (blockNode [])
-        crazyBlockToHtmlNode
-        htmlNodeToCrazyBlock
+        { name = "crazy_block"
+        , group = "block"
+        , contentType = blockNode []
+        , toHtmlNode = crazyBlockToHtmlNode
+        , fromHtmlNode = htmlNodeToCrazyBlock
+        }
 
 
 paragraph =
     nodeDefinition
-        "paragraph"
-        "block"
-        (textBlock [])
-        (defaultElementToHtml "p")
-        (defaultHtmlToElement "p")
+        { name = "paragraph"
+        , group = "block"
+        , contentType = textBlock []
+        , toHtmlNode = defaultElementToHtml "p"
+        , fromHtmlNode = defaultHtmlToElement "p"
+        }
 
 
 image =
     nodeDefinition
-        "image"
-        "inline"
-        inlineLeaf
-        (defaultElementToHtml "img")
-        (defaultHtmlToElement "img")
+        { name = "image"
+        , group = "inline"
+        , contentType = inlineLeaf
+        , toHtmlNode = defaultElementToHtml "img"
+        , fromHtmlNode = defaultHtmlToElement "img"
+        }
 
 
 bold =
-    markDefinition "bold" boldToHtmlNode (defaultHtmlToMark "b")
+    markDefinition
+        { name = "bold"
+        , toHtmlNode = boldToHtmlNode
+        , fromHtmlNode = defaultHtmlToMark "b"
+        }
 
 
 italic =
-    markDefinition "italic" italicToHtmlNode (defaultHtmlToMark "i")
+    markDefinition
+        { name = "italic"
+        , toHtmlNode = italicToHtmlNode
+        , fromHtmlNode = defaultHtmlToMark "i"
+        }
 
 
 strikethrough =
-    markDefinition "strikethrough" italicToHtmlNode (defaultHtmlToMark "s")
+    markDefinition
+        { name = "strikethrough"
+        , toHtmlNode = italicToHtmlNode
+        , fromHtmlNode = defaultHtmlToMark "s"
+        }
 
 
 simpleSpec : Spec

@@ -1,6 +1,6 @@
 module RichTextEditor.Annotation exposing
     ( selection, selectable, lift
-    , add, addAnnotationAtPath, annotationsFromNode, clearAnnotations, findPathsWithAnnotation, remove, removeAnnotationAtPath, toggle, toggleElementParameters
+    , add, addAnnotationAtPath, annotateSelection, annotationsFromNode, clearAnnotations, clearSelectionAnnotations, findPathsWithAnnotation, remove, removeAnnotationAtPath, selectionFromAnnotations, toggle, toggleElementParameters
     )
 
 {-| This module contains common constants used as node annotations. Annotations can be added to
@@ -25,6 +25,7 @@ import RichTextEditor.Model.Node
         , element
         , withElement
         )
+import RichTextEditor.Model.Selection exposing (Selection, anchorNode, focusNode, range)
 import RichTextEditor.Model.Text as Text
 import RichTextEditor.Node exposing (Node(..), indexedFoldl, map, nodeAt, replace)
 import Set exposing (Set)
@@ -157,3 +158,45 @@ findPathsWithAnnotation annotation node =
         )
         []
         (Block node)
+
+
+annotateSelection : Selection -> Block -> Block
+annotateSelection selection_ node =
+    addSelectionAnnotationAtPath (focusNode selection_) <| addSelectionAnnotationAtPath (anchorNode selection_) node
+
+
+addSelectionAnnotationAtPath : Path -> Block -> Block
+addSelectionAnnotationAtPath nodePath node =
+    Result.withDefault node (addAnnotationAtPath selection nodePath node)
+
+
+clearSelectionAnnotations : Block -> Block
+clearSelectionAnnotations =
+    clearAnnotations selection
+
+
+selectionFromAnnotations : Block -> Int -> Int -> Maybe Selection
+selectionFromAnnotations node anchorOffset focusOffset =
+    case findNodeRangeFromSelectionAnnotations node of
+        Nothing ->
+            Nothing
+
+        Just ( start, end ) ->
+            Just (range start anchorOffset end focusOffset)
+
+
+findNodeRangeFromSelectionAnnotations : Block -> Maybe ( Path, Path )
+findNodeRangeFromSelectionAnnotations node =
+    let
+        paths =
+            findPathsWithAnnotation selection node
+    in
+    case paths of
+        [] ->
+            Nothing
+
+        [ x ] ->
+            Just ( x, x )
+
+        end :: start :: _ ->
+            Just ( start, end )

@@ -1,7 +1,7 @@
 module RichTextEditor.Model.Mark exposing
     ( Mark, mark, name, attributes, withAttributes
     , MarkOrder, markOrderFromSpec
-    , sort, ToggleAction(..), toggle
+    , sort, ToggleAction(..), toggle, hasMarkWithName
     )
 
 {-| A mark is a piece of information that can be attached to an inline node (like color, font, and link information).
@@ -19,7 +19,7 @@ module RichTextEditor.Model.Mark exposing
 
 # List helpers
 
-@docs sort, ToggleAction, toggle
+@docs sort, ToggleAction, toggle, hasMarkWithName
 
 -}
 
@@ -197,3 +197,10 @@ markOrderFromSpec spec =
                 )
                 (markDefinitions spec)
             )
+
+
+{-| Predicate that returns true if the list of marks contains a mark with the given name
+-}
+hasMarkWithName : String -> List Mark -> Bool
+hasMarkWithName name_ marks =
+    List.any (\m -> name_ == name m) marks
