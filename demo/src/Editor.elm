@@ -5,8 +5,8 @@ import Controls exposing (EditorMsg(..), InsertImageModal, InsertLinkModal, Styl
 import ExtraMarks exposing (strikethrough, underline)
 import Html exposing (Html, div)
 import Html.Attributes
-import RichTextEditor.Annotation exposing (selectable)
-import RichTextEditor.Commands as Commands
+import RichText.Annotation exposing (selectable)
+import RichText.Commands as Commands
     exposing
         ( insertBlockNode
         , lift
@@ -16,16 +16,16 @@ import RichTextEditor.Commands as Commands
         , toggleMarkOnInlineNodes
         , wrap
         )
-import RichTextEditor.Config.Command as Command exposing (CommandMap, inputEvent, key, set, transform)
-import RichTextEditor.Config.Decorations exposing (Decorations, addElementDecoration, emptyDecorations, selectableDecoration)
-import RichTextEditor.Config.Keys exposing (enter, return)
-import RichTextEditor.Config.Spec exposing (Spec)
-import RichTextEditor.Editor as Editor exposing (Editor, applyCommand, applyNamedCommandList, model, state)
-import RichTextEditor.List exposing (ListType, defaultListDefinition)
-import RichTextEditor.Model.Attribute exposing (Attribute(..))
-import RichTextEditor.Model.Element as Element exposing (element)
-import RichTextEditor.Model.Mark as Mark exposing (ToggleAction(..), mark, markOrderFromSpec)
-import RichTextEditor.Model.Node
+import RichText.Config.Command as Command exposing (CommandMap, inputEvent, key, set, transform)
+import RichText.Config.Decorations exposing (Decorations, addElementDecoration, emptyDecorations, selectableDecoration)
+import RichText.Config.Keys exposing (enter, return)
+import RichText.Config.Spec exposing (Spec)
+import RichText.Editor as Editor exposing (Editor, apply, applyList, init, state)
+import RichText.List exposing (ListType, defaultListDefinition)
+import RichText.Model.Attribute exposing (Attribute(..))
+import RichText.Model.Element as Element exposing (element)
+import RichText.Model.Mark as Mark exposing (ToggleAction(..), mark, markOrderFromSpec)
+import RichText.Model.Node
     exposing
         ( Block
         , Children(..)
@@ -37,10 +37,10 @@ import RichTextEditor.Model.Node
         , marks
         , plainText
         )
-import RichTextEditor.Model.Selection exposing (anchorNode, focusNode, normalize)
-import RichTextEditor.Model.State as State exposing (State)
-import RichTextEditor.Node exposing (Node(..), anyRange)
-import RichTextEditor.Specs
+import RichText.Model.Selection exposing (anchorNode, focusNode, normalize)
+import RichText.Model.State as State exposing (State)
+import RichText.Node exposing (Node(..), anyRange)
+import RichText.Specs
     exposing
         ( blockquote
         , bold
@@ -93,7 +93,7 @@ initialState =
 
 
 listCommandBindings =
-    RichTextEditor.List.commandBindings RichTextEditor.List.defaultListDefinition
+    RichText.List.commandBindings RichText.List.defaultListDefinition
 
 
 commandBindings =
@@ -120,7 +120,7 @@ decorations =
 
 initEditor : State -> Editor
 initEditor iState =
-    model iState
+    Editor.init iState
 
 
 initInsertLinkModal : InsertLinkModal
@@ -192,7 +192,7 @@ handleShowInsertLinkModal spec model =
 
                     newEditor =
                         Result.withDefault model.editor <|
-                            applyCommand
+                            apply
                                 ( "removeLink"
                                 , transform <|
                                     Commands.toggleMarkOnInlineNodes markOrder linkMark Remove
@@ -237,7 +237,7 @@ handleInsertLink spec model =
                             mark link attributes
                     in
                     Result.withDefault model.editor <|
-                        applyCommand
+                        apply
                             ( "insertLink"
                             , transform <|
                                 Commands.toggleMarkOnInlineNodes markOrder linkMark Add
@@ -281,7 +281,7 @@ handleInsertImage spec model =
                             inlineElement params []
                     in
                     Result.withDefault model.editor <|
-                        applyCommand
+                        apply
                             ( "insertImage"
                             , transform <|
                                 Commands.insertInlineElement img
@@ -327,7 +327,7 @@ handleToggleStyle style spec model =
     { model
         | editor =
             Result.withDefault model.editor
-                (applyCommand
+                (apply
                     ( "toggleStyle"
                     , transform <|
                         toggleMarkOnInlineNodes markOrder (mark markDef []) Flip
@@ -398,9 +398,9 @@ handleLiftBlock spec model =
     { model
         | editor =
             Result.withDefault model.editor
-                (applyNamedCommandList
+                (applyList
                     [ ( "liftList"
-                      , transform <| RichTextEditor.List.lift defaultListDefinition
+                      , transform <| RichText.List.lift defaultListDefinition
                       )
                     , ( "lift"
                       , transform <| lift
@@ -417,7 +417,7 @@ handleWrapInList spec listType model =
     { model
         | editor =
             Result.withDefault model.editor
-                (applyCommand ( "wrapList", transform <| RichTextEditor.List.wrap defaultListDefinition listType ) spec model.editor)
+                (apply ( "wrapList", transform <| RichText.List.wrap defaultListDefinition listType ) spec model.editor)
     }
 
 
@@ -444,7 +444,7 @@ handleToggleBlock spec block model =
     { model
         | editor =
             Result.withDefault model.editor
-                (applyCommand
+                (apply
                     ( "toggleBlock"
                     , transform <| toggleBlock [ "heading", "code_block", "paragraph" ] onParams offParams
                     )
@@ -459,7 +459,7 @@ handleWrapBlockNode spec model =
     { model
         | editor =
             Result.withDefault model.editor
-                (applyCommand
+                (apply
                     ( "wrapBlockquote"
                     , transform <|
                         wrap
@@ -477,7 +477,7 @@ handleInsertHorizontalRule spec model =
     { model
         | editor =
             Result.withDefault model.editor
-                (applyCommand
+                (apply
                     ( "insertHR"
                     , transform <|
                         insertBlockNode

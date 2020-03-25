@@ -5,10 +5,10 @@ import Html exposing (Html, a, h1, p, text)
 import Html.Attributes exposing (href, title)
 import Html.Events
 import Links exposing (rteToolkit)
-import RichTextEditor.Commands as Commands
-import RichTextEditor.Config.Command exposing (Transform, transform)
-import RichTextEditor.Config.Decorations exposing (addElementDecoration, emptyDecorations)
-import RichTextEditor.Config.NodeDefinition as NodeDefinition
+import RichText.Commands as Commands
+import RichText.Config.Command exposing (Transform, transform)
+import RichText.Config.Decorations exposing (addElementDecoration, emptyDecorations)
+import RichText.Config.NodeDefinition as NodeDefinition
     exposing
         ( ElementToHtml
         , HtmlToElement
@@ -16,26 +16,26 @@ import RichTextEditor.Config.NodeDefinition as NodeDefinition
         , defaultHtmlToElement
         , nodeDefinition
         )
-import RichTextEditor.Config.Spec
+import RichText.Config.Spec
     exposing
         ( emptySpec
         , withNodeDefinitions
         )
-import RichTextEditor.Editor as Editor
+import RichText.Editor as Editor
     exposing
         ( Editor
         , Message
-        , applyCommand
+        , apply
         )
-import RichTextEditor.Model.Attribute
+import RichText.Model.Attribute
     exposing
         ( Attribute(..)
         , findBoolAttribute
         , replaceOrAddBoolAttribute
         )
-import RichTextEditor.Model.Element as Element exposing (Element, element)
-import RichTextEditor.Model.HtmlNode exposing (HtmlNode(..))
-import RichTextEditor.Model.Node as Node
+import RichText.Model.Element as Element exposing (Element, element)
+import RichText.Model.HtmlNode exposing (HtmlNode(..))
+import RichText.Model.Node as Node
     exposing
         ( Block
         , Path
@@ -45,9 +45,9 @@ import RichTextEditor.Model.Node as Node
         , plainText
         , withElement
         )
-import RichTextEditor.Model.State as State exposing (State, withRoot)
-import RichTextEditor.Node as Node exposing (Node(..), nodeAt)
-import RichTextEditor.Specs exposing (hardBreak)
+import RichText.Model.State as State exposing (State, withRoot)
+import RichText.Node as Node exposing (Node(..), nodeAt)
+import RichText.Specs exposing (hardBreak)
 import Session exposing (Session)
 
 
@@ -106,7 +106,7 @@ initialState =
 init : Session -> ( Model, Cmd Msg )
 init session =
     ( { session = session
-      , editor = Editor.model initialState
+      , editor = Editor.init initialState
       }
     , Cmd.none
     )
@@ -266,7 +266,7 @@ handleTodoListChecked path value model =
     { model
         | editor =
             Result.withDefault model.editor
-                (applyCommand
+                (apply
                     ( "updateTodoListItem"
                     , transform <|
                         updateTodoListItem

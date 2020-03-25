@@ -10,18 +10,18 @@ import Links exposing (rteToolkit)
 import Markdown.Block as M
 import Markdown.Config as M
 import Markdown.Inline as MI
-import RichTextEditor.Config.Spec exposing (Spec, withMarkDefinitions)
-import RichTextEditor.Editor exposing (state)
-import RichTextEditor.Model.Attribute
+import RichText.Config.Spec exposing (Spec, withMarkDefinitions)
+import RichText.Editor exposing (state)
+import RichText.Model.Attribute
     exposing
         ( Attribute(..)
         , findIntegerAttribute
         , findStringAttribute
         )
-import RichTextEditor.Model.Element as Element exposing (Element, element)
-import RichTextEditor.Model.InlineElement as InlineElement
-import RichTextEditor.Model.Mark as Mark exposing (Mark, MarkOrder, markOrderFromSpec)
-import RichTextEditor.Model.Node as Node
+import RichText.Model.Element as Element exposing (Element, element)
+import RichText.Model.InlineElement as InlineElement
+import RichText.Model.Mark as Mark exposing (Mark, MarkOrder, markOrderFromSpec)
+import RichText.Model.Node as Node
     exposing
         ( Block
         , Children(..)
@@ -38,9 +38,9 @@ import RichTextEditor.Model.Node as Node
         , toInlineArray
         , toInlineTree
         )
-import RichTextEditor.Model.State as State exposing (State)
-import RichTextEditor.Model.Text as Text
-import RichTextEditor.Specs as MarkdownSpec
+import RichText.Model.State as State exposing (State)
+import RichText.Model.Text as Text
+import RichText.Specs as MarkdownSpec
     exposing
         ( blockquote
         , bold
@@ -823,9 +823,7 @@ markdownInlineToInlineLeaves marks inline =
 
         MI.HardLineBreak ->
             Ok <|
-                [ inlineElement (element hardBreak [])
-                    []
-                ]
+                [ inlineElement (element hardBreak []) [] ]
 
         MI.CodeInline s ->
             let

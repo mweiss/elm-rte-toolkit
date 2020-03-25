@@ -2,12 +2,12 @@ module TestNode exposing (..)
 
 import Array
 import Expect
-import RichTextEditor.Annotation exposing (selectable)
-import RichTextEditor.Model.Element as Element
-import RichTextEditor.Model.InlineElement as InlineElement
-import RichTextEditor.Model.Node as Node exposing (Block, Children(..), Inline(..), Path, block, blockChildren, inlineChildren, inlineElement, plainText, toString, withElement)
-import RichTextEditor.Model.Text as Text exposing (text, withText)
-import RichTextEditor.Node
+import RichText.Annotation exposing (selectable)
+import RichText.Model.Element as Element
+import RichText.Model.InlineElement as InlineElement
+import RichText.Model.Node as Node exposing (Block, Children(..), Inline(..), Path, block, blockChildren, inlineChildren, inlineElement, plainText, toString, withElement)
+import RichText.Model.Text as Text exposing (text, withText)
+import RichText.Node
     exposing
         ( Fragment(..)
         , Node(..)
@@ -43,7 +43,7 @@ import RichTextEditor.Node
         , splitBlockAtPathAndOffset
         , splitTextLeaf
         )
-import RichTextEditor.Specs exposing (doc, horizontalRule, image, paragraph)
+import RichText.Specs exposing (doc, horizontalRule, image, paragraph)
 import Set
 import Test exposing (Test, describe, test)
 

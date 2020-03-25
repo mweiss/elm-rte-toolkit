@@ -9,11 +9,11 @@ import Html.Attributes exposing (href, title)
 import Html.Events exposing (onClick)
 import Json.Decode as D
 import Links exposing (rteToolkit)
-import RichTextEditor.Annotation exposing (selectable)
-import RichTextEditor.Commands as Commands
-import RichTextEditor.Config.Command exposing (Transform, transform)
-import RichTextEditor.Config.Decorations exposing (addElementDecoration, selectableDecoration)
-import RichTextEditor.Config.NodeDefinition
+import RichText.Annotation exposing (selectable)
+import RichText.Commands as Commands
+import RichText.Config.Command exposing (Transform, transform)
+import RichText.Config.Decorations exposing (addElementDecoration, selectableDecoration)
+import RichText.Config.NodeDefinition
     exposing
         ( ElementToHtml
         , HtmlToElement
@@ -21,7 +21,7 @@ import RichTextEditor.Config.NodeDefinition
         , blockLeaf
         , nodeDefinition
         )
-import RichTextEditor.Config.Spec
+import RichText.Config.Spec
     exposing
         ( Spec
         , markDefinitions
@@ -29,16 +29,16 @@ import RichTextEditor.Config.Spec
         , withMarkDefinitions
         , withNodeDefinitions
         )
-import RichTextEditor.Editor exposing (applyCommand, applyCommandNoForceSelection)
-import RichTextEditor.Model.Attribute
+import RichText.Editor exposing (apply, applyNoForceSelection)
+import RichText.Model.Attribute
     exposing
         ( Attribute(..)
         , findStringAttribute
         , replaceOrAddStringAttribute
         )
-import RichTextEditor.Model.Element as Element exposing (Element, element)
-import RichTextEditor.Model.HtmlNode exposing (HtmlNode(..))
-import RichTextEditor.Model.Node as Node
+import RichText.Model.Element as Element exposing (Element, element)
+import RichText.Model.HtmlNode exposing (HtmlNode(..))
+import RichText.Model.Node as Node
     exposing
         ( Block
         , Children(..)
@@ -49,9 +49,9 @@ import RichTextEditor.Model.Node as Node
         , plainText
         , withElement
         )
-import RichTextEditor.Model.State as State exposing (State, withRoot)
-import RichTextEditor.Node as Node exposing (Node(..), nodeAt)
-import RichTextEditor.Specs as MarkdownSpec exposing (doc, paragraph)
+import RichText.Model.State as State exposing (State, withRoot)
+import RichText.Node as Node exposing (Node(..), nodeAt)
+import RichText.Specs as MarkdownSpec exposing (doc, paragraph)
 import Session exposing (Session)
 import Set
 
@@ -92,7 +92,7 @@ handleShowInsertCaptionedImageModal model =
         | insertCaptionedImageModal =
             { insertImageModal
                 | visible = True
-                , editorState = Just (RichTextEditor.Editor.state model.editor.editor)
+                , editorState = Just (RichText.Editor.state model.editor.editor)
             }
     }
 
@@ -152,7 +152,7 @@ handleInsertCaptionedImage spec model =
                             block params Leaf
                     in
                     Result.withDefault model.editor.editor <|
-                        applyCommand
+                        apply
                             ( "insertImage"
                             , transform <|
                                 Commands.insertBlockNode img
@@ -264,11 +264,11 @@ docInitNode : Block
 docInitNode =
     block
         (element doc [])
-        (blockChildren (Array.fromList [ initialEditorNode, initialCaptionedImage, initialEditorNode ]))
+        (blockChildren (Array.fromList [ loremParagraph, initialCaptionedImage, loremParagraph ]))
 
 
-initialEditorNode : Block
-initialEditorNode =
+loremParagraph : Block
+loremParagraph =
     block
         (element paragraph [])
         (inlineChildren (Array.fromList [ plainText "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum." ]))
@@ -401,7 +401,7 @@ handleCaptionedImageText path value model =
     { model
         | editor =
             Result.withDefault model.editor
-                (applyCommandNoForceSelection
+                (applyNoForceSelection
                     ( "updateCaptionedImageText"
                     , transform <|
                         updateCaptionedImageText

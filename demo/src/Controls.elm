@@ -6,19 +6,19 @@ import Html exposing (Attribute, Html, div, span)
 import Html.Attributes exposing (class)
 import Html.Events exposing (preventDefaultOn)
 import Json.Decode exposing (succeed)
-import RichTextEditor.Editor exposing (Editor, Message, state)
-import RichTextEditor.List exposing (ListType(..))
-import RichTextEditor.Model.Element as Element
-import RichTextEditor.Model.Mark as Mark
-import RichTextEditor.Model.Node
+import RichText.Editor exposing (Editor, Message, state)
+import RichText.List exposing (ListType(..))
+import RichText.Model.Element as Element
+import RichText.Model.Mark as Mark
+import RichText.Model.Node
     exposing
         ( Path
         , element
         , marks
         )
-import RichTextEditor.Model.Selection exposing (anchorNode, focusNode, normalize)
-import RichTextEditor.Model.State as State exposing (State)
-import RichTextEditor.Node as Node exposing (Node(..))
+import RichText.Model.Selection exposing (anchorNode, focusNode, normalize)
+import RichText.Model.State as State exposing (State)
+import RichText.Node as Node exposing (Node(..))
 import Set exposing (Set)
 
 

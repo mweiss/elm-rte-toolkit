@@ -1,10 +1,10 @@
 module Model.TestMark exposing (..)
 
 import Expect
-import RichTextEditor.Config.MarkDefinition exposing (MarkDefinition, defaultMarkDefinition)
-import RichTextEditor.Model.Attribute exposing (Attribute(..))
-import RichTextEditor.Model.Mark exposing (Mark, MarkOrder, ToggleAction(..), mark, markOrderFromSpec, sort, toggle)
-import RichTextEditor.Specs exposing (bold, code, italic, link, markdown)
+import RichText.Config.MarkDefinition exposing (MarkDefinition, defaultMarkDefinition)
+import RichText.Model.Attribute exposing (Attribute(..))
+import RichText.Model.Mark exposing (Mark, MarkOrder, ToggleAction(..), mark, markOrderFromSpec, sort, toggle)
+import RichText.Specs exposing (bold, code, italic, link, markdown)
 import Test exposing (Test, describe, test)
 
 

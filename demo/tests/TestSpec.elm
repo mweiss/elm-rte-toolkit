@@ -2,10 +2,10 @@ module TestSpec exposing (..)
 
 import Array exposing (Array)
 import Expect
-import RichTextEditor.Internal.Spec exposing (htmlToElementArray)
-import RichTextEditor.Model.Element exposing (element)
-import RichTextEditor.Model.Mark exposing (mark)
-import RichTextEditor.Model.Node
+import RichText.Internal.Spec exposing (htmlToElementArray)
+import RichText.Model.Element exposing (element)
+import RichText.Model.Mark exposing (mark)
+import RichText.Model.Node
     exposing
         ( Inline(..)
         , block
@@ -13,9 +13,9 @@ import RichTextEditor.Model.Node
         , inlineChildren
         , plainText
         )
-import RichTextEditor.Model.Text as Text
-import RichTextEditor.Node exposing (Fragment(..))
-import RichTextEditor.Specs exposing (blockquote, bold, italic, markdown, paragraph)
+import RichText.Model.Text as Text
+import RichText.Node exposing (Fragment(..))
+import RichText.Specs exposing (blockquote, bold, italic, markdown, paragraph)
 import Test exposing (Test, describe, test)
 
 

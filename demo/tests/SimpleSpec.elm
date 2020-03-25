@@ -1,8 +1,8 @@
 module SimpleSpec exposing (..)
 
 import Array exposing (Array)
-import RichTextEditor.Config.MarkDefinition exposing (defaultHtmlToMark, markDefinition)
-import RichTextEditor.Config.NodeDefinition
+import RichText.Config.MarkDefinition exposing (defaultHtmlToMark, markDefinition)
+import RichText.Config.NodeDefinition
     exposing
         ( NodeDefinition
         , blockNode
@@ -12,16 +12,16 @@ import RichTextEditor.Config.NodeDefinition
         , nodeDefinition
         , textBlock
         )
-import RichTextEditor.Config.Spec
+import RichText.Config.Spec
     exposing
         ( Spec
         , emptySpec
         , withMarkDefinitions
         , withNodeDefinitions
         )
-import RichTextEditor.Model.Element exposing (Element, element)
-import RichTextEditor.Model.HtmlNode exposing (HtmlNode(..))
-import RichTextEditor.Model.Mark exposing (Mark)
+import RichText.Model.Element exposing (Element, element)
+import RichText.Model.HtmlNode exposing (HtmlNode(..))
+import RichText.Model.Mark exposing (Mark)
 
 
 codeBlockToHtmlNode : Element -> Array HtmlNode -> HtmlNode

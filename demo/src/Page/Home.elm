@@ -4,9 +4,9 @@ import Array
 import Editor
 import Html exposing (Html, h1, text)
 import Html.Attributes exposing (class)
-import RichTextEditor.Model.Element exposing (element)
-import RichTextEditor.Model.Mark exposing (mark)
-import RichTextEditor.Model.Node
+import RichText.Model.Element exposing (element)
+import RichText.Model.Mark exposing (mark)
+import RichText.Model.Node
     exposing
         ( Block
         , Inline(..)
@@ -15,9 +15,9 @@ import RichTextEditor.Model.Node
         , inlineChildren
         , plainText
         )
-import RichTextEditor.Model.State as State exposing (State)
-import RichTextEditor.Model.Text as Text
-import RichTextEditor.Specs as Specs exposing (code, doc, paragraph)
+import RichText.Model.State as State exposing (State)
+import RichText.Model.Text as Text
+import RichText.Specs as Specs exposing (code, doc, paragraph)
 import Session exposing (Session)
 import Set
 

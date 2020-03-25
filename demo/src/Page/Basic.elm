@@ -4,7 +4,7 @@ import Editor
 import Html exposing (Html, a, h1, p, text)
 import Html.Attributes exposing (href, title)
 import Links exposing (rteToolkit)
-import RichTextEditor.Specs as MarkdownSpec
+import RichText.Specs as MarkdownSpec
 import Session exposing (Session)
 
 

@@ -2,8 +2,8 @@ module Model.TestNode exposing (..)
 
 import Array
 import Expect
-import RichTextEditor.Model.Mark exposing (Mark, mark)
-import RichTextEditor.Model.Node
+import RichText.Model.Mark exposing (Mark, mark)
+import RichText.Model.Node
     exposing
         ( InlineTree(..)
         , commonAncestor

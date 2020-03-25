@@ -2,15 +2,15 @@ module TestPath exposing (..)
 
 import Array exposing (Array)
 import Expect
-import RichTextEditor.Internal.Path
+import RichText.Internal.Path
     exposing
         ( domToEditor
         , editorToDom
         )
-import RichTextEditor.Model.Element exposing (element)
-import RichTextEditor.Model.Mark exposing (mark)
-import RichTextEditor.Model.Node exposing (Inline(..), block, inlineChildren, plainText)
-import RichTextEditor.Model.Text as Text exposing (withText)
+import RichText.Model.Element exposing (element)
+import RichText.Model.Mark exposing (mark)
+import RichText.Model.Node exposing (Inline(..), block, inlineChildren, plainText)
+import RichText.Model.Text as Text exposing (withText)
 import SimpleSpec exposing (bold, codeBlock, crazyBlock, paragraph, simpleSpec)
 import Test exposing (..)
 
