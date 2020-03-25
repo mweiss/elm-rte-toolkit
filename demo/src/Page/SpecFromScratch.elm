@@ -21,17 +21,17 @@ import RichTextEditor.Config.Spec
         ( emptySpec
         , withNodeDefinitions
         )
-import RichTextEditor.Editor as Editor exposing (applyCommand)
+import RichTextEditor.Editor as Editor
+    exposing
+        ( Editor
+        , Message
+        , applyCommand
+        )
 import RichTextEditor.Model.Attribute
     exposing
         ( Attribute(..)
         , findBoolAttribute
         , replaceOrAddBoolAttribute
-        )
-import RichTextEditor.Model.Editor
-    exposing
-        ( Editor
-        , Message
         )
 import RichTextEditor.Model.Element as Element exposing (Element, element)
 import RichTextEditor.Model.HtmlNode exposing (HtmlNode(..))
@@ -107,8 +107,7 @@ initialState =
 init : Session -> ( Model, Cmd Msg )
 init session =
     ( { session = session
-      , editor =
-            RichTextEditor.Model.Editor.editor initialState
+      , editor = Editor.model initialState
       }
     , Cmd.none
     )

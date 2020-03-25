@@ -45,7 +45,7 @@ import Regex
 import RichTextEditor.Annotation as Annotation
     exposing
         ( annotateSelection
-        , clearAnnotations
+        , clear
         , clearSelectionAnnotations
         , selectionFromAnnotations
         )
@@ -1597,7 +1597,7 @@ lift editorState =
                 (editorState
                     |> withSelection newSelection
                     |> withRoot
-                        (clearAnnotations Annotation.lift <|
+                        (clear Annotation.lift <|
                             clearSelectionAnnotations liftedRoot
                         )
                 )

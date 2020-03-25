@@ -20,10 +20,9 @@ import RichTextEditor.Config.Command as Command exposing (CommandMap, inputEvent
 import RichTextEditor.Config.Decorations exposing (Decorations, addElementDecoration, emptyDecorations, selectableDecoration)
 import RichTextEditor.Config.Keys exposing (enter, return)
 import RichTextEditor.Config.Spec exposing (Spec)
-import RichTextEditor.Editor as Editor exposing (applyCommand, applyNamedCommandList)
+import RichTextEditor.Editor as Editor exposing (Editor, applyCommand, applyNamedCommandList, model, state)
 import RichTextEditor.List exposing (ListType, defaultListDefinition)
 import RichTextEditor.Model.Attribute exposing (Attribute(..))
-import RichTextEditor.Model.Editor exposing (Editor, editor, state)
 import RichTextEditor.Model.Element exposing (element)
 import RichTextEditor.Model.Mark as Mark exposing (ToggleAction(..), mark, markOrderFromSpec)
 import RichTextEditor.Model.Node
@@ -121,7 +120,7 @@ decorations =
 
 initEditor : State -> Editor
 initEditor iState =
-    editor iState
+    model iState
 
 
 initInsertLinkModal : InsertLinkModal

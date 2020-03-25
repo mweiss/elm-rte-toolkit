@@ -3,12 +3,12 @@ module RichTextEditor.Internal.BeforeInput exposing (..)
 import Json.Decode as D
 import RichTextEditor.Config.Command exposing (CommandMap, namedCommandListFromInputEvent)
 import RichTextEditor.Config.Spec exposing (Spec)
-import RichTextEditor.Internal.Editor exposing (applyNamedCommandList)
 import RichTextEditor.Internal.Model.Editor
     exposing
         ( Editor
         , Message(..)
         , Tagger
+        , applyNamedCommandList
         , forceRerender
         )
 import RichTextEditor.Internal.Model.Event exposing (InputEvent)

@@ -1,10 +1,17 @@
 module RichTextEditor.Editor exposing
-    ( applyCommand
+    ( Editor
+    , Message
+    , applyCommand
     , applyCommandNoForceSelection
     , applyNamedCommandList
+    , history
+    , model
+    , shortKey
+    , state
     , update
     , updateEditorState
     , view
+    , withHistory
     )
 
 import Array exposing (Array)
@@ -30,34 +37,16 @@ import RichTextEditor.Internal.DomNode
         , extractRootEditorBlockNode
         , findTextChanges
         )
-import RichTextEditor.Internal.Editor exposing (updateEditorStateWithTimestamp)
 import RichTextEditor.Internal.HtmlNode exposing (childNodesPlaceholder, editorBlockNodeToHtmlNode)
 import RichTextEditor.Internal.KeyDown as KeyDown
-import RichTextEditor.Internal.Model.Editor
-    exposing
-        ( Editor
-        , Message(..)
-        , Tagger
-        , bufferedEditorState
-        , completeRerenderCount
-        , forceCompleteRerender
-        , forceRerender
-        , forceReselection
-        , isComposing
-        , renderCount
-        , selectionCount
-        , state
-        , withBufferedEditorState
-        , withComposing
-        , withShortKey
-        , withState
-        )
+import RichTextEditor.Internal.Model.Editor as InternalEditor exposing (Editor, Message(..), Tagger, applyNamedCommandList, bufferedEditorState, completeRerenderCount, forceCompleteRerender, forceRerender, forceReselection, isComposing, renderCount, selectionCount, state, updateEditorState, updateEditorStateWithTimestamp, withBufferedEditorState, withComposing, withShortKey, withState)
 import RichTextEditor.Internal.Model.Event exposing (EditorChange, InitEvent, PasteEvent, TextChange)
 import RichTextEditor.Internal.Paste as Paste
 import RichTextEditor.Internal.Path as NodePath
 import RichTextEditor.Internal.Selection exposing (domToEditor, editorToDom)
 import RichTextEditor.Internal.Spec exposing (markDefinitionWithDefault, nodeDefinitionWithDefault)
 import RichTextEditor.Model.Element as Element exposing (Element)
+import RichTextEditor.Model.History exposing (History)
 import RichTextEditor.Model.HtmlNode exposing (HtmlNode(..))
 import RichTextEditor.Model.InlineElement as InlineElement
 import RichTextEditor.Model.Mark as Mark exposing (Mark)
@@ -94,14 +83,14 @@ import RichTextEditor.Node exposing (Node(..), nodeAt)
 
 
 updateSelection : Maybe Selection -> Bool -> Spec -> Editor -> Editor
-updateSelection maybeSelection isDomPath spec editor =
+updateSelection maybeSelection isDomPath spec editor_ =
     let
         editorState =
-            state editor
+            state editor_
     in
     case maybeSelection of
         Nothing ->
-            editor |> withState (editorState |> withSelection maybeSelection)
+            editor_ |> withState (editorState |> withSelection maybeSelection)
 
         Just selection ->
             let
@@ -112,53 +101,53 @@ updateSelection maybeSelection isDomPath spec editor =
                     else
                         Just selection
             in
-            editor |> withState (editorState |> withSelection translatedSelection)
+            editor_ |> withState (editorState |> withSelection translatedSelection)
 
 
 update : CommandMap -> Spec -> Message -> Editor -> Editor
-update commandMap spec msg editor =
+update commandMap spec msg editor_ =
     case msg of
         ChangeEvent change ->
-            updateChangeEvent change spec editor
+            updateChangeEvent change spec editor_
 
         SelectionEvent selection isDomPath ->
-            updateSelection selection isDomPath spec editor
+            updateSelection selection isDomPath spec editor_
 
         BeforeInputEvent inputEvent ->
-            BeforeInput.handleBeforeInput inputEvent commandMap spec editor
+            BeforeInput.handleBeforeInput inputEvent commandMap spec editor_
 
         CompositionStart ->
-            handleCompositionStart editor
+            handleCompositionStart editor_
 
         CompositionEnd ->
-            handleCompositionEnd editor
+            handleCompositionEnd editor_
 
         KeyDownEvent e ->
-            KeyDown.handleKeyDown e commandMap spec editor
+            KeyDown.handleKeyDown e commandMap spec editor_
 
         PasteWithDataEvent e ->
-            Paste.handlePaste e spec editor
+            Paste.handlePaste e spec editor_
 
         CutEvent ->
-            handleCut spec editor
+            handleCut spec editor_
 
         Init e ->
-            handleInitEvent e editor
+            handleInitEvent e editor_
 
         ReplaceWith e ->
             e
 
 
 handleInitEvent : InitEvent -> Editor -> Editor
-handleInitEvent initEvent editor =
-    editor |> withShortKey initEvent.shortKey
+handleInitEvent initEvent editor_ =
+    editor_ |> withShortKey initEvent.shortKey
 
 
 handleCut : Spec -> Editor -> Editor
-handleCut spec editor =
-    case applyNamedCommandList [ ( "removeRangeSelection", transform removeRangeSelection ) ] spec editor of
+handleCut spec editor_ =
+    case applyNamedCommandList [ ( "removeRangeSelection", transform removeRangeSelection ) ] spec editor_ of
         Err _ ->
-            editor
+            editor_
 
         Ok e ->
             forceRerender e
@@ -194,16 +183,16 @@ deriveTextChanges spec editorNode domNode =
 
 
 applyForceFunctionOnEditor : (Editor -> Editor) -> Editor -> Editor
-applyForceFunctionOnEditor rerenderFunc editor =
+applyForceFunctionOnEditor rerenderFunc editor_ =
     rerenderFunc
-        (case bufferedEditorState editor of
+        (case bufferedEditorState editor_ of
             Nothing ->
-                editor
+                editor_
 
             Just bufferedEditorState ->
                 let
                     newEditor =
-                        updateEditorState "buffered" bufferedEditorState editor
+                        updateEditorState "buffered" bufferedEditorState editor_
                 in
                 newEditor
                     |> withBufferedEditorState Nothing
@@ -212,15 +201,15 @@ applyForceFunctionOnEditor rerenderFunc editor =
 
 
 updateChangeEvent : EditorChange -> Spec -> Editor -> Editor
-updateChangeEvent change spec editor =
+updateChangeEvent change spec editor_ =
     case change.characterDataMutations of
         Nothing ->
             case D.decodeValue decodeDomNode change.root of
                 Err _ ->
-                    editor
+                    editor_
 
                 Ok root ->
-                    updateChangeEventFullScan change.timestamp root change.selection spec editor
+                    updateChangeEventFullScan change.timestamp root change.selection spec editor_
 
         Just characterDataMutations ->
             updateChangeEventTextChanges
@@ -228,7 +217,7 @@ updateChangeEvent change spec editor =
                 (sanitizeMutations characterDataMutations)
                 change.selection
                 spec
-                editor
+                editor_
 
 
 sanitizeMutations : List TextChange -> List TextChange
@@ -267,26 +256,26 @@ differentText root ( path, t ) =
 
 
 updateChangeEventTextChanges : Int -> List TextChange -> Maybe Selection -> Spec -> Editor -> Editor
-updateChangeEventTextChanges timestamp textChanges selection spec editor =
-    case textChangesDomToEditor spec (State.root (state editor)) textChanges of
+updateChangeEventTextChanges timestamp textChanges selection spec editor_ =
+    case textChangesDomToEditor spec (State.root (state editor_)) textChanges of
         Nothing ->
-            applyForceFunctionOnEditor forceRerender editor
+            applyForceFunctionOnEditor forceRerender editor_
 
         Just changes ->
             let
                 editorState =
-                    state editor
+                    state editor_
 
                 actualChanges =
                     List.filter (differentText (State.root editorState)) changes
             in
             if List.isEmpty actualChanges then
-                editor
+                editor_
 
             else
                 case replaceText (State.root editorState) actualChanges of
                     Nothing ->
-                        applyForceFunctionOnEditor forceRerender editor
+                        applyForceFunctionOnEditor forceRerender editor_
 
                     Just replacedEditorNodes ->
                         let
@@ -295,35 +284,35 @@ updateChangeEventTextChanges timestamp textChanges selection spec editor =
                                     |> withSelection (selection |> Maybe.andThen (domToEditor spec (State.root editorState)))
                                     |> withRoot replacedEditorNodes
                         in
-                        if isComposing editor then
-                            editor
+                        if isComposing editor_ then
+                            editor_
                                 |> withBufferedEditorState (Just newEditorState)
 
                         else
                             let
                                 newEditor =
-                                    updateEditorStateWithTimestamp (Just timestamp) "textChange" newEditorState editor
+                                    updateEditorStateWithTimestamp (Just timestamp) "textChange" newEditorState editor_
                             in
                             applyForceFunctionOnEditor forceReselection newEditor
 
 
 updateChangeEventFullScan : Int -> DomNode -> Maybe Selection -> Spec -> Editor -> Editor
-updateChangeEventFullScan timestamp domRoot selection spec editor =
+updateChangeEventFullScan timestamp domRoot selection spec editor_ =
     case extractRootEditorBlockNode domRoot of
         Nothing ->
-            applyForceFunctionOnEditor forceCompleteRerender editor
+            applyForceFunctionOnEditor forceCompleteRerender editor_
 
         Just editorRootDomNode ->
             if needCompleteRerender domRoot then
-                applyForceFunctionOnEditor forceCompleteRerender editor
+                applyForceFunctionOnEditor forceCompleteRerender editor_
 
             else
-                case deriveTextChanges spec (State.root (state editor)) editorRootDomNode of
+                case deriveTextChanges spec (State.root (state editor_)) editorRootDomNode of
                     Ok changes ->
-                        updateChangeEventTextChanges timestamp changes selection spec editor
+                        updateChangeEventTextChanges timestamp changes selection spec editor_
 
                     Err _ ->
-                        applyForceFunctionOnEditor forceRerender editor
+                        applyForceFunctionOnEditor forceRerender editor_
 
 
 needCompleteRerender : DomNode -> Bool
@@ -519,29 +508,29 @@ selectionAttribute maybeSelection renderCount selectionCount =
 
 
 onBeforeInput : Tagger msg -> CommandMap -> Spec -> Editor -> Html.Attribute msg
-onBeforeInput tagger commandMap spec editor =
-    Html.Events.preventDefaultOn "beforeinput" (BeforeInput.preventDefaultOnBeforeInputDecoder tagger commandMap spec editor)
+onBeforeInput tagger commandMap spec editor_ =
+    Html.Events.preventDefaultOn "beforeinput" (BeforeInput.preventDefaultOnBeforeInputDecoder tagger commandMap spec editor_)
 
 
 onKeyDown : Tagger msg -> CommandMap -> Spec -> Editor -> Html.Attribute msg
-onKeyDown tagger commandMap spec editor =
-    Html.Events.preventDefaultOn "keydown" (KeyDown.preventDefaultOnKeyDownDecoder tagger commandMap spec editor)
+onKeyDown tagger commandMap spec editor_ =
+    Html.Events.preventDefaultOn "keydown" (KeyDown.preventDefaultOnKeyDownDecoder tagger commandMap spec editor_)
 
 
 handleCompositionStart : Editor -> Editor
-handleCompositionStart editor =
-    editor
+handleCompositionStart editor_ =
+    editor_
         |> withComposing True
 
 
 handleCompositionEnd : Editor -> Editor
-handleCompositionEnd editor =
-    case bufferedEditorState editor of
+handleCompositionEnd editor_ =
+    case bufferedEditorState editor_ of
         Nothing ->
-            editor |> withComposing False
+            editor_ |> withComposing False
 
         Just _ ->
-            applyForceFunctionOnEditor forceReselection editor
+            applyForceFunctionOnEditor forceReselection editor_
 
 
 shouldHideCaret : State -> Bool
@@ -588,20 +577,20 @@ markCaretSelectionOnEditorNodes editorState =
 
 
 editorToDomSelection : Spec -> Editor -> Maybe Selection
-editorToDomSelection spec editor =
-    case State.selection (state editor) of
+editorToDomSelection spec editor_ =
+    case State.selection (state editor_) of
         Nothing ->
             Nothing
 
         Just selection ->
-            editorToDom spec (State.root (state editor)) selection
+            editorToDom spec (State.root (state editor_)) selection
 
 
 view : Tagger msg -> Decorations msg -> CommandMap -> Spec -> Editor -> Html msg
-view tagger decorations commandMap spec editor =
+view tagger decorations commandMap spec editor_ =
     let
         st =
-            state editor
+            state editor_
     in
     Html.Keyed.node "elm-editor"
         [ onEditorChange tagger
@@ -612,16 +601,16 @@ view tagger decorations commandMap spec editor =
         , onCut tagger
         , onInit tagger
         ]
-        [ ( String.fromInt (completeRerenderCount editor)
+        [ ( String.fromInt (completeRerenderCount editor_)
           , Html.Keyed.node "div"
                 [ Html.Attributes.contenteditable True
                 , Html.Attributes.class "rte-main"
                 , Html.Attributes.attribute "data-rte-main" "true"
                 , Html.Attributes.classList [ ( "rte-hide-caret", shouldHideCaret st ) ]
-                , onBeforeInput tagger commandMap spec editor
-                , onKeyDown tagger commandMap spec editor
+                , onBeforeInput tagger commandMap spec editor_
+                , onKeyDown tagger commandMap spec editor_
                 ]
-                [ ( String.fromInt (renderCount editor)
+                [ ( String.fromInt (renderCount editor_)
                   , viewEditorBlockNode
                         spec
                         decorations
@@ -635,9 +624,9 @@ view tagger decorations commandMap spec editor =
                 [ Html.Attributes.attribute
                     "selection"
                     (selectionAttribute
-                        (editorToDomSelection spec editor)
-                        (renderCount editor)
-                        (selectionCount editor)
+                        (editorToDomSelection spec editor_)
+                        (renderCount editor_)
+                        (selectionCount editor_)
                     )
                 ]
                 []
@@ -771,21 +760,79 @@ viewInlineLeaf spec decorations backwardsPath leaf =
             viewText (Text.text v)
 
 
+{-| `Editor` represents the entire state of the editor, and is what you store in your model.
+-}
+type alias Editor =
+    InternalEditor.Editor
+
+
+{-| Initializes an editor
+
+    editor <| State.state docNode Nothing
+
+-}
+model : State -> Editor
+model =
+    InternalEditor.editor
+
+
+{-| The internal events that an editor has to respond to.
+-}
+type alias Message =
+    InternalEditor.Message
+
+
+{-| Retrieves the current state from the editor
+-}
+state : Editor -> State
+state =
+    InternalEditor.state
+
+
+{-| Retrieves the current history from the editor
+-}
+history : Editor -> History
+history =
+    InternalEditor.history
+
+
+{-| Retrieves the shortKey from the editor. Note that this gets updated after the editor has been
+rendered.
+-}
+shortKey : Editor -> String
+shortKey =
+    InternalEditor.shortKey
+
+
+{-| Sets the history on the editor.
+
+    editor
+        |> withHistory newHistory
+
+-}
+withHistory : History -> Editor -> Editor
+withHistory =
+    InternalEditor.withHistory
+
+
 applyNamedCommandList : NamedCommandList -> Spec -> Editor -> Result String Editor
 applyNamedCommandList =
-    RichTextEditor.Internal.Editor.applyNamedCommandList
+    InternalEditor.applyNamedCommandList
 
 
 applyCommand : NamedCommand -> Spec -> Editor -> Result String Editor
 applyCommand =
-    RichTextEditor.Internal.Editor.applyCommand
+    InternalEditor.applyCommand
 
 
 applyCommandNoForceSelection : NamedCommand -> Spec -> Editor -> Result String Editor
 applyCommandNoForceSelection =
-    RichTextEditor.Internal.Editor.applyCommandNoForceSelection
+    InternalEditor.applyCommandNoForceSelection
 
 
+{-| Directly updates the editor state. This function skips validation, so when possible,
+it's better to
+-}
 updateEditorState : String -> State -> Editor -> Editor
 updateEditorState =
-    RichTextEditor.Internal.Editor.updateEditorState
+    InternalEditor.updateEditorState

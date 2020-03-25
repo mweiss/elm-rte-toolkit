@@ -6,8 +6,8 @@ import Html exposing (Attribute, Html, div, span)
 import Html.Attributes exposing (class)
 import Html.Events exposing (preventDefaultOn)
 import Json.Decode exposing (succeed)
+import RichTextEditor.Editor exposing (Editor, Message, state)
 import RichTextEditor.List exposing (ListType(..))
-import RichTextEditor.Model.Editor exposing (Editor, Message, state)
 import RichTextEditor.Model.Element as Element
 import RichTextEditor.Model.Mark as Mark
 import RichTextEditor.Model.Node

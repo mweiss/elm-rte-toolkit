@@ -1,16 +1,31 @@
 module RichTextEditor.Annotation exposing
     ( selection, selectable, lift
-    , add, addAnnotationAtPath, annotateSelection, annotationsFromNode, clearAnnotations, clearSelectionAnnotations, findPathsWithAnnotation, remove, removeAnnotationAtPath, selectionFromAnnotations, toggle, toggleElementParameters
+    , add, addAtPath, fromNode, clear, remove, removeAtPath
+    , annotateSelection, selectionFromAnnotations, clearSelectionAnnotations
     )
 
-{-| This module contains common constants used as node annotations. Annotations can be added to
-elements and text to keep track of position when doing a complex transform like a lift or join,
-as well as add flags to a node that you can use to effect behavior, like if something is selectable.
+{-| This module contains common constants and functions used to annotate nodes.
+Annotations can be added to elements and text to keep track of position when doing a complex
+transform like a lift or join, as well as add flags to a node that you can use to effect behavior,
+like if something is selectable.
 
     newElement =
         element |> Element.withAnnotations (Set.singleton selection)
 
+
+# Annotations
+
 @docs selection, selectable, lift
+
+
+# Helpers
+
+@docs add, addAtPath, fromNode, clear, findPathsWithAnnotation, remove, removeAtPath
+
+
+# Selection
+
+@docs annotateSelection, selectionFromAnnotations, clearSelectionAnnotations
 
 -}
 
@@ -55,8 +70,8 @@ lift =
     Constants.lift
 
 
-addAnnotationAtPath : String -> Path -> Block -> Result String Block
-addAnnotationAtPath annotation path node =
+addAtPath : String -> Path -> Block -> Result String Block
+addAtPath annotation path node =
     case nodeAt path node of
         Nothing ->
             Err "No block found at path"
@@ -65,8 +80,8 @@ addAnnotationAtPath annotation path node =
             replace path (add annotation n) node
 
 
-removeAnnotationAtPath : String -> Path -> Block -> Result String Block
-removeAnnotationAtPath annotation path node =
+removeAtPath : String -> Path -> Block -> Result String Block
+removeAtPath annotation path node =
     case nodeAt path node of
         Nothing ->
             Err "No block found at path"
@@ -121,8 +136,8 @@ toggle func annotation node =
                         Text <| (tl |> Text.withAnnotations (func annotation <| Text.annotations tl))
 
 
-clearAnnotations : String -> Block -> Block
-clearAnnotations annotation root =
+clear : String -> Block -> Block
+clear annotation root =
     case map (remove annotation) (Block root) of
         Block bn ->
             bn
@@ -131,8 +146,8 @@ clearAnnotations annotation root =
             root
 
 
-annotationsFromNode : Node -> Set String
-annotationsFromNode node =
+fromNode : Node -> Set String
+fromNode node =
     case node of
         Block blockNode ->
             Element.annotations <| element blockNode
@@ -150,7 +165,7 @@ findPathsWithAnnotation : String -> Block -> List Path
 findPathsWithAnnotation annotation node =
     indexedFoldl
         (\path n agg ->
-            if Set.member annotation <| annotationsFromNode n then
+            if Set.member annotation <| fromNode n then
                 path :: agg
 
             else
@@ -167,12 +182,12 @@ annotateSelection selection_ node =
 
 addSelectionAnnotationAtPath : Path -> Block -> Block
 addSelectionAnnotationAtPath nodePath node =
-    Result.withDefault node (addAnnotationAtPath selection nodePath node)
+    Result.withDefault node (addAtPath selection nodePath node)
 
 
 clearSelectionAnnotations : Block -> Block
 clearSelectionAnnotations =
-    clearAnnotations selection
+    clear selection
 
 
 selectionFromAnnotations : Block -> Int -> Int -> Maybe Selection

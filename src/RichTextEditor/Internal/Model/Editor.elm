@@ -1,35 +1,18 @@
-module RichTextEditor.Internal.Model.Editor exposing
-    ( Editor
-    , Message(..)
-    , Tagger
-    , bufferedEditorState
-    , completeRerenderCount
-    , editor
-    , forceCompleteRerender
-    , forceRerender
-    , forceReselection
-    , history
-    , isComposing
-    , renderCount
-    , selectionCount
-    , shortKey
-    , state
-    , withBufferedEditorState
-    , withComposing
-    , withHistory
-    , withShortKey
-    , withState
-    )
+module RichTextEditor.Internal.Model.Editor exposing (..)
 
 {-| This is the internal module contains the types used to model the editor,
 as well as the messages used to update the editor's internal state.
 -}
 
+import BoundedDeque exposing (BoundedDeque)
+import RichTextEditor.Config.Command exposing (Command(..), InternalAction(..), NamedCommand, NamedCommandList)
 import RichTextEditor.Config.Keys exposing (meta)
+import RichTextEditor.Config.Spec exposing (Spec)
 import RichTextEditor.Internal.Model.Event exposing (EditorChange, InitEvent, InputEvent, KeyboardEvent, PasteEvent)
-import RichTextEditor.Internal.Model.History exposing (History, empty)
+import RichTextEditor.Internal.Model.History exposing (History, contents, empty, fromContents)
 import RichTextEditor.Model.Selection exposing (Selection)
 import RichTextEditor.Model.State exposing (State)
+import RichTextEditor.State exposing (reduceEditorState, validate)
 
 
 type alias Tagger msg =
@@ -199,3 +182,181 @@ forceCompleteRerender e =
     case e of
         Editor c ->
             Editor { c | completeRerenderCount = c.completeRerenderCount + 1 }
+
+
+handleUndo : Editor -> Editor
+handleUndo editor_ =
+    let
+        editorHistory =
+            contents (history editor_)
+
+        editorState =
+            state editor_
+
+        ( maybeState, newUndoDeque ) =
+            findNextState editorState editorHistory.undoDeque
+    in
+    case maybeState of
+        Nothing ->
+            editor_
+
+        Just newState ->
+            let
+                newHistory =
+                    { editorHistory | undoDeque = newUndoDeque, redoStack = editorState :: editorHistory.redoStack, lastTextChangeTimestamp = 0 }
+            in
+            editor_ |> withState newState |> withHistory (fromContents newHistory)
+
+
+handleRedo : Editor -> Result String Editor
+handleRedo editor_ =
+    let
+        editorHistory =
+            contents (history editor_)
+    in
+    case editorHistory.redoStack of
+        [] ->
+            Err "There are no states on the redo stack"
+
+        newState :: xs ->
+            let
+                newHistory =
+                    { editorHistory
+                        | undoDeque =
+                            BoundedDeque.pushFront ( "redo", state editor_ )
+                                editorHistory.undoDeque
+                        , redoStack = xs
+                    }
+            in
+            Ok (editor_ |> withState newState |> withHistory (fromContents newHistory))
+
+
+updateEditorState : String -> State -> Editor -> Editor
+updateEditorState =
+    updateEditorStateWithTimestamp Nothing
+
+
+updateEditorStateWithTimestamp : Maybe Int -> String -> State -> Editor -> Editor
+updateEditorStateWithTimestamp maybeTimestamp action newState editor_ =
+    let
+        editorHistory =
+            contents (history editor_)
+
+        timestamp =
+            Maybe.withDefault 0 maybeTimestamp
+
+        newUndoDeque =
+            case BoundedDeque.first editorHistory.undoDeque of
+                Nothing ->
+                    BoundedDeque.pushFront ( action, state editor_ ) editorHistory.undoDeque
+
+                Just ( lastAction, _ ) ->
+                    if
+                        lastAction
+                            == action
+                            && timestamp
+                            /= 0
+                            && timestamp
+                            - editorHistory.lastTextChangeTimestamp
+                            < editorHistory.groupDelayMilliseconds
+                    then
+                        editorHistory.undoDeque
+
+                    else
+                        BoundedDeque.pushFront ( action, state editor_ ) editorHistory.undoDeque
+
+        newHistory =
+            { editorHistory
+                | undoDeque = newUndoDeque
+                , redoStack = []
+                , lastTextChangeTimestamp = timestamp
+            }
+    in
+    editor_ |> withState newState |> withHistory (fromContents newHistory)
+
+
+applyInternalCommand : InternalAction -> Editor -> Result String Editor
+applyInternalCommand action editor_ =
+    case action of
+        Undo ->
+            -- Undo always succeeds to prevent the default undo behavior.
+            Ok (handleUndo editor_)
+
+        Redo ->
+            handleRedo editor_
+
+
+findNextState : State -> BoundedDeque ( String, State ) -> ( Maybe State, BoundedDeque ( String, State ) )
+findNextState editorState undoDeque =
+    let
+        ( maybeState, rest ) =
+            BoundedDeque.popFront undoDeque
+    in
+    case maybeState of
+        Nothing ->
+            ( Nothing, rest )
+
+        Just ( _, state_ ) ->
+            if state_ /= editorState then
+                ( Just state_, rest )
+
+            else
+                findNextState editorState rest
+
+
+applyCommand : NamedCommand -> Spec -> Editor -> Result String Editor
+applyCommand ( name, command ) spec editor_ =
+    case command of
+        InternalCommand action ->
+            applyInternalCommand action editor_
+
+        TransformCommand transform ->
+            case transform (state editor_) |> Result.andThen (validate spec) of
+                Err s ->
+                    Err s
+
+                Ok v ->
+                    let
+                        reducedState =
+                            reduceEditorState v
+                    in
+                    Ok <| forceReselection (updateEditorState name reducedState editor_)
+
+
+applyCommandNoForceSelection : NamedCommand -> Spec -> Editor -> Result String Editor
+applyCommandNoForceSelection ( name, command ) spec editor_ =
+    case command of
+        InternalCommand action ->
+            applyInternalCommand action editor_
+
+        TransformCommand transform ->
+            case transform (state editor_) |> Result.andThen (validate spec) of
+                Err s ->
+                    Err s
+
+                Ok v ->
+                    let
+                        reducedState =
+                            reduceEditorState v
+                    in
+                    Ok <| updateEditorState name reducedState editor_
+
+
+applyNamedCommandList : NamedCommandList -> Spec -> Editor -> Result String Editor
+applyNamedCommandList list spec editor_ =
+    List.foldl
+        (\cmd result ->
+            case result of
+                Err _ ->
+                    case applyCommand cmd spec editor_ of
+                        Err s2 ->
+                            Err s2
+
+                        Ok o ->
+                            Ok o
+
+                _ ->
+                    result
+        )
+        (Err "No commands found")
+        list

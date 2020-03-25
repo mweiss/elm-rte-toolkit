@@ -36,7 +36,6 @@ import RichTextEditor.Model.Attribute
         , findStringAttribute
         , replaceOrAddStringAttribute
         )
-import RichTextEditor.Model.Editor
 import RichTextEditor.Model.Element as Element exposing (Element, element)
 import RichTextEditor.Model.HtmlNode exposing (HtmlNode(..))
 import RichTextEditor.Model.Node as Node
@@ -93,7 +92,7 @@ handleShowInsertCaptionedImageModal model =
         | insertCaptionedImageModal =
             { insertImageModal
                 | visible = True
-                , editorState = Just (RichTextEditor.Model.Editor.state model.editor.editor)
+                , editorState = Just (RichTextEditor.Editor.state model.editor.editor)
             }
     }
 

@@ -11,13 +11,13 @@ import Markdown.Block as M
 import Markdown.Config as M
 import Markdown.Inline as MI
 import RichTextEditor.Config.Spec exposing (Spec, withMarkDefinitions)
+import RichTextEditor.Editor exposing (state)
 import RichTextEditor.Model.Attribute
     exposing
         ( Attribute(..)
         , findIntegerAttribute
         , findStringAttribute
         )
-import RichTextEditor.Model.Editor exposing (state)
 import RichTextEditor.Model.Element as Element exposing (Element, element)
 import RichTextEditor.Model.InlineElement as InlineElement
 import RichTextEditor.Model.Mark as Mark exposing (Mark, MarkOrder, markOrderFromSpec)

@@ -8,7 +8,20 @@ import RichTextEditor.Config.Spec exposing (Spec)
 import RichTextEditor.Internal.Model.Definitions exposing (ContentType(..), toStringContentType)
 import RichTextEditor.Internal.Spec exposing (nodeDefinitionWithDefault)
 import RichTextEditor.Model.InlineElement as InlineElement
-import RichTextEditor.Model.Node as Node exposing (Block, Children(..), Inline(..), InlineChildren, Path, childNodes, element, inlineChildren, toBlockArray, toInlineArray, withChildNodes)
+import RichTextEditor.Model.Node as Node
+    exposing
+        ( Block
+        , Children(..)
+        , Inline(..)
+        , InlineChildren
+        , Path
+        , childNodes
+        , element
+        , inlineChildren
+        , toBlockArray
+        , toInlineArray
+        , withChildNodes
+        )
 import RichTextEditor.Model.Selection
     exposing
         ( anchorNode

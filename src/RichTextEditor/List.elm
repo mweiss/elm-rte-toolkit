@@ -24,7 +24,7 @@ import List.Extra
 import RichTextEditor.Annotation as Annotation
     exposing
         ( annotateSelection
-        , clearAnnotations
+        , clear
         , clearSelectionAnnotations
         , selectionFromAnnotations
         )
@@ -212,7 +212,7 @@ isListNode definition node =
 
 addLiftAnnotationAtPathAndChildren : Path -> Block -> Result String Block
 addLiftAnnotationAtPathAndChildren path root =
-    case Annotation.addAnnotationAtPath Annotation.lift path root of
+    case Annotation.addAtPath Annotation.lift path root of
         Err s ->
             Err s
 
@@ -233,7 +233,7 @@ addLiftAnnotationAtPathAndChildren path root =
                                                     result
 
                                                 Ok n ->
-                                                    Annotation.addAnnotationAtPath Annotation.lift (path ++ [ i ]) n
+                                                    Annotation.addAtPath Annotation.lift (path ++ [ i ]) n
                                         )
                                         (Ok newRoot)
                                         (List.range 0 (Array.length (toBlockArray ba) - 1))
@@ -324,7 +324,7 @@ lift definition editorState =
                     Ok
                         (editorState
                             |> withSelection newSelection
-                            |> withRoot (clearAnnotations Annotation.lift <| clearSelectionAnnotations liftedRoot)
+                            |> withRoot (clear Annotation.lift <| clearSelectionAnnotations liftedRoot)
                         )
 
 
