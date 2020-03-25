@@ -18,7 +18,7 @@ import RichTextEditor.Internal.Model.Editor
         , withHistory
         , withState
         )
-import RichTextEditor.Model.History exposing (contents, fromContents)
+import RichTextEditor.Internal.Model.History exposing (contents, fromContents)
 import RichTextEditor.Model.State exposing (State)
 import RichTextEditor.State exposing (reduceEditorState, validate)
 

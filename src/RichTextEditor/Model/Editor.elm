@@ -19,7 +19,7 @@ update the editor's internal state.
 -}
 
 import RichTextEditor.Internal.Model.Editor as InternalEditor
-import RichTextEditor.Model.History exposing (History)
+import RichTextEditor.Internal.Model.History exposing (History)
 import RichTextEditor.Model.State exposing (State)
 
 

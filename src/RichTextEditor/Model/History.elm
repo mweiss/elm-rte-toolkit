@@ -1,60 +1,27 @@
-module RichTextEditor.Model.History exposing (History, emptyHistory, Contents, contents, fromContents)
+module RichTextEditor.Model.History exposing (History, empty)
 
-{-| This module contains the data structure for undo/redo history.
+{-| This module contains the type used to store undo/redo history.
 
-@docs History, emptyHistory, Contents, contents, fromContents
+@docs History, empty
 
 -}
 
-import BoundedDeque exposing (BoundedDeque)
-import RichTextEditor.Model.State exposing (State)
+import RichTextEditor.Internal.Model.History as Internal
 
 
 {-| `History` contains the undo deque and redo stack related to undo history.
 -}
-type History
-    = History Contents
+type alias History =
+    Internal.History
 
 
-{-| The contents used to initialize history, namely:
+{-| Provides an empty `History` with the given config. The config values are as follows:
 
-  - `undoDeque` is a deque of (action-name, previousStack)
-  - `redoStack` is a list of states that have just been undone
-  - `groupDelayMilliseconds` is the delay which the editor will group text changes into one entry
-  - `lastTextChangeTimestamp` is the last text change timestamp in milliseconds
+  - `groupDelayMilliseconds` is the interval which the editor will ignore adding multiple text changes onto the undo stack. This is
+    so the history doesn't get overwhelmed by single character changes.
+  - `size` is the number of states stored in the history
 
 -}
-type alias Contents =
-    { undoDeque : BoundedDeque ( String, State )
-    , redoStack : List State
-    , groupDelayMilliseconds : Int
-    , lastTextChangeTimestamp : Int
-    }
-
-
-{-| Retrieves the contents of `History`
--}
-contents : History -> Contents
-contents history =
-    case history of
-        History c ->
-            c
-
-
-{-| Initializes history from `Contents`
--}
-fromContents : Contents -> History
-fromContents c =
-    History c
-
-
-{-| Initializes a `History` with an empty Deque and initial size
--}
-emptyHistory : Int -> History
-emptyHistory size =
-    History
-        { undoDeque = BoundedDeque.empty size
-        , redoStack = []
-        , groupDelayMilliseconds = 500
-        , lastTextChangeTimestamp = 0
-        }
+empty : { groupDelayMilliseconds : Int, size : Int } -> History
+empty =
+    Internal.empty

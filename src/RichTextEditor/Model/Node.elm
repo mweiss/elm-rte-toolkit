@@ -41,7 +41,7 @@ import RichTextEditor.Model.Mark exposing (Mark, name)
 import RichTextEditor.Model.Text as Text exposing (Text)
 
 
-{-| A node path is a list of indexes that represent the path from an editor fragment to a node. It's
+{-| A node path is a list of indexes that represent the path from a node to a child. It's
 the main type used to identify where a node is in the editor.
 -}
 type alias Path =

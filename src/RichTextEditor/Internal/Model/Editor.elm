@@ -27,7 +27,7 @@ as well as the messages used to update the editor's internal state.
 
 import RichTextEditor.Config.Keys exposing (meta)
 import RichTextEditor.Internal.Model.Event exposing (EditorChange, InitEvent, InputEvent, KeyboardEvent, PasteEvent)
-import RichTextEditor.Model.History exposing (History, emptyHistory)
+import RichTextEditor.Internal.Model.History exposing (History, empty)
 import RichTextEditor.Model.Selection exposing (Selection)
 import RichTextEditor.Model.State exposing (State)
 
@@ -70,7 +70,7 @@ editor iState =
         , shortKey = meta
         , isComposing = False
         , state = iState
-        , history = emptyHistory defaultDequeSize
+        , history = empty { size = defaultDequeSize, groupDelayMilliseconds = 500 }
         }
 
 
