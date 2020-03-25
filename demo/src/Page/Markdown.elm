@@ -40,6 +40,7 @@ import RichTextEditor.Model.Node as Node
         )
 import RichTextEditor.Model.State as State exposing (State)
 import RichTextEditor.Model.Text as Text
+import RichTextEditor.Node as Node exposing (Node(..))
 import RichTextEditor.Specs as MarkdownSpec
     exposing
         ( blockquote

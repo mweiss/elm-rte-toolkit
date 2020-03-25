@@ -262,7 +262,8 @@ class ElmEditor extends HTMLElement {
             detail: {
                 root: element,
                 selection: selection,
-                characterDataMutations: characterDataMutations
+                characterDataMutations: characterDataMutations,
+                timestamp: (new Date()).getTime()
             }
         });
         this.dispatchEvent(event);

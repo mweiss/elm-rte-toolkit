@@ -214,15 +214,13 @@ defaultInputEventCommand event =
 
 removeRangeSelectionAndInsert : String -> Transform
 removeRangeSelectionAndInsert s editorState =
-    case removeRangeSelection editorState of
-        Err e ->
-            Err e
-
-        Ok removedRangeEditorState ->
-            Ok <|
-                Result.withDefault
-                    removedRangeEditorState
-                    (insertTextAtSelection s removedRangeEditorState)
+    Result.map
+        (\removedRangeEditorState ->
+            Result.withDefault
+                removedRangeEditorState
+                (insertTextAtSelection s removedRangeEditorState)
+        )
+        (removeRangeSelection editorState)
 
 
 insertTextAtSelection : String -> Transform
@@ -883,18 +881,6 @@ backspaceText editorState =
                 Err "I can only backspace a collapsed selection"
 
             else if anchorOffset selection > 1 then
-                {-
-                   -- This would be the logic if we didn't revert to using the native behavior.
-                   removeRangeSelection
-                       { editorState
-                           | selection =
-                               Just <|
-                                   singleNodeRange
-                                       (anchorNode selection)
-                                       ((anchorOffset selection) - 1)
-                                       (anchorOffset selection)
-                       }
-                -}
                 Err <|
                     "I use native behavior when doing backspace when the "
                         ++ "anchor offset could not result in a node change"

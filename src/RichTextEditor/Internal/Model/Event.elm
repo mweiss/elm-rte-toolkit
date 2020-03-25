@@ -18,6 +18,7 @@ type alias EditorChange =
     { root : E.Value
     , selection : Maybe Selection
     , characterDataMutations : Maybe (List TextChange)
+    , timestamp : Int
     }
 
 

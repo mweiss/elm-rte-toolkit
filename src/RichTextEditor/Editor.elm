@@ -29,7 +29,7 @@ import RichTextEditor.Internal.DomNode
         , extractRootEditorBlockNode
         , findTextChanges
         )
-import RichTextEditor.Internal.Editor
+import RichTextEditor.Internal.Editor exposing (updateEditorStateWithTimestamp)
 import RichTextEditor.Internal.HtmlNode exposing (childNodesPlaceholder, editorBlockNodeToHtmlNode)
 import RichTextEditor.Internal.KeyDown as KeyDown
 import RichTextEditor.Internal.Model.Editor
@@ -218,10 +218,15 @@ updateChangeEvent change spec editor =
                     editor
 
                 Ok root ->
-                    updateChangeEventFullScan root change.selection spec editor
+                    updateChangeEventFullScan change.timestamp root change.selection spec editor
 
         Just characterDataMutations ->
-            updateChangeEventTextChanges (sanitizeMutations characterDataMutations) change.selection spec editor
+            updateChangeEventTextChanges
+                change.timestamp
+                (sanitizeMutations characterDataMutations)
+                change.selection
+                spec
+                editor
 
 
 sanitizeMutations : List TextChange -> List TextChange
@@ -259,8 +264,8 @@ differentText root ( path, t ) =
                     True
 
 
-updateChangeEventTextChanges : List TextChange -> Maybe Selection -> Spec -> Editor -> Editor
-updateChangeEventTextChanges textChanges selection spec editor =
+updateChangeEventTextChanges : Int -> List TextChange -> Maybe Selection -> Spec -> Editor -> Editor
+updateChangeEventTextChanges timestamp textChanges selection spec editor =
     case textChangesDomToEditor spec (State.root (state editor)) textChanges of
         Nothing ->
             applyForceFunctionOnEditor forceRerender editor
@@ -295,13 +300,13 @@ updateChangeEventTextChanges textChanges selection spec editor =
                         else
                             let
                                 newEditor =
-                                    updateEditorState "textChange" newEditorState editor
+                                    updateEditorStateWithTimestamp (Just timestamp) "textChange" newEditorState editor
                             in
                             applyForceFunctionOnEditor forceReselection newEditor
 
 
-updateChangeEventFullScan : DomNode -> Maybe Selection -> Spec -> Editor -> Editor
-updateChangeEventFullScan domRoot selection spec editor =
+updateChangeEventFullScan : Int -> DomNode -> Maybe Selection -> Spec -> Editor -> Editor
+updateChangeEventFullScan timestamp domRoot selection spec editor =
     case extractRootEditorBlockNode domRoot of
         Nothing ->
             applyForceFunctionOnEditor forceCompleteRerender editor
@@ -313,7 +318,7 @@ updateChangeEventFullScan domRoot selection spec editor =
             else
                 case deriveTextChanges spec (State.root (state editor)) editorRootDomNode of
                     Ok changes ->
-                        updateChangeEventTextChanges changes selection spec editor
+                        updateChangeEventTextChanges timestamp changes selection spec editor
 
                     Err _ ->
                         applyForceFunctionOnEditor forceRerender editor
@@ -333,10 +338,11 @@ needCompleteRerender root =
 editorChangeDecoder : D.Decoder Message
 editorChangeDecoder =
     D.map ChangeEvent
-        (D.map3 EditorChange
+        (D.map4 EditorChange
             (D.at [ "detail", "root" ] D.value)
             (D.at [ "detail", "selection" ] selectionDecoder)
             (D.maybe (D.at [ "detail", "characterDataMutations" ] characterDataMutationsDecoder))
+            (D.at [ "detail", "timestamp" ] D.int)
         )
 
 

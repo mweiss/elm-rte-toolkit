@@ -2,7 +2,7 @@ module RichTextEditor.Config.Command exposing
     ( Command(..), transform, internal, InternalAction(..), NamedCommand, NamedCommandList
     , CommandMap, CommandBinding, key, inputEvent, emptyCommandMap, set, withDefaultInputEventCommand, withDefaultKeyCommand, defaultKeyCommand, defaultInputEventCommand, combine
     , Transform
-    , namedCommandListFromInputEvent, namedCommandListFromKeyboardEvent, InputEvent, KeyboardEvent
+    , InputEvent, KeyboardEvent, namedCommandListFromInputEvent, namedCommandListFromKeyboardEvent
     )
 
 {-| This module contains types relating to defining transforms, commands and command maps
@@ -25,7 +25,7 @@ module RichTextEditor.Config.Command exposing
 
 # Event
 
-@docs namedCommandListFromInputEvent, namedCommandListFromKeyboardEvent, InputEvent, KeyboardEvent
+@docs InputEvent, KeyboardEvent, namedCommandListFromInputEvent, namedCommandListFromKeyboardEvent
 
 -}
 

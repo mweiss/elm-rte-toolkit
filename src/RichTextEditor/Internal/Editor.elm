@@ -27,7 +27,8 @@ applyInternalCommand : InternalAction -> Editor -> Result String Editor
 applyInternalCommand action editor =
     case action of
         Undo ->
-            handleUndo editor
+            -- Undo always succeeds to prevent the default undo behavior.
+            Ok (handleUndo editor)
 
         Redo ->
             handleRedo editor
@@ -51,7 +52,7 @@ findNextState editorState undoDeque =
                 findNextState editorState rest
 
 
-handleUndo : Editor -> Result String Editor
+handleUndo : Editor -> Editor
 handleUndo editor =
     let
         editorHistory =
@@ -65,14 +66,14 @@ handleUndo editor =
     in
     case maybeState of
         Nothing ->
-            Err "Cannot undo because there are no different editor states on the undo deque"
+            editor
 
         Just newState ->
             let
                 newHistory =
-                    { editorHistory | undoDeque = newUndoDeque, redoStack = editorState :: editorHistory.redoStack }
+                    { editorHistory | undoDeque = newUndoDeque, redoStack = editorState :: editorHistory.redoStack, lastTextChangeTimestamp = 0 }
             in
-            Ok (editor |> withState newState |> withHistory (fromContents newHistory))
+            editor |> withState newState |> withHistory (fromContents newHistory)
 
 
 handleRedo : Editor -> Result String Editor
@@ -99,15 +100,44 @@ handleRedo editor =
 
 
 updateEditorState : String -> State -> Editor -> Editor
-updateEditorState action newState editor =
+updateEditorState =
+    updateEditorStateWithTimestamp Nothing
+
+
+updateEditorStateWithTimestamp : Maybe Int -> String -> State -> Editor -> Editor
+updateEditorStateWithTimestamp maybeTimestamp action newState editor =
     let
         editorHistory =
             contents (history editor)
 
+        timestamp =
+            Maybe.withDefault 0 maybeTimestamp
+
+        newUndoDeque =
+            case BoundedDeque.first editorHistory.undoDeque of
+                Nothing ->
+                    BoundedDeque.pushFront ( action, state editor ) editorHistory.undoDeque
+
+                Just ( lastAction, _ ) ->
+                    if
+                        lastAction
+                            == action
+                            && timestamp
+                            /= 0
+                            && timestamp
+                            - editorHistory.lastTextChangeTimestamp
+                            < editorHistory.groupDelayMilliseconds
+                    then
+                        editorHistory.undoDeque
+
+                    else
+                        BoundedDeque.pushFront ( action, state editor ) editorHistory.undoDeque
+
         newHistory =
             { editorHistory
-                | undoDeque = BoundedDeque.pushFront ( action, state editor ) editorHistory.undoDeque
+                | undoDeque = newUndoDeque
                 , redoStack = []
+                , lastTextChangeTimestamp = timestamp
             }
     in
     editor |> withState newState |> withHistory (fromContents newHistory)

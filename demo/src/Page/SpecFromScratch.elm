@@ -269,7 +269,7 @@ handleTodoListChecked path value model =
         | editor =
             Result.withDefault model.editor
                 (applyCommand
-                    ( "updateCaptionedImageText"
+                    ( "updateTodoListItem"
                     , transform <|
                         updateTodoListItem
                             path

@@ -131,16 +131,20 @@ defaultMarkDefinition : String -> MarkDefinition
 defaultMarkDefinition name_ =
     markDefinition
         { name = name_
-        , toHtmlNode = defaultMarkToHtml
+        , toHtmlNode = defaultMarkToHtml name_
         , fromHtmlNode = defaultHtmlToMark name_
         }
 
 
 {-| Creates an `MarkToHtml` function that will encode a mark to html with the same name as the mark.
+
+    defaultMarkToHtml "b"
+    --> returns a function which encodes to "<b>...</b>"
+
 -}
-defaultMarkToHtml : MarkToHtml
-defaultMarkToHtml mark_ children =
-    ElementNode (Internal.nameFromMark mark_)
+defaultMarkToHtml : String -> MarkToHtml
+defaultMarkToHtml tag mark_ children =
+    ElementNode tag
         (List.filterMap
             (\attr ->
                 case attr of
