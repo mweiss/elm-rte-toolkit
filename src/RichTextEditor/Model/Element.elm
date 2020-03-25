@@ -26,16 +26,13 @@ type alias Element =
 
   - `attributes` are a list of attributes
 
-  - `annotations` is a set of annotations. Annotations are used to set flags on nodes for transforms
-    or labeling purposes.
-
 ```
     element header [IntegerAttribute "level" 1] Set.empty
     --> creates a header (h1) element
 ```
 
 -}
-element : NodeDefinition -> List Attribute -> Set String -> Element
+element : NodeDefinition -> List Attribute -> Element
 element =
     Internal.element
 

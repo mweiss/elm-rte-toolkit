@@ -48,7 +48,7 @@ import RichTextEditor.Config.Spec
         , withNodeDefinitions
         )
 import RichTextEditor.Model.Attribute exposing (Attribute(..), findIntegerAttribute, findStringAttribute)
-import RichTextEditor.Model.Element exposing (attributes, element)
+import RichTextEditor.Model.Element as Element exposing (attributes, element)
 import RichTextEditor.Model.HtmlNode exposing (HtmlNode(..))
 import RichTextEditor.Model.Mark as Mark exposing (mark)
 import Set
@@ -77,7 +77,7 @@ htmlToDoc definition node =
     case node of
         ElementNode name attrs children ->
             if name == "div" && attrs == [ ( "data-rte-doc", "true" ) ] then
-                Just <| ( element definition [] Set.empty, children )
+                Just <| ( element definition [], children )
 
             else
                 Nothing
@@ -107,7 +107,7 @@ htmlToParagraph definition node =
     case node of
         ElementNode name _ children ->
             if name == "p" then
-                Just <| ( element definition [] Set.empty, children )
+                Just <| ( element definition [], children )
 
             else
                 Nothing
@@ -158,7 +158,7 @@ htmlToHorizontalRule def node =
     case node of
         ElementNode name _ _ ->
             if name == "hr" then
-                Just ( element def [] <| Set.fromList [ selectable ], Array.empty )
+                Just ( element def [] |> Element.withAnnotations (Set.fromList [ selectable ]), Array.empty )
 
             else
                 Nothing
@@ -223,7 +223,6 @@ htmlToHeading def node =
                     Just <|
                         ( element def
                             [ IntegerAttribute "level" level ]
-                            Set.empty
                         , children
                         )
 
@@ -261,7 +260,7 @@ htmlNodeToCodeBlock def node =
                     Just n ->
                         case n of
                             ElementNode _ _ childChildren ->
-                                Just ( element def [] Set.empty, childChildren )
+                                Just ( element def [], childChildren )
 
                             _ ->
                                 Nothing
@@ -328,8 +327,7 @@ htmlNodeToImage def node =
                         ( element
                             def
                             elementNodeAttributes
-                          <|
-                            Set.fromList [ selectable ]
+                            |> Element.withAnnotations (Set.singleton selectable)
                         , Array.empty
                         )
 

@@ -22,7 +22,6 @@ import RichTextEditor.Config.Spec
 import RichTextEditor.Model.Element exposing (Element, element)
 import RichTextEditor.Model.HtmlNode exposing (HtmlNode(..))
 import RichTextEditor.Model.Mark exposing (Mark)
-import Set
 
 
 codeBlockToHtmlNode : Element -> Array HtmlNode -> HtmlNode
@@ -59,7 +58,7 @@ htmlNodeToCrazyBlock def node =
                     Just n ->
                         case n of
                             ElementNode _ _ c ->
-                                Just ( element def [] Set.empty, c )
+                                Just ( element def [], c )
 
                             _ ->
                                 Nothing
@@ -80,7 +79,7 @@ htmlNodeToCodeBlock def node =
                     Just n ->
                         case n of
                             ElementNode _ _ childChildren ->
-                                Just ( element def [] Set.empty, childChildren )
+                                Just ( element def [], childChildren )
 
                             _ ->
                                 Nothing

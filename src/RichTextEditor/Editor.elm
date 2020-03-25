@@ -6,10 +6,10 @@ module RichTextEditor.Editor exposing
     , applyNamedCommandList
     , history
     , model
+    , setStateNoValidation
     , shortKey
     , state
     , update
-    , updateEditorState
     , view
     , withHistory
     )
@@ -39,7 +39,27 @@ import RichTextEditor.Internal.DomNode
         )
 import RichTextEditor.Internal.HtmlNode exposing (childNodesPlaceholder, editorBlockNodeToHtmlNode)
 import RichTextEditor.Internal.KeyDown as KeyDown
-import RichTextEditor.Internal.Model.Editor as InternalEditor exposing (Editor, Message(..), Tagger, applyNamedCommandList, bufferedEditorState, completeRerenderCount, forceCompleteRerender, forceRerender, forceReselection, isComposing, renderCount, selectionCount, state, updateEditorState, updateEditorStateWithTimestamp, withBufferedEditorState, withComposing, withShortKey, withState)
+import RichTextEditor.Internal.Model.Editor as InternalEditor
+    exposing
+        ( Editor
+        , Message(..)
+        , Tagger
+        , applyNamedCommandList
+        , bufferedEditorState
+        , completeRerenderCount
+        , forceCompleteRerender
+        , forceRerender
+        , forceReselection
+        , isComposing
+        , renderCount
+        , selectionCount
+        , state
+        , updateEditorStateWithTimestamp
+        , withBufferedEditorState
+        , withComposing
+        , withShortKey
+        , withState
+        )
 import RichTextEditor.Internal.Model.Event exposing (EditorChange, InitEvent, PasteEvent, TextChange)
 import RichTextEditor.Internal.Paste as Paste
 import RichTextEditor.Internal.Path as NodePath
@@ -192,7 +212,7 @@ applyForceFunctionOnEditor rerenderFunc editor_ =
             Just bufferedEditorState ->
                 let
                     newEditor =
-                        updateEditorState "buffered" bufferedEditorState editor_
+                        setStateNoValidation "buffered" bufferedEditorState editor_
                 in
                 newEditor
                     |> withBufferedEditorState Nothing
@@ -768,7 +788,7 @@ type alias Editor =
 
 {-| Initializes an editor
 
-    editor <| State.state docNode Nothing
+    model <| State.state docNode Nothing
 
 -}
 model : State -> Editor
@@ -833,6 +853,6 @@ applyCommandNoForceSelection =
 {-| Directly updates the editor state. This function skips validation, so when possible,
 it's better to
 -}
-updateEditorState : String -> State -> Editor -> Editor
-updateEditorState =
+setStateNoValidation : String -> State -> Editor -> Editor
+setStateNoValidation =
     InternalEditor.updateEditorState

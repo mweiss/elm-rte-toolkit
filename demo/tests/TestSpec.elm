@@ -16,7 +16,6 @@ import RichTextEditor.Model.Node
 import RichTextEditor.Model.Text as Text
 import RichTextEditor.Node exposing (Fragment(..))
 import RichTextEditor.Specs exposing (blockquote, bold, italic, markdown, paragraph)
-import Set
 import Test exposing (Test, describe, test)
 
 
@@ -29,7 +28,7 @@ expectedOneParagraph =
         [ BlockNodeFragment <|
             Array.fromList
                 [ block
-                    (element paragraph [] Set.empty)
+                    (element paragraph [])
                     (inlineChildren
                         (Array.fromList
                             [ plainText "test"
@@ -47,7 +46,7 @@ twoParagraphs =
 twoParagraphsBlockFragment =
     Array.fromList
         [ block
-            (element paragraph [] Set.empty)
+            (element paragraph [])
             (inlineChildren
                 (Array.fromList
                     [ plainText "test1"
@@ -55,7 +54,7 @@ twoParagraphsBlockFragment =
                 )
             )
         , block
-            (element paragraph [] Set.empty)
+            (element paragraph [])
             (inlineChildren
                 (Array.fromList
                     [ plainText "test2"
@@ -94,7 +93,7 @@ expectedBlockquoteAndParagraphs =
         [ BlockNodeFragment <|
             Array.fromList
                 [ block
-                    (element blockquote [] Set.empty)
+                    (element blockquote [])
                     (blockChildren twoParagraphsBlockFragment)
                 ]
         ]
@@ -117,7 +116,7 @@ expectedOneParagraphWithBold =
         [ BlockNodeFragment <|
             Array.fromList
                 [ block
-                    (element paragraph [] Set.empty)
+                    (element paragraph [])
                     (inlineChildren
                         (Array.fromList
                             [ Text (Text.empty |> Text.withText "test" |> Text.withMarks [ boldMark ])
@@ -137,7 +136,7 @@ expectedOneParagraphWithBoldAndItalic =
         [ BlockNodeFragment <|
             Array.fromList
                 [ block
-                    (element paragraph [] Set.empty)
+                    (element paragraph [])
                     (inlineChildren
                         (Array.fromList
                             [ Text (Text.empty |> Text.withText "tes" |> Text.withMarks [ boldMark ])

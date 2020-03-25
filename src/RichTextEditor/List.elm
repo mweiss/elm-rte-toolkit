@@ -135,9 +135,9 @@ commandBindings definition =
 defaultListDefinition : ListDefinition
 defaultListDefinition =
     ListDefinition
-        { ordered = element orderedList [] Set.empty
-        , unordered = element unorderedList [] Set.empty
-        , item = element listItem [] Set.empty
+        { ordered = element orderedList []
+        , unordered = element unorderedList []
+        , item = element listItem []
         }
 
 

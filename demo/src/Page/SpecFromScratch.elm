@@ -49,7 +49,6 @@ import RichTextEditor.Model.State as State exposing (State, withRoot)
 import RichTextEditor.Node as Node exposing (Node(..), nodeAt)
 import RichTextEditor.Specs exposing (hardBreak)
 import Session exposing (Session)
-import Set
 
 
 type alias Model =
@@ -88,14 +87,14 @@ view model =
 todoInitNode : Block
 todoInitNode =
     block
-        (element todoList [] Set.empty)
+        (element todoList [])
         (blockChildren (Array.fromList [ initialTodoNode "Item 1", initialTodoNode "Item 2" ]))
 
 
 initialTodoNode : String -> Block
 initialTodoNode s =
     block
-        (element item [] Set.empty)
+        (element item [])
         (inlineChildren (Array.fromList [ plainText s ]))
 
 
@@ -218,7 +217,7 @@ htmlToItem def node =
                                                 ElementNode _ _ c ->
                                                     let
                                                         parameters =
-                                                            element def [ BoolAttribute "checked" checked ] Set.empty
+                                                            element def [ BoolAttribute "checked" checked ]
                                                     in
                                                     Just ( parameters, c )
 

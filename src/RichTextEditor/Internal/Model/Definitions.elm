@@ -40,11 +40,11 @@ type Element
     = ElementParameters ElementParametersContents
 
 
-element : NodeDefinition -> List Attribute -> Set String -> Element
-element def attrs annotations =
+element : NodeDefinition -> List Attribute -> Element
+element def attrs =
     case def of
         NodeDefinition d ->
-            ElementParameters { name = d.name, attributes = attrs, annotations = annotations }
+            ElementParameters { name = d.name, attributes = attrs, annotations = Set.empty }
 
 
 nameFromElement : Element -> String

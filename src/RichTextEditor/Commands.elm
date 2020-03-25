@@ -594,7 +594,7 @@ removeRangeSelection editorState =
 insertLineBreak : Transform
 insertLineBreak =
     insertInlineElement
-        (InlineElement (inlineElement (Element.element hardBreak [] Set.empty) []))
+        (InlineElement (inlineElement (Element.element hardBreak []) []))
 
 
 insertInlineElement : Inline -> Transform

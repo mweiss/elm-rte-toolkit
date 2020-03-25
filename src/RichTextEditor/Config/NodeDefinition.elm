@@ -289,7 +289,7 @@ defaultHtmlToElement htmlTag def node =
     case node of
         ElementNode name_ _ children ->
             if name_ == htmlTag then
-                Just ( Internal.element def [] Set.empty, children )
+                Just ( Internal.element def [], children )
 
             else
                 Nothing

@@ -146,7 +146,7 @@ handleInsertCaptionedImage spec model =
                                 , StringAttribute "alt" insertImageModal.alt
                                 , StringAttribute "caption" insertImageModal.caption
                                 ]
-                                (Set.singleton selectable)
+                                |> Element.withAnnotations (Set.singleton selectable)
 
                         img =
                             block params Leaf
@@ -263,14 +263,14 @@ customSpec =
 docInitNode : Block
 docInitNode =
     block
-        (element doc [] Set.empty)
+        (element doc [])
         (blockChildren (Array.fromList [ initialEditorNode, initialCaptionedImage, initialEditorNode ]))
 
 
 initialEditorNode : Block
 initialEditorNode =
     block
-        (element paragraph [] Set.empty)
+        (element paragraph [])
         (inlineChildren (Array.fromList [ plainText "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum." ]))
 
 
@@ -279,7 +279,7 @@ initialCaptionedImage =
     block
         (element captionedImage
             [ StringAttribute "caption" "The elm logo!", StringAttribute "src" "/logo.svg" ]
-            (Set.singleton selectable)
+            |> Element.withAnnotations (Set.singleton selectable)
         )
         Leaf
 
@@ -522,10 +522,8 @@ htmlNodeToImage def node =
 
                             Just attr ->
                                 Just
-                                    ( element
-                                        def
-                                        attr
-                                        (Set.singleton selectable)
+                                    ( element def attr
+                                        |> Element.withAnnotations (Set.singleton selectable)
                                     , Array.empty
                                     )
 

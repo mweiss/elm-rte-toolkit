@@ -85,14 +85,14 @@ subscriptions model =
 initNode : Block
 initNode =
     block
-        (element doc [] Set.empty)
+        (element doc [])
         (blockChildren (Array.fromList [ initialEditorNode ]))
 
 
 initialEditorNode : Block
 initialEditorNode =
     block
-        (element paragraph [] Set.empty)
+        (element paragraph [])
         (inlineChildren
             (Array.fromList
                 [ plainText <|

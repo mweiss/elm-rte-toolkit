@@ -11,21 +11,20 @@ import RichTextEditor.Model.Element exposing (element)
 import RichTextEditor.Model.Mark exposing (mark)
 import RichTextEditor.Model.Node exposing (Inline(..), block, inlineChildren, plainText)
 import RichTextEditor.Model.Text as Text exposing (withText)
-import Set
 import SimpleSpec exposing (bold, codeBlock, crazyBlock, paragraph, simpleSpec)
 import Test exposing (..)
 
 
 paragraphParams =
-    element paragraph [] Set.empty
+    element paragraph []
 
 
 codeBlockParams =
-    element codeBlock [] Set.empty
+    element codeBlock []
 
 
 crazyBlockParams =
-    element crazyBlock [] Set.empty
+    element crazyBlock []
 
 
 boldMark =

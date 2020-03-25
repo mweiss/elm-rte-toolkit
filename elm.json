@@ -12,7 +12,6 @@
         "RichTextEditor.Config.NodeDefinition",
         "RichTextEditor.Config.Spec",
         "RichTextEditor.Model.Attribute",
-        "RichTextEditor.Model.Editor",
         "RichTextEditor.Model.Element",
         "RichTextEditor.Model.History",
         "RichTextEditor.Model.HtmlNode",

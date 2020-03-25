@@ -23,7 +23,7 @@ import RichTextEditor.Config.Spec exposing (Spec)
 import RichTextEditor.Editor as Editor exposing (Editor, applyCommand, applyNamedCommandList, model, state)
 import RichTextEditor.List exposing (ListType, defaultListDefinition)
 import RichTextEditor.Model.Attribute exposing (Attribute(..))
-import RichTextEditor.Model.Element exposing (element)
+import RichTextEditor.Model.Element as Element exposing (element)
 import RichTextEditor.Model.Mark as Mark exposing (ToggleAction(..), mark, markOrderFromSpec)
 import RichTextEditor.Model.Node
     exposing
@@ -76,14 +76,14 @@ type alias Model =
 docInitNode : Block
 docInitNode =
     block
-        (element doc [] Set.empty)
+        (element doc [])
         (blockChildren (Array.fromList [ initialEditorNode ]))
 
 
 initialEditorNode : Block
 initialEditorNode =
     block
-        (element paragraph [] Set.empty)
+        (element paragraph [])
         (inlineChildren (Array.fromList [ plainText "This is some sample text" ]))
 
 
@@ -106,7 +106,7 @@ commandBindings =
                   , transform <|
                         splitBlockHeaderToNewParagraph
                             [ "heading" ]
-                            (element paragraph [] Set.empty)
+                            (element paragraph [])
                   )
                 ]
         )
@@ -275,7 +275,7 @@ handleInsertImage spec model =
                                 [ StringAttribute "src" insertImageModal.src
                                 , StringAttribute "alt" insertImageModal.alt
                                 ]
-                                (Set.singleton selectable)
+                                |> Element.withAnnotations (Set.singleton selectable)
 
                         img =
                             inlineElement params []
@@ -429,7 +429,6 @@ handleToggleBlock spec block model =
                 element
                     codeBlock
                     []
-                    Set.empty
 
             else
                 element
@@ -438,10 +437,9 @@ handleToggleBlock spec block model =
                         "level"
                         (Maybe.withDefault 1 <| String.toInt (String.right 1 block))
                     ]
-                    Set.empty
 
         offParams =
-            element paragraph [] Set.empty
+            element paragraph []
     in
     { model
         | editor =
@@ -466,7 +464,7 @@ handleWrapBlockNode spec model =
                     , transform <|
                         wrap
                             (\n -> n)
-                            (element blockquote [] Set.empty)
+                            (element blockquote [])
                     )
                     spec
                     model.editor
@@ -487,7 +485,7 @@ handleInsertHorizontalRule spec model =
                                 (element
                                     horizontalRule
                                     []
-                                    (Set.fromList [ selectable ])
+                                    |> Element.withAnnotations (Set.singleton selectable)
                                 )
                                 Leaf
                             )

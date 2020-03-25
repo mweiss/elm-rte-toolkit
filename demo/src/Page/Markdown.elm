@@ -40,7 +40,6 @@ import RichTextEditor.Model.Node as Node
         )
 import RichTextEditor.Model.State as State exposing (State)
 import RichTextEditor.Model.Text as Text
-import RichTextEditor.Node as Node exposing (Node(..))
 import RichTextEditor.Specs as MarkdownSpec
     exposing
         ( blockquote
@@ -59,7 +58,6 @@ import RichTextEditor.Specs as MarkdownSpec
         , unorderedList
         )
 import Session exposing (Session)
-import Set
 
 
 type alias CustomInline =
@@ -784,7 +782,7 @@ markdownToBlock md =
     Result.map
         (\children ->
             block
-                (element doc [] Set.empty)
+                (element doc [])
                 children
         )
         (markdownBlockListToBlockChildNodes md)
@@ -825,7 +823,7 @@ markdownInlineToInlineLeaves marks inline =
 
         MI.HardLineBreak ->
             Ok <|
-                [ inlineElement (element hardBreak [] Set.empty)
+                [ inlineElement (element hardBreak [])
                     []
                 ]
 
@@ -858,7 +856,6 @@ markdownInlineToInlineLeaves marks inline =
                                 , Maybe.map (\t -> StringAttribute "alt" t) alt
                                 ]
                             )
-                            Set.empty
                         )
                         (Mark.sort markdownMarkOrder marks)
             in
@@ -897,7 +894,7 @@ markdownCodeBlockToEditorBlock cb s =
     in
     Ok <|
         block
-            (element codeBlock attributes Set.empty)
+            (element codeBlock attributes)
             (inlineChildren <| Array.fromList [ plainText s ])
 
 
@@ -921,13 +918,13 @@ markdownListToEditorBlock lb children =
     Result.map
         (\listItems ->
             block
-                (element node attributes Set.empty)
+                (element node attributes)
                 (blockChildren
                     (Array.fromList
                         (List.map
                             (\cn ->
                                 block
-                                    (element listItem [] Set.empty)
+                                    (element listItem [])
                                     cn
                             )
                             listItems
@@ -948,7 +945,7 @@ markdownInlineToParagraphBlock children =
     Result.map
         (\c ->
             block
-                (element paragraph [] Set.empty)
+                (element paragraph [])
                 c
         )
         (markdownInlineListToInlineChildNodes children)
@@ -960,13 +957,13 @@ markdownBlockToEditorBlock mblock =
         M.BlankLine s ->
             Ok <|
                 block
-                    (element paragraph [] Set.empty)
+                    (element paragraph [])
                     (inlineChildren <| Array.fromList [ plainText s ])
 
         M.ThematicBreak ->
             Ok <|
                 block
-                    (element horizontalRule [] Set.empty)
+                    (element horizontalRule [])
                     Leaf
 
         M.Heading _ i children ->
@@ -976,7 +973,6 @@ markdownBlockToEditorBlock mblock =
                         (element
                             heading
                             [ IntegerAttribute "level" i ]
-                            Set.empty
                         )
                         c
                 )
@@ -992,7 +988,7 @@ markdownBlockToEditorBlock mblock =
             Result.map
                 (\c ->
                     block
-                        (element blockquote [] Set.empty)
+                        (element blockquote [])
                         c
                 )
                 (markdownBlockListToBlockChildNodes children)
