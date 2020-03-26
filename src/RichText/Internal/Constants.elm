@@ -25,14 +25,14 @@ selection =
     "__selection__"
 
 
-{-| Represents that a node is can be selected. This annotation is not transient.
+{-| Represents that a node can be selected. This annotation is not transient.
 -}
 selectable : String
 selectable =
     "__selectable__"
 
 
-{-| Represents that a node is can be selected. This annotation is transient, e.g. it should be
+{-| Represents that a node should be lifted. This annotation is transient, e.g. it should be
 cleared before a transform or command is complete.
 -}
 lift : String

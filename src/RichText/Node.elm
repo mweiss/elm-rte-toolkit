@@ -1,46 +1,66 @@
 module RichText.Node exposing
-    ( Fragment(..)
-    , Iterator
-    , Node(..)
-    , allRange
-    , anyRange
-    , concatMap
-    , findAncestor
-    , findBackwardFrom
-    , findBackwardFromExclusive
-    , findClosestBlockPath
-    , findForwardFrom
-    , findForwardFromExclusive
-    , findTextBlockNodeAncestor
-    , foldl
-    , foldlRange
-    , foldr
-    , foldrRange
-    , indexedFoldl
-    , indexedFoldr
-    , indexedMap
-    , insertAfter
-    , insertBefore
-    , isSelectable
-    , joinBlocks
-    , last
-    , map
-    , next
-    , nodeAt
-    , previous
-    , removeInRange
-    , removeNodeAndEmptyParents
-    , replace
-    , replaceWithFragment
-    , splitBlockAtPathAndOffset
-    , splitTextLeaf
+    ( Fragment(..), Node(..)
+    , insertAfter, insertBefore, replace, replaceWithFragment
+    , removeInRange, removeNodeAndEmptyParents
+    , allRange, anyRange
+    , concatMap, indexedMap, joinBlocks, map
+    , Iterator, last, next, nodeAt, previous, findAncestor, findBackwardFrom, findBackwardFromExclusive, findClosestBlockPath, findForwardFrom, findForwardFromExclusive, findTextBlockNodeAncestor
+    , foldl, foldlRange, foldr, foldrRange, indexedFoldl, indexedFoldr
+    , splitBlockAtPathAndOffset, splitTextLeaf
     , toggleMark
     )
 
+{-| This module contains convenience functions for working with Block and Inline nodes.
+
+
+# Helper types
+
+@docs Fragment, Node
+
+
+# Insert / Replace
+
+@docs insertAfter, insertBefore, replace, replaceWithFragment
+
+
+# Remove
+
+@docs removeInRange, removeNodeAndEmptyParents
+
+
+# Predicates
+
+@docs allRange, anyRange
+
+
+# Transform
+
+@docs concatMap, indexedMap, joinBlocks, map
+
+
+# Searching
+
+@docs Iterator, last, next, nodeAt, previous, findAncestor, findBackwardFrom, findBackwardFromExclusive, findClosestBlockPath, findForwardFrom, findForwardFromExclusive, findTextBlockNodeAncestor
+
+
+# Folds
+
+@docs foldl, foldlRange, foldr, foldrRange, indexedFoldl, indexedFoldr
+
+
+# Split
+
+@docs splitBlockAtPathAndOffset, splitTextLeaf
+
+
+# Marks
+
+toggleMark
+
+-}
+
 import Array exposing (Array)
 import Array.Extra
-import RichText.Internal.Constants exposing (selectable)
-import RichText.Model.Element as Element
 import RichText.Model.InlineElement as InlineElement
 import RichText.Model.Mark exposing (Mark, MarkOrder, ToggleAction, toggle)
 import RichText.Model.Node
@@ -51,7 +71,6 @@ import RichText.Model.Node
         , Path
         , blockChildren
         , childNodes
-        , element
         , inlineChildren
         , parent
         , toBlockArray
@@ -59,19 +78,30 @@ import RichText.Model.Node
         , withChildNodes
         )
 import RichText.Model.Text as Text exposing (Text, text, withText)
-import Set
 
 
+{-| Node represents either a `Block` or `Inline`. It's a convenience type that wraps an argument
+or return value of a function that can use either block or inline, like `nodeAt` or `replace`.
+-}
 type Node
     = Block Block
     | Inline Inline
 
 
+{-| A `Fragment` represents an array of `Block` or `Inline` nodes. It's a convenience type used
+for things like insertion or deserialization.
+-}
 type Fragment
-    = BlockNodeFragment (Array Block)
-    | InlineLeafFragment (Array Inline)
+    = BlockFragment (Array Block)
+    | InlineFragment (Array Inline)
 
 
+{-| Returns the last path and node in the block.
+
+    ( lastPath, lastNode ) =
+        last node
+
+-}
 last : Block -> ( Path, Node )
 last node =
     case childNodes node of
@@ -113,10 +143,19 @@ last node =
             ( [], Block node )
 
 
+{-| Type alias for a function that takes a path and a root block and returns a path and node. Useful
+for functions like previous and next that can iterate through a Block.
+-}
 type alias Iterator =
     Path -> Block -> Maybe ( Path, Node )
 
 
+{-| Returns the previous path and node, if one exists, relative to the given path.
+
+    previous [0, 1] root
+    --> ([0, 0], Text { annotations = Set.empty, marks = [], text = "example" }
+
+-}
 previous : Iterator
 previous path node =
     case path of
@@ -179,6 +218,12 @@ previous path node =
                     Nothing
 
 
+{-| Returns the next path and node, if one exists, relative to the given path.
+
+    next [0, 1] root
+    --> ([0, 2], Text { annotations = Set.empty, marks = [], text = "example2" }
+
+-}
 next : Iterator
 next path node =
     case path of
@@ -239,39 +284,52 @@ next path node =
                     Nothing
 
 
+{-| Starting from the given path, scans the node forward until the predicate
+has been met or it reaches the last node.
+
+    findForwardFrom isTextBlock path node
+    --> Returns Just (path, block) or Nothing
+
+-}
 findForwardFrom : (Path -> Node -> Bool) -> Path -> Block -> Maybe ( Path, Node )
 findForwardFrom =
     findNodeFrom next
 
 
+{-| Starting from but excluding the given path, scans the node forward until
+the predicate has been met or it reaches the last node.
+
+    findForwardFromExclusive isTextBlock path node
+    --> Returns Just (path, block) or Nothing
+
+-}
 findForwardFromExclusive : (Path -> Node -> Bool) -> Path -> Block -> Maybe ( Path, Node )
 findForwardFromExclusive =
     findNodeFromExclusive next
 
 
+{-| Starting from the given path, scans the node backward until the predicate
+has been met or it reaches the last node.
+
+    findBackwardFrom isTextBlock path node
+    --> Returns Just (path, block) or Nothing
+
+-}
 findBackwardFrom : (Path -> Node -> Bool) -> Path -> Block -> Maybe ( Path, Node )
 findBackwardFrom =
     findNodeFrom previous
 
 
+{-| Starting from but excluding the given path, scans the node backward until the predicate
+has been met or it reaches the last node.
+
+    findBackwardFromExclusive isTextBlock path node
+    --> Returns Just (path, block) or Nothing
+
+-}
 findBackwardFromExclusive : (Path -> Node -> Bool) -> Path -> Block -> Maybe ( Path, Node )
 findBackwardFromExclusive =
     findNodeFromExclusive previous
-
-
-isSelectable : Node -> Bool
-isSelectable node =
-    case node of
-        Block bn ->
-            Set.member selectable (Element.annotations (element bn))
-
-        Inline ln ->
-            case ln of
-                Text _ ->
-                    True
-
-                InlineElement l ->
-                    Set.member selectable (Element.annotations (InlineElement.element l))
 
 
 findNodeFromExclusive : Iterator -> (Path -> Node -> Bool) -> Path -> Block -> Maybe ( Path, Node )
@@ -298,6 +356,13 @@ findNodeFrom iterator pred path node =
             Nothing
 
 
+{-| Map a given function onto a block's children recursively and flatten the resulting list.
+
+    -- rootNode = (doc, [(paragraph, [text])]
+    concatMap (\node -> [ node, node ]) rootNode
+    --> (doc [(paragraph, [text, text]), (paragraph, [text, text])])
+
+-}
 concatMap : (Node -> List Node) -> Block -> Block
 concatMap func node =
     let
@@ -342,6 +407,21 @@ concatMap func node =
     node |> withChildNodes newChildren
 
 
+{-| Apply a function to this node and all child nodes.
+
+    -- rootNode = (doc, [(paragraph, [text]), (paragraph, [text])]
+    map
+        (\node ->
+            if node == text then
+                text2
+
+            else
+                node
+        )
+        (Block rootNode)
+    --> (doc, [(paragraph, [text2]), (paragraph, [text2])]
+
+-}
 map : (Node -> Node) -> Node -> Node
 map func node =
     let
@@ -389,6 +469,21 @@ map func node =
             Inline inlineLeaf
 
 
+{-| Same as map but the function is also applied with the path of each element (starting at []).
+
+    -- rootNode = (doc, [(paragraph, [text]), (paragraph, [text])]
+    indexedMap
+        (\path node ->
+            if path == [0, 0] then
+                text2
+
+            else
+                node
+        )
+        (Block rootNode)
+    --> (doc, [(paragraph, [text2]), (paragraph, [text])]
+
+-}
 indexedMap : (Path -> Node -> Node) -> Node -> Node
 indexedMap =
     indexedMapRec []
@@ -440,6 +535,29 @@ indexedMapRec path func node =
             Inline inlineLeaf
 
 
+{-| Reduce a node from the bottom right (e.g. from last to first).
+
+    nodeNameOrTextValue : Node -> List String -> List String
+    nodeNameOrTextValue node list =
+        (case node of
+            Block bn ->
+                Element.name (Node.element bn)
+
+            Inline il ->
+                case il of
+                    Text tl ->
+                        text tl
+
+                    InlineElement p ->
+                        Element.name (InlineElement.element p)
+        )
+            :: list
+
+    -- rootNode = (doc, [(paragraph, [text]), (paragraph, [text])]
+    (foldr nodeNameOrTextValue [] (Block rootNode)) ==
+    [ "doc", "paragraph", "text", "paragraph", "text ]
+
+-}
 foldr : (Node -> b -> b) -> b -> Node -> b
 foldr func acc node =
     func
@@ -470,6 +588,29 @@ foldr func acc node =
         )
 
 
+{-| Reduce a node from the top left (e.g. from first to last).
+
+    nodeNameOrTextValue : Node -> List String -> List String
+    nodeNameOrTextValue node list =
+        (case node of
+            Block bn ->
+                Element.name (Node.element bn)
+
+            Inline il ->
+                case il of
+                    Text tl ->
+                        text tl
+
+                    InlineElement p ->
+                        Element.name (InlineElement.element p)
+        )
+            :: list
+
+    -- rootNode = (doc, [(paragraph, [text]), (paragraph, [text])]
+    (foldl nodeNameOrTextValue [] (Block rootNode)) ==
+    [ "text", "paragraph", "text", "paragraph", "doc" ]
+
+-}
 foldl : (Node -> b -> b) -> b -> Node -> b
 foldl func acc node =
     case node of
@@ -497,6 +638,16 @@ foldl func acc node =
             func node acc
 
 
+{-| Same as `foldr` but the reduce function also has the current node's path.
+
+    pathList : Path -> Node -> List Path -> List Path
+    pathList path _ list =
+        path :: list
+
+    -- rootNode = (doc, [(paragraph, [text, text2])]
+    (indexedFoldr pathList [] (Block rootNode)) == [ [], [ 0 ], [ 0, 0 ], [ 0, 1 ] ]
+
+-}
 indexedFoldr : (Path -> Node -> b -> b) -> b -> Node -> b
 indexedFoldr =
     indexedFoldrRec []
@@ -534,6 +685,16 @@ indexedFoldrRec path func acc node =
         )
 
 
+{-| Same as `foldl` but the reduce function also has the current node's path.
+
+    pathList : Path -> Node -> List Path -> List Path
+    pathList path _ list =
+        path :: list
+
+    -- rootNode = (doc, [(paragraph, [text, text2])]
+    (indexedFoldl pathList [] (Block rootNode)) == [ [ 0, 1 ], [ 0, 0 ], [ 0 ], [] ]
+
+-}
 indexedFoldl : (Path -> Node -> b -> b) -> b -> Node -> b
 indexedFoldl =
     indexedFoldlRec []
@@ -567,6 +728,8 @@ indexedFoldlRec path func acc node =
             func path node acc
 
 
+{-| Same as `foldl` but only applied the nodes between the given paths, inclusive.
+-}
 foldlRange : Path -> Path -> (Node -> b -> b) -> b -> Block -> b
 foldlRange start end func acc root =
     case nodeAt start root of
@@ -595,6 +758,8 @@ foldlRangeRec start end func acc root node =
                 foldlRangeRec p end func result root n
 
 
+{-| Same as `foldr` but only applied the nodes between the given paths, inclusive.
+-}
 foldrRange : Path -> Path -> (Node -> b -> b) -> b -> Block -> b
 foldrRange start end func acc root =
     case nodeAt end root of
@@ -623,10 +788,10 @@ foldrRangeRec start end func acc root node =
                 foldrRangeRec start p func result root n
 
 
-
-{- replaceNodeWithFragment replaces the node at the node path with the given fragment -}
-
-
+{-| Returns a Ok Block that replaces the node at the node path with the given fragment. If it is
+unable to replace it do to an invalid path or the wrong type of node, a Err string describing
+the error is returned.
+-}
 replaceWithFragment : Path -> Fragment -> Block -> Result String Block
 replaceWithFragment path fragment root =
     case path of
@@ -637,7 +802,7 @@ replaceWithFragment path fragment root =
             case childNodes root of
                 BlockChildren a ->
                     case fragment of
-                        BlockNodeFragment blocks ->
+                        BlockFragment blocks ->
                             let
                                 arr =
                                     toBlockArray a
@@ -656,12 +821,12 @@ replaceWithFragment path fragment root =
                                         )
                                 )
 
-                        InlineLeafFragment _ ->
+                        InlineFragment _ ->
                             Err "I cannot replace a block fragment with an inline leaf fragment"
 
                 InlineChildren a ->
                     case fragment of
-                        InlineLeafFragment leaves ->
+                        InlineFragment leaves ->
                             let
                                 arr =
                                     toInlineArray a
@@ -680,7 +845,7 @@ replaceWithFragment path fragment root =
                                         )
                                 )
 
-                        BlockNodeFragment _ ->
+                        BlockFragment _ ->
                             Err "I cannot replace an inline fragment with an block fragment"
 
                 Leaf ->
@@ -732,10 +897,10 @@ replace path node root =
                 fragment =
                     case node of
                         Block n ->
-                            BlockNodeFragment <| Array.fromList [ n ]
+                            BlockFragment <| Array.fromList [ n ]
 
                         Inline n ->
-                            InlineLeafFragment <| Array.fromList [ n ]
+                            InlineFragment <| Array.fromList [ n ]
             in
             replaceWithFragment path fragment root
 
@@ -1191,26 +1356,26 @@ insertAfter path fragment root =
             case node of
                 Inline il ->
                     case fragment of
-                        InlineLeafFragment a ->
+                        InlineFragment a ->
                             let
                                 newFragment =
-                                    InlineLeafFragment <| Array.fromList (il :: Array.toList a)
+                                    InlineFragment <| Array.fromList (il :: Array.toList a)
                             in
                             replaceWithFragment path newFragment root
 
-                        BlockNodeFragment _ ->
+                        BlockFragment _ ->
                             Err "I cannot insert a block node fragment into an inline leaf fragment"
 
                 Block bn ->
                     case fragment of
-                        BlockNodeFragment a ->
+                        BlockFragment a ->
                             let
                                 newFragment =
-                                    BlockNodeFragment <| Array.fromList (bn :: Array.toList a)
+                                    BlockFragment <| Array.fromList (bn :: Array.toList a)
                             in
                             replaceWithFragment path newFragment root
 
-                        InlineLeafFragment _ ->
+                        InlineFragment _ ->
                             Err "I cannot insert an inline leaf fragment fragment into an block node fragment"
 
 
@@ -1224,26 +1389,26 @@ insertBefore path fragment root =
             case node of
                 Inline il ->
                     case fragment of
-                        InlineLeafFragment a ->
+                        InlineFragment a ->
                             let
                                 newFragment =
-                                    InlineLeafFragment <| Array.push il a
+                                    InlineFragment <| Array.push il a
                             in
                             replaceWithFragment path newFragment root
 
-                        BlockNodeFragment _ ->
+                        BlockFragment _ ->
                             Err "I cannot insert a block node fragment into an inline leaf fragment"
 
                 Block bn ->
                     case fragment of
-                        BlockNodeFragment a ->
+                        BlockFragment a ->
                             let
                                 newFragment =
-                                    BlockNodeFragment <| Array.push bn a
+                                    BlockFragment <| Array.push bn a
                             in
                             replaceWithFragment path newFragment root
 
-                        InlineLeafFragment _ ->
+                        InlineFragment _ ->
                             Err "I cannot insert an inline leaf fragment fragment into an block node fragment"
 
 

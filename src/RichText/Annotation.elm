@@ -1,7 +1,7 @@
 module RichText.Annotation exposing
     ( selection, selectable, lift
     , add, addAtPath, fromNode, clear, remove, removeAtPath
-    , annotateSelection, selectionFromAnnotations, clearSelectionAnnotations
+    , annotateSelection, selectionFromAnnotations, clearSelectionAnnotations, isSelectable
     )
 
 {-| This module contains common constants and functions used to annotate nodes.
@@ -28,7 +28,7 @@ like if something is selectable.
 These methods are for marking selection, which is useful for keeping track of a user's selection
 when defining your own transforms.
 
-@docs annotateSelection, selectionFromAnnotations, clearSelectionAnnotations
+@docs annotateSelection, selectionFromAnnotations, clearSelectionAnnotations, isSelectable
 
 -}
 
@@ -58,14 +58,14 @@ selection =
     Constants.selection
 
 
-{-| Represents that a node is can be selected. This annotation is not transient.
+{-| Represents that a node can be selected. This annotation is not transient.
 -}
 selectable : String
 selectable =
     Constants.selectable
 
 
-{-| Represents that a node is can be selected. This annotation is transient, e.g. it should be
+{-| Represents that a node should be lifted. This annotation is transient, e.g. it should be
 cleared before a transform or command is complete.
 -}
 lift : String
@@ -274,3 +274,24 @@ findNodeRangeFromSelectionAnnotations node =
 
         end :: start :: _ ->
             Just ( start, end )
+
+
+{-| True if a node has the `selectable` annotation or is Text, false otherwise.
+
+    isSelectable (Inline textNode)
+    --> True
+
+-}
+isSelectable : Node -> Bool
+isSelectable node =
+    case node of
+        Block bn ->
+            Set.member selectable (Element.annotations (element bn))
+
+        Inline ln ->
+            case ln of
+                Text _ ->
+                    True
+
+                InlineElement l ->
+                    Set.member selectable (Element.annotations (InlineElement.element l))

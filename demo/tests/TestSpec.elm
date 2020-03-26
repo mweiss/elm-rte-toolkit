@@ -25,7 +25,7 @@ oneParagraph =
 
 expectedOneParagraph =
     Array.fromList <|
-        [ BlockNodeFragment <|
+        [ BlockFragment <|
             Array.fromList
                 [ block
                     (element paragraph [])
@@ -66,7 +66,7 @@ twoParagraphsBlockFragment =
 
 expectedTwoParagraphs =
     Array.fromList <|
-        [ BlockNodeFragment <| twoParagraphsBlockFragment ]
+        [ BlockFragment <| twoParagraphsBlockFragment ]
 
 
 justText =
@@ -81,7 +81,7 @@ justTextInlineFragment =
 
 expectedJustText =
     Array.fromList
-        [ InlineLeafFragment <| justTextInlineFragment ]
+        [ InlineFragment <| justTextInlineFragment ]
 
 
 blockquoteAndParagraphs =
@@ -90,7 +90,7 @@ blockquoteAndParagraphs =
 
 expectedBlockquoteAndParagraphs =
     Array.fromList
-        [ BlockNodeFragment <|
+        [ BlockFragment <|
             Array.fromList
                 [ block
                     (element blockquote [])
@@ -113,7 +113,7 @@ italicMark =
 
 expectedOneParagraphWithBold =
     Array.fromList <|
-        [ BlockNodeFragment <|
+        [ BlockFragment <|
             Array.fromList
                 [ block
                     (element paragraph [])
@@ -133,7 +133,7 @@ oneParagraphWithBoldAndItalic =
 
 expectedOneParagraphWithBoldAndItalic =
     Array.fromList <|
-        [ BlockNodeFragment <|
+        [ BlockFragment <|
             Array.fromList
                 [ block
                     (element paragraph [])

@@ -433,7 +433,7 @@ joinBackward definition editorState =
                                                         joinedNodes =
                                                             replace prevLiPath (Block joinedLi) markedRoot
                                                                 |> Result.andThen
-                                                                    (replaceWithFragment liPath (BlockNodeFragment Array.empty))
+                                                                    (replaceWithFragment liPath (BlockFragment Array.empty))
                                                     in
                                                     case joinedNodes of
                                                         Err s ->
@@ -530,7 +530,7 @@ joinForward definition editorState =
                                                     joinedNodes =
                                                         replace liPath (Block joinedLi) markedRoot
                                                             |> Result.andThen
-                                                                (replaceWithFragment nextLiPath (BlockNodeFragment Array.empty))
+                                                                (replaceWithFragment nextLiPath (BlockFragment Array.empty))
                                                 in
                                                 case joinedNodes of
                                                     Err s ->

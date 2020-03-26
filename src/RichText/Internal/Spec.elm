@@ -71,7 +71,7 @@ htmlNodeToEditorFragment spec marks node =
     case node of
         TextNode s ->
             Ok <|
-                InlineLeafFragment <|
+                InlineFragment <|
                     Array.fromList
                         [ Node.Text <|
                             (Text.empty
@@ -111,7 +111,7 @@ htmlNodeToEditorFragment spec marks node =
                     in
                     if contentType == InlineLeafNodeType then
                         Ok <|
-                            InlineLeafFragment <|
+                            InlineFragment <|
                                 Array.fromList
                                     [ Node.InlineElement <|
                                         inlineElement element marks
@@ -127,7 +127,7 @@ htmlNodeToEditorFragment spec marks node =
                                 Err s
 
                             Ok childNodes ->
-                                Ok <| BlockNodeFragment <| Array.fromList [ Node.block element childNodes ]
+                                Ok <| BlockFragment <| Array.fromList [ Node.block element childNodes ]
 
                 Nothing ->
                     case htmlNodeToMark spec node of
@@ -175,21 +175,21 @@ reduceEditorFragmentArray fragmentArray =
 
                 Just prevFragment ->
                     case prevFragment of
-                        InlineLeafFragment pilf ->
+                        InlineFragment pilf ->
                             case fragment of
-                                InlineLeafFragment ilf ->
-                                    Array.set (Array.length arr - 1) (InlineLeafFragment (Array.append pilf ilf)) arr
+                                InlineFragment ilf ->
+                                    Array.set (Array.length arr - 1) (InlineFragment (Array.append pilf ilf)) arr
 
-                                BlockNodeFragment _ ->
+                                BlockFragment _ ->
                                     Array.push fragment arr
 
-                        BlockNodeFragment pbnf ->
+                        BlockFragment pbnf ->
                             case fragment of
-                                InlineLeafFragment _ ->
+                                InlineFragment _ ->
                                     Array.push fragment arr
 
-                                BlockNodeFragment bnf ->
-                                    Array.set (Array.length arr - 1) (BlockNodeFragment (Array.append pbnf bnf)) arr
+                                BlockFragment bnf ->
+                                    Array.set (Array.length arr - 1) (BlockFragment (Array.append pbnf bnf)) arr
         )
         Array.empty
         fragmentArray
@@ -212,7 +212,7 @@ arrayToChildNodes contentType results =
 
             Ok fragment ->
                 case fragment of
-                    InlineLeafFragment ilf ->
+                    InlineFragment ilf ->
                         case contentType of
                             TextBlockNodeType _ ->
                                 Ok <| inlineChildren ilf
@@ -220,7 +220,7 @@ arrayToChildNodes contentType results =
                             _ ->
                                 Err "I received an inline leaf fragment, but the node I parsed doesn't accept this child type"
 
-                    BlockNodeFragment bnf ->
+                    BlockFragment bnf ->
                         case contentType of
                             BlockNodeType _ ->
                                 Ok <| blockChildren bnf

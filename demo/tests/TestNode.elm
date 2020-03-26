@@ -2,10 +2,22 @@ module TestNode exposing (..)
 
 import Array
 import Expect
-import RichText.Annotation exposing (selectable)
 import RichText.Model.Element as Element
 import RichText.Model.InlineElement as InlineElement
-import RichText.Model.Node as Node exposing (Block, Children(..), Inline(..), Path, block, blockChildren, inlineChildren, inlineElement, plainText, toString, withElement)
+import RichText.Model.Node as Node
+    exposing
+        ( Block
+        , Children(..)
+        , Inline(..)
+        , Path
+        , block
+        , blockChildren
+        , inlineChildren
+        , inlineElement
+        , plainText
+        , toString
+        , withElement
+        )
 import RichText.Model.Text as Text exposing (text, withText)
 import RichText.Node
     exposing
@@ -29,7 +41,6 @@ import RichText.Node
         , indexedMap
         , insertAfter
         , insertBefore
-        , isSelectable
         , joinBlocks
         , last
         , map
@@ -152,28 +163,6 @@ testFoldl =
     describe "Tests that foldl works as expected"
         [ test "Test that the nodes are passed in as expected" <|
             \_ -> Expect.equal [ "sample2", "sample1", "paragraph", "doc" ] (foldl (\x -> nodeNameOrTextValue [] x) [] (Block rootNode))
-        ]
-
-
-testIsSelectable : Test
-testIsSelectable =
-    describe "Tests that a node is selectable"
-        [ test "Test that a text node is selectable" <|
-            \_ -> Expect.equal True <| isSelectable (Inline (plainText ""))
-        , test "Test that a element node with a selectable mark is selectable" <|
-            \_ ->
-                Expect.equal True <|
-                    isSelectable
-                        (Block
-                            (block (Element.element doc [] |> Element.withAnnotations (Set.fromList [ selectable ])) Leaf)
-                        )
-        , test "Test that a element node without a selectable mark is not selectable" <|
-            \_ ->
-                Expect.equal False <|
-                    isSelectable
-                        (Block
-                            (block (Element.element doc []) Leaf)
-                        )
         ]
 
 
@@ -563,7 +552,7 @@ testReplaceWithFragment =
         [ test "Tests that we replace the element we want" <|
             \_ ->
                 Expect.equal (Ok replaceRootPNode)
-                    (replaceWithFragment [ 0, 0 ] (InlineLeafFragment <| Array.fromList [ textNode2 ]) rootNode)
+                    (replaceWithFragment [ 0, 0 ] (InlineFragment <| Array.fromList [ textNode2 ]) rootNode)
         ]
 
 
@@ -745,11 +734,11 @@ testFoldrRange =
 
 
 inlineInsertFragment =
-    InlineLeafFragment (Array.fromList [ textNode1, textNode2 ])
+    InlineFragment (Array.fromList [ textNode1, textNode2 ])
 
 
 blockInsertFragment =
-    BlockNodeFragment (Array.fromList [ hrNode ])
+    BlockFragment (Array.fromList [ hrNode ])
 
 
 expectedInsertBeforeBlock : Block

@@ -47,6 +47,7 @@ import RichText.Annotation as Annotation
         ( annotateSelection
         , clear
         , clearSelectionAnnotations
+        , isSelectable
         , selectionFromAnnotations
         )
 import RichText.Config.Command
@@ -121,7 +122,6 @@ import RichText.Node
         , findTextBlockNodeAncestor
         , indexedFoldl
         , indexedMap
-        , isSelectable
         , joinBlocks
         , next
         , nodeAt
@@ -136,7 +136,6 @@ import RichText.Node
         )
 import RichText.Specs exposing (hardBreak)
 import Set exposing (Set)
-import String.Extra
 
 
 backspaceCommands =
@@ -216,6 +215,16 @@ removeRangeSelectionAndInsert s editorState =
         (removeRangeSelection editorState)
 
 
+{-| Insert a substring at the specified index. (derived from String.Extra)
+
+    insertAt "world" 6 "Hello " == "Hello world"
+
+-}
+insertAt : String -> Int -> String -> String
+insertAt insert pos string =
+    String.slice 0 pos string ++ insert ++ String.slice pos (String.length string) string
+
+
 insertTextAtSelection : String -> Transform
 insertTextAtSelection s editorState =
     case State.selection editorState of
@@ -244,7 +253,7 @@ insertTextAtSelection s editorState =
                                     Text tl ->
                                         let
                                             newText =
-                                                String.Extra.insertAt s (anchorOffset selection) (Text.text tl)
+                                                insertAt s (anchorOffset selection) (Text.text tl)
 
                                             newTextLeaf =
                                                 Text (tl |> Text.withText newText)
@@ -655,7 +664,7 @@ insertInlineElement leaf editorState =
                                         case
                                             replaceWithFragment
                                                 (anchorNode selection)
-                                                (InlineLeafFragment
+                                                (InlineFragment
                                                     (Array.fromList
                                                         [ Text before, leaf, Text after ]
                                                     )
@@ -723,7 +732,7 @@ splitBlock ancestorFunc editorState =
                                 case
                                     replaceWithFragment
                                         textBlockPath
-                                        (BlockNodeFragment (Array.fromList [ before, after ]))
+                                        (BlockFragment (Array.fromList [ before, after ]))
                                         (State.root editorState)
                                 of
                                     Err s ->
@@ -1065,7 +1074,7 @@ toggleMarkSingleInlineNode markOrder mark action editorState =
                                 case
                                     replaceWithFragment
                                         (anchorNode normalizedSelection)
-                                        (InlineLeafFragment <| Array.fromList leaves)
+                                        (InlineFragment <| Array.fromList leaves)
                                         (State.root editorState)
                                 of
                                     Err s ->
@@ -1749,7 +1758,7 @@ insertBlockNode node editorState =
                                 case
                                     replaceWithFragment
                                         (anchorNode selection)
-                                        (BlockNodeFragment (Array.fromList [ bn, node ]))
+                                        (BlockFragment (Array.fromList [ bn, node ]))
                                         (State.root editorState)
                                 of
                                     Err s ->
@@ -1816,7 +1825,7 @@ insertBlockNodeBeforeSelection node editorState =
                                 case
                                     replaceWithFragment
                                         closestBlockPath
-                                        (BlockNodeFragment (Array.fromList newFragment))
+                                        (BlockFragment (Array.fromList newFragment))
                                         markedRoot
                                 of
                                     Err s ->
@@ -1875,7 +1884,7 @@ backspaceInlineElement editorState =
                                         case
                                             replaceWithFragment
                                                 decrementedPath
-                                                (InlineLeafFragment Array.empty)
+                                                (InlineFragment Array.empty)
                                                 (State.root editorState)
                                         of
                                             Err s ->
@@ -1922,7 +1931,7 @@ backspaceBlockNode editorState =
                             Block bn ->
                                 case childNodes bn of
                                     Leaf ->
-                                        case replaceWithFragment path (BlockNodeFragment Array.empty) markedRoot of
+                                        case replaceWithFragment path (BlockFragment Array.empty) markedRoot of
                                             Err s ->
                                                 Err s
 
@@ -2240,7 +2249,7 @@ deleteInlineElement editorState =
                                                             case
                                                                 replaceWithFragment
                                                                     incrementedPath
-                                                                    (InlineLeafFragment Array.empty)
+                                                                    (InlineFragment Array.empty)
                                                                     (State.root editorState)
                                                             of
                                                                 Err s ->
@@ -2279,7 +2288,7 @@ deleteBlockNode editorState =
                                         case
                                             replaceWithFragment
                                                 path
-                                                (BlockNodeFragment Array.empty)
+                                                (BlockFragment Array.empty)
                                                 (State.root editorState)
                                         of
                                             Err s ->

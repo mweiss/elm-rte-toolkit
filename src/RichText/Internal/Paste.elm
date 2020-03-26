@@ -105,7 +105,7 @@ pasteText text editorState =
                                         lines
 
                                 fragment =
-                                    BlockNodeFragment (Array.fromList newLines)
+                                    BlockFragment (Array.fromList newLines)
                             in
                             pasteFragment fragment editorState
 
@@ -137,10 +137,10 @@ pasteHtml spec html editorState =
 pasteFragment : Fragment -> Transform
 pasteFragment fragment editorState =
     case fragment of
-        InlineLeafFragment a ->
+        InlineFragment a ->
             pasteInlineArray a editorState
 
-        BlockNodeFragment a ->
+        BlockFragment a ->
             pasteBlockArray a editorState
 
 
@@ -189,7 +189,7 @@ pasteInlineArray inlineFragment editorState =
 
                                                             replaceResult =
                                                                 replaceWithFragment (anchorNode selection)
-                                                                    (InlineLeafFragment newFragment)
+                                                                    (InlineFragment newFragment)
                                                                     (State.root editorState)
 
                                                             newSelection =
@@ -209,7 +209,7 @@ pasteInlineArray inlineFragment editorState =
                                                     InlineElement _ ->
                                                         let
                                                             replaceResult =
-                                                                replaceWithFragment (anchorNode selection) (InlineLeafFragment inlineFragment) (State.root editorState)
+                                                                replaceWithFragment (anchorNode selection) (InlineFragment inlineFragment) (State.root editorState)
 
                                                             newSelection =
                                                                 caret (path ++ [ index + Array.length inlineFragment - 1 ]) 0
@@ -259,7 +259,7 @@ pasteBlockArray blockFragment editorState =
                                     BlockChildren _ ->
                                         case
                                             replaceWithFragment (anchorNode selection)
-                                                (BlockNodeFragment blockFragment)
+                                                (BlockFragment blockFragment)
                                                 (State.root editorState)
                                         of
                                             Err s ->
@@ -296,7 +296,7 @@ pasteBlockArray blockFragment editorState =
                                                             annotatedSelectionRoot =
                                                                 annotateSelection splitSelection (State.root splitEditorState)
                                                         in
-                                                        case insertAfter parentPath (BlockNodeFragment blockFragment) annotatedSelectionRoot of
+                                                        case insertAfter parentPath (BlockFragment blockFragment) annotatedSelectionRoot of
                                                             Err s ->
                                                                 Err s
 
