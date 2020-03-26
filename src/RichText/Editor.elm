@@ -29,8 +29,8 @@ import RichText.Annotation exposing (annotateSelection)
 import RichText.Commands exposing (removeRangeSelection)
 import RichText.Config.Command exposing (CommandMap, NamedCommand, NamedCommandList, transform)
 import RichText.Config.Decorations exposing (Decorations, elementDecorators, markDecorators)
+import RichText.Config.ElementDefinition as ElementDefinition
 import RichText.Config.MarkDefinition as MarkDefinition
-import RichText.Config.NodeDefinition as NodeDefinition
 import RichText.Config.Spec exposing (Spec)
 import RichText.Internal.BeforeInput as BeforeInput
 import RichText.Internal.Constants exposing (zeroWidthSpace)
@@ -67,7 +67,7 @@ import RichText.Internal.KeyDown as KeyDown
 import RichText.Internal.Paste as Paste
 import RichText.Internal.Path as NodePath
 import RichText.Internal.Selection exposing (domToEditor, editorToDom)
-import RichText.Internal.Spec exposing (markDefinitionWithDefault, nodeDefinitionWithDefault)
+import RichText.Internal.Spec exposing (elementDefinitionWithDefault, markDefinitionWithDefault)
 import RichText.Model.Element as Element exposing (Element)
 import RichText.Model.History exposing (History)
 import RichText.Model.HtmlNode exposing (HtmlNode(..))
@@ -769,10 +769,10 @@ viewElement : Spec -> Decorations msg -> Element -> Path -> Array (Html msg) -> 
 viewElement spec_ decorations_ elementParameters backwardsNodePath children =
     let
         definition =
-            nodeDefinitionWithDefault elementParameters spec_
+            elementDefinitionWithDefault elementParameters spec_
 
         node =
-            NodeDefinition.toHtmlNode definition elementParameters childNodesPlaceholder
+            ElementDefinition.toHtmlNode definition elementParameters childNodesPlaceholder
 
         eDecorators =
             Maybe.withDefault []

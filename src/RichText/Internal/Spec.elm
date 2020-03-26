@@ -1,11 +1,11 @@
-module RichText.Internal.Spec exposing (htmlToElementArray, markDefinitionWithDefault, nodeDefinitionWithDefault)
+module RichText.Internal.Spec exposing (elementDefinitionWithDefault, htmlToElementArray, markDefinitionWithDefault)
 
 import Array exposing (Array)
 import Html.Parser as Html exposing (Node(..))
 import Result exposing (Result)
+import RichText.Config.ElementDefinition as ElementDefinition exposing (ElementDefinition, blockNode, defaultElementDefinition)
 import RichText.Config.MarkDefinition as MarkDefinition exposing (MarkDefinition, defaultMarkDefinition)
-import RichText.Config.NodeDefinition as NodeDefinition exposing (NodeDefinition, blockNode, defaultNodeDefinition)
-import RichText.Config.Spec exposing (Spec, markDefinition, markDefinitions, nodeDefinition, nodeDefinitions)
+import RichText.Config.Spec exposing (Spec, elementDefinition, elementDefinitions, markDefinition, markDefinitions)
 import RichText.Internal.Constants exposing (zeroWidthSpace)
 import RichText.Internal.Definitions exposing (ContentType(..), nameFromElement, nameFromMark)
 import RichText.Model.Element exposing (Element)
@@ -83,14 +83,14 @@ htmlNodeToEditorFragment spec marks node =
         _ ->
             let
                 definitions =
-                    nodeDefinitions spec
+                    elementDefinitions spec
 
                 maybeElementAndChildren =
                     List.foldl
                         (\definition result ->
                             case result of
                                 Nothing ->
-                                    case NodeDefinition.fromHtmlNode definition definition node of
+                                    case ElementDefinition.fromHtmlNode definition definition node of
                                         Nothing ->
                                             Nothing
 
@@ -107,7 +107,7 @@ htmlNodeToEditorFragment spec marks node =
                 Just ( definition, ( element, children ) ) ->
                     let
                         contentType =
-                            NodeDefinition.contentType definition
+                            ElementDefinition.contentType definition
                     in
                     if contentType == InlineLeafNodeType then
                         Ok <|
@@ -313,10 +313,10 @@ markDefinitionWithDefault mark spec =
     Maybe.withDefault (defaultMarkDefinition name) (markDefinition name spec)
 
 
-nodeDefinitionWithDefault : Element -> Spec -> NodeDefinition
-nodeDefinitionWithDefault ele spec =
+elementDefinitionWithDefault : Element -> Spec -> ElementDefinition
+elementDefinitionWithDefault ele spec =
     let
         name =
             nameFromElement ele
     in
-    Maybe.withDefault (defaultNodeDefinition name "block" (blockNode [])) (nodeDefinition name spec)
+    Maybe.withDefault (defaultElementDefinition name "block" (blockNode [])) (elementDefinition name spec)

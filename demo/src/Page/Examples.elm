@@ -31,7 +31,7 @@ values =
     , { title = "Extend a specification"
       , text =
             "This example shows how you can extend the default specification "
-                ++ "with your own mark and node definitions."
+                ++ "with your own mark and element definitions."
       , route = Route.SpecExtension
       }
     , { title = "New specification"

@@ -7,11 +7,11 @@ module RichText.Internal.Path exposing
 -}
 
 import Array exposing (Array)
+import RichText.Config.ElementDefinition as ElementDefinition
 import RichText.Config.MarkDefinition as MarkDefinition
-import RichText.Config.NodeDefinition as NodeDefinition
 import RichText.Config.Spec exposing (Spec)
 import RichText.Internal.HtmlNode exposing (childNodesPlaceholder)
-import RichText.Internal.Spec exposing (markDefinitionWithDefault, nodeDefinitionWithDefault)
+import RichText.Internal.Spec exposing (elementDefinitionWithDefault, markDefinitionWithDefault)
 import RichText.Model.Element exposing (Element)
 import RichText.Model.HtmlNode exposing (HtmlNode(..))
 import RichText.Model.Mark exposing (Mark)
@@ -76,11 +76,11 @@ domToEditor spec node path =
             parameters =
                 element node
 
-            nodeDefinition =
-                nodeDefinitionWithDefault parameters spec
+            elementDefinition =
+                elementDefinitionWithDefault parameters spec
 
             structure =
-                NodeDefinition.toHtmlNode nodeDefinition parameters childNodesPlaceholder
+                ElementDefinition.toHtmlNode elementDefinition parameters childNodesPlaceholder
         in
         case removePathUpToChildContents structure path of
             Nothing ->
@@ -260,11 +260,11 @@ pathToChildContentsFromMark spec mark =
 pathToChildContentsFromElementParameters : Spec -> Element -> Maybe Path
 pathToChildContentsFromElementParameters spec parameters =
     let
-        nodeDefinition =
-            nodeDefinitionWithDefault parameters spec
+        elementDefinition =
+            elementDefinitionWithDefault parameters spec
 
         nodeStructure =
-            NodeDefinition.toHtmlNode nodeDefinition parameters childNodesPlaceholder
+            ElementDefinition.toHtmlNode elementDefinition parameters childNodesPlaceholder
     in
     pathToChildContents nodeStructure
 

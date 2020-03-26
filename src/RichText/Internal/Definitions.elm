@@ -40,10 +40,10 @@ type Element
     = ElementParameters ElementParametersContents
 
 
-element : NodeDefinition -> List Attribute -> Element
+element : ElementDefinition -> List Attribute -> Element
 element def attrs =
     case def of
-        NodeDefinition d ->
+        ElementDefinition d ->
             ElementParameters { name = d.name, attributes = attrs, annotations = Set.empty }
 
 
@@ -142,14 +142,14 @@ type alias ElementToHtml =
 
 
 type alias HtmlToElement =
-    NodeDefinition -> HtmlNode -> Maybe ( Element, Array HtmlNode )
+    ElementDefinition -> HtmlNode -> Maybe ( Element, Array HtmlNode )
 
 
-type NodeDefinition
-    = NodeDefinition NodeDefinitionContents
+type ElementDefinition
+    = ElementDefinition ElementDefinitionContents
 
 
-type alias NodeDefinitionContents =
+type alias ElementDefinitionContents =
     { name : String
     , toHtmlNode : ElementToHtml
     , group : String

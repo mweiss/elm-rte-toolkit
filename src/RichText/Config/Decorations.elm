@@ -23,8 +23,8 @@ import Dict exposing (Dict)
 import Html
 import Html.Attributes
 import Html.Events
+import RichText.Config.ElementDefinition as ElementDefinition exposing (ElementDefinition)
 import RichText.Config.MarkDefinition as MarkDefinition exposing (MarkDefinition)
-import RichText.Config.NodeDefinition as NodeDefinition exposing (NodeDefinition)
 import RichText.Internal.Constants exposing (selection)
 import RichText.Internal.Editor exposing (Message(..), Tagger)
 import RichText.Model.Element exposing (Element, annotations)
@@ -155,14 +155,14 @@ withElementDecorators elements d =
     --> a collection of decorations that contains a single element decoration for image
 
 -}
-addElementDecoration : NodeDefinition -> ElementDecoratorFunction msg -> Decorations msg -> Decorations msg
+addElementDecoration : ElementDefinition -> ElementDecoratorFunction msg -> Decorations msg -> Decorations msg
 addElementDecoration definition decorator decorations =
     let
         eleDecorators =
             elementDecorators decorations
 
         name =
-            NodeDefinition.name definition
+            ElementDefinition.name definition
 
         previousDecorations =
             Maybe.withDefault [] (Dict.get name eleDecorators)

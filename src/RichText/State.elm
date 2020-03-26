@@ -3,10 +3,10 @@ module RichText.State exposing (reduceEditorState, validate)
 import Array exposing (Array)
 import List.Extra
 import RichText.Annotation exposing (annotateSelection, clearSelectionAnnotations, selection)
-import RichText.Config.NodeDefinition as NodeDefinition
+import RichText.Config.ElementDefinition as ElementDefinition
 import RichText.Config.Spec exposing (Spec)
 import RichText.Internal.Definitions exposing (ContentType(..), toStringContentType)
-import RichText.Internal.Spec exposing (nodeDefinitionWithDefault)
+import RichText.Internal.Spec exposing (elementDefinitionWithDefault)
 import RichText.Model.InlineElement as InlineElement
 import RichText.Model.Node as Node
     exposing
@@ -285,9 +285,9 @@ validateInlineLeaf spec allowedGroups leaf =
         Node.InlineElement il ->
             let
                 definition =
-                    nodeDefinitionWithDefault (InlineElement.element il) spec
+                    elementDefinitionWithDefault (InlineElement.element il) spec
             in
-            validateAllowedGroups allowedGroups (NodeDefinition.group definition) (NodeDefinition.name definition)
+            validateAllowedGroups allowedGroups (ElementDefinition.group definition) (ElementDefinition.name definition)
 
 
 validateAllowedGroups : Maybe (Set String) -> String -> String -> List String
@@ -319,11 +319,11 @@ validateEditorBlockNode spec allowedGroups node =
             element node
 
         definition =
-            nodeDefinitionWithDefault parameters spec
+            elementDefinitionWithDefault parameters spec
     in
     let
         allowedGroupsErrors =
-            validateAllowedGroups allowedGroups (NodeDefinition.group definition) (NodeDefinition.name definition)
+            validateAllowedGroups allowedGroups (ElementDefinition.group definition) (ElementDefinition.name definition)
     in
     if not <| List.isEmpty allowedGroupsErrors then
         allowedGroupsErrors
@@ -331,7 +331,7 @@ validateEditorBlockNode spec allowedGroups node =
     else
         let
             contentType =
-                NodeDefinition.contentType definition
+                ElementDefinition.contentType definition
         in
         case childNodes node of
             BlockChildren ba ->
@@ -355,7 +355,7 @@ validateEditorBlockNode spec allowedGroups node =
                         [ "I was expecting textblock content type, but instead I got " ++ toStringContentType contentType ]
 
             Leaf ->
-                if contentType == NodeDefinition.blockLeaf then
+                if contentType == ElementDefinition.blockLeaf then
                     []
 
                 else

@@ -1,23 +1,23 @@
 module SimpleSpec exposing (..)
 
 import Array exposing (Array)
-import RichText.Config.MarkDefinition exposing (defaultHtmlToMark, markDefinition)
-import RichText.Config.NodeDefinition
+import RichText.Config.ElementDefinition
     exposing
-        ( NodeDefinition
+        ( ElementDefinition
         , blockNode
         , defaultElementToHtml
         , defaultHtmlToElement
+        , elementDefinition
         , inlineLeaf
-        , nodeDefinition
         , textBlock
         )
+import RichText.Config.MarkDefinition exposing (defaultHtmlToMark, markDefinition)
 import RichText.Config.Spec
     exposing
         ( Spec
         , emptySpec
+        , withElementDefinitions
         , withMarkDefinitions
-        , withNodeDefinitions
         )
 import RichText.Model.Element exposing (Element, element)
 import RichText.Model.HtmlNode exposing (HtmlNode(..))
@@ -43,7 +43,7 @@ crazyBlockToHtmlNode _ children =
             ]
 
 
-htmlNodeToCrazyBlock : NodeDefinition -> HtmlNode -> Maybe ( Element, Array HtmlNode )
+htmlNodeToCrazyBlock : ElementDefinition -> HtmlNode -> Maybe ( Element, Array HtmlNode )
 htmlNodeToCrazyBlock def node =
     case node of
         ElementNode name _ children ->
@@ -67,7 +67,7 @@ htmlNodeToCrazyBlock def node =
             Nothing
 
 
-htmlNodeToCodeBlock : NodeDefinition -> HtmlNode -> Maybe ( Element, Array HtmlNode )
+htmlNodeToCodeBlock : ElementDefinition -> HtmlNode -> Maybe ( Element, Array HtmlNode )
 htmlNodeToCodeBlock def node =
     case node of
         ElementNode name _ children ->
@@ -102,7 +102,7 @@ italicToHtmlNode _ children =
 
 
 codeBlock =
-    nodeDefinition
+    elementDefinition
         { name = "code_block"
         , group = "block"
         , contentType = blockNode []
@@ -112,7 +112,7 @@ codeBlock =
 
 
 crazyBlock =
-    nodeDefinition
+    elementDefinition
         { name = "crazy_block"
         , group = "block"
         , contentType = blockNode []
@@ -122,7 +122,7 @@ crazyBlock =
 
 
 paragraph =
-    nodeDefinition
+    elementDefinition
         { name = "paragraph"
         , group = "block"
         , contentType = textBlock []
@@ -132,7 +132,7 @@ paragraph =
 
 
 image =
-    nodeDefinition
+    elementDefinition
         { name = "image"
         , group = "inline"
         , contentType = inlineLeaf
@@ -168,7 +168,7 @@ strikethrough =
 simpleSpec : Spec
 simpleSpec =
     emptySpec
-        |> withNodeDefinitions
+        |> withElementDefinitions
             [ codeBlock
             , crazyBlock
             , paragraph

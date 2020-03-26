@@ -13,21 +13,21 @@ import RichText.Annotation exposing (selectable)
 import RichText.Commands as Commands
 import RichText.Config.Command exposing (Transform, transform)
 import RichText.Config.Decorations exposing (addElementDecoration, selectableDecoration)
-import RichText.Config.NodeDefinition
+import RichText.Config.ElementDefinition
     exposing
-        ( ElementToHtml
+        ( ElementDefinition
+        , ElementToHtml
         , HtmlToElement
-        , NodeDefinition
         , blockLeaf
-        , nodeDefinition
+        , elementDefinition
         )
 import RichText.Config.Spec
     exposing
         ( Spec
+        , elementDefinitions
         , markDefinitions
-        , nodeDefinitions
+        , withElementDefinitions
         , withMarkDefinitions
-        , withNodeDefinitions
         )
 import RichText.Editor as RTE exposing (apply, applyNoForceSelection)
 import RichText.Model.Attribute
@@ -263,7 +263,7 @@ captionedImageView model =
 customSpec : Spec
 customSpec =
     MarkdownSpec.markdown
-        |> withNodeDefinitions (nodeDefinitions MarkdownSpec.markdown ++ [ captionedImage ])
+        |> withElementDefinitions (elementDefinitions MarkdownSpec.markdown ++ [ captionedImage ])
         |> withMarkDefinitions
             (markDefinitions MarkdownSpec.markdown
                 ++ [ strikethrough, underline ]
@@ -434,9 +434,9 @@ subscriptions model =
     Session.changes GotSession (Session.navKey model.session)
 
 
-captionedImage : NodeDefinition
+captionedImage : ElementDefinition
 captionedImage =
-    nodeDefinition
+    elementDefinition
         { name = "captioned_image"
         , group = "block"
         , contentType = blockLeaf

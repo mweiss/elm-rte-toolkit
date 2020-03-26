@@ -1,16 +1,16 @@
-module RichText.Config.NodeDefinition exposing
-    ( NodeDefinition, nodeDefinition, ElementToHtml, HtmlToElement, name, group, contentType, fromHtmlNode, toHtmlNode
+module RichText.Config.ElementDefinition exposing
+    ( ElementDefinition, elementDefinition, ElementToHtml, HtmlToElement, name, group, contentType, fromHtmlNode, toHtmlNode
     , ContentType, blockLeaf, inlineLeaf, blockNode, textBlock
-    , defaultNodeDefinition, defaultElementToHtml, defaultHtmlToElement
+    , defaultElementDefinition, defaultElementToHtml, defaultHtmlToElement
     )
 
-{-| A NodeDefinition describes how to serialize/deserialize an editor node, as well as the children a
-node can have.
+{-| An element definition describes how to serialize/deserialize an element, as well as what content
+it can have.
 
 
-# Node definition
+# Element definition
 
-@docs NodeDefinition, nodeDefinition, ElementToHtml, HtmlToElement, name, group, contentType, fromHtmlNode, toHtmlNode
+@docs ElementDefinition, elementDefinition, ElementToHtml, HtmlToElement, name, group, contentType, fromHtmlNode, toHtmlNode
 
 
 # Content type
@@ -20,7 +20,7 @@ node can have.
 
 # Struts
 
-@docs defaultNodeDefinition, defaultElementToHtml, defaultHtmlToElement
+@docs defaultElementDefinition, defaultElementToHtml, defaultHtmlToElement
 
 -}
 
@@ -32,8 +32,8 @@ import RichText.Model.HtmlNode exposing (HtmlNode(..))
 import Set
 
 
-{-| Describes what type of node this is, as well as what children a node can contain. It can be one
-of four values:
+{-| Describes what type of node can have this element, as well as what children the node can contain.
+It can be one of four values:
 
   - `inlineLeaf`: An inline element, like an inline image or hard break.
   - `blockLeaf`: A block which does not allow children, like a horizontal rule.
@@ -45,14 +45,14 @@ type alias ContentType =
     Internal.ContentType
 
 
-{-| A `NodeDefinition` contains information on how to serialize/deserialize an editor node,
+{-| A `ElementDefinition` contains information on how to serialize/deserialize an editor node,
 as well as describes what type of node and what children the node can have.
 -}
-type alias NodeDefinition =
-    Internal.NodeDefinition
+type alias ElementDefinition =
+    Internal.ElementDefinition
 
 
-{-| Type alias for defining an element serialization function `Element` -> `Array HtmlNode` -> `HtmlNode`
+{-| Type alias for defining an element serialization function.
 
     paragraphToHtml : ElementToHtml
     paragraphToHtml _ children =
@@ -67,7 +67,7 @@ type alias ElementToHtml =
     Element -> Array HtmlNode -> HtmlNode
 
 
-{-| Type alias for defining an element deserialization function: `NodeDefinition` -> `HtmlNode` -> `Maybe ( Element, Array HtmlNode )`
+{-| Type alias for defining an element deserialization function.
 
     htmlToParagraph : HtmlToElement
     htmlToParagraph definition node =
@@ -84,14 +84,14 @@ type alias ElementToHtml =
 
 -}
 type alias HtmlToElement =
-    NodeDefinition -> HtmlNode -> Maybe ( Element, Array HtmlNode )
+    ElementDefinition -> HtmlNode -> Maybe ( Element, Array HtmlNode )
 
 
-{-| Defines a node. The arguments are as follows:
+{-| Defines an element. The arguments are as follows:
 
   - `name` is the unique name of this type of node, usually something like "paragraph" or "heading"
 
-  - `group` is the group this node belongs to. Commonly, this value will be 'block' or 'inline'
+  - `group` is the group this element belongs to. Commonly, this value will be 'block' or 'inline'
     This is used when validating the document and can be useful if you're defining complicated block structures
     like a table or list. For example, for a markdown list, there is a 'list\_item' group, and ordered lists
     and unordered lists only accept children that are part of the 'list\_item' group. The root
@@ -108,9 +108,9 @@ type alias HtmlToElement =
     changes.
 
 ```
--- Define a paragraph node
+-- Define a paragraph element
 paragraph =
-    nodeDefinition
+    elementDefinition
         { name = "paragraph"
         , group = "block"
         , contentType = textBlock [ "inline" ]
@@ -120,29 +120,29 @@ paragraph =
 ```
 
 -}
-nodeDefinition :
+elementDefinition :
     { name : String
     , group : String
     , contentType : ContentType
     , toHtmlNode : ElementToHtml
     , fromHtmlNode : HtmlToElement
     }
-    -> NodeDefinition
-nodeDefinition contents =
-    Internal.NodeDefinition
+    -> ElementDefinition
+elementDefinition contents =
+    Internal.ElementDefinition
         contents
 
 
-{-| The name of the node this node definition defines.
+{-| The name of the node this element definition defines.
 
     name paragraph
     --> "paragraph"
 
 -}
-name : NodeDefinition -> String
+name : ElementDefinition -> String
 name definition_ =
     case definition_ of
-        Internal.NodeDefinition c ->
+        Internal.ElementDefinition c ->
             c.name
 
 
@@ -152,39 +152,39 @@ name definition_ =
     --> "inline"
 
 -}
-group : NodeDefinition -> String
+group : ElementDefinition -> String
 group definition_ =
     case definition_ of
-        Internal.NodeDefinition c ->
+        Internal.ElementDefinition c ->
             c.group
 
 
 {-| The serialization function for this node. This should be called internally by the editor code
 to determine selection, render the editor, and validate the DOM.
 -}
-toHtmlNode : NodeDefinition -> ElementToHtml
+toHtmlNode : ElementDefinition -> ElementToHtml
 toHtmlNode definition_ =
     case definition_ of
-        Internal.NodeDefinition c ->
+        Internal.ElementDefinition c ->
             c.toHtmlNode
 
 
 {-| The deserialization function for this node. This is used for things like a paste event to
 derive editor nodes from HTML content.
 -}
-fromHtmlNode : NodeDefinition -> HtmlToElement
+fromHtmlNode : ElementDefinition -> HtmlToElement
 fromHtmlNode definition_ =
     case definition_ of
-        Internal.NodeDefinition c ->
+        Internal.ElementDefinition c ->
             c.fromHtmlNode
 
 
 {-| Describes what type of node this is and what children it can have.
 -}
-contentType : NodeDefinition -> ContentType
+contentType : ElementDefinition -> ContentType
 contentType definition_ =
     case definition_ of
-        Internal.NodeDefinition c ->
+        Internal.ElementDefinition c ->
             c.contentType
 
 
@@ -236,16 +236,16 @@ textBlock allowedGroups =
             Just <| Set.fromList allowedGroups
 
 
-{-| Creates a node definition which assumes the name of the editor node is the same as the name of the
+{-| Creates an element definition which assumes the name of the editor node is the same as the name of the
 html node.
 
-    defaultNodeDefinition "p" "block" (textBlock [])
+    defaultElementDefinition "p" "block" (textBlock [])
     --> definition which encodes to <p>...</p> and decodes from "<p>...</p>"
 
 -}
-defaultNodeDefinition : String -> String -> ContentType -> NodeDefinition
-defaultNodeDefinition name_ group_ contentType_ =
-    nodeDefinition
+defaultElementDefinition : String -> String -> ContentType -> ElementDefinition
+defaultElementDefinition name_ group_ contentType_ =
+    elementDefinition
         { name = name_
         , group = group_
         , contentType = contentType_

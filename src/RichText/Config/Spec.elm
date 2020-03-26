@@ -1,8 +1,8 @@
-module RichText.Config.Spec exposing (Spec, emptySpec, markDefinitions, markDefinition, nodeDefinitions, nodeDefinition, withMarkDefinitions, withNodeDefinitions)
+module RichText.Config.Spec exposing (Spec, emptySpec, markDefinitions, markDefinition, elementDefinitions, elementDefinition, withMarkDefinitions, withElementDefinitions)
 
 {-| A spec describes what nodes and marks can be in an editor.
 
-@docs Spec, emptySpec, markDefinitions, markDefinition, nodeDefinitions, nodeDefinition, withMarkDefinitions, withNodeDefinitions
+@docs Spec, emptySpec, markDefinitions, markDefinition, elementDefinitions, elementDefinition, withMarkDefinitions, withElementDefinitions
 
 -}
 
@@ -11,13 +11,13 @@ import RichText.Internal.Definitions
     exposing
         ( ContentType(..)
         , Element
+        , ElementDefinition(..)
         , ElementToHtml
         , HtmlToElement
         , HtmlToMark
         , Mark
         , MarkDefinition(..)
         , MarkToHtml
-        , NodeDefinition(..)
         )
 
 
@@ -29,7 +29,7 @@ applied.
     simpleSpec : Spec
     simpleSpec =
         emptySpec
-            |> withNodeDefinitions
+            |> withElementDefinitions
                 [ codeBlock
                 , crazyBlock
                 , paragraph
@@ -49,7 +49,7 @@ type Spec
 -}
 emptySpec : Spec
 emptySpec =
-    Spec { marks = [], nameToMark = Dict.empty, nodes = [], nameToNode = Dict.empty }
+    Spec { marks = [], nameToMark = Dict.empty, elements = [], nameToElement = Dict.empty }
 
 
 {-| list of `MarkDefinition` from a spec
@@ -61,13 +61,13 @@ markDefinitions spec =
             c.marks
 
 
-{-| list of `NodeDefinition` from a spec
+{-| list of `ElementDefinition` from a spec
 -}
-nodeDefinitions : Spec -> List NodeDefinition
-nodeDefinitions spec =
+elementDefinitions : Spec -> List ElementDefinition
+elementDefinitions spec =
     case spec of
         Spec c ->
-            c.nodes
+            c.elements
 
 
 {-| a spec with the given mark definitions
@@ -91,21 +91,21 @@ withMarkDefinitions marks spec =
                 }
 
 
-{-| a spec with the given node definitions
+{-| a spec with the given element definitions
 -}
-withNodeDefinitions : List NodeDefinition -> Spec -> Spec
-withNodeDefinitions nodes spec =
+withElementDefinitions : List ElementDefinition -> Spec -> Spec
+withElementDefinitions nodes spec =
     case spec of
         Spec c ->
             Spec
                 { c
-                    | nodes = nodes
-                    , nameToNode =
+                    | elements = nodes
+                    , nameToElement =
                         Dict.fromList <|
                             List.map
                                 (\x ->
                                     case x of
-                                        NodeDefinition m ->
+                                        ElementDefinition m ->
                                             ( m.name, x )
                                 )
                                 nodes
@@ -125,22 +125,22 @@ markDefinition name spec =
             Dict.get name c.nameToMark
 
 
-{-| Returns the node definition with the given name from a spec.
+{-| Returns the element definition with the given name from a spec.
 
-    nodeDefinition "paragraph" markdown
-    --> Just (paragraph node definition)
+    elementDefinition "paragraph" markdown
+    --> Just (paragraph element definition)
 
 -}
-nodeDefinition : String -> Spec -> Maybe NodeDefinition
-nodeDefinition name spec =
+elementDefinition : String -> Spec -> Maybe ElementDefinition
+elementDefinition name spec =
     case spec of
         Spec c ->
-            Dict.get name c.nameToNode
+            Dict.get name c.nameToElement
 
 
 type alias SpecContents =
     { marks : List MarkDefinition
     , nameToMark : Dict String MarkDefinition
-    , nodes : List NodeDefinition
-    , nameToNode : Dict String NodeDefinition
+    , elements : List ElementDefinition
+    , nameToElement : Dict String ElementDefinition
     }

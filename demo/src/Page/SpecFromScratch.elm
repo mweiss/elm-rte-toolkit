@@ -8,18 +8,18 @@ import Links exposing (rteToolkit)
 import RichText.Commands as Commands
 import RichText.Config.Command exposing (Transform, transform)
 import RichText.Config.Decorations exposing (addElementDecoration, emptyDecorations)
-import RichText.Config.NodeDefinition as NodeDefinition
+import RichText.Config.ElementDefinition as ElementDefinition
     exposing
-        ( ElementToHtml
+        ( ElementDefinition
+        , ElementToHtml
         , HtmlToElement
-        , NodeDefinition
         , defaultHtmlToElement
-        , nodeDefinition
+        , elementDefinition
         )
 import RichText.Config.Spec
     exposing
         ( emptySpec
-        , withNodeDefinitions
+        , withElementDefinitions
         )
 import RichText.Editor as Editor
     exposing
@@ -149,12 +149,12 @@ subscriptions model =
     Session.changes GotSession (Session.navKey model.session)
 
 
-todoList : NodeDefinition
+todoList : ElementDefinition
 todoList =
-    nodeDefinition
+    elementDefinition
         { name = "todo_list"
         , group = "root"
-        , contentType = NodeDefinition.blockNode [ "items" ]
+        , contentType = ElementDefinition.blockNode [ "items" ]
         , toHtmlNode = todoListToHtml
         , fromHtmlNode = htmlToTodoList
         }
@@ -172,12 +172,12 @@ htmlToTodoList =
     defaultHtmlToElement "ul"
 
 
-item : NodeDefinition
+item : ElementDefinition
 item =
-    nodeDefinition
+    elementDefinition
         { name = "todo_item"
         , group = "items"
-        , contentType = NodeDefinition.textBlock [ "inline" ]
+        , contentType = ElementDefinition.textBlock [ "inline" ]
         , toHtmlNode = itemToHtml
         , fromHtmlNode = htmlToItem
         }
@@ -341,4 +341,4 @@ updateTodoListItem path value state =
 
 todoSpec =
     emptySpec
-        |> withNodeDefinitions [ todoList, item, hardBreak ]
+        |> withElementDefinitions [ todoList, item, hardBreak ]

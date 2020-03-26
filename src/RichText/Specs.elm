@@ -19,6 +19,19 @@ module RichText.Specs exposing
 
 import Array exposing (Array)
 import RichText.Annotation exposing (selectable)
+import RichText.Config.ElementDefinition
+    exposing
+        ( ElementDefinition
+        , ElementToHtml
+        , HtmlToElement
+        , blockLeaf
+        , blockNode
+        , defaultElementToHtml
+        , defaultHtmlToElement
+        , elementDefinition
+        , inlineLeaf
+        , textBlock
+        )
 import RichText.Config.MarkDefinition
     exposing
         ( HtmlToMark
@@ -27,25 +40,12 @@ import RichText.Config.MarkDefinition
         , defaultHtmlToMark
         , markDefinition
         )
-import RichText.Config.NodeDefinition
-    exposing
-        ( ElementToHtml
-        , HtmlToElement
-        , NodeDefinition
-        , blockLeaf
-        , blockNode
-        , defaultElementToHtml
-        , defaultHtmlToElement
-        , inlineLeaf
-        , nodeDefinition
-        , textBlock
-        )
 import RichText.Config.Spec
     exposing
         ( Spec
         , emptySpec
+        , withElementDefinitions
         , withMarkDefinitions
-        , withNodeDefinitions
         )
 import RichText.Model.Attribute exposing (Attribute(..), findIntegerAttribute, findStringAttribute)
 import RichText.Model.Element as Element exposing (attributes, element)
@@ -54,9 +54,9 @@ import RichText.Model.Mark as Mark exposing (mark)
 import Set
 
 
-doc : NodeDefinition
+doc : ElementDefinition
 doc =
-    nodeDefinition
+    elementDefinition
         { name = "doc"
         , group = "root"
         , contentType = blockNode [ "block" ]
@@ -86,9 +86,9 @@ htmlToDoc definition node =
             Nothing
 
 
-paragraph : NodeDefinition
+paragraph : ElementDefinition
 paragraph =
-    nodeDefinition
+    elementDefinition
         { name = "paragraph"
         , group = "block"
         , contentType = textBlock [ "inline" ]
@@ -116,9 +116,9 @@ htmlToParagraph definition node =
             Nothing
 
 
-blockquote : NodeDefinition
+blockquote : ElementDefinition
 blockquote =
-    nodeDefinition
+    elementDefinition
         { name = "blockquote"
         , group = "block"
         , contentType = blockNode [ "block" ]
@@ -137,9 +137,9 @@ htmlToBlockquote =
     defaultHtmlToElement "blockquote"
 
 
-horizontalRule : NodeDefinition
+horizontalRule : ElementDefinition
 horizontalRule =
-    nodeDefinition
+    elementDefinition
         { name = "horizontal_rule"
         , group = "block"
         , contentType = blockLeaf
@@ -167,9 +167,9 @@ htmlToHorizontalRule def node =
             Nothing
 
 
-heading : NodeDefinition
+heading : ElementDefinition
 heading =
-    nodeDefinition
+    elementDefinition
         { name = "heading"
         , group = "block"
         , contentType = textBlock [ "inline" ]
@@ -230,9 +230,9 @@ htmlToHeading def node =
             Nothing
 
 
-codeBlock : NodeDefinition
+codeBlock : ElementDefinition
 codeBlock =
-    nodeDefinition
+    elementDefinition
         { name = "code_block"
         , group = "block"
         , contentType = textBlock [ "text", "hard_break" ]
@@ -272,9 +272,9 @@ htmlNodeToCodeBlock def node =
             Nothing
 
 
-image : NodeDefinition
+image : ElementDefinition
 image =
-    nodeDefinition
+    elementDefinition
         { name = "image"
         , group = "inline"
         , contentType = inlineLeaf
@@ -341,9 +341,9 @@ htmlNodeToImage def node =
             Nothing
 
 
-hardBreak : NodeDefinition
+hardBreak : ElementDefinition
 hardBreak =
-    nodeDefinition
+    elementDefinition
         { name = "hard_break"
         , group = "inline"
         , contentType = inlineLeaf
@@ -377,12 +377,12 @@ filterAttributesToHtml attrs =
 
 
 
---- List node definitions
+--- List element definitions
 
 
-orderedList : NodeDefinition
+orderedList : ElementDefinition
 orderedList =
-    nodeDefinition
+    elementDefinition
         { name = "ordered_list"
         , group = "block"
         , contentType = blockNode [ "list_item" ]
@@ -401,9 +401,9 @@ htmlToOrderedList =
     defaultHtmlToElement "ol"
 
 
-unorderedList : NodeDefinition
+unorderedList : ElementDefinition
 unorderedList =
-    nodeDefinition
+    elementDefinition
         { name = "unordered_list"
         , group = "block"
         , contentType = blockNode [ "list_item" ]
@@ -422,9 +422,9 @@ htmlToUnorderedList =
     defaultHtmlToElement "ul"
 
 
-listItem : NodeDefinition
+listItem : ElementDefinition
 listItem =
-    nodeDefinition
+    elementDefinition
         { name = "list_item"
         , group = "list_item"
         , contentType = blockNode [ "block" ]
@@ -557,7 +557,7 @@ htmlNodeToCode =
 markdown : Spec
 markdown =
     emptySpec
-        |> withNodeDefinitions
+        |> withElementDefinitions
             [ doc
             , paragraph
             , blockquote

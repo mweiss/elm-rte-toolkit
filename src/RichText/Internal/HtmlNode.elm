@@ -1,10 +1,10 @@
 module RichText.Internal.HtmlNode exposing (..)
 
 import Array exposing (Array)
+import RichText.Config.ElementDefinition as ElementDefinition
 import RichText.Config.MarkDefinition as MarkDefinition
-import RichText.Config.NodeDefinition as NodeDefinition
 import RichText.Config.Spec exposing (Spec)
-import RichText.Internal.Spec exposing (markDefinitionWithDefault, nodeDefinitionWithDefault)
+import RichText.Internal.Spec exposing (elementDefinitionWithDefault, markDefinitionWithDefault)
 import RichText.Model.Element exposing (Element)
 import RichText.Model.HtmlNode exposing (HtmlNode(..))
 import RichText.Model.InlineElement as InlineElement
@@ -44,10 +44,10 @@ markToHtmlNode spec mark children =
 elementToHtmlNode : Spec -> Element -> Array HtmlNode -> HtmlNode
 elementToHtmlNode spec parameters children =
     let
-        nodeDefinition =
-            nodeDefinitionWithDefault parameters spec
+        elementDefinition =
+            elementDefinitionWithDefault parameters spec
     in
-    NodeDefinition.toHtmlNode nodeDefinition parameters children
+    ElementDefinition.toHtmlNode elementDefinition parameters children
 
 
 {-| Renders element block nodes to their HtmlNode representation.

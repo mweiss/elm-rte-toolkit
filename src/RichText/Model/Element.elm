@@ -6,12 +6,12 @@ module RichText.Model.Element exposing (Element, element, annotations, attribute
 
 -}
 
-import RichText.Internal.Definitions as Internal exposing (NodeDefinition)
+import RichText.Internal.Definitions as Internal exposing (ElementDefinition)
 import RichText.Model.Attribute exposing (Attribute)
 import Set exposing (Set)
 
 
-{-| An `Element` represents the parameters of non-text nodes. It consists of a node definition,
+{-| An `Element` represents the parameters of non-text nodes. It consists of an element name,
 a list of attributes, and a set of annotations.
 -}
 type alias Element =
@@ -20,8 +20,8 @@ type alias Element =
 
 {-| Creates an element. The arguments are as follows:
 
-  - `node definition` is the `NodeDefinition` that defines this element. Note that even though
-    elements require a node definition, it's still safe to use (==) because the function arguments
+  - `element definition` is the `ElementDefinition` that defines this element. Note that even though
+    elements require an element definition, it's still safe to use (==) because the function arguments
     are not stored.
 
   - `attributes` are a list of attributes
@@ -32,7 +32,7 @@ type alias Element =
 ```
 
 -}
-element : NodeDefinition -> List Attribute -> Element
+element : ElementDefinition -> List Attribute -> Element
 element =
     Internal.element
 
