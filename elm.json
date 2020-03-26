@@ -5,6 +5,7 @@
     "license": "BSD-3-Clause",
     "version": "1.0.0",
     "exposed-modules": [
+        "RichText.Annotation",
         "RichText.Config.Command",
         "RichText.Config.Decorations",
         "RichText.Config.Keys",

@@ -20,10 +20,13 @@ like if something is selectable.
 
 # Helpers
 
-@docs add, addAtPath, fromNode, clear, findPathsWithAnnotation, remove, removeAtPath
+@docs add, addAtPath, fromNode, clear, remove, removeAtPath
 
 
 # Selection
+
+These methods are for marking selection, which is useful for keeping track of a user's selection
+when defining your own transforms.
 
 @docs annotateSelection, selectionFromAnnotations, clearSelectionAnnotations
 
@@ -70,6 +73,12 @@ lift =
     Constants.lift
 
 
+{-| Adds an annotation to the node at the given path. Returns an error if no node
+exists at that path.
+
+    Annotation.addAtPath "myAnnotation" path root
+
+-}
 addAtPath : String -> Path -> Block -> Result String Block
 addAtPath annotation path node =
     case nodeAt path node of
@@ -80,6 +89,12 @@ addAtPath annotation path node =
             replace path (add annotation n) node
 
 
+{-| Removes the given annotation to the node at the given path. Returns an error if no node
+exists at that path.
+
+    Annotation.removeAtPath "myAnnotation" path root
+
+-}
 removeAtPath : String -> Path -> Block -> Result String Block
 removeAtPath annotation path node =
     case nodeAt path node of
@@ -90,11 +105,23 @@ removeAtPath annotation path node =
             replace path (remove annotation n) node
 
 
+{-| Removes the given annotation from the node if it exists.
+
+    remove Annotation.selectable (Block horizontal_rule)
+    --> Returns (Block horizontal_rule) but with all the lift annotation removed.
+
+-}
 remove : String -> Node -> Node
 remove =
     toggle Set.remove
 
 
+{-| Adds the given annotation to the node.
+
+    add Annotation.selectable (Block horizontal_rule)
+    --> Returns (Block horizontal_rule) but with all the lift annotation added.
+
+-}
 add : String -> Node -> Node
 add =
     toggle Set.insert
@@ -136,6 +163,12 @@ toggle func annotation node =
                         Text <| (tl |> Text.withAnnotations (func annotation <| Text.annotations tl))
 
 
+{-| Removes the given annotation this node and its children.
+
+    clear Annotation.lift root
+    --> Returns `root` but with all the lift annotations removed.
+
+-}
 clear : String -> Block -> Block
 clear annotation root =
     case map (remove annotation) (Block root) of
@@ -146,6 +179,12 @@ clear annotation root =
             root
 
 
+{-| Helper method to extract annotations from a node.
+
+    fromNode node
+    --> Set ["__selectable__"]
+
+-}
 fromNode : Node -> Set String
 fromNode node =
     case node of
@@ -175,6 +214,13 @@ findPathsWithAnnotation annotation node =
         (Block node)
 
 
+{-| Adds the selection annotation to the paths in the selection if they exist. This is useful
+when defining your own transforms to keep track of which nodes are selected.
+
+    markedRoot =
+        annotateSelection normalizedSelection (State.root editorState)
+
+-}
 annotateSelection : Selection -> Block -> Block
 annotateSelection selection_ node =
     addSelectionAnnotationAtPath (focusNode selection_) <| addSelectionAnnotationAtPath (anchorNode selection_) node
@@ -185,11 +231,24 @@ addSelectionAnnotationAtPath nodePath node =
     Result.withDefault node (addAtPath selection nodePath node)
 
 
+{-| Clears the selection annotation from the editor node. The selection annotation should be
+transient, so it's important to clear the annotation once you're finished with it.
+
+    clearSelectionAnnotations root
+    --> Returns root but with the selection annotation removed
+
+-}
 clearSelectionAnnotations : Block -> Block
 clearSelectionAnnotations =
     clear selection
 
 
+{-| Derives the selection from selection annotations.
+
+    selectionFromAnnotations root 0 0
+    --> Just { anchorNode=[0], anchorOffset=0, focusNode=[1,2], focusOffset=0 }
+
+-}
 selectionFromAnnotations : Block -> Int -> Int -> Maybe Selection
 selectionFromAnnotations node anchorOffset focusOffset =
     case findNodeRangeFromSelectionAnnotations node of
