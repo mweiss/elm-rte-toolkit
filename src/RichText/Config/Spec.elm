@@ -7,7 +7,7 @@ module RichText.Config.Spec exposing (Spec, emptySpec, markDefinitions, markDefi
 -}
 
 import Dict exposing (Dict)
-import RichText.Internal.Model.Definitions
+import RichText.Internal.Definitions
     exposing
         ( ContentType(..)
         , Element

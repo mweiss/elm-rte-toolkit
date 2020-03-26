@@ -20,7 +20,7 @@ import RichText.Config.Command as Command exposing (CommandMap, inputEvent, key,
 import RichText.Config.Decorations exposing (Decorations, addElementDecoration, emptyDecorations, selectableDecoration)
 import RichText.Config.Keys exposing (enter, return)
 import RichText.Config.Spec exposing (Spec)
-import RichText.Editor as Editor exposing (Editor, apply, applyList, init, state)
+import RichText.Editor as Editor exposing (Config, Editor, apply, applyList, state)
 import RichText.List exposing (ListType, defaultListDefinition)
 import RichText.Model.Attribute exposing (Attribute(..))
 import RichText.Model.Element as Element exposing (element)
@@ -338,11 +338,15 @@ handleToggleStyle style spec model =
     }
 
 
-update : CommandMap -> Spec -> Msg -> Model -> ( Model, Cmd Msg )
-update commandMap spec msg model =
+update : Config msg -> Msg -> Model -> ( Model, Cmd Msg )
+update cfg msg model =
+    let
+        spec =
+            Editor.spec cfg
+    in
     case msg of
         InternalMsg internalEditorMsg ->
-            ( { model | editor = Editor.update commandMap spec internalEditorMsg model.editor }, Cmd.none )
+            ( { model | editor = Editor.update cfg internalEditorMsg model.editor }, Cmd.none )
 
         ToggleStyle style ->
             ( handleToggleStyle style spec model, Cmd.none )
@@ -551,11 +555,11 @@ handleUpdateLinkHref href model =
 ---- VIEW ----
 
 
-view : Decorations Msg -> CommandMap -> Spec -> Model -> Html Msg
-view decorations_ commandMap spec model =
+view : Config Msg -> Model -> Html Msg
+view cfg model =
     div [ Html.Attributes.class "editor-container" ]
         [ Controls.editorControlPanel model.styles model.editor
-        , Editor.view InternalMsg decorations_ commandMap spec model.editor
+        , Editor.view cfg model.editor
         , Controls.renderInsertLinkModal model.insertLinkModal
         , Controls.renderInsertImageModal model.insertImageModal
         ]

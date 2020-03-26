@@ -25,7 +25,7 @@ node can have.
 -}
 
 import Array exposing (Array)
-import RichText.Internal.Model.Definitions as Internal exposing (ContentType(..))
+import RichText.Internal.Definitions as Internal exposing (ContentType(..))
 import RichText.Model.Attribute exposing (Attribute(..))
 import RichText.Model.Element exposing (Element)
 import RichText.Model.HtmlNode exposing (HtmlNode(..))
@@ -74,7 +74,7 @@ type alias ElementToHtml =
         case node of
             ElementNode name _ children ->
                 if name == "p" then
-                    Just <| ( element definition [] Set.empty, children )
+                    Just <| ( element definition [], children )
 
                 else
                     Nothing

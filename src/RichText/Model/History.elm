@@ -6,7 +6,7 @@ module RichText.Model.History exposing (History, empty)
 
 -}
 
-import RichText.Internal.Model.History as Internal
+import RichText.Internal.History as Internal
 
 
 {-| `History` contains the undo deque and redo stack related to undo history.

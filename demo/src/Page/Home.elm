@@ -1,9 +1,11 @@
 module Page.Home exposing (..)
 
 import Array
+import Controls exposing (EditorMsg(..))
 import Editor
 import Html exposing (Html, h1, text)
 import Html.Attributes exposing (class)
+import RichText.Editor as RTE
 import RichText.Model.Element exposing (element)
 import RichText.Model.Mark exposing (mark)
 import RichText.Model.Node
@@ -19,7 +21,6 @@ import RichText.Model.State as State exposing (State)
 import RichText.Model.Text as Text
 import RichText.Specs as Specs exposing (code, doc, paragraph)
 import Session exposing (Session)
-import Set
 
 
 type alias Model =
@@ -33,6 +34,15 @@ type Msg
     | GotSession Session
 
 
+config =
+    RTE.config
+        { decorations = Editor.decorations
+        , commandMap = Editor.commandBindings
+        , spec = Specs.markdown
+        , toMsg = InternalMsg
+        }
+
+
 dummyView : { title : String, content : List (Html msg) }
 dummyView =
     { title = "Dummy Home", content = [ text "Dummy Home" ] }
@@ -44,7 +54,7 @@ view model =
     , content =
         [ h1 [ class "main-header" ]
             [ text "Elm package for building rich text editors" ]
-        , Html.map EditorMsg (Editor.view Editor.decorations Editor.commandBindings Specs.markdown model.editor)
+        , Html.map EditorMsg (Editor.view config model.editor)
         ]
     }
 
@@ -60,7 +70,7 @@ update msg model =
         EditorMsg editorMsg ->
             let
                 ( e, _ ) =
-                    Editor.update Editor.commandBindings Specs.markdown editorMsg model.editor
+                    Editor.update config editorMsg model.editor
             in
             ( { model | editor = e }, Cmd.none )
 

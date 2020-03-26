@@ -1,10 +1,12 @@
 module Page.Basic exposing (..)
 
+import Controls exposing (EditorMsg(..))
 import Editor
 import Html exposing (Html, a, h1, p, text)
 import Html.Attributes exposing (href, title)
 import Links exposing (rteToolkit)
-import RichText.Specs as MarkdownSpec
+import RichText.Editor as RTE
+import RichText.Specs as Specs
 import Session exposing (Session)
 
 
@@ -19,6 +21,15 @@ type Msg
     | GotSession Session
 
 
+config =
+    RTE.config
+        { decorations = Editor.decorations
+        , commandMap = Editor.commandBindings
+        , spec = Specs.markdown
+        , toMsg = InternalMsg
+        }
+
+
 view : Model -> { title : String, content : List (Html Msg) }
 view model =
     { title = "Basic"
@@ -31,7 +42,7 @@ view model =
                     In this example, we use the default spec to create an editor which supports
                     things like headers, lists, as well as links and images."""
             ]
-        , Html.map EditorMsg (Editor.view Editor.decorations Editor.commandBindings MarkdownSpec.markdown model.editor)
+        , Html.map EditorMsg (Editor.view config model.editor)
         , p []
             [ text "You can see the code for this example in the "
             , a
@@ -59,7 +70,7 @@ update msg model =
         EditorMsg editorMsg ->
             let
                 ( e, _ ) =
-                    Editor.update Editor.commandBindings MarkdownSpec.markdown editorMsg model.editor
+                    Editor.update config editorMsg model.editor
             in
             ( { model | editor = e }, Cmd.none )
 

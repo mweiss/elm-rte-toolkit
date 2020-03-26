@@ -1,4 +1,4 @@
-module RichText.Internal.Model.Definitions exposing (..)
+module RichText.Internal.Definitions exposing (..)
 
 {-| Internal module for various entities related to definition, elements and nodes to keep records
 private and avoid dependency loops.

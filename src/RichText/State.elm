@@ -5,7 +5,7 @@ import List.Extra
 import RichText.Annotation exposing (annotateSelection, clearSelectionAnnotations, selection)
 import RichText.Config.NodeDefinition as NodeDefinition
 import RichText.Config.Spec exposing (Spec)
-import RichText.Internal.Model.Definitions exposing (ContentType(..), toStringContentType)
+import RichText.Internal.Definitions exposing (ContentType(..), toStringContentType)
 import RichText.Internal.Spec exposing (nodeDefinitionWithDefault)
 import RichText.Model.InlineElement as InlineElement
 import RichText.Model.Node as Node

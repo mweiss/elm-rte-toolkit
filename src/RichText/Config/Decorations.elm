@@ -26,7 +26,7 @@ import Html.Events
 import RichText.Config.MarkDefinition as MarkDefinition exposing (MarkDefinition)
 import RichText.Config.NodeDefinition as NodeDefinition exposing (NodeDefinition)
 import RichText.Internal.Constants exposing (selection)
-import RichText.Internal.Model.Editor exposing (Message(..), Tagger)
+import RichText.Internal.Editor exposing (Message(..), Tagger)
 import RichText.Model.Element exposing (Element, annotations)
 import RichText.Model.Mark exposing (Mark)
 import RichText.Model.Node exposing (Path)

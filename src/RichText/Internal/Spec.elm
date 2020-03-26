@@ -7,7 +7,7 @@ import RichText.Config.MarkDefinition as MarkDefinition exposing (MarkDefinition
 import RichText.Config.NodeDefinition as NodeDefinition exposing (NodeDefinition, blockNode, defaultNodeDefinition)
 import RichText.Config.Spec exposing (Spec, markDefinition, markDefinitions, nodeDefinition, nodeDefinitions)
 import RichText.Internal.Constants exposing (zeroWidthSpace)
-import RichText.Internal.Model.Definitions exposing (ContentType(..), nameFromElement, nameFromMark)
+import RichText.Internal.Definitions exposing (ContentType(..), nameFromElement, nameFromMark)
 import RichText.Model.Element exposing (Element)
 import RichText.Model.HtmlNode exposing (HtmlNode(..))
 import RichText.Model.InlineElement exposing (inlineElement)

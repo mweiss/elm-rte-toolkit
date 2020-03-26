@@ -6,7 +6,7 @@ module RichText.Model.Element exposing (Element, element, annotations, attribute
 
 -}
 
-import RichText.Internal.Model.Definitions as Internal exposing (NodeDefinition)
+import RichText.Internal.Definitions as Internal exposing (NodeDefinition)
 import RichText.Model.Attribute exposing (Attribute)
 import Set exposing (Set)
 
@@ -27,7 +27,7 @@ type alias Element =
   - `attributes` are a list of attributes
 
 ```
-    element header [IntegerAttribute "level" 1] Set.empty
+    element header [IntegerAttribute "level" 1]
     --> creates a header (h1) element
 ```
 
@@ -50,7 +50,7 @@ annotations =
 
 {-| Attributes from an element
 
-    attributes (element image [StringAttribute "src" "logo.svg"] Set.empty)
+    attributes (element image [StringAttribute "src" "logo.svg"])
     --> [StringAttribute "src" "logo.svg"]
 
 -}
@@ -61,7 +61,7 @@ attributes =
 
 {-| Name from an element
 
-    name (element image [StringAttribute "src" "logo.svg"] Set.empty)
+    name (element image [StringAttribute "src" "logo.svg"])
     --> "image"
 
 -}

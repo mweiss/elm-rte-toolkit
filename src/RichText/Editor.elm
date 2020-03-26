@@ -1,12 +1,17 @@
 module RichText.Editor exposing
-    ( Editor
+    ( Config
+    , Editor
     , Message
     , apply
     , applyList
     , applyNoForceSelection
+    , commandMap
+    , config
+    , decorations
     , history
     , init
     , shortKey
+    , spec
     , state
     , update
     , view
@@ -36,14 +41,11 @@ import RichText.Internal.DomNode
         , extractRootEditorBlockNode
         , findTextChanges
         )
-import RichText.Internal.HtmlNode exposing (childNodesPlaceholder, editorBlockNodeToHtmlNode)
-import RichText.Internal.KeyDown as KeyDown
-import RichText.Internal.Model.Editor as InternalEditor
+import RichText.Internal.Editor as InternalEditor
     exposing
         ( Editor
         , Message(..)
         , Tagger
-        , applyNamedCommandList
         , bufferedEditorState
         , completeRerenderCount
         , forceCompleteRerender
@@ -59,7 +61,9 @@ import RichText.Internal.Model.Editor as InternalEditor
         , withShortKey
         , withState
         )
-import RichText.Internal.Model.Event exposing (EditorChange, InitEvent, PasteEvent, TextChange)
+import RichText.Internal.Event exposing (EditorChange, InitEvent, PasteEvent, TextChange)
+import RichText.Internal.HtmlNode exposing (childNodesPlaceholder, editorBlockNodeToHtmlNode)
+import RichText.Internal.KeyDown as KeyDown
 import RichText.Internal.Paste as Paste
 import RichText.Internal.Path as NodePath
 import RichText.Internal.Selection exposing (domToEditor, editorToDom)
@@ -101,8 +105,49 @@ import RichText.Model.Text as Text
 import RichText.Node exposing (Node(..), nodeAt)
 
 
+type Config msg
+    = Config
+        { decorations : Decorations msg
+        , spec : Spec
+        , commandMap : CommandMap
+        , toMsg : Message -> msg
+        }
+
+
+config :
+    { decorations : Decorations msg
+    , spec : Spec
+    , commandMap : CommandMap
+    , toMsg : Message -> msg
+    }
+    -> Config msg
+config cfg =
+    Config cfg
+
+
+decorations : Config msg -> Decorations msg
+decorations cfg =
+    case cfg of
+        Config c ->
+            c.decorations
+
+
+spec : Config msg -> Spec
+spec cfg =
+    case cfg of
+        Config c ->
+            c.spec
+
+
+commandMap : Config msg -> CommandMap
+commandMap cfg =
+    case cfg of
+        Config c ->
+            c.commandMap
+
+
 updateSelection : Maybe Selection -> Bool -> Spec -> Editor -> Editor
-updateSelection maybeSelection isDomPath spec editor_ =
+updateSelection maybeSelection isDomPath spec_ editor_ =
     let
         editorState =
             state editor_
@@ -115,7 +160,7 @@ updateSelection maybeSelection isDomPath spec editor_ =
             let
                 translatedSelection =
                     if isDomPath then
-                        domToEditor spec (State.root editorState) selection
+                        domToEditor spec_ (State.root editorState) selection
 
                     else
                         Just selection
@@ -123,38 +168,47 @@ updateSelection maybeSelection isDomPath spec editor_ =
             editor_ |> withState (editorState |> withSelection translatedSelection)
 
 
-update : CommandMap -> Spec -> Message -> Editor -> Editor
-update commandMap spec msg editor_ =
-    case msg of
-        ChangeEvent change ->
-            updateChangeEvent change spec editor_
+update : Config msg -> Message -> Editor -> Editor
+update cfg msg editor_ =
+    case cfg of
+        Config c ->
+            let
+                spec_ =
+                    c.spec
 
-        SelectionEvent selection isDomPath ->
-            updateSelection selection isDomPath spec editor_
+                commandMap_ =
+                    c.commandMap
+            in
+            case msg of
+                ChangeEvent change ->
+                    updateChangeEvent change spec_ editor_
 
-        BeforeInputEvent inputEvent ->
-            BeforeInput.handleBeforeInput inputEvent commandMap spec editor_
+                SelectionEvent selection isDomPath ->
+                    updateSelection selection isDomPath spec_ editor_
 
-        CompositionStart ->
-            handleCompositionStart editor_
+                BeforeInputEvent inputEvent ->
+                    BeforeInput.handleBeforeInput inputEvent commandMap_ spec_ editor_
 
-        CompositionEnd ->
-            handleCompositionEnd editor_
+                CompositionStart ->
+                    handleCompositionStart editor_
 
-        KeyDownEvent e ->
-            KeyDown.handleKeyDown e commandMap spec editor_
+                CompositionEnd ->
+                    handleCompositionEnd editor_
 
-        PasteWithDataEvent e ->
-            Paste.handlePaste e spec editor_
+                KeyDownEvent e ->
+                    KeyDown.handleKeyDown e commandMap_ spec_ editor_
 
-        CutEvent ->
-            handleCut spec editor_
+                PasteWithDataEvent e ->
+                    Paste.handlePaste e spec_ editor_
 
-        Init e ->
-            handleInitEvent e editor_
+                CutEvent ->
+                    handleCut spec_ editor_
 
-        ReplaceWith e ->
-            e
+                Init e ->
+                    handleInitEvent e editor_
+
+                ReplaceWith e ->
+                    e
 
 
 handleInitEvent : InitEvent -> Editor -> Editor
@@ -163,8 +217,8 @@ handleInitEvent initEvent editor_ =
 
 
 handleCut : Spec -> Editor -> Editor
-handleCut spec editor_ =
-    case applyList [ ( "removeRangeSelection", transform removeRangeSelection ) ] spec editor_ of
+handleCut spec_ editor_ =
+    case applyList [ ( "removeRangeSelection", transform removeRangeSelection ) ] spec_ editor_ of
         Err _ ->
             editor_
 
@@ -173,7 +227,7 @@ handleCut spec editor_ =
 
 
 textChangesDomToEditor : Spec -> Block -> List TextChange -> Maybe (List TextChange)
-textChangesDomToEditor spec editorNode changes =
+textChangesDomToEditor spec_ editorNode changes =
     List.foldl
         (\( p, text ) maybeAgg ->
             case maybeAgg of
@@ -181,7 +235,7 @@ textChangesDomToEditor spec editorNode changes =
                     Nothing
 
                 Just agg ->
-                    case NodePath.domToEditor spec editorNode p of
+                    case NodePath.domToEditor spec_ editorNode p of
                         Nothing ->
                             Nothing
 
@@ -193,10 +247,10 @@ textChangesDomToEditor spec editorNode changes =
 
 
 deriveTextChanges : Spec -> Block -> DomNode -> Result String (List TextChange)
-deriveTextChanges spec editorNode domNode =
+deriveTextChanges spec_ editorNode domNode =
     let
         htmlNode =
-            editorBlockNodeToHtmlNode spec editorNode
+            editorBlockNodeToHtmlNode spec_ editorNode
     in
     findTextChanges htmlNode domNode
 
@@ -220,7 +274,7 @@ applyForceFunctionOnEditor rerenderFunc editor_ =
 
 
 updateChangeEvent : EditorChange -> Spec -> Editor -> Editor
-updateChangeEvent change spec editor_ =
+updateChangeEvent change spec_ editor_ =
     case change.characterDataMutations of
         Nothing ->
             case D.decodeValue decodeDomNode change.root of
@@ -228,14 +282,14 @@ updateChangeEvent change spec editor_ =
                     editor_
 
                 Ok root ->
-                    updateChangeEventFullScan change.timestamp root change.selection spec editor_
+                    updateChangeEventFullScan change.timestamp root change.selection spec_ editor_
 
         Just characterDataMutations ->
             updateChangeEventTextChanges
                 change.timestamp
                 (sanitizeMutations characterDataMutations)
                 change.selection
-                spec
+                spec_
                 editor_
 
 
@@ -275,8 +329,8 @@ differentText root ( path, t ) =
 
 
 updateChangeEventTextChanges : Int -> List TextChange -> Maybe Selection -> Spec -> Editor -> Editor
-updateChangeEventTextChanges timestamp textChanges selection spec editor_ =
-    case textChangesDomToEditor spec (State.root (state editor_)) textChanges of
+updateChangeEventTextChanges timestamp textChanges selection spec_ editor_ =
+    case textChangesDomToEditor spec_ (State.root (state editor_)) textChanges of
         Nothing ->
             applyForceFunctionOnEditor forceRerender editor_
 
@@ -300,7 +354,7 @@ updateChangeEventTextChanges timestamp textChanges selection spec editor_ =
                         let
                             newEditorState =
                                 editorState
-                                    |> withSelection (selection |> Maybe.andThen (domToEditor spec (State.root editorState)))
+                                    |> withSelection (selection |> Maybe.andThen (domToEditor spec_ (State.root editorState)))
                                     |> withRoot replacedEditorNodes
                         in
                         if isComposing editor_ then
@@ -316,7 +370,7 @@ updateChangeEventTextChanges timestamp textChanges selection spec editor_ =
 
 
 updateChangeEventFullScan : Int -> DomNode -> Maybe Selection -> Spec -> Editor -> Editor
-updateChangeEventFullScan timestamp domRoot selection spec editor_ =
+updateChangeEventFullScan timestamp domRoot selection spec_ editor_ =
     case extractRootEditorBlockNode domRoot of
         Nothing ->
             applyForceFunctionOnEditor forceCompleteRerender editor_
@@ -326,9 +380,9 @@ updateChangeEventFullScan timestamp domRoot selection spec editor_ =
                 applyForceFunctionOnEditor forceCompleteRerender editor_
 
             else
-                case deriveTextChanges spec (State.root (state editor_)) editorRootDomNode of
+                case deriveTextChanges spec_ (State.root (state editor_)) editorRootDomNode of
                     Ok changes ->
-                        updateChangeEventTextChanges timestamp changes selection spec editor_
+                        updateChangeEventTextChanges timestamp changes selection spec_ editor_
 
                     Err _ ->
                         applyForceFunctionOnEditor forceRerender editor_
@@ -527,13 +581,13 @@ selectionAttribute maybeSelection renderCount selectionCount =
 
 
 onBeforeInput : Tagger msg -> CommandMap -> Spec -> Editor -> Html.Attribute msg
-onBeforeInput tagger commandMap spec editor_ =
-    Html.Events.preventDefaultOn "beforeinput" (BeforeInput.preventDefaultOnBeforeInputDecoder tagger commandMap spec editor_)
+onBeforeInput tagger commandMap_ spec_ editor_ =
+    Html.Events.preventDefaultOn "beforeinput" (BeforeInput.preventDefaultOnBeforeInputDecoder tagger commandMap_ spec_ editor_)
 
 
 onKeyDown : Tagger msg -> CommandMap -> Spec -> Editor -> Html.Attribute msg
-onKeyDown tagger commandMap spec editor_ =
-    Html.Events.preventDefaultOn "keydown" (KeyDown.preventDefaultOnKeyDownDecoder tagger commandMap spec editor_)
+onKeyDown tagger commandMap_ spec_ editor_ =
+    Html.Events.preventDefaultOn "keydown" (KeyDown.preventDefaultOnKeyDownDecoder tagger commandMap_ spec_ editor_)
 
 
 handleCompositionStart : Editor -> Editor
@@ -596,61 +650,75 @@ markCaretSelectionOnEditorNodes editorState =
 
 
 editorToDomSelection : Spec -> Editor -> Maybe Selection
-editorToDomSelection spec editor_ =
+editorToDomSelection spec_ editor_ =
     case State.selection (state editor_) of
         Nothing ->
             Nothing
 
         Just selection ->
-            editorToDom spec (State.root (state editor_)) selection
+            editorToDom spec_ (State.root (state editor_)) selection
 
 
-view : Tagger msg -> Decorations msg -> CommandMap -> Spec -> Editor -> Html msg
-view tagger decorations commandMap spec editor_ =
-    let
-        st =
-            state editor_
-    in
-    Html.Keyed.node "elm-editor"
-        [ onEditorChange tagger
-        , onEditorSelectionChange tagger
-        , onCompositionStart tagger
-        , onCompositionEnd tagger
-        , onPasteWithData tagger
-        , onCut tagger
-        , onInit tagger
-        ]
-        [ ( String.fromInt (completeRerenderCount editor_)
-          , Html.Keyed.node "div"
-                [ Html.Attributes.contenteditable True
-                , Html.Attributes.class "rte-main"
-                , Html.Attributes.attribute "data-rte-main" "true"
-                , Html.Attributes.classList [ ( "rte-hide-caret", shouldHideCaret st ) ]
-                , onBeforeInput tagger commandMap spec editor_
-                , onKeyDown tagger commandMap spec editor_
+view : Config msg -> Editor -> Html msg
+view cfg editor_ =
+    case cfg of
+        Config c ->
+            let
+                tagger =
+                    c.toMsg
+
+                commandMap_ =
+                    c.commandMap
+
+                decorations_ =
+                    c.decorations
+
+                spec_ =
+                    c.spec
+
+                st =
+                    state editor_
+            in
+            Html.Keyed.node "elm-editor"
+                [ onEditorChange tagger
+                , onEditorSelectionChange tagger
+                , onCompositionStart tagger
+                , onCompositionEnd tagger
+                , onPasteWithData tagger
+                , onCut tagger
+                , onInit tagger
                 ]
-                [ ( String.fromInt (renderCount editor_)
-                  , viewEditorBlockNode
-                        spec
-                        decorations
+                [ ( String.fromInt (completeRerenderCount editor_)
+                  , Html.Keyed.node "div"
+                        [ Html.Attributes.contenteditable True
+                        , Html.Attributes.class "rte-main"
+                        , Html.Attributes.attribute "data-rte-main" "true"
+                        , Html.Attributes.classList [ ( "rte-hide-caret", shouldHideCaret st ) ]
+                        , onBeforeInput tagger commandMap_ spec_ editor_
+                        , onKeyDown tagger commandMap_ spec_ editor_
+                        ]
+                        [ ( String.fromInt (renderCount editor_)
+                          , viewEditorBlockNode
+                                spec_
+                                decorations_
+                                []
+                                (markCaretSelectionOnEditorNodes st)
+                          )
+                        ]
+                  )
+                , ( "selectionstate"
+                  , Html.node "selection-state"
+                        [ Html.Attributes.attribute
+                            "selection"
+                            (selectionAttribute
+                                (editorToDomSelection spec_ editor_)
+                                (renderCount editor_)
+                                (selectionCount editor_)
+                            )
+                        ]
                         []
-                        (markCaretSelectionOnEditorNodes st)
                   )
                 ]
-          )
-        , ( "selectionstate"
-          , Html.node "selection-state"
-                [ Html.Attributes.attribute
-                    "selection"
-                    (selectionAttribute
-                        (editorToDomSelection spec editor_)
-                        (renderCount editor_)
-                        (selectionCount editor_)
-                    )
-                ]
-                []
-          )
-        ]
 
 
 viewHtmlNode : HtmlNode -> List (Path -> List (Html.Attribute msg)) -> Array (Html msg) -> Path -> Html msg
@@ -679,29 +747,29 @@ viewHtmlNode node decorators vdomChildren backwardsRelativePath =
 
 
 viewMark : Spec -> Decorations msg -> Path -> Mark -> Array (Html msg) -> Html msg
-viewMark spec decorations backwardsNodePath mark children =
+viewMark spec_ decorations_ backwardsNodePath mark children =
     let
         mDecorators =
             Maybe.withDefault []
                 (Dict.get
                     (Mark.name mark)
-                    (markDecorators decorations)
+                    (markDecorators decorations_)
                 )
 
         decorators =
             List.map (\d -> d (List.reverse backwardsNodePath) mark) mDecorators
 
         node =
-            MarkDefinition.toHtmlNode (markDefinitionWithDefault mark spec) mark childNodesPlaceholder
+            MarkDefinition.toHtmlNode (markDefinitionWithDefault mark spec_) mark childNodesPlaceholder
     in
     viewHtmlNode node decorators children []
 
 
 viewElement : Spec -> Decorations msg -> Element -> Path -> Array (Html msg) -> Html msg
-viewElement spec decorations elementParameters backwardsNodePath children =
+viewElement spec_ decorations_ elementParameters backwardsNodePath children =
     let
         definition =
-            nodeDefinitionWithDefault elementParameters spec
+            nodeDefinitionWithDefault elementParameters spec_
 
         node =
             NodeDefinition.toHtmlNode definition elementParameters childNodesPlaceholder
@@ -710,7 +778,7 @@ viewElement spec decorations elementParameters backwardsNodePath children =
             Maybe.withDefault []
                 (Dict.get
                     (Element.name elementParameters)
-                    (elementDecorators decorations)
+                    (elementDecorators decorations_)
                 )
 
         decorators =
@@ -723,12 +791,12 @@ viewElement spec decorations elementParameters backwardsNodePath children =
 
 
 viewInlineLeafTree : Spec -> Decorations msg -> Path -> Array Inline -> InlineTree -> Html msg
-viewInlineLeafTree spec decorations backwardsPath inlineLeafArray inlineLeafTree =
+viewInlineLeafTree spec_ decorations_ backwardsPath inlineLeafArray inlineLeafTree =
     case inlineLeafTree of
         LeafNode i ->
             case Array.get i inlineLeafArray of
                 Just l ->
-                    viewInlineLeaf spec decorations (i :: backwardsPath) l
+                    viewInlineLeaf spec_ decorations_ (i :: backwardsPath) l
 
                 Nothing ->
                     -- Not the best thing, but what else can we do if we have an invalid tree?
@@ -736,22 +804,22 @@ viewInlineLeafTree spec decorations backwardsPath inlineLeafArray inlineLeafTree
                     Html.div [ Html.Attributes.class "rte-error" ] [ Html.text "Invalid leaf tree." ]
 
         MarkNode n ->
-            viewMark spec decorations backwardsPath n.mark <|
-                Array.map (viewInlineLeafTree spec decorations backwardsPath inlineLeafArray) n.children
+            viewMark spec_ decorations_ backwardsPath n.mark <|
+                Array.map (viewInlineLeafTree spec_ decorations_ backwardsPath inlineLeafArray) n.children
 
 
 viewEditorBlockNode : Spec -> Decorations msg -> Path -> Block -> Html msg
-viewEditorBlockNode spec decorations backwardsPath node =
-    viewElement spec
-        decorations
+viewEditorBlockNode spec_ decorations_ backwardsPath node =
+    viewElement spec_
+        decorations_
         (element node)
         backwardsPath
         (case childNodes node of
             BlockChildren l ->
-                Array.indexedMap (\i n -> viewEditorBlockNode spec decorations (i :: backwardsPath) n) (toBlockArray l)
+                Array.indexedMap (\i n -> viewEditorBlockNode spec_ decorations_ (i :: backwardsPath) n) (toBlockArray l)
 
             InlineChildren l ->
-                Array.map (\n -> viewInlineLeafTree spec decorations backwardsPath (toInlineArray l) n) (toInlineTree l)
+                Array.map (\n -> viewInlineLeafTree spec_ decorations_ backwardsPath (toInlineArray l) n) (toInlineTree l)
 
             Leaf ->
                 Array.empty
@@ -770,10 +838,10 @@ viewText text =
 
 
 viewInlineLeaf : Spec -> Decorations msg -> Path -> Inline -> Html msg
-viewInlineLeaf spec decorations backwardsPath leaf =
+viewInlineLeaf spec_ decorations_ backwardsPath leaf =
     case leaf of
         InlineElement l ->
-            viewElement spec decorations (InlineElement.element l) backwardsPath Array.empty
+            viewElement spec_ decorations_ (InlineElement.element l) backwardsPath Array.empty
 
         Text v ->
             viewText (Text.text v)

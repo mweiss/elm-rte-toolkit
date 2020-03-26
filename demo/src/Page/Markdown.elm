@@ -1,7 +1,7 @@
 module Page.Markdown exposing (..)
 
 import Array exposing (Array)
-import Controls exposing (Style(..))
+import Controls exposing (EditorMsg(..), Style(..))
 import Editor
 import Html exposing (Html, a, div, h1, p, text, textarea)
 import Html.Attributes exposing (href, title)
@@ -11,7 +11,7 @@ import Markdown.Block as M
 import Markdown.Config as M
 import Markdown.Inline as MI
 import RichText.Config.Spec exposing (Spec, withMarkDefinitions)
-import RichText.Editor exposing (state)
+import RichText.Editor as RTE exposing (state)
 import RichText.Model.Attribute
     exposing
         ( Attribute(..)
@@ -90,6 +90,15 @@ type alias Model =
     }
 
 
+config =
+    RTE.config
+        { decorations = Editor.decorations
+        , commandMap = Editor.commandBindings
+        , spec = customMarkdownSpec
+        , toMsg = InternalMsg
+        }
+
+
 customMarkdownSpec : Spec
 customMarkdownSpec =
     MarkdownSpec.markdown
@@ -133,7 +142,7 @@ markdownOrEditorView model =
     let
         editor =
             if model.editorType == WYSIWYG then
-                Html.map EditorMsg (Editor.view Editor.decorations Editor.commandBindings customMarkdownSpec model.editor)
+                Html.map EditorMsg (Editor.view config model.editor)
 
             else
                 markdownTextArea model
@@ -218,7 +227,7 @@ update msg model =
         EditorMsg editorMsg ->
             let
                 ( e, _ ) =
-                    Editor.update Editor.commandBindings customMarkdownSpec editorMsg model.editor
+                    Editor.update config editorMsg model.editor
             in
             ( { model | editor = e }, Cmd.none )
 

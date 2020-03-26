@@ -1,4 +1,4 @@
-module RichText.Internal.Model.Editor exposing (..)
+module RichText.Internal.Editor exposing (..)
 
 {-| This is the internal module contains the types used to model the editor,
 as well as the messages used to update the editor's internal state.
@@ -8,8 +8,8 @@ import BoundedDeque exposing (BoundedDeque)
 import RichText.Config.Command exposing (Command(..), InternalAction(..), NamedCommand, NamedCommandList)
 import RichText.Config.Keys exposing (meta)
 import RichText.Config.Spec exposing (Spec)
-import RichText.Internal.Model.Event exposing (EditorChange, InitEvent, InputEvent, KeyboardEvent, PasteEvent)
-import RichText.Internal.Model.History exposing (History, contents, empty, fromContents)
+import RichText.Internal.Event exposing (EditorChange, InitEvent, InputEvent, KeyboardEvent, PasteEvent)
+import RichText.Internal.History exposing (History, contents, empty, fromContents)
 import RichText.Model.Selection exposing (Selection)
 import RichText.Model.State exposing (State)
 import RichText.State exposing (reduceEditorState, validate)

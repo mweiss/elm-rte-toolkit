@@ -67,7 +67,7 @@ import RichText.Config.Command
         )
 import RichText.Config.Keys exposing (alt, backspace, delete, enter, return, shift, short)
 import RichText.Internal.DeleteWord as DeleteWord
-import RichText.Internal.Model.Event exposing (InputEvent, KeyboardEvent)
+import RichText.Internal.Event exposing (InputEvent, KeyboardEvent)
 import RichText.Model.Element as Element exposing (Element)
 import RichText.Model.InlineElement as InlineElement
 import RichText.Model.Mark as Mark exposing (Mark, MarkOrder, ToggleAction(..), hasMarkWithName, toggle)

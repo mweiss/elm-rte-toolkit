@@ -19,8 +19,8 @@ import RichText.Commands
 import RichText.Config.Command exposing (Transform, transform)
 import RichText.Config.Spec exposing (Spec)
 import RichText.Internal.Constants exposing (zeroWidthSpace)
-import RichText.Internal.Model.Editor exposing (Editor, applyNamedCommandList)
-import RichText.Internal.Model.Event exposing (PasteEvent)
+import RichText.Internal.Editor exposing (Editor, applyNamedCommandList)
+import RichText.Internal.Event exposing (PasteEvent)
 import RichText.Internal.Spec exposing (htmlToElementArray)
 import RichText.Model.Node
     exposing

@@ -29,7 +29,7 @@ import RichText.Config.Spec
         , withMarkDefinitions
         , withNodeDefinitions
         )
-import RichText.Editor exposing (apply, applyNoForceSelection)
+import RichText.Editor as RTE exposing (apply, applyNoForceSelection)
 import RichText.Model.Attribute
     exposing
         ( Attribute(..)
@@ -82,6 +82,16 @@ type Msg
     | GotSession Session
 
 
+config : RTE.Config EditorMsg
+config =
+    RTE.config
+        { decorations = newDecorations
+        , commandMap = Editor.commandBindings
+        , spec = customSpec
+        , toMsg = InternalMsg
+        }
+
+
 handleShowInsertCaptionedImageModal : Model -> Model
 handleShowInsertCaptionedImageModal model =
     let
@@ -92,7 +102,7 @@ handleShowInsertCaptionedImageModal model =
         | insertCaptionedImageModal =
             { insertImageModal
                 | visible = True
-                , editorState = Just (RichText.Editor.state model.editor.editor)
+                , editorState = Just (RTE.state model.editor.editor)
             }
     }
 
@@ -229,7 +239,7 @@ view model =
             [ text """This example shows how you can extend a specification"""
             ]
         , captionedImageView model
-        , Html.map EditorMsg (Editor.view newDecorations Editor.commandBindings customSpec model.editor)
+        , Html.map EditorMsg (Editor.view config model.editor)
         , p []
             [ text "You can see the code for this example in the "
             , a
@@ -329,7 +339,7 @@ update msg model =
                 _ ->
                     let
                         ( e, _ ) =
-                            Editor.update Editor.commandBindings customSpec editorMsg model.editor
+                            Editor.update config editorMsg model.editor
                     in
                     ( { model | editor = e }, Cmd.none )
 

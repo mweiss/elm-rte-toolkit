@@ -63,6 +63,16 @@ type Msg
     | GotSession Session
 
 
+config : Editor.Config Msg
+config =
+    Editor.config
+        { decorations = decorations
+        , commandMap = commandBindings
+        , spec = todoSpec
+        , toMsg = InternalMsg
+        }
+
+
 view : Model -> { title : String, content : List (Html Msg) }
 view model =
     { title = "New specification"
@@ -71,7 +81,7 @@ view model =
         , p []
             [ text """This example shows how you can create a specification from scratch"""
             ]
-        , Editor.view InternalMsg decorations commandBindings todoSpec model.editor
+        , Editor.view config model.editor
         , p []
             [ text "You can see the code for this example in the "
             , a
@@ -120,7 +130,7 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         InternalMsg editorMsg ->
-            ( { model | editor = Editor.update commandBindings todoSpec editorMsg model.editor }, Cmd.none )
+            ( { model | editor = Editor.update config editorMsg model.editor }, Cmd.none )
 
         ToggleCheckedTodoItem path value ->
             ( handleTodoListChecked path value model, Cmd.none )
@@ -141,7 +151,13 @@ subscriptions model =
 
 todoList : NodeDefinition
 todoList =
-    nodeDefinition { name = "todo_list", group = "root", contentType = NodeDefinition.blockNode [ "items" ], toHtmlNode = todoListToHtml, fromHtmlNode = htmlToTodoList }
+    nodeDefinition
+        { name = "todo_list"
+        , group = "root"
+        , contentType = NodeDefinition.blockNode [ "items" ]
+        , toHtmlNode = todoListToHtml
+        , fromHtmlNode = htmlToTodoList
+        }
 
 
 todoListToHtml : ElementToHtml

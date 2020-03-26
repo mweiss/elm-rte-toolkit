@@ -3,25 +3,18 @@ module RichText.Internal.Path exposing
     , editorToDom
     )
 
-{-|
-
-    This module contains functions related to transforming node paths.
-
-    # DOM <-> Editor translation
-    @docs domToEditor, editorToDom
-
+{-| This module contains functions related to transforming node paths.
 -}
 
 import Array exposing (Array)
-import List.Extra
 import RichText.Config.MarkDefinition as MarkDefinition
 import RichText.Config.NodeDefinition as NodeDefinition
 import RichText.Config.Spec exposing (Spec)
 import RichText.Internal.HtmlNode exposing (childNodesPlaceholder)
 import RichText.Internal.Spec exposing (markDefinitionWithDefault, nodeDefinitionWithDefault)
-import RichText.Model.Element as Element exposing (Element)
+import RichText.Model.Element exposing (Element)
 import RichText.Model.HtmlNode exposing (HtmlNode(..))
-import RichText.Model.Mark as Mark exposing (Mark)
+import RichText.Model.Mark exposing (Mark)
 import RichText.Model.Node
     exposing
         ( Block

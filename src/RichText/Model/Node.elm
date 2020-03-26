@@ -148,7 +148,7 @@ type alias BlockNodeContents =
 
 ```
 block
-    (Element.element paragraph [] Set.empty)
+    (Element.element paragraph [])
     (inlineChildren <| Array.fromList [ plainText "some text" ])
 ```
 

@@ -25,7 +25,7 @@ module RichText.Model.Mark exposing
 
 import Dict exposing (Dict)
 import RichText.Config.Spec exposing (Spec, markDefinitions)
-import RichText.Internal.Model.Definitions as Internal exposing (MarkDefinition(..), attributesFromMark)
+import RichText.Internal.Definitions as Internal exposing (MarkDefinition(..), attributesFromMark)
 import RichText.Model.Attribute exposing (Attribute)
 
 

@@ -18,7 +18,7 @@ module RichText.Config.MarkDefinition exposing
 -}
 
 import Array exposing (Array)
-import RichText.Internal.Model.Definitions as Internal
+import RichText.Internal.Definitions as Internal
 import RichText.Model.Attribute exposing (Attribute(..))
 import RichText.Model.HtmlNode exposing (HtmlNode(..))
 import RichText.Model.Mark exposing (Mark)
