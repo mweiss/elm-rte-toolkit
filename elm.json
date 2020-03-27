@@ -20,7 +20,8 @@
         "RichText.Model.Mark",
         "RichText.Model.Node",
         "RichText.Model.Selection",
-        "RichText.Model.Text"
+        "RichText.Model.Text",
+        "RichText.Node"
     ],
     "elm-version": "0.19.1 <= v < 0.20.0",
     "dependencies": {

@@ -1,21 +1,16 @@
 module RichText.Node exposing
-    ( Fragment(..), Node(..)
-    , insertAfter, insertBefore, replace, replaceWithFragment
+    ( insertAfter, insertBefore, replace, replaceWithFragment
     , removeInRange, removeNodeAndEmptyParents
-    , allRange, anyRange
+    , allRange, anyRange, isEmptyTextBlock, selectionIsBeginningOfTextBlock, selectionIsEndOfTextBlock
     , concatMap, indexedMap, joinBlocks, map
     , Iterator, last, next, nodeAt, previous, findAncestor, findBackwardFrom, findBackwardFromExclusive, findClosestBlockPath, findForwardFrom, findForwardFromExclusive, findTextBlockNodeAncestor
     , foldl, foldlRange, foldr, foldrRange, indexedFoldl, indexedFoldr
     , splitBlockAtPathAndOffset, splitTextLeaf
     , toggleMark
+    , Fragment(..), Node(..)
     )
 
 {-| This module contains convenience functions for working with Block and Inline nodes.
-
-
-# Helper types
-
-@docs Fragment, Node
 
 
 # Insert / Replace
@@ -30,7 +25,7 @@ module RichText.Node exposing
 
 # Predicates
 
-@docs allRange, anyRange
+@docs allRange, anyRange, isEmptyTextBlock, selectionIsBeginningOfTextBlock, selectionIsEndOfTextBlock
 
 
 # Transform
@@ -55,12 +50,20 @@ module RichText.Node exposing
 
 # Marks
 
-toggleMark
+@docs toggleMark
+
+
+# Types
+
+These are convenience types to wrap around inline and block node and arrays
+
+@docs Fragment, Node
 
 -}
 
 import Array exposing (Array)
 import Array.Extra
+import List.Extra
 import RichText.Model.InlineElement as InlineElement
 import RichText.Model.Mark exposing (Mark, MarkOrder, ToggleAction, toggle)
 import RichText.Model.Node
@@ -77,6 +80,7 @@ import RichText.Model.Node
         , toInlineArray
         , withChildNodes
         )
+import RichText.Model.Selection exposing (Selection, anchorNode, anchorOffset, isCollapsed)
 import RichText.Model.Text as Text exposing (Text, text, withText)
 
 
@@ -729,6 +733,11 @@ indexedFoldlRec path func acc node =
 
 
 {-| Same as `foldl` but only applied the nodes between the given paths, inclusive.
+
+    -- rootNode = (doc, [(paragraph, [text]), (paragraph, [text])]
+    foldlRange [] [ 1 ] nodeNameOrTextValue [] (Block rootNode)
+        == [ "paragraph", "text", "paragraph", "doc" ]
+
 -}
 foldlRange : Path -> Path -> (Node -> b -> b) -> b -> Block -> b
 foldlRange start end func acc root =
@@ -759,6 +768,11 @@ foldlRangeRec start end func acc root node =
 
 
 {-| Same as `foldr` but only applied the nodes between the given paths, inclusive.
+
+    -- rootNode = (doc, [(paragraph, [text]), (paragraph, [text])]
+    foldlRange [] [ 1 ] nodeNameOrTextValue [] (Block rootNode)
+        == [ "doc", "paragraph", "text", "paragraph" ]
+
 -}
 foldrRange : Path -> Path -> (Node -> b -> b) -> b -> Block -> b
 foldrRange start end func acc root =
@@ -791,6 +805,10 @@ foldrRangeRec start end func acc root node =
 {-| Returns a Ok Block that replaces the node at the node path with the given fragment. If it is
 unable to replace it do to an invalid path or the wrong type of node, a Err string describing
 the error is returned.
+
+    -- replaces the node at [0, 0] with the given inline fragment
+    replaceWithFragment [ 0, 0 ] (InlineFragment <| Array.fromList [ textNode ]) rootNode
+
 -}
 replaceWithFragment : Path -> Fragment -> Block -> Result String Block
 replaceWithFragment path fragment root =
@@ -877,10 +895,12 @@ replaceWithFragment path fragment root =
                     Err "I received an invalid path, I am on a leaf node, but I still have more path left."
 
 
+{-| Replaces the node at the path with the given editor node.
 
-{- replaceNode replaces the node at the nodepath with the given editor node -}
+    -- replaces the node at [0, 0] with the inline text
+    replace [ 0, 0 ] (Inline textNode) rootNode
 
-
+-}
 replace : Path -> Node -> Block -> Result String Block
 replace path node root =
     case path of
@@ -905,7 +925,15 @@ replace path node root =
             replaceWithFragment path fragment root
 
 
-{-| Finds the closest node ancestor with inline content.
+{-| Returns Just the parent of the given path if the path refers to an inline node, otherwise
+inline content, otherwisereturn Nothing.
+
+    findTextBlockNodeAncestor [ 0, 1, 2 ] root
+    --> Just [ 0, 1]
+
+    findTextBlockNodeAncestor [ 0, 1 ] root
+    --> Nothing
+
 -}
 findTextBlockNodeAncestor : Path -> Block -> Maybe ( Path, Block )
 findTextBlockNodeAncestor =
@@ -922,6 +950,10 @@ findTextBlockNodeAncestor =
 
 {-| Find ancestor from path finds the closest ancestor from the given NodePath that matches the
 predicate.
+
+    -- Finds the closest list item ancestor if it exists
+    findAncestor (\n -> Element.name (Node.element n) == "list_item")
+
 -}
 findAncestor : (Block -> Bool) -> Path -> Block -> Maybe ( Path, Block )
 findAncestor pred path node =
@@ -956,7 +988,12 @@ findAncestor pred path node =
                         Nothing
 
 
-{-| nodeAt returns the node at the specified NodePath if it exists.
+{-| Returns the node at the specified path if it exists.
+
+    -- root = (doc, [(paragraph, [text])]
+    nodeAt [0, 0] root
+    --> Just text
+
 -}
 nodeAt : Path -> Block -> Maybe Node
 nodeAt path node =
@@ -990,12 +1027,14 @@ nodeAt path node =
                     Nothing
 
 
+{-| This method removes all the nodes inclusive to both the start and end path. Note that
+an ancestor is not removed if the start path or end path is a child node.
 
-{- This method removes all the nodes inclusive to both the start and end node path.  Note that
-   an ancestor is not removed if the start path or end path is a child node.
+    -- root = (doc, [(paragraph, [text, text2]), (paragraph, [text, text2])]
+    removeInRange [0, 0][1, 0] root
+    --> (doc, [(paragraph, [text2])]
+
 -}
-
-
 removeInRange : Path -> Path -> Block -> Block
 removeInRange start end node =
     let
@@ -1123,6 +1162,14 @@ removeInRange start end node =
                 node
 
 
+{-| Removes the node at the given path, and recursively removes parent blocks that have no remaining
+child nodes, excluding the root.
+
+    root = (doc, [(paragraph, [text]), (paragraph, [text, text2])]
+    removeNodeAndEmptyParents [0, 0] root
+    --> (doc, [(paragraph, [text, text2])]
+
+-}
 removeNodeAndEmptyParents : Path -> Block -> Block
 removeNodeAndEmptyParents path node =
     case path of
@@ -1189,6 +1236,12 @@ removeNodeAndEmptyParents path node =
                     node
 
 
+{-| Splits a text leaf into two based on the given offset.
+
+    splitTextLeaf 1 (emptyText <| withText "test")
+    --> (Text "t", Text "est")
+
+-}
 splitTextLeaf : Int -> Text -> ( Text, Text )
 splitTextLeaf offset leaf =
     let
@@ -1198,6 +1251,36 @@ splitTextLeaf offset leaf =
     ( leaf |> withText (String.left offset leafText), leaf |> withText (String.dropLeft offset leafText) )
 
 
+{-| Splits a block at the given path and offset and returns Just the split nodes.
+If the path is invalid or the node cannot be split, Nothing is returned.
+
+    nodeWithTextLeafToSplit =
+        block
+            (Element.element paragraph [])
+            (inlineChildren <|
+                Array.fromList [ textNode1 ]
+            )
+
+    nodeBeforeTextLeafSplit =
+        block
+            (Element.element paragraph [])
+            (inlineChildren <|
+                Array.fromList [ plainText "sam" ]
+            )
+
+
+    nodeAfterTextLeafSplit =
+        block
+            (Element.element paragraph [])
+            (inlineChildren <|
+                Array.fromList [ plainText "ple1" ]
+            )
+
+
+    Just (nodeBeforeTextLeafSplit, nodeAfterTextLeafSplit) ==
+        splitBlockAtPathAndOffset [ 0 ] 3 nodeWithTextLeafToSplit
+
+-}
 splitBlockAtPathAndOffset : Path -> Int -> Block -> Maybe ( Block, Block )
 splitBlockAtPathAndOffset path offset node =
     case path of
@@ -1279,6 +1362,12 @@ splitBlockAtPathAndOffset path offset node =
                     Nothing
 
 
+{-| Determine if all elements in range satisfy some test.
+
+    -- Query to determine if all the elements in range are selectable
+    allRange isSelectable [ 0, 0 ] [ 0, 2 ] root
+
+-}
 allRange : (Node -> Bool) -> Path -> Path -> Block -> Bool
 allRange pred start end root =
     if start > end then
@@ -1303,11 +1392,28 @@ allRange pred start end root =
                     False
 
 
+{-| Determine if any elements in range satisfy some test.
+
+    -- Query to determine if any elements in range are selectable
+    allRange isSelectable [ 0, 0 ] [ 0, 2 ] root
+
+-}
 anyRange : (Node -> Bool) -> Path -> Path -> Block -> Bool
 anyRange pred start end root =
     not <| allRange (\x -> not <| pred x) start end root
 
 
+{-| If the node specified by the path is an inline node, returns the parent. If the node at the
+path is a block, then returns the same path. Otherwise if the path is invalid,
+returns the root path.
+
+    root = (doc, [(paragraph, [text]), (paragraph, [text, text2])]
+    findClosestBlockPath [0, 0] root
+    --> [0]
+    findClosestBlockPath [0] root
+    --> [0]
+
+-}
 findClosestBlockPath : Path -> Block -> Path
 findClosestBlockPath path node =
     case nodeAt path node of
@@ -1323,6 +1429,36 @@ findClosestBlockPath path node =
                     parent path
 
 
+{-| If the two blocks have the same type of children, returns the joined block. Otherwise, if the
+blocks have different children or one or more is a leaf node, then Nothing is return.
+
+    pNode : Block
+    pNode =
+        block
+            (Element.element paragraph [])
+            (inlineChildren <|
+                Array.fromList [ textNode1, textNode2 ]
+            )
+
+    pNodeReverse : Block
+    pNodeReverse =
+        block
+            (Element.element paragraph [])
+            (inlineChildren <|
+                Array.fromList [ textNode2, textNode1 ]
+            )
+
+    pNodeExpectedJoin : Block
+    pNodeExpectedJoin =
+        block
+            (Element.element paragraph [])
+            (inlineChildren <|
+                Array.fromList [ textNode1, textNode2, textNode2, textNode1 ]
+            )
+
+    pNodeExpectedJoin == joinBlocks pNode pNodeReverse
+
+-}
 joinBlocks : Block -> Block -> Maybe Block
 joinBlocks b1 b2 =
     case childNodes b1 of
@@ -1346,6 +1482,13 @@ joinBlocks b1 b2 =
             Nothing
 
 
+{-| Inserts the fragments after the node at the given path and returns the result. Returns an
+error if the path is invalid or the fragment cannot be inserted.
+
+    insertAfter [ 0, 0 ] fragment root
+    --> Inserts the fragment after the node at path [0, 0]
+
+-}
 insertAfter : Path -> Fragment -> Block -> Result String Block
 insertAfter path fragment root =
     case nodeAt path root of
@@ -1379,6 +1522,13 @@ insertAfter path fragment root =
                             Err "I cannot insert an inline leaf fragment fragment into an block node fragment"
 
 
+{-| Inserts the fragments before the node at the given path and returns the result. Returns an
+error if the path is invalid or the fragment cannot be inserted.
+
+    insertBefore [ 0, 0 ] fragment root
+    --> Inserts the fragment before the node at path [0, 0]
+
+-}
 insertBefore : Path -> Fragment -> Block -> Result String Block
 insertBefore path fragment root =
     case nodeAt path root of
@@ -1412,6 +1562,12 @@ insertBefore path fragment root =
                             Err "I cannot insert an inline leaf fragment fragment into an block node fragment"
 
 
+{-| Runs the toggle action on the node for the given mark.
+
+    toggleMark Add markOrder bold node
+    --> Adds bold to the given node
+
+-}
 toggleMark : ToggleAction -> MarkOrder -> Mark -> Node -> Node
 toggleMark action markOrder mark node =
     case node of
@@ -1434,3 +1590,132 @@ toggleMark action markOrder mark node =
                                 |> InlineElement.withMarks
                                     (toggle action markOrder mark (InlineElement.marks leaf))
                             )
+
+
+{-| True if this block has inline content with no children or a single empty text node, false otherwise
+
+    pNode : Block
+        pNode =
+            block
+                (Element.element paragraph [])
+                (inlineChildren <|
+                    Array.fromList [ emptyText ]
+                )
+
+    isEmptyTextBlock pNode == True
+
+-}
+isEmptyTextBlock : Node -> Bool
+isEmptyTextBlock node =
+    case node of
+        Block bn ->
+            case childNodes bn of
+                InlineChildren a ->
+                    let
+                        array =
+                            toInlineArray a
+                    in
+                    case Array.get 0 array of
+                        Nothing ->
+                            Array.isEmpty array
+
+                        Just n ->
+                            Array.length array
+                                == 1
+                                && (case n of
+                                        Text t ->
+                                            String.isEmpty (Text.text t)
+
+                                        _ ->
+                                            False
+                                   )
+
+                _ ->
+                    False
+
+        Inline _ ->
+            False
+
+
+{-| True if the selection is collapsed at the beginning of a text block, false otherwise.
+
+    -- selectionIsBeginningOfTextBlock is used for things like lift and join backward
+    if selectionIsBeginningOfTextBlock selection (State.root editorState) then
+        -- Do join backward logic
+    else
+        -- Do something else
+
+-}
+selectionIsBeginningOfTextBlock : Selection -> Block -> Bool
+selectionIsBeginningOfTextBlock selection root =
+    if not <| isCollapsed selection then
+        False
+
+    else
+        case findTextBlockNodeAncestor (anchorNode selection) root of
+            Nothing ->
+                False
+
+            Just ( _, n ) ->
+                case childNodes n of
+                    InlineChildren a ->
+                        case List.Extra.last (anchorNode selection) of
+                            Nothing ->
+                                False
+
+                            Just i ->
+                                if i /= 0 || Array.isEmpty (toInlineArray a) then
+                                    False
+
+                                else
+                                    anchorOffset selection == 0
+
+                    _ ->
+                        False
+
+
+{-| True if the selection is collapsed at the end of a text block, false otherwise.
+
+    -- selectionIsEndOfTextBlock is used for things like join forward
+    if selectionIsEndOfTextBlock selection (State.root editorState) then
+        -- Do join forward logic
+    else
+        -- Do something else
+
+-}
+selectionIsEndOfTextBlock : Selection -> Block -> Bool
+selectionIsEndOfTextBlock selection root =
+    if not <| isCollapsed selection then
+        False
+
+    else
+        case findTextBlockNodeAncestor (anchorNode selection) root of
+            Nothing ->
+                False
+
+            Just ( _, n ) ->
+                case childNodes n of
+                    InlineChildren a ->
+                        case List.Extra.last (anchorNode selection) of
+                            Nothing ->
+                                False
+
+                            Just i ->
+                                if i /= Array.length (toInlineArray a) - 1 then
+                                    False
+
+                                else
+                                    case Array.get i (toInlineArray a) of
+                                        Nothing ->
+                                            False
+
+                                        Just leaf ->
+                                            case leaf of
+                                                Text tl ->
+                                                    String.length (Text.text tl) == anchorOffset selection
+
+                                                InlineElement _ ->
+                                                    True
+
+                    _ ->
+                        False

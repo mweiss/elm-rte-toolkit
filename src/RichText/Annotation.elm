@@ -2,6 +2,7 @@ module RichText.Annotation exposing
     ( selection, selectable, lift
     , add, addAtPath, fromNode, clear, remove, removeAtPath
     , annotateSelection, selectionFromAnnotations, clearSelectionAnnotations, isSelectable
+    , doLift
     )
 
 {-| This module contains common constants and functions used to annotate nodes.
@@ -30,22 +31,34 @@ when defining your own transforms.
 
 @docs annotateSelection, selectionFromAnnotations, clearSelectionAnnotations, isSelectable
 
+
+# Lift
+
+@docs doLift
+
 -}
 
+import Array
+import List.Extra
 import RichText.Internal.Constants as Constants
 import RichText.Model.Element as Element exposing (Element)
 import RichText.Model.InlineElement as InlineElement
-import RichText.Model.Node
+import RichText.Model.Node as Node
     exposing
         ( Block
+        , Children(..)
         , Inline(..)
         , Path
+        , blockChildren
+        , childNodes
         , element
+        , toBlockArray
+        , withChildNodes
         , withElement
         )
 import RichText.Model.Selection exposing (Selection, anchorNode, focusNode, range)
 import RichText.Model.Text as Text
-import RichText.Node exposing (Node(..), indexedFoldl, map, nodeAt, replace)
+import RichText.Node exposing (Node(..), concatMap, indexedFoldl, map, nodeAt, replace)
 import Set exposing (Set)
 
 
@@ -108,7 +121,7 @@ removeAtPath annotation path node =
 {-| Removes the given annotation from the node if it exists.
 
     remove Annotation.selectable (Block horizontal_rule)
-    --> Returns (Block horizontal_rule) but with all the lift annotation removed.
+    --> Returns (Block horizontal_rule) with the selectable annotation removed
 
 -}
 remove : String -> Node -> Node
@@ -119,7 +132,7 @@ remove =
 {-| Adds the given annotation to the node.
 
     add Annotation.selectable (Block horizontal_rule)
-    --> Returns (Block horizontal_rule) but with all the lift annotation added.
+    --> Returns (Block horizontal_rule) with the selectable annotation added
 
 -}
 add : String -> Node -> Node
@@ -295,3 +308,65 @@ isSelectable node =
 
                 InlineElement l ->
                     Set.member selectable (Element.annotations (InlineElement.element l))
+
+
+annotationsFromBlockNode : Block -> Set String
+annotationsFromBlockNode node =
+    Element.annotations <| Node.element node
+
+
+liftConcatMapFunc : Node -> List Node
+liftConcatMapFunc node =
+    case node of
+        Block bn ->
+            case childNodes bn of
+                Leaf ->
+                    [ node ]
+
+                InlineChildren _ ->
+                    [ node ]
+
+                BlockChildren a ->
+                    let
+                        groupedBlockNodes =
+                            List.Extra.groupWhile
+                                (\n1 n2 ->
+                                    Set.member
+                                        lift
+                                        (annotationsFromBlockNode n1)
+                                        == Set.member
+                                            lift
+                                            (annotationsFromBlockNode n2)
+                                )
+                                (Array.toList (toBlockArray a))
+                    in
+                    List.map Block <|
+                        List.concatMap
+                            (\( n, l ) ->
+                                if Set.member lift (annotationsFromBlockNode n) then
+                                    n :: l
+
+                                else
+                                    [ bn |> withChildNodes (blockChildren (Array.fromList <| n :: l)) ]
+                            )
+                            groupedBlockNodes
+
+        Inline _ ->
+            [ node ]
+
+
+{-| Lifts nodes that are marked with the lift annotation if possible. Note that if there are multiple
+levels of lift annotations, you may have to call this function multiple times.
+
+    markedRoot : Block
+    markedRoot =
+        addLiftMarkToBlocksInSelection normalizedSelection root
+
+    liftedRoot : Block
+    liftedRoot =
+        doLift markedRoot
+
+-}
+doLift : Block -> Block
+doLift root =
+    concatMap liftConcatMapFunc root

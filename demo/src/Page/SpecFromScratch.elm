@@ -123,7 +123,7 @@ init session =
 
 
 commandBindings =
-    Commands.defaultCommandBindings
+    Commands.defaultCommandMap
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )

@@ -165,7 +165,7 @@ handleInsertCaptionedImage spec model =
                         apply
                             ( "insertImage"
                             , transform <|
-                                Commands.insertBlockNode img
+                                Commands.insertBlock img
                             )
                             spec
                             model.editor.editor

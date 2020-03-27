@@ -1,55 +1,87 @@
 module RichText.Commands exposing
-    ( backspaceBlockNode
-    , backspaceCommands
-    , backspaceInlineElement
-    , backspaceText
-    , backspaceWord
-    , defaultCommandBindings
-    , defaultInputEventCommand
-    , defaultKeyCommand
-    , deleteBlockNode
-    , deleteCommands
-    , deleteInlineElement
-    , deleteText
-    , deleteWord
-    , insertBlockNode
-    , insertBlockNodeBeforeSelection
-    , insertInlineElement
-    , insertLineBreak
-    , insertTextAtSelection
-    , isEmptyTextBlock
-    , joinBackward
-    , joinForward
-    , lift
-    , liftConcatMapFunc
-    , liftEmpty
-    , removeRangeSelection
-    , removeRangeSelectionAndInsert
-    , removeSelectedLeafElement
+    ( defaultCommandMap, defaultInputEventCommand, defaultKeyCommand
+    , removeRange, removeRangeAndInsert, removeSelectedLeafElement
+    , backspaceBlock, backspaceInlineElement, backspaceText, backspaceWord
+    , deleteBlock, deleteInlineElement, deleteText, deleteWord
+    , insertBlock, insertBlockBeforeSelection, insertInlineElement, insertLineBreak, insertText
+    , joinBackward, joinForward
+    , lift, liftEmpty
+    , splitBlock, splitBlockHeaderToNewParagraph, splitTextBlock
+    , toggleBlock, toggleMark
     , selectAll
-    , selectionIsBeginningOfTextBlock
-    , selectionIsEndOfTextBlock
-    , splitBlock
-    , splitBlockHeaderToNewParagraph
-    , splitTextBlock
-    , toggleBlock
-    , toggleMarkOnInlineNodes
-    , toggleMarkSingleInlineNode
     , wrap
     )
+
+{-| This module contains pre defined commands and transforms, which are the building blocks for
+creating actions that modify the editor's state.
+
+
+# Commands
+
+@docs defaultCommandMap, defaultInputEventCommand, defaultKeyCommand
+
+
+# Transforms
+
+
+## Remove selection
+
+@docs removeRange, removeRangeAndInsert, removeSelectedLeafElement
+
+
+## Backspace
+
+@docs backspaceBlock, backspaceInlineElement, backspaceText, backspaceWord
+
+
+## Deletion
+
+@docs deleteBlock, deleteInlineElement, deleteText, deleteWord
+
+
+## Insert
+
+@docs insertBlock, insertBlockBeforeSelection, insertInlineElement, insertLineBreak, insertText
+
+
+## Join
+
+@docs joinBackward, joinForward
+
+
+## Lift
+
+@docs lift, liftConcatMapFunc, liftEmpty
+
+
+## Split
+
+@docs splitBlock, splitBlockHeaderToNewParagraph, splitTextBlock
+
+
+## Toggle
+
+Toggle commands for elements and marks
+
+@docs toggleBlock, toggleMark
+
+
+## Selection
+
+@docs selectAll
+
+
+## Wrap
+
+@docs wrap
+
+-}
 
 import Array exposing (Array)
 import Array.Extra
 import List.Extra
 import Regex
-import RichText.Annotation as Annotation
-    exposing
-        ( annotateSelection
-        , clear
-        , clearSelectionAnnotations
-        , isSelectable
-        , selectionFromAnnotations
-        )
+import RichText.Annotation as Annotation exposing (annotateSelection, clear, clearSelectionAnnotations, doLift, isSelectable, selectionFromAnnotations)
 import RichText.Config.Command
     exposing
         ( CommandBinding
@@ -109,7 +141,7 @@ import RichText.Model.Selection
         )
 import RichText.Model.State as State exposing (State, withRoot, withSelection)
 import RichText.Model.Text as Text
-import RichText.Node
+import RichText.Node as RTNode
     exposing
         ( Fragment(..)
         , Node(..)
@@ -122,6 +154,7 @@ import RichText.Node
         , findTextBlockNodeAncestor
         , indexedFoldl
         , indexedMap
+        , isEmptyTextBlock
         , joinBlocks
         , next
         , nodeAt
@@ -130,33 +163,34 @@ import RichText.Node
         , removeNodeAndEmptyParents
         , replace
         , replaceWithFragment
+        , selectionIsBeginningOfTextBlock
+        , selectionIsEndOfTextBlock
         , splitBlockAtPathAndOffset
         , splitTextLeaf
-        , toggleMark
         )
 import RichText.Specs exposing (hardBreak)
 import Set exposing (Set)
 
 
 backspaceCommands =
-    [ ( "removeRangeSelection", transform removeRangeSelection )
+    [ ( "removeRange", transform removeRange )
     , ( "removeSelectedLeafElementCommand", transform removeSelectedLeafElement )
     , ( "backspaceInlineElement", transform backspaceInlineElement )
-    , ( "backspaceBlockNode", transform backspaceBlockNode )
+    , ( "backspaceBlock", transform backspaceBlock )
     , ( "joinBackward", transform joinBackward )
     ]
 
 
 deleteCommands =
-    [ ( "removeRangeSelection", transform removeRangeSelection )
+    [ ( "removeRange", transform removeRange )
     , ( "removeSelectedLeafElementCommand", transform removeSelectedLeafElement )
     , ( "deleteInlineElement", transform deleteInlineElement )
-    , ( "deleteBlockNode", transform deleteBlockNode )
+    , ( "deleteBlock", transform deleteBlock )
     , ( "joinForward", transform joinForward )
     ]
 
 
-defaultCommandBindings =
+defaultCommandMap =
     emptyCommandMap
         |> set
             [ inputEvent "insertLineBreak", key [ shift, enter ], key [ shift, return ] ]
@@ -184,7 +218,7 @@ defaultCommandBindings =
 defaultKeyCommand : KeyboardEvent -> NamedCommandList
 defaultKeyCommand event =
     if not event.altKey && not event.metaKey && not event.ctrlKey && String.length event.key == 1 then
-        [ ( "removeRangeAndInsert", transform <| removeRangeSelectionAndInsert event.key ) ]
+        [ ( "removeRangeAndInsert", transform <| removeRangeAndInsert event.key ) ]
 
     else
         []
@@ -198,21 +232,21 @@ defaultInputEventCommand event =
                 []
 
             Just data ->
-                [ ( "removeRangeAndInsert", transform <| removeRangeSelectionAndInsert data ) ]
+                [ ( "removeRangeAndInsert", transform <| removeRangeAndInsert data ) ]
 
     else
         []
 
 
-removeRangeSelectionAndInsert : String -> Transform
-removeRangeSelectionAndInsert s editorState =
+removeRangeAndInsert : String -> Transform
+removeRangeAndInsert s editorState =
     Result.map
         (\removedRangeEditorState ->
             Result.withDefault
                 removedRangeEditorState
-                (insertTextAtSelection s removedRangeEditorState)
+                (insertText s removedRangeEditorState)
         )
-        (removeRangeSelection editorState)
+        (removeRange editorState)
 
 
 {-| Insert a substring at the specified index. (derived from String.Extra)
@@ -225,8 +259,8 @@ insertAt insert pos string =
     String.slice 0 pos string ++ insert ++ String.slice pos (String.length string) string
 
 
-insertTextAtSelection : String -> Transform
-insertTextAtSelection s editorState =
+insertText : String -> Transform
+insertText s editorState =
     case State.selection editorState of
         Nothing ->
             Err "Nothing is selected"
@@ -336,72 +370,6 @@ joinBackward editorState =
                                         Err "I can only join with text blocks"
 
 
-selectionIsBeginningOfTextBlock : Selection -> Block -> Bool
-selectionIsBeginningOfTextBlock selection root =
-    if not <| isCollapsed selection then
-        False
-
-    else
-        case findTextBlockNodeAncestor (anchorNode selection) root of
-            Nothing ->
-                False
-
-            Just ( _, n ) ->
-                case childNodes n of
-                    InlineChildren a ->
-                        case List.Extra.last (anchorNode selection) of
-                            Nothing ->
-                                False
-
-                            Just i ->
-                                if i /= 0 || Array.isEmpty (toInlineArray a) then
-                                    False
-
-                                else
-                                    anchorOffset selection == 0
-
-                    _ ->
-                        False
-
-
-selectionIsEndOfTextBlock : Selection -> Block -> Bool
-selectionIsEndOfTextBlock selection root =
-    if not <| isCollapsed selection then
-        False
-
-    else
-        case findTextBlockNodeAncestor (anchorNode selection) root of
-            Nothing ->
-                False
-
-            Just ( _, n ) ->
-                case childNodes n of
-                    InlineChildren a ->
-                        case List.Extra.last (anchorNode selection) of
-                            Nothing ->
-                                False
-
-                            Just i ->
-                                if i /= Array.length (toInlineArray a) - 1 then
-                                    False
-
-                                else
-                                    case Array.get i (toInlineArray a) of
-                                        Nothing ->
-                                            False
-
-                                        Just leaf ->
-                                            case leaf of
-                                                Text tl ->
-                                                    String.length (Text.text tl) == anchorOffset selection
-
-                                                InlineElement _ ->
-                                                    True
-
-                    _ ->
-                        False
-
-
 joinForward : Transform
 joinForward editorState =
     case State.selection editorState of
@@ -496,8 +464,8 @@ findPreviousTextBlock =
     findTextBlock findBackwardFromExclusive
 
 
-removeRangeSelection : Transform
-removeRangeSelection editorState =
+removeRange : Transform
+removeRange editorState =
     case State.selection editorState of
         Nothing ->
             Err "Nothing is selected"
@@ -614,7 +582,7 @@ insertInlineElement leaf editorState =
 
         Just selection ->
             if not <| isCollapsed selection then
-                removeRangeSelection editorState |> Result.andThen (insertInlineElement leaf)
+                removeRange editorState |> Result.andThen (insertInlineElement leaf)
 
             else
                 case nodeAt (anchorNode selection) (State.root editorState) of
@@ -712,7 +680,7 @@ splitBlock ancestorFunc editorState =
 
         Just selection ->
             if not <| isCollapsed selection then
-                removeRangeSelection editorState |> Result.andThen (splitBlock ancestorFunc)
+                removeRange editorState |> Result.andThen (splitBlock ancestorFunc)
 
             else
                 case ancestorFunc (anchorNode selection) (State.root editorState) of
@@ -946,7 +914,7 @@ backspaceText editorState =
                                                                         newSelection =
                                                                             singleNodeRange previousPath l (max 0 (l - 1))
                                                                     in
-                                                                    removeRangeSelection
+                                                                    removeRange
                                                                         (editorState
                                                                             |> withSelection (Just newSelection)
                                                                         )
@@ -1088,8 +1056,8 @@ toggleMarkSingleInlineNode markOrder mark action editorState =
                                             )
 
 
-toggleMarkOnInlineNodes : MarkOrder -> Mark -> ToggleAction -> Transform
-toggleMarkOnInlineNodes markOrder mark action editorState =
+toggleMark : MarkOrder -> Mark -> ToggleAction -> Transform
+toggleMark markOrder mark action editorState =
     case State.selection editorState of
         Nothing ->
             Err "Nothing is selected"
@@ -1142,7 +1110,7 @@ toggleMarkOnInlineNodes markOrder mark action editorState =
                                                                 node
 
                                                             Inline _ ->
-                                                                toggleMark toggleAction markOrder mark node
+                                                                RTNode.toggleMark toggleAction markOrder mark node
                                                 )
                                                 (Block (State.root editorState))
                                         of
@@ -1533,51 +1501,6 @@ addLiftMarkToBlocksInSelection selection root =
             root
 
 
-annotationsFromBlockNode : Block -> Set String
-annotationsFromBlockNode node =
-    Element.annotations <| Node.element node
-
-
-liftConcatMapFunc : Node -> List Node
-liftConcatMapFunc node =
-    case node of
-        Block bn ->
-            case childNodes bn of
-                Leaf ->
-                    [ node ]
-
-                InlineChildren _ ->
-                    [ node ]
-
-                BlockChildren a ->
-                    let
-                        groupedBlockNodes =
-                            List.Extra.groupWhile
-                                (\n1 n2 ->
-                                    Set.member
-                                        Annotation.lift
-                                        (annotationsFromBlockNode n1)
-                                        == Set.member
-                                            Annotation.lift
-                                            (annotationsFromBlockNode n2)
-                                )
-                                (Array.toList (toBlockArray a))
-                    in
-                    List.map Block <|
-                        List.concatMap
-                            (\( n, l ) ->
-                                if Set.member Annotation.lift (annotationsFromBlockNode n) then
-                                    n :: l
-
-                                else
-                                    [ bn |> withChildNodes (blockChildren (Array.fromList <| n :: l)) ]
-                            )
-                            groupedBlockNodes
-
-        Inline _ ->
-            [ node ]
-
-
 lift : Transform
 lift editorState =
     case State.selection editorState of
@@ -1594,7 +1517,7 @@ lift editorState =
                         annotateSelection normalizedSelection (State.root editorState)
 
                 liftedRoot =
-                    concatMap liftConcatMapFunc markedRoot
+                    doLift markedRoot
 
                 newSelection =
                     selectionFromAnnotations
@@ -1640,38 +1563,6 @@ liftEmpty editorState =
 
                         else
                             lift editorState
-
-
-isEmptyTextBlock : Node -> Bool
-isEmptyTextBlock node =
-    case node of
-        Block bn ->
-            case childNodes bn of
-                InlineChildren a ->
-                    let
-                        array =
-                            toInlineArray a
-                    in
-                    case Array.get 0 array of
-                        Nothing ->
-                            Array.isEmpty array
-
-                        Just n ->
-                            Array.length array
-                                == 1
-                                && (case n of
-                                        Text t ->
-                                            String.isEmpty (Text.text t)
-
-                                        _ ->
-                                            False
-                                   )
-
-                _ ->
-                    False
-
-        Inline _ ->
-            False
 
 
 splitBlockHeaderToNewParagraph : List String -> Element -> Transform
@@ -1736,15 +1627,15 @@ splitBlockHeaderToNewParagraph headerElements paragraphElement editorState =
                                         Ok splitEditorState
 
 
-insertBlockNode : Block -> Transform
-insertBlockNode node editorState =
+insertBlock : Block -> Transform
+insertBlock node editorState =
     case State.selection editorState of
         Nothing ->
             Err "Nothing is selected"
 
         Just selection ->
             if not <| isCollapsed selection then
-                removeRangeSelection editorState |> Result.andThen (insertBlockNode node)
+                removeRange editorState |> Result.andThen (insertBlock node)
 
             else
                 case nodeAt (anchorNode selection) (State.root editorState) of
@@ -1786,11 +1677,11 @@ insertBlockNode node editorState =
                                         Err s
 
                                     Ok splitEditorState ->
-                                        insertBlockNodeBeforeSelection node splitEditorState
+                                        insertBlockBeforeSelection node splitEditorState
 
 
-insertBlockNodeBeforeSelection : Block -> Transform
-insertBlockNodeBeforeSelection node editorState =
+insertBlockBeforeSelection : Block -> Transform
+insertBlockBeforeSelection node editorState =
     case State.selection editorState of
         Nothing ->
             Err "Nothing is selected"
@@ -1904,8 +1795,8 @@ backspaceInlineElement editorState =
                                 Err "There is no previous inline leaf element, found a block node"
 
 
-backspaceBlockNode : Transform
-backspaceBlockNode editorState =
+backspaceBlock : Transform
+backspaceBlock editorState =
     case State.selection editorState of
         Nothing ->
             Err "Nothing is selected"
@@ -2117,7 +2008,7 @@ backspaceWord editorState =
                                                 newState =
                                                     editorState |> withSelection (Just newSelection)
                                             in
-                                            removeRangeSelection newState
+                                            removeRange newState
 
                             _ ->
                                 Err "I expected an inline leaf array"
@@ -2190,7 +2081,7 @@ deleteText editorState =
                                                                         newSelection =
                                                                             singleNodeRange nextPath 0 1
                                                                     in
-                                                                    removeRangeSelection
+                                                                    removeRange
                                                                         (editorState
                                                                             |> withSelection (Just newSelection)
                                                                         )
@@ -2265,8 +2156,8 @@ deleteInlineElement editorState =
                                                     Err "There is no next inline leaf, found a block node"
 
 
-deleteBlockNode : Transform
-deleteBlockNode editorState =
+deleteBlock : Transform
+deleteBlock editorState =
     case State.selection editorState of
         Nothing ->
             Err "Nothing is selected"
@@ -2410,7 +2301,7 @@ deleteWord editorState =
                                                 newState =
                                                     editorState |> withSelection (Just newSelection)
                                             in
-                                            removeRangeSelection newState
+                                            removeRange newState
 
                             _ ->
                                 Err "I expected an inline leaf array"

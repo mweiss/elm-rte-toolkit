@@ -8,12 +8,12 @@ import Html.Attributes
 import RichText.Annotation exposing (selectable)
 import RichText.Commands as Commands
     exposing
-        ( insertBlockNode
+        ( insertBlock
         , lift
         , liftEmpty
         , splitBlockHeaderToNewParagraph
         , toggleBlock
-        , toggleMarkOnInlineNodes
+        , toggleMark
         , wrap
         )
 import RichText.Config.Command as Command exposing (CommandMap, inputEvent, key, set, transform)
@@ -99,7 +99,7 @@ listCommandBindings =
 commandBindings =
     Command.combine
         listCommandBindings
-        (Commands.defaultCommandBindings
+        (Commands.defaultCommandMap
             |> set [ inputEvent "insertParagraph", key [ enter ], key [ return ] ]
                 [ ( "liftEmpty", transform <| liftEmpty )
                 , ( "splitBlockHeaderToNewParagraph"
@@ -195,7 +195,7 @@ handleShowInsertLinkModal spec model =
                             apply
                                 ( "removeLink"
                                 , transform <|
-                                    Commands.toggleMarkOnInlineNodes markOrder linkMark Remove
+                                    Commands.toggleMark markOrder linkMark Remove
                                 )
                                 spec
                                 model.editor
@@ -240,7 +240,7 @@ handleInsertLink spec model =
                         apply
                             ( "insertLink"
                             , transform <|
-                                Commands.toggleMarkOnInlineNodes markOrder linkMark Add
+                                Commands.toggleMark markOrder linkMark Add
                             )
                             spec
                             model.editor
@@ -330,7 +330,7 @@ handleToggleStyle style spec model =
                 (apply
                     ( "toggleStyle"
                     , transform <|
-                        toggleMarkOnInlineNodes markOrder (mark markDef []) Flip
+                        toggleMark markOrder (mark markDef []) Flip
                     )
                     spec
                     model.editor
@@ -484,7 +484,7 @@ handleInsertHorizontalRule spec model =
                 (apply
                     ( "insertHR"
                     , transform <|
-                        insertBlockNode
+                        insertBlock
                             (block
                                 (element
                                     horizontalRule

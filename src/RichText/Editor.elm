@@ -26,7 +26,7 @@ import Html.Events
 import Html.Keyed
 import Json.Decode as D
 import RichText.Annotation exposing (annotateSelection)
-import RichText.Commands exposing (removeRangeSelection)
+import RichText.Commands exposing (removeRange)
 import RichText.Config.Command exposing (CommandMap, NamedCommand, NamedCommandList, transform)
 import RichText.Config.Decorations exposing (Decorations, elementDecorators, markDecorators)
 import RichText.Config.ElementDefinition as ElementDefinition
@@ -218,7 +218,7 @@ handleInitEvent initEvent editor_ =
 
 handleCut : Spec -> Editor -> Editor
 handleCut spec_ editor_ =
-    case applyList [ ( "removeRangeSelection", transform removeRangeSelection ) ] spec_ editor_ of
+    case applyList [ ( "removeRangeSelection", transform removeRange ) ] spec_ editor_ of
         Err _ ->
             editor_
 
@@ -855,7 +855,7 @@ type alias Editor =
 
 {-| Initializes an editor
 
-    model <| State.state docNode Nothing
+    init <| State.state docNode Nothing
 
 -}
 init : State -> Editor

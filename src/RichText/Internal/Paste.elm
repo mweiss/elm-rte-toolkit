@@ -13,7 +13,7 @@ import RichText.Commands
     exposing
         ( joinBackward
         , joinForward
-        , removeRangeSelection
+        , removeRange
         , splitTextBlock
         )
 import RichText.Config.Command exposing (Transform, transform)
@@ -79,7 +79,7 @@ pasteText text editorState =
 
             Just selection ->
                 if not <| isCollapsed selection then
-                    removeRangeSelection editorState |> Result.andThen (pasteText text)
+                    removeRange editorState |> Result.andThen (pasteText text)
 
                 else
                     let
@@ -152,7 +152,7 @@ pasteInlineArray inlineFragment editorState =
 
         Just selection ->
             if not <| isCollapsed selection then
-                removeRangeSelection editorState |> Result.andThen (pasteInlineArray inlineFragment)
+                removeRange editorState |> Result.andThen (pasteInlineArray inlineFragment)
 
             else
                 case findTextBlockNodeAncestor (anchorNode selection) (State.root editorState) of
@@ -235,7 +235,7 @@ pasteBlockArray blockFragment editorState =
 
         Just selection ->
             if not <| isCollapsed selection then
-                removeRangeSelection editorState |> Result.andThen (pasteBlockArray blockFragment)
+                removeRange editorState |> Result.andThen (pasteBlockArray blockFragment)
 
             else
                 let

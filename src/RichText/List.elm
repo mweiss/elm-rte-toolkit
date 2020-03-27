@@ -26,13 +26,10 @@ import RichText.Annotation as Annotation
         ( annotateSelection
         , clear
         , clearSelectionAnnotations
+        , doLift
         , selectionFromAnnotations
         )
 import RichText.Commands
-    exposing
-        ( isEmptyTextBlock
-        , liftConcatMapFunc
-        )
 import RichText.Config.Command
     exposing
         ( CommandMap
@@ -83,8 +80,8 @@ import RichText.Node
     exposing
         ( Fragment(..)
         , Node(..)
-        , concatMap
         , findAncestor
+        , isEmptyTextBlock
         , joinBlocks
         , last
         , nodeAt
@@ -92,7 +89,6 @@ import RichText.Node
         , replaceWithFragment
         )
 import RichText.Specs exposing (listItem, orderedList, unorderedList)
-import Set
 
 
 type ListType
@@ -316,7 +312,7 @@ lift definition editorState =
                     let
                         -- this logic looks suspicious... but it seems to work
                         liftedRoot =
-                            concatMap liftConcatMapFunc <| concatMap liftConcatMapFunc markedRoot
+                            doLift <| doLift markedRoot
 
                         newSelection =
                             selectionFromAnnotations liftedRoot (anchorOffset normalizedSelection) (focusOffset normalizedSelection)
