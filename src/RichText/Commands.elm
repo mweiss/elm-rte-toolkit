@@ -146,7 +146,6 @@ import RichText.Node as RTNode
         ( Fragment(..)
         , Node(..)
         , allRange
-        , concatMap
         , findBackwardFromExclusive
         , findClosestBlockPath
         , findForwardFrom
@@ -169,7 +168,6 @@ import RichText.Node as RTNode
         , splitTextLeaf
         )
 import RichText.Specs exposing (hardBreak)
-import Set exposing (Set)
 
 
 backspaceCommands =
@@ -190,6 +188,10 @@ deleteCommands =
     ]
 
 
+{-| Starting point for creating your own command map. Contains deletion, line break, lift,
+split, select all, and undo/redo behavior.
+-}
+defaultCommandMap : CommandMap
 defaultCommandMap =
     emptyCommandMap
         |> set
@@ -215,6 +217,9 @@ defaultCommandMap =
         |> withDefaultInputEventCommand defaultInputEventCommand
 
 
+{-| The default key command does remove range when a range is selected and a regular
+key is pressed. In this case, we want to remove range and insert the character related to that key.
+-}
 defaultKeyCommand : KeyboardEvent -> NamedCommandList
 defaultKeyCommand event =
     if not event.altKey && not event.metaKey && not event.ctrlKey && String.length event.key == 1 then
@@ -224,6 +229,9 @@ defaultKeyCommand event =
         []
 
 
+{-| The default input event command does remove range when a range is selected and an insertText
+event occurs. In this case, we want to remove range and insert the character related to that key.
+-}
 defaultInputEventCommand : InputEvent -> NamedCommandList
 defaultInputEventCommand event =
     if event.inputType == "insertText" then
@@ -238,6 +246,52 @@ defaultInputEventCommand event =
         []
 
 
+{-|
+
+    example : State
+    example =
+        state
+            (block
+                (Element.element doc [])
+                (blockChildren <|
+                    Array.fromList
+                        [ block
+                            (Element.element paragraph [])
+                            (inlineChildren <|
+                                Array.fromList
+                                    [ plainText "hello"
+                                    , inlineElement (Element.element image []) []
+                                    , plainText "world"
+                                    ]
+                            )
+                        ]
+                )
+            )
+            (Just <| range [ 0, 0 ] 2 [ 0, 2 ] 2)
+
+    expectedExample : State
+    expectedExample =
+        state
+            (block
+                (Element.element doc [])
+                (blockChildren <|
+                    Array.fromList
+                        [ block
+                            (Element.element paragraph [])
+                            (inlineChildren <|
+                                Array.fromList
+                                    [ plainText "het"
+                                    , plainText "rld"
+                                    ]
+                            )
+                        ]
+                )
+            )
+            (Just <| caret [ 0, 0 ] 3)
+
+    (removeRangeAndInsert "t" before) == (Ok after)
+
+-}
 removeRangeAndInsert : String -> Transform
 removeRangeAndInsert s editorState =
     Result.map
@@ -464,6 +518,54 @@ findPreviousTextBlock =
     findTextBlock findBackwardFromExclusive
 
 
+{-| Delete the nodes in the selection, if there is one. Succeeds if the selection is a range
+selection and a successful remove operation occurred, otherwise returns the error describing why
+removing the nodes failed.
+
+    before : State
+    before =
+        state
+            (block
+                (Element.element doc [])
+                (blockChildren <|
+                    Array.fromList
+                        [ block
+                            (Element.element paragraph [])
+                            (inlineChildren <|
+                                Array.fromList
+                                    [ plainText "hello"
+                                    , inlineElement (Element.element image []) []
+                                    , plainText "world"
+                                    ]
+                            )
+                        ]
+                )
+            )
+            (Just <| range [ 0, 0 ] 2 [ 0, 2 ] 2)
+
+    after : State
+    after =
+       state
+           (block
+               (Element.element doc [])
+               (blockChildren <|
+                   Array.fromList
+                       [ block
+                           (Element.element paragraph [])
+                           (inlineChildren <|
+                               Array.fromList
+                                   [ plainText "he"
+                                   , plainText "rld"
+                                   ]
+                           )
+                       ]
+               )
+           )
+           (Just <| caret [ 0, 0 ] 2)
+
+    (removeRange before) == (Ok after)
+
+-}
 removeRange : Transform
 removeRange editorState =
     case State.selection editorState of
@@ -481,13 +583,13 @@ removeRange editorState =
                 in
                 if anchorNode normalizedSelection == focusNode normalizedSelection then
                     case
-                        removeTextAtRange
+                        removeNodeOrTextWithRange
                             (anchorNode normalizedSelection)
                             (anchorOffset normalizedSelection)
                             (Just (focusOffset normalizedSelection))
                             (State.root editorState)
                     of
-                        Ok newRoot ->
+                        Ok ( newRoot, _ ) ->
                             let
                                 newSelection =
                                     caret (anchorNode normalizedSelection) (anchorOffset normalizedSelection)
@@ -514,7 +616,7 @@ removeRange editorState =
                                 (State.root editorState)
                     in
                     case
-                        removeTextAtRange (focusNode normalizedSelection)
+                        removeNodeOrTextWithRange (focusNode normalizedSelection)
                             0
                             (Just (focusOffset normalizedSelection))
                             (State.root editorState)
@@ -522,34 +624,63 @@ removeRange editorState =
                         Err s ->
                             Err s
 
-                        Ok removedEnd ->
+                        Ok ( removedEnd, _ ) ->
+                            let
+                                removedNodes =
+                                    removeInRange
+                                        (increment (anchorNode normalizedSelection))
+                                        (decrement (focusNode normalizedSelection))
+                                        removedEnd
+                            in
                             case
-                                removeTextAtRange
+                                removeNodeOrTextWithRange
                                     (anchorNode normalizedSelection)
                                     (anchorOffset normalizedSelection)
                                     Nothing
-                                    removedEnd
+                                    removedNodes
                             of
                                 Err s ->
                                     Err s
 
-                                Ok removedStart ->
+                                Ok ( removedStart, maybePath ) ->
                                     let
-                                        removedNodes =
-                                            removeInRange
-                                                (increment (anchorNode normalizedSelection))
-                                                (decrement (focusNode normalizedSelection))
-                                                removedStart
-
                                         newSelection =
-                                            caret
-                                                (anchorNode normalizedSelection)
-                                                (anchorOffset normalizedSelection)
+                                            Maybe.map
+                                                (\( p, n ) ->
+                                                    let
+                                                        offset =
+                                                            case n of
+                                                                Inline i ->
+                                                                    case i of
+                                                                        Text t ->
+                                                                            String.length <| Text.text t
+
+                                                                        _ ->
+                                                                            0
+
+                                                                _ ->
+                                                                    0
+                                                    in
+                                                    caret
+                                                        p
+                                                        offset
+                                                )
+                                                maybePath
+
+                                        defaultedSelection =
+                                            case newSelection of
+                                                Nothing ->
+                                                    Maybe.map
+                                                        (\( p, _ ) -> caret p 0)
+                                                        (findForwardFrom (\_ n -> isSelectable n) [] removedStart)
+
+                                                Just _ ->
+                                                    newSelection
 
                                         newEditorState =
                                             editorState
-                                                |> withRoot removedNodes
-                                                |> withSelection (Just newSelection)
+                                                |> withRoot removedStart
+                                                |> withSelection defaultedSelection
                                     in
                                     case anchorTextBlock of
                                         Nothing ->
@@ -746,18 +877,35 @@ isLeafNode path root =
                             False
 
 
-removeTextAtRange : Path -> Int -> Maybe Int -> Block -> Result String Block
-removeTextAtRange nodePath start maybeEnd root =
+{-| This is a helper method to remove a node or some text in a given range. If this is a node,
+it returns the previously selectable node. Otherwise, it re
+-}
+removeNodeOrTextWithRange : Path -> Int -> Maybe Int -> Block -> Result String ( Block, Maybe ( Path, Node ) )
+removeNodeOrTextWithRange nodePath start maybeEnd root =
     case nodeAt nodePath root of
         Just node ->
             case node of
                 Block _ ->
-                    Err "I was expecting a text node, but instead I got a block node"
+                    let
+                        previouslySelectablePathAndNode =
+                            findBackwardFromExclusive (\_ n -> isSelectable n) nodePath root
+
+                        newRoot =
+                            removeNodeAndEmptyParents nodePath root
+                    in
+                    Ok ( newRoot, previouslySelectablePathAndNode )
 
                 Inline leaf ->
                     case leaf of
                         InlineElement _ ->
-                            Err "I was expecting a text leaf, but instead I got an inline leaf"
+                            let
+                                previouslySelectablePath =
+                                    findBackwardFromExclusive (\_ n -> isSelectable n) nodePath root
+
+                                newRoot =
+                                    removeNodeAndEmptyParents nodePath root
+                            in
+                            Ok ( newRoot, previouslySelectablePath )
 
                         Text v ->
                             let
@@ -778,7 +926,7 @@ removeTextAtRange nodePath start maybeEnd root =
                                                         )
                                                 )
                             in
-                            replace nodePath (Inline textNode) root
+                            Result.map (\r -> ( r, Just ( nodePath, Inline textNode ) )) (replace nodePath (Inline textNode) root)
 
         Nothing ->
             Err <| "There is no node at node path " ++ toString nodePath
