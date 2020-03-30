@@ -2229,15 +2229,59 @@ lengthsFromGroup leaves =
         leaves
 
 
+{-| Removes the word previous to the collapsed selection, otherwise returns an error.
 
--- Find the inline fragment that represents connected text nodes
--- get the text in that fragment
--- translate the offset for that text
--- find where to backspace
+    before : State
+    before =
+        state
+            (block
+                (Element.element doc [])
+                (blockChildren <|
+                    Array.fromList
+                        [ block
+                            (Element.element paragraph [])
+                            (inlineChildren <|
+                                Array.fromList
+                                    [ plainText "this is an ex"
+                                    , markedText "ample okay" [ mark bold [] ]
+                                    ]
+                            )
+                        ]
+                )
+            )
+            (Just <| caret [ 0, 1 ] 6)
 
 
+    after : State
+    after =
+        state
+            (block
+                (Element.element doc [])
+                (blockChildren <|
+                    Array.fromList
+                        [ block
+                            (Element.element paragraph [])
+                            (inlineChildren <|
+                                Array.fromList
+                                    [ plainText "this is an "
+                                    , markedText "okay" [ mark bold [] ]
+                                    ]
+                            )
+                        ]
+                )
+            )
+            (Just <| caret [ 0, 0 ] 11)
+
+    (backspaceWord before) == after
+
+-}
 backspaceWord : Transform
 backspaceWord editorState =
+    -- Overview:
+    -- Find the inline fragment that represents connected text nodes
+    -- get the text in that fragment
+    -- translate the offset for that text
+    -- find where to backspace
     case State.selection editorState of
         Nothing ->
             Err "Nothing is selected"
