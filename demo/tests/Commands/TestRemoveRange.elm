@@ -220,7 +220,7 @@ testState =
 
 testRemoveRange : Test
 testRemoveRange =
-    describe "Tests the removeRange command"
+    describe "Tests the removeRange transform"
         [ test "Tests that an error occurs if nothing is selected" <|
             \_ ->
                 Expect.equal (Err "Nothing is selected") (removeRange testState)

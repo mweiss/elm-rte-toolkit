@@ -932,6 +932,8 @@ removeNodeOrTextWithRange nodePath start maybeEnd root =
             Err <| "There is no node at node path " ++ toString nodePath
 
 
+{-| Removes a leaf element if it is the selected element, otherwise fails with an error.
+-}
 removeSelectedLeafElement : Transform
 removeSelectedLeafElement editorState =
     case State.selection editorState of
@@ -940,7 +942,7 @@ removeSelectedLeafElement editorState =
 
         Just selection ->
             if not <| isCollapsed selection then
-                Err "I cannot remove a block element if it is not"
+                Err "I cannot remove a leaf element if it is not collapsed"
 
             else if isLeafNode (anchorNode selection) (State.root editorState) then
                 let

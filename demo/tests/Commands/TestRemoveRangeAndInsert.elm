@@ -218,9 +218,9 @@ testState =
     state testDoc Nothing
 
 
-testRemoveRange : Test
-testRemoveRange =
-    describe "Tests the removeRange command"
+testRemoveRangeAndInsert : Test
+testRemoveRangeAndInsert =
+    describe "Tests the testRemoveRangeAndInsert transform"
         [ test "Tests that an error occurs if nothing is selected" <|
             \_ ->
                 Expect.equal (Err "Nothing is selected") (removeRangeAndInsert "t" testState)
