@@ -1940,6 +1940,54 @@ insertBlockBeforeSelection node editorState =
                                 Err "Invalid state! I was expecting a block node."
 
 
+{-| Removes the previous inline element if the selection is an inline element with offset 0. Returns
+an error if it was unable to remove the element.
+
+    before : State
+    before =
+        state
+            (block
+                (Element.element doc [])
+                (blockChildren <|
+                    Array.fromList
+                        [ block
+                            (Element.element paragraph [])
+                            (inlineChildren <|
+                                Array.fromList
+                                    [ plainText "text"
+                                    , inlineElement (Element.element image []) []
+                                    , plainText "text2"
+                                    ]
+                            )
+                        ]
+                )
+            )
+            (Just <| caret [ 0, 2 ] 0)
+
+
+    after : State
+    after =
+        state
+            (block
+                (Element.element doc [])
+                (blockChildren <|
+                    Array.fromList
+                        [ block
+                            (Element.element paragraph [])
+                            (inlineChildren <|
+                                Array.fromList
+                                    [ plainText "text"
+                                    , plainText "text2"
+                                    ]
+                            )
+                        ]
+                )
+            )
+            (Just <| caret [ 0, 1 ] 0)
+
+    (backspaceInlineElement before) == after
+
+-}
 backspaceInlineElement : Transform
 backspaceInlineElement editorState =
     case State.selection editorState of
