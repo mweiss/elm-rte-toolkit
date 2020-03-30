@@ -51,7 +51,7 @@ creating actions that modify the editor's state.
 
 ## Lift
 
-@docs lift, liftConcatMapFunc, liftEmpty
+@docs lift, liftEmpty
 
 
 ## Split
@@ -246,10 +246,12 @@ defaultInputEventCommand event =
         []
 
 
-{-|
+{-| Removes the contents in the state's range selection and optionally
+inserts the given text if possible. Returns an error if the selection is collapsed or
+it cannot remove the selection.
 
-    example : State
-    example =
+    before : State
+    before =
         state
             (block
                 (Element.element doc [])
@@ -269,8 +271,8 @@ defaultInputEventCommand event =
             )
             (Just <| range [ 0, 0 ] 2 [ 0, 2 ] 2)
 
-    expectedExample : State
-    expectedExample =
+    after : State
+    after =
         state
             (block
                 (Element.element doc [])
@@ -289,7 +291,7 @@ defaultInputEventCommand event =
             )
             (Just <| caret [ 0, 0 ] 3)
 
-    (removeRangeAndInsert "t" before) == (Ok after)
+    removeRangeAndInsert "t" before == Ok after
 
 -}
 removeRangeAndInsert : String -> Transform
@@ -313,6 +315,7 @@ insertAt insert pos string =
     String.slice 0 pos string ++ insert ++ String.slice pos (String.length string) string
 
 
+{-| -}
 insertText : String -> Transform
 insertText s editorState =
     case State.selection editorState of
@@ -368,6 +371,7 @@ insertText s editorState =
                                                     )
 
 
+{-| -}
 joinBackward : Transform
 joinBackward editorState =
     case State.selection editorState of
@@ -424,6 +428,7 @@ joinBackward editorState =
                                         Err "I can only join with text blocks"
 
 
+{-| -}
 joinForward : Transform
 joinForward editorState =
     case State.selection editorState of
@@ -563,7 +568,7 @@ removing the nodes failed.
            )
            (Just <| caret [ 0, 0 ] 2)
 
-    (removeRange before) == (Ok after)
+    removeRange before == Ok after
 
 -}
 removeRange : Transform
@@ -699,12 +704,14 @@ removeRange editorState =
                                                         Ok <| Result.withDefault newEditorState (joinForward newEditorState)
 
 
+{-| -}
 insertLineBreak : Transform
 insertLineBreak =
     insertInlineElement
         (Node.inlineElement (Element.element hardBreak []) [])
 
 
+{-| -}
 insertInlineElement : Inline -> Transform
 insertInlineElement leaf editorState =
     case State.selection editorState of
@@ -798,11 +805,13 @@ insertInlineElement leaf editorState =
                                 Err "I can not insert an inline element in a block node"
 
 
+{-| -}
 splitTextBlock : Transform
 splitTextBlock =
     splitBlock findTextBlockNodeAncestor
 
 
+{-| -}
 splitBlock : (Path -> Block -> Maybe ( Path, Block )) -> Transform
 splitBlock ancestorFunc editorState =
     case State.selection editorState of
@@ -976,7 +985,7 @@ removeNodeOrTextWithRange nodePath start maybeEnd root =
             )
             (Just <| caret [ 0, 0 ] 5)
 
-    removeSelectedLeafElement before == (Ok after)
+    removeSelectedLeafElement before == Ok after
 
 -}
 removeSelectedLeafElement : Transform
@@ -1037,47 +1046,47 @@ advantage of native backspace behavior, namely:
   - any other offset, return an error to allow browser to do the default behavior
 
 ```
-    before : State
-    before =
-        state
-            (block
-                (Element.element doc [])
-                (blockChildren <|
-                    Array.fromList
-                        [ block
-                            (Element.element paragraph [])
-                            (inlineChildren <|
-                                Array.fromList
-                                    [ plainText "text"
-                                    , markedText "text2" [ mark bold [] ]
-                                    ]
-                            )
-                        ]
-                )
+before : State
+before =
+    state
+        (block
+            (Element.element doc [])
+            (blockChildren <|
+                Array.fromList
+                    [ block
+                        (Element.element paragraph [])
+                        (inlineChildren <|
+                            Array.fromList
+                                [ plainText "text"
+                                , markedText "text2" [ mark bold [] ]
+                                ]
+                        )
+                    ]
             )
-            (Just <| caret [ 0, 1 ] 0)
+        )
+        (Just <| caret [ 0, 1 ] 0)
 
-    after : State
-    after =
-        state
-            (block
-                (Element.element doc [])
-                (blockChildren <|
-                    Array.fromList
-                        [ block
-                            (Element.element paragraph [])
-                            (inlineChildren <|
-                                Array.fromList
-                                    [ plainText "tex"
-                                    , markedText "text2" [ mark bold [] ]
-                                    ]
-                            )
-                        ]
-                )
+after : State
+after =
+    state
+        (block
+            (Element.element doc [])
+            (blockChildren <|
+                Array.fromList
+                    [ block
+                        (Element.element paragraph [])
+                        (inlineChildren <|
+                            Array.fromList
+                                [ plainText "tex"
+                                , markedText "text2" [ mark bold [] ]
+                                ]
+                        )
+                    ]
             )
-            (Just <| caret [ 0, 0 ] 3)
+        )
+        (Just <| caret [ 0, 0 ] 3)
 
-    (backspaceText before) == after
+backspaceText before == Ok after
 ```
 
 -}
@@ -1297,6 +1306,7 @@ toggleMarkSingleInlineNode markOrder mark action editorState =
                                             )
 
 
+{-| -}
 toggleMark : MarkOrder -> Mark -> ToggleAction -> Transform
 toggleMark markOrder mark action editorState =
     case State.selection editorState of
@@ -1444,6 +1454,7 @@ toggleMark markOrder mark action editorState =
                     )
 
 
+{-| -}
 toggleBlock : List String -> Element -> Element -> Transform
 toggleBlock allowedBlocks onParams offParams editorState =
     case State.selection editorState of
@@ -1516,6 +1527,7 @@ toggleBlock allowedBlocks onParams offParams editorState =
             Ok (editorState |> withRoot newRoot)
 
 
+{-| -}
 wrap : (Block -> Block) -> Element -> Transform
 wrap contentsMapFunc elementParameters editorState =
     case State.selection editorState of
@@ -1649,6 +1661,7 @@ wrap contentsMapFunc elementParameters editorState =
                                                 Err "Invalid ancestor path... somehow we have an inline leaf"
 
 
+{-| -}
 selectAll : Transform
 selectAll editorState =
     let
@@ -1742,6 +1755,7 @@ addLiftMarkToBlocksInSelection selection root =
             root
 
 
+{-| -}
 lift : Transform
 lift editorState =
     case State.selection editorState of
@@ -1776,6 +1790,7 @@ lift editorState =
                 )
 
 
+{-| -}
 liftEmpty : Transform
 liftEmpty editorState =
     case State.selection editorState of
@@ -1806,6 +1821,7 @@ liftEmpty editorState =
                             lift editorState
 
 
+{-| -}
 splitBlockHeaderToNewParagraph : List String -> Element -> Transform
 splitBlockHeaderToNewParagraph headerElements paragraphElement editorState =
     case splitTextBlock editorState of
@@ -1868,6 +1884,7 @@ splitBlockHeaderToNewParagraph headerElements paragraphElement editorState =
                                         Ok splitEditorState
 
 
+{-| -}
 insertBlock : Block -> Transform
 insertBlock node editorState =
     case State.selection editorState of
@@ -1921,6 +1938,7 @@ insertBlock node editorState =
                                         insertBlockBeforeSelection node splitEditorState
 
 
+{-| -}
 insertBlockBeforeSelection : Block -> Transform
 insertBlockBeforeSelection node editorState =
     case State.selection editorState of
@@ -2031,7 +2049,7 @@ an error if it was unable to remove the element.
             )
             (Just <| caret [ 0, 1 ] 0)
 
-    (backspaceInlineElement before) == after
+    backspaceInlineElement before == Ok after
 
 -}
 backspaceInlineElement : Transform
@@ -2127,7 +2145,7 @@ returns an error.
             )
             (Just <| caret [ 1, 0 ] 0)
 
-    (backspaceBlock before) == after
+    backspaceBlock before == Ok after
 
 -}
 backspaceBlock : Transform
@@ -2272,7 +2290,7 @@ lengthsFromGroup leaves =
             )
             (Just <| caret [ 0, 0 ] 11)
 
-    (backspaceWord before) == after
+    backspaceWord before == Ok after
 
 -}
 backspaceWord : Transform
@@ -2393,6 +2411,7 @@ backspaceWord editorState =
                                 Err "I expected an inline leaf array"
 
 
+{-| -}
 deleteText : Transform
 deleteText editorState =
     case State.selection editorState of
@@ -2469,6 +2488,7 @@ deleteText editorState =
                                                                     Err "Cannot backspace the text of an inline leaf"
 
 
+{-| -}
 deleteInlineElement : Transform
 deleteInlineElement editorState =
     case State.selection editorState of
@@ -2535,6 +2555,7 @@ deleteInlineElement editorState =
                                                     Err "There is no next inline leaf, found a block node"
 
 
+{-| -}
 deleteBlock : Transform
 deleteBlock editorState =
     case State.selection editorState of
@@ -2574,6 +2595,7 @@ deleteBlock editorState =
                                 Err "The next node is not a block leaf, it's an inline leaf"
 
 
+{-| -}
 deleteWord : Transform
 deleteWord editorState =
     case State.selection editorState of

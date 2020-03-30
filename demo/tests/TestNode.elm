@@ -80,6 +80,7 @@ textNode1 =
     plainText "sample1"
 
 
+textNode2 : Inline
 textNode2 =
     plainText "sample2"
 
@@ -458,6 +459,7 @@ testPrevious =
         ]
 
 
+removedRootNode : Block
 removedRootNode =
     block
         (Element.element doc [])
@@ -466,6 +468,7 @@ removedRootNode =
         )
 
 
+removedPHtmlNode : Block
 removedPHtmlNode =
     block
         (Element.element paragraph [])
@@ -474,18 +477,21 @@ removedPHtmlNode =
         )
 
 
+removedRootAll : Block
 removedRootAll =
     block
         (Element.element doc [])
         (blockChildren Array.empty)
 
 
+removedPHtmlNodeAll : Block
 removedPHtmlNodeAll =
     block
         (Element.element paragraph [])
         (inlineChildren Array.empty)
 
 
+removedRootNodeRemovedPNodeAll : Block
 removedRootNodeRemovedPNodeAll =
     block
         (Element.element doc [])
@@ -582,6 +588,7 @@ testAnyRange =
         ]
 
 
+doubleRoot : Block
 doubleRoot =
     block
         (Element.element doc [])
@@ -590,6 +597,7 @@ doubleRoot =
         )
 
 
+doublePNode : Block
 doublePNode =
     block
         (Element.element paragraph [])

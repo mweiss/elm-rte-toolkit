@@ -17,9 +17,9 @@ import RichText.Model.Node
         , markedText
         , plainText
         )
-import RichText.Model.Selection exposing (caret, singleNodeRange)
+import RichText.Model.Selection exposing (caret)
 import RichText.Model.State exposing (State, state, withSelection)
-import RichText.Specs exposing (bold, doc, horizontalRule, image, paragraph)
+import RichText.Specs exposing (bold, doc, image, paragraph)
 import Test exposing (Test, describe, test)
 
 

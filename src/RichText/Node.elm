@@ -156,8 +156,29 @@ type alias Iterator =
 
 {-| Returns the previous path and node, if one exists, relative to the given path.
 
-    previous [0, 1] root
-    --> ([0, 0], Text { annotations = Set.empty, marks = [], text = "example" }
+    rootNode : Block
+    rootNode =
+        block
+            (Element.element doc [])
+            (blockChildren <| Array.fromList [ pNode ])
+
+    pNode : Block
+    pNode =
+        block
+            (Element.element paragraph [])
+            (inlineChildren <|
+                Array.fromList [ textNode1, textNode2 ]
+            )
+
+    textNode1 : Inline
+    textNode1 =
+        plainText "sample1"
+
+    textNode2 : Inline
+    textNode2 =
+        plainText "sample2"
+
+    previous [0, 1] rootNode == Just ([0, 0], Inline textNode1)
 
 -}
 previous : Iterator
@@ -224,8 +245,29 @@ previous path node =
 
 {-| Returns the next path and node, if one exists, relative to the given path.
 
-    next [0, 1] root
-    --> ([0, 2], Text { annotations = Set.empty, marks = [], text = "example2" }
+    rootNode : Block
+    rootNode =
+        block
+            (Element.element doc [])
+            (blockChildren <| Array.fromList [ pNode ])
+
+    pNode : Block
+    pNode =
+        block
+            (Element.element paragraph [])
+            (inlineChildren <|
+                Array.fromList [ textNode1, textNode2 ]
+            )
+
+    textNode1 : Inline
+    textNode1 =
+        plainText "sample1"
+
+    textNode2 : Inline
+    textNode2 =
+        plainText "sample2"
+
+    next [0, 0] rootNode == Just ([0, 1], Inline textNode2)
 
 -}
 next : Iterator
@@ -290,10 +332,6 @@ next path node =
 
 {-| Starting from the given path, scans the node forward until the predicate
 has been met or it reaches the last node.
-
-    findForwardFrom isTextBlock path node
-    --> Returns Just (path, block) or Nothing
-
 -}
 findForwardFrom : (Path -> Node -> Bool) -> Path -> Block -> Maybe ( Path, Node )
 findForwardFrom =
@@ -302,10 +340,6 @@ findForwardFrom =
 
 {-| Starting from but excluding the given path, scans the node forward until
 the predicate has been met or it reaches the last node.
-
-    findForwardFromExclusive isTextBlock path node
-    --> Returns Just (path, block) or Nothing
-
 -}
 findForwardFromExclusive : (Path -> Node -> Bool) -> Path -> Block -> Maybe ( Path, Node )
 findForwardFromExclusive =
@@ -314,10 +348,6 @@ findForwardFromExclusive =
 
 {-| Starting from the given path, scans the node backward until the predicate
 has been met or it reaches the last node.
-
-    findBackwardFrom isTextBlock path node
-    --> Returns Just (path, block) or Nothing
-
 -}
 findBackwardFrom : (Path -> Node -> Bool) -> Path -> Block -> Maybe ( Path, Node )
 findBackwardFrom =
@@ -326,10 +356,6 @@ findBackwardFrom =
 
 {-| Starting from but excluding the given path, scans the node backward until the predicate
 has been met or it reaches the last node.
-
-    findBackwardFromExclusive isTextBlock path node
-    --> Returns Just (path, block) or Nothing
-
 -}
 findBackwardFromExclusive : (Path -> Node -> Bool) -> Path -> Block -> Maybe ( Path, Node )
 findBackwardFromExclusive =
@@ -362,9 +388,46 @@ findNodeFrom iterator pred path node =
 
 {-| Map a given function onto a block's children recursively and flatten the resulting list.
 
-    -- rootNode = (doc, [(paragraph, [text])]
-    concatMap (\node -> [ node, node ]) rootNode
-    --> (doc [(paragraph, [text, text]), (paragraph, [text, text])])
+    rootNode : Block
+    rootNode =
+        block
+            (Element.element doc [])
+            (blockChildren <| Array.fromList [ pNode ])
+
+    pNode : Block
+    pNode =
+        block
+            (Element.element paragraph [])
+            (inlineChildren <|
+                Array.fromList [ textNode1, textNode2 ]
+            )
+
+    textNode1 : Inline
+    textNode1 =
+        plainText "sample1"
+
+    textNode2 : Inline
+    textNode2 =
+        plainText "sample2"
+
+    doubleRoot : Block
+    doubleRoot =
+        block
+            (Element.element doc [])
+            (blockChildren <|
+                Array.fromList [ doublePNode, doublePNode ]
+            )
+
+    doublePNode : Block
+    doublePNode =
+        block
+            (Element.element paragraph [])
+            (inlineChildren <|
+                Array.fromList [ textNode1, textNode1, textNode2, textNode2 ]
+            )
+
+    concatMap (\node -> [ node, node ]) rootNode == doubleRoot
+    --> True
 
 -}
 concatMap : (Node -> List Node) -> Block -> Block
@@ -413,17 +476,38 @@ concatMap func node =
 
 {-| Apply a function to this node and all child nodes.
 
-    -- rootNode = (doc, [(paragraph, [text]), (paragraph, [text])]
-    map
-        (\node ->
-            if node == text then
-                text2
+    setAnnotations : String -> Node -> Node
+    setAnnotations mark node =
+        let
+            annotations =
+                Set.fromList [ mark ]
+        in
+        case node of
+            Block bn ->
+                let
+                    params =
+                        Node.element bn
+                in
+                Block (bn |> withElement (params |> Element.withAnnotations annotations))
 
-            else
-                node
-        )
-        (Block rootNode)
-    --> (doc, [(paragraph, [text2]), (paragraph, [text2])]
+            Inline il ->
+                case il of
+                    Text tl ->
+                        Inline (Text (tl |> Text.withAnnotations annotations))
+
+                    InlineElement l ->
+                        let
+                            params =
+                                InlineElement.element l
+                        in
+                        Inline (InlineElement (l |> InlineElement.withElement (params |> Element.withAnnotations annotations)))
+
+    addDummyAnnotation : Node -> Node
+    addDummyAnnotation node =
+        setAnnotations dummyAnnotation node
+
+    map addDummyAnnotation (Block rootNode)
+    --> Recursively adds a dummy annotation to rootNode and all its children
 
 -}
 map : (Node -> Node) -> Node -> Node
@@ -475,17 +559,16 @@ map func node =
 
 {-| Same as map but the function is also applied with the path of each element (starting at []).
 
-    -- rootNode = (doc, [(paragraph, [text]), (paragraph, [text])]
     indexedMap
         (\path node ->
-            if path == [0, 0] then
+            if path == [ 0, 0 ] then
                 text2
 
             else
                 node
         )
         (Block rootNode)
-    --> (doc, [(paragraph, [text2]), (paragraph, [text])]
+    --> replaces the node at [0, 0] with the text2 node
 
 -}
 indexedMap : (Path -> Node -> Node) -> Node -> Node
@@ -557,9 +640,8 @@ indexedMapRec path func node =
         )
             :: list
 
-    -- rootNode = (doc, [(paragraph, [text]), (paragraph, [text])]
-    (foldr nodeNameOrTextValue [] (Block rootNode)) ==
-    [ "doc", "paragraph", "text", "paragraph", "text ]
+    foldr nodeNameOrTextValue [] (Block rootNode)
+    --> [ "doc", "paragraph", "sample1", "sample2" ]
 
 -}
 foldr : (Node -> b -> b) -> b -> Node -> b
@@ -594,6 +676,28 @@ foldr func acc node =
 
 {-| Reduce a node from the top left (e.g. from first to last).
 
+    rootNode : Block
+    rootNode =
+        block
+            (Element.element doc [])
+            (blockChildren <| Array.fromList [ pNode ])
+
+    pNode : Block
+    pNode =
+        block
+            (Element.element paragraph [])
+            (inlineChildren <|
+                Array.fromList [ textNode1, textNode2 ]
+            )
+
+    textNode1 : Inline
+    textNode1 =
+        plainText "sample1"
+
+    textNode2 : Inline
+    textNode2 =
+        plainText "sample2"
+
     nodeNameOrTextValue : Node -> List String -> List String
     nodeNameOrTextValue node list =
         (case node of
@@ -610,9 +714,8 @@ foldr func acc node =
         )
             :: list
 
-    -- rootNode = (doc, [(paragraph, [text]), (paragraph, [text])]
-    (foldl nodeNameOrTextValue [] (Block rootNode)) ==
-    [ "text", "paragraph", "text", "paragraph", "doc" ]
+    foldl nodeNameOrTextValue [] (Block rootNode)
+    -->  [ "sample2", "sample1", "paragraph", "doc" ]
 
 -}
 foldl : (Node -> b -> b) -> b -> Node -> b
@@ -648,7 +751,6 @@ foldl func acc node =
     pathList path _ list =
         path :: list
 
-    -- rootNode = (doc, [(paragraph, [text, text2])]
     (indexedFoldr pathList [] (Block rootNode)) == [ [], [ 0 ], [ 0, 0 ], [ 0, 1 ] ]
 
 -}
@@ -695,7 +797,6 @@ indexedFoldrRec path func acc node =
     pathList path _ list =
         path :: list
 
-    -- rootNode = (doc, [(paragraph, [text, text2])]
     (indexedFoldl pathList [] (Block rootNode)) == [ [ 0, 1 ], [ 0, 0 ], [ 0 ], [] ]
 
 -}
@@ -734,9 +835,8 @@ indexedFoldlRec path func acc node =
 
 {-| Same as `foldl` but only applied the nodes between the given paths, inclusive.
 
-    -- rootNode = (doc, [(paragraph, [text]), (paragraph, [text])]
     foldlRange [] [ 1 ] nodeNameOrTextValue [] (Block rootNode)
-        == [ "paragraph", "text", "paragraph", "doc" ]
+    -->  [ "sample2", "sample1", "paragraph" ]
 
 -}
 foldlRange : Path -> Path -> (Node -> b -> b) -> b -> Block -> b
@@ -769,9 +869,8 @@ foldlRangeRec start end func acc root node =
 
 {-| Same as `foldr` but only applied the nodes between the given paths, inclusive.
 
-    -- rootNode = (doc, [(paragraph, [text]), (paragraph, [text])]
-    foldlRange [] [ 1 ] nodeNameOrTextValue [] (Block rootNode)
-        == [ "doc", "paragraph", "text", "paragraph" ]
+    foldlRange [ 0 ] [ 0, 1 ] nodeNameOrTextValue [] (Block rootNode)
+    --> [ "paragraph", "sample1", "sample2" ]
 
 -}
 foldrRange : Path -> Path -> (Node -> b -> b) -> b -> Block -> b
@@ -928,11 +1027,33 @@ replace path node root =
 {-| Returns Just the parent of the given path if the path refers to an inline node, otherwise
 inline content, otherwisereturn Nothing.
 
-    findTextBlockNodeAncestor [ 0, 1, 2 ] root
-    --> Just [ 0, 1]
+    rootNode : Block
+    rootNode =
+        block
+            (Element.element doc [])
+            (blockChildren <| Array.fromList [ pNode ])
 
-    findTextBlockNodeAncestor [ 0, 1 ] root
-    --> Nothing
+    pNode : Block
+    pNode =
+        block
+            (Element.element paragraph [])
+            (inlineChildren <|
+                Array.fromList [ textNode1, textNode2 ]
+            )
+
+    textNode1 : Inline
+    textNode1 =
+        plainText "sample1"
+
+    textNode2 : Inline
+    textNode2 =
+        plainText "sample2"
+
+    findTextBlockNodeAncestor [ 0, 0 ] rootNode
+    --> Just ( [ 0 ], pNode )
+
+    findTextBlockNodeAncestor [ 0 ] rootNode
+    --> Nothing ==
 
 -}
 findTextBlockNodeAncestor : Path -> Block -> Maybe ( Path, Block )
@@ -990,9 +1111,21 @@ findAncestor pred path node =
 
 {-| Returns the node at the specified path if it exists.
 
-    -- root = (doc, [(paragraph, [text])]
-    nodeAt [0, 0] root
-    --> Just text
+    rootNode : Block
+    rootNode =
+        block
+            (Element.element doc [])
+            (blockChildren <| Array.fromList [ pNode ])
+
+    pNode : Block
+    pNode =
+        block
+            (Element.element paragraph [])
+            (inlineChildren <|
+                Array.fromList [ textNode1, textNode2 ]
+            )
+
+    nodeAt [0] rootNode == Just (Block pNode)
 
 -}
 nodeAt : Path -> Block -> Maybe Node
@@ -1030,9 +1163,21 @@ nodeAt path node =
 {-| This method removes all the nodes inclusive to both the start and end path. Note that
 an ancestor is not removed if the start path or end path is a child node.
 
-    -- root = (doc, [(paragraph, [text, text2]), (paragraph, [text, text2])]
-    removeInRange [0, 0][1, 0] root
-    --> (doc, [(paragraph, [text2])]
+    rootNode : Block
+    rootNode =
+        block
+            (Element.element doc [])
+            (blockChildren <| Array.fromList [ pNode ])
+
+
+    emptyRoot : Block
+    emptyRoot =
+        block
+            (Element.element doc [])
+            (blockChildren <| Array.empty)
+
+    removeInRange [0] [0] root == emptyRoot
+    --> True
 
 -}
 removeInRange : Path -> Path -> Block -> Block
@@ -1165,9 +1310,34 @@ removeInRange start end node =
 {-| Removes the node at the given path, and recursively removes parent blocks that have no remaining
 child nodes, excluding the root.
 
-    root = (doc, [(paragraph, [text]), (paragraph, [text, text2])]
-    removeNodeAndEmptyParents [0, 0] root
-    --> (doc, [(paragraph, [text, text2])]
+    rootNode : Block
+    rootNode =
+        block
+            (Element.element doc [])
+            (blockChildren <|
+                Array.fromList [ removedPHtmlNode ]
+            )
+
+    pNode : Block
+    pNode =
+        block
+            (Element.element paragraph [])
+            (inlineChildren <|
+                Array.fromList [ textNode ]
+            )
+
+    textNode : Inline
+    textNode =
+        plainText "sample1"
+
+    removedRoot : Block
+    removedRoot =
+        block
+            (Element.element doc [])
+            (blockChildren Array.empty)
+
+    removeNodeAndEmptyParents [0, 0] root == removedRoot
+    --> True
 
 -}
 removeNodeAndEmptyParents : Path -> Block -> Block
@@ -1254,6 +1424,11 @@ splitTextLeaf offset leaf =
 {-| Splits a block at the given path and offset and returns Just the split nodes.
 If the path is invalid or the node cannot be split, Nothing is returned.
 
+    textNode1 : Inline
+    textNode1 =
+        plainText "sample1"
+
+    nodeWithTextLeafToSplit : Block
     nodeWithTextLeafToSplit =
         block
             (Element.element paragraph [])
@@ -1261,6 +1436,7 @@ If the path is invalid or the node cannot be split, Nothing is returned.
                 Array.fromList [ textNode1 ]
             )
 
+    nodeBeforeTextLeafSplit : Block
     nodeBeforeTextLeafSplit =
         block
             (Element.element paragraph [])
@@ -1268,14 +1444,13 @@ If the path is invalid or the node cannot be split, Nothing is returned.
                 Array.fromList [ plainText "sam" ]
             )
 
-
+    nodeAfterTextLeafSplit : Block
     nodeAfterTextLeafSplit =
         block
             (Element.element paragraph [])
             (inlineChildren <|
                 Array.fromList [ plainText "ple1" ]
             )
-
 
     Just (nodeBeforeTextLeafSplit, nodeAfterTextLeafSplit) ==
         splitBlockAtPathAndOffset [ 0 ] 3 nodeWithTextLeafToSplit
@@ -1407,10 +1582,31 @@ anyRange pred start end root =
 path is a block, then returns the same path. Otherwise if the path is invalid,
 returns the root path.
 
-    root = (doc, [(paragraph, [text]), (paragraph, [text, text2])]
-    findClosestBlockPath [0, 0] root
+    rootNode : Block
+    rootNode =
+        block
+            (Element.element doc [])
+            (blockChildren <| Array.fromList [ pNode ])
+
+    pNode : Block
+    pNode =
+        block
+            (Element.element paragraph [])
+            (inlineChildren <|
+                Array.fromList [ textNode1, textNode2 ]
+            )
+
+    textNode1 : Inline
+    textNode1 =
+        plainText "sample1"
+
+    textNode2 : Inline
+    textNode2 =
+        plainText "sample2"
+
+    findClosestBlockPath [0, 0] rootNode
     --> [0]
-    findClosestBlockPath [0] root
+    findClosestBlockPath [0] rootNode
     --> [0]
 
 -}
@@ -1602,7 +1798,8 @@ toggleMark action markOrder mark node =
                     Array.fromList [ emptyText ]
                 )
 
-    isEmptyTextBlock pNode == True
+    isEmptyTextBlock pNode
+    --> True
 
 -}
 isEmptyTextBlock : Node -> Bool
