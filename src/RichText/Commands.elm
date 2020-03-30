@@ -933,6 +933,51 @@ removeNodeOrTextWithRange nodePath start maybeEnd root =
 
 
 {-| Removes a leaf element if it is the selected element, otherwise fails with an error.
+
+    before : State
+    before =
+        state
+            (block
+                (Element.element doc [])
+                (blockChildren <|
+                    Array.fromList
+                        [ block
+                            (Element.element paragraph [])
+                            (inlineChildren <|
+                                Array.fromList
+                                    [ plainText "hello"
+                                    , inlineElement (Element.element image []) []
+                                    , plainText "world"
+                                    ]
+                            )
+                        ]
+                )
+            )
+            (Just <| caret [ 0, 1 ] 0)
+
+
+    after : State
+    after =
+        state
+            (block
+                (Element.element doc [])
+                (blockChildren <|
+                    Array.fromList
+                        [ block
+                            (Element.element paragraph [])
+                            (inlineChildren <|
+                                Array.fromList
+                                    [ plainText "hello"
+                                    , plainText "world"
+                                    ]
+                            )
+                        ]
+                )
+            )
+            (Just <| caret [ 0, 0 ] 5)
+
+    removeSelectedLeafElement before == (Ok after)
+
 -}
 removeSelectedLeafElement : Transform
 removeSelectedLeafElement editorState =
@@ -1945,6 +1990,52 @@ backspaceInlineElement editorState =
                                 Err "There is no previous inline leaf element, found a block node"
 
 
+{-| Removes the previous block leaf if the selection is at the beginning of a text block, otherwise
+returns an error.
+
+    before : State
+    before =
+        state
+            (block
+                (Element.element doc [])
+                (blockChildren <|
+                    Array.fromList
+                        [ block
+                            (Element.element paragraph [])
+                            (inlineChildren <| Array.fromList [ plainText "p1" ])
+                        , block
+                            (Element.element horizontalRule [])
+                            Leaf
+                        , block
+                            (Element.element paragraph [])
+                            (inlineChildren <| Array.fromList [ plainText "p2" ])
+                        ]
+                )
+            )
+            (Just <| caret [ 2, 0 ] 0)
+
+
+    after : State
+    after =
+        state
+            (block
+                (Element.element doc [])
+                (blockChildren <|
+                    Array.fromList
+                        [ block
+                            (Element.element paragraph [])
+                            (inlineChildren <| Array.fromList [ plainText "p1" ])
+                        , block
+                            (Element.element paragraph [])
+                            (inlineChildren <| Array.fromList [ plainText "p2" ])
+                        ]
+                )
+            )
+            (Just <| caret [ 1, 0 ] 0)
+
+    (backspaceBlock before) == after
+
+-}
 backspaceBlock : Transform
 backspaceBlock editorState =
     case State.selection editorState of
