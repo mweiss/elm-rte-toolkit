@@ -1028,13 +1028,59 @@ removeSelectedLeafElement editorState =
                 Err "There's no leaf node at the given selection"
 
 
+{-| Backspace transform for a single character. This function has a few quirks in order to take
+advantage of native backspace behavior, namely:
 
--- backspace logic for text
--- offset = 0, try to delete the previous text node's text
--- offset = 1, set the text node to empty
--- other offset, allow browser to do the default behavior
+  - selection offset = 0, try to delete the previous text node's text
+  - selection offset = 1, remove the first character (afterwards, the reduce behavior of `apply`
+    may remove the text node)
+  - any other offset, return an error to allow browser to do the default behavior
 
+```
+    before : State
+    before =
+        state
+            (block
+                (Element.element doc [])
+                (blockChildren <|
+                    Array.fromList
+                        [ block
+                            (Element.element paragraph [])
+                            (inlineChildren <|
+                                Array.fromList
+                                    [ plainText "text"
+                                    , markedText "text2" [ mark bold [] ]
+                                    ]
+                            )
+                        ]
+                )
+            )
+            (Just <| caret [ 0, 1 ] 0)
 
+    after : State
+    after =
+        state
+            (block
+                (Element.element doc [])
+                (blockChildren <|
+                    Array.fromList
+                        [ block
+                            (Element.element paragraph [])
+                            (inlineChildren <|
+                                Array.fromList
+                                    [ plainText "tex"
+                                    , markedText "text2" [ mark bold [] ]
+                                    ]
+                            )
+                        ]
+                )
+            )
+            (Just <| caret [ 0, 0 ] 3)
+
+    (backspaceText before) == after
+```
+
+-}
 backspaceText : Transform
 backspaceText editorState =
     case State.selection editorState of
@@ -1115,10 +1161,10 @@ backspaceText editorState =
                                                                         )
 
                                                                 InlineElement _ ->
-                                                                    Err "Cannot backspace the text of an inline leaf"
+                                                                    Err "Cannot backspace if the previous node is an inline leaf"
 
                                                         Block _ ->
-                                                            Err "Cannot backspace the text of a block node"
+                                                            Err "Cannot backspace if the previous node is a block"
 
 
 isBlockOrInlineNodeWithMark : String -> Node -> Bool
