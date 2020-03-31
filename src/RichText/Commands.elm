@@ -1884,7 +1884,10 @@ splitBlockHeaderToNewParagraph headerElements paragraphElement editorState =
                                         Ok splitEditorState
 
 
-{-| -}
+{-| Transform that inserts the given block at the selection. If the selection is a range selection,
+the contents of that selection are first removed, then the insert command happens. Returns an error
+if the block could not be inserted.
+-}
 insertBlock : Block -> Transform
 insertBlock node editorState =
     case State.selection editorState of
@@ -2247,7 +2250,7 @@ lengthsFromGroup leaves =
         leaves
 
 
-{-| Removes the word previous to the collapsed selection, otherwise returns an error.
+{-| Removes the word before the collapsed selection, otherwise returns an error.
 
     before : State
     before =
@@ -2419,6 +2422,49 @@ advantage of native backspace behavior, namely:
         may remove the text node)
       - any other offset, return an error to allow browser to do the default behavior
 
+    before : State
+    before =
+        state
+            (block
+                (Element.element doc [])
+                (blockChildren <|
+                    Array.fromList
+                        [ block
+                            (Element.element paragraph [])
+                            (inlineChildren <|
+                                Array.fromList
+                                    [ plainText "text"
+                                    , markedText "text2" [ mark bold [] ]
+                                    ]
+                            )
+                        ]
+                )
+            )
+            (Just <| caret [ 0, 0 ] 4)
+
+
+    after : State
+    after =
+        state
+            (block
+                (Element.element doc [])
+                (blockChildren <|
+                    Array.fromList
+                        [ block
+                            (Element.element paragraph [])
+                            (inlineChildren <|
+                                Array.fromList
+                                    [ plainText "text"
+                                    , markedText "ext2" [ mark bold [] ]
+                                    ]
+                            )
+                        ]
+                )
+            )
+            (Just <| caret [ 0, 1 ] 0)
+
+    deleteText before == Ok after
+
 -}
 deleteText : Transform
 deleteText editorState =
@@ -2493,7 +2539,7 @@ deleteText editorState =
                                                                         )
 
                                                                 InlineElement _ ->
-                                                                    Err "Cannot backspace the text of an inline leaf"
+                                                                    Err "Cannot delete if the previous node is an inline leaf"
 
 
 {-| Removes the next inline element if the selection is at the end of a text leaf or inline element.
@@ -2650,7 +2696,52 @@ deleteBlock editorState =
                                 Err "The next node is not a block leaf, it's an inline leaf"
 
 
-{-| -}
+{-| Removes the word after the collapsed selection, otherwise returns an error.
+
+    before : State
+    before =
+        state
+            (block
+                (Element.element doc [])
+                (blockChildren <|
+                    Array.fromList
+                        [ block
+                            (Element.element paragraph [])
+                            (inlineChildren <|
+                                Array.fromList
+                                    [ plainText "this is an ex"
+                                    , markedText "ample okay" [ mark bold [] ]
+                                    ]
+                            )
+                        ]
+                )
+            )
+            (Just <| caret [ 0, 0 ] 11)
+
+
+    after : State
+    after =
+        state
+            (block
+                (Element.element doc [])
+                (blockChildren <|
+                    Array.fromList
+                        [ block
+                            (Element.element paragraph [])
+                            (inlineChildren <|
+                                Array.fromList
+                                    [ plainText "this is an "
+                                    , markedText " okay" [ mark bold [] ]
+                                    ]
+                            )
+                        ]
+                )
+            )
+            (Just <| caret [ 0, 0 ] 11)
+
+    deleteWord before == Ok after
+
+-}
 deleteWord : Transform
 deleteWord editorState =
     case State.selection editorState of
