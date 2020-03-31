@@ -502,11 +502,11 @@ concatMap func node =
                         in
                         Inline (InlineElement (l |> InlineElement.withElement (params |> Element.withAnnotations annotations)))
 
-    addDummyAnnotation : Node -> Node
-    addDummyAnnotation node =
+    setDummyAnnotation : Node -> Node
+    setDummyAnnotation node =
         setAnnotations dummyAnnotation node
 
-    map addDummyAnnotation (Block rootNode)
+    map setDummyAnnotation (Block rootNode)
     --> Recursively adds a dummy annotation to rootNode and all its children
 
 -}

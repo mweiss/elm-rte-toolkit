@@ -3,7 +3,7 @@ module RichText.Commands exposing
     , removeRange, removeRangeAndInsert, removeSelectedLeafElement
     , backspaceBlock, backspaceInlineElement, backspaceText, backspaceWord
     , deleteBlock, deleteInlineElement, deleteText, deleteWord
-    , insertBlock, insertBlockBeforeSelection, insertInlineElement, insertLineBreak, insertText
+    , insertBlock, insertInlineElement, insertLineBreak, insertText
     , joinBackward, joinForward
     , lift, liftEmpty
     , splitBlock, splitBlockHeaderToNewParagraph, splitTextBlock
@@ -41,7 +41,7 @@ creating actions that modify the editor's state.
 
 ## Insert
 
-@docs insertBlock, insertBlockBeforeSelection, insertInlineElement, insertLineBreak, insertText
+@docs insertBlock, insertInlineElement, insertLineBreak, insertText
 
 
 ## Join
@@ -2004,8 +2004,8 @@ insertBlockBeforeSelection node editorState =
                                 Err "Invalid state! I was expecting a block node."
 
 
-{-| Removes the previous inline element if the selection is an inline element with offset 0. Returns
-an error if it was unable to remove the element.
+{-| Removes the previous inline element if the selection is an inline element or text with offset 0.
+Returns an error if it was unable to remove the element.
 
     before : State
     before =
@@ -2411,7 +2411,15 @@ backspaceWord editorState =
                                 Err "I expected an inline leaf array"
 
 
-{-| -}
+{-| Delete (forward) transform for a single character. This function has a few quirks in order to take
+advantage of native backspace behavior, namely:
+
+      - selection offset = end of text leaf, try to delete the next text node's text
+      - selection offset = 1 - end of text leaf, remove the last character (afterwards, the reduce behavior of `apply`
+        may remove the text node)
+      - any other offset, return an error to allow browser to do the default behavior
+
+-}
 deleteText : Transform
 deleteText editorState =
     case State.selection editorState of
@@ -2488,7 +2496,9 @@ deleteText editorState =
                                                                     Err "Cannot backspace the text of an inline leaf"
 
 
-{-| -}
+{-| Removes the next inline element if the selection is at the end of a text leaf or inline element.
+Returns an error if it was unable to remove the element.
+-}
 deleteInlineElement : Transform
 deleteInlineElement editorState =
     case State.selection editorState of
@@ -2519,7 +2529,7 @@ deleteInlineElement editorState =
                                             InlineElement _ ->
                                                 0
                                 in
-                                if length < anchorOffset selection then
+                                if anchorOffset selection < length then
                                     Err "I cannot delete an inline element if the cursor is not at the end of an inline node"
 
                                 else
@@ -2555,7 +2565,52 @@ deleteInlineElement editorState =
                                                     Err "There is no next inline leaf, found a block node"
 
 
-{-| -}
+{-| Removes the next block leaf if the selection is at the end of a text block, otherwise fails
+with an error.
+
+    before : State
+    before =
+        state
+            (block
+                (Element.element doc [])
+                (blockChildren <|
+                    Array.fromList
+                        [ block
+                            (Element.element paragraph [])
+                            (inlineChildren <| Array.fromList [ plainText "p1" ])
+                        , block
+                            (Element.element horizontalRule [])
+                            Leaf
+                        , block
+                            (Element.element paragraph [])
+                            (inlineChildren <| Array.fromList [ plainText "p2" ])
+                        ]
+                )
+            )
+            (Just <| caret [ 0, 0 ] 2)
+
+
+    after : State
+    after =
+        state
+            (block
+                (Element.element doc [])
+                (blockChildren <|
+                    Array.fromList
+                        [ block
+                            (Element.element paragraph [])
+                            (inlineChildren <| Array.fromList [ plainText "p1" ])
+                        , block
+                            (Element.element paragraph [])
+                            (inlineChildren <| Array.fromList [ plainText "p2" ])
+                        ]
+                )
+            )
+            (Just <| caret [ 0, 0 ] 2)
+
+    deleteBlock before == Ok after
+
+-}
 deleteBlock : Transform
 deleteBlock editorState =
     case State.selection editorState of
