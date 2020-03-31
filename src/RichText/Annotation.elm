@@ -1,6 +1,6 @@
 module RichText.Annotation exposing
     ( selection, selectable, lift
-    , add, addAtPath, fromNode, clear, remove, removeAtPath
+    , add, addAtPath, addToBlock, addToInline, fromNode, clear, remove, removeAtPath, removeFromBlock, removeFromInline
     , annotateSelection, selectionFromAnnotations, clearSelectionAnnotations, isSelectable
     , doLift
     )
@@ -21,7 +21,7 @@ like if something is selectable.
 
 # Helpers
 
-@docs add, addAtPath, fromNode, clear, remove, removeAtPath
+@docs add, addAtPath, addToBlock, addToInline, fromNode, clear, remove, removeAtPath, removeFromBlock, removeFromInline
 
 
 # Selection
@@ -138,6 +138,54 @@ remove =
 add : String -> Node -> Node
 add =
     toggle Set.insert
+
+
+{-| Helper which adds the given annotation to a block node.
+-}
+addToBlock : String -> Block -> Block
+addToBlock a n =
+    case add a (Block n) of
+        Block b ->
+            b
+
+        _ ->
+            n
+
+
+{-| Helper which adds the given annotation to an inline node.
+-}
+addToInline : String -> Inline -> Inline
+addToInline a n =
+    case add a (Inline n) of
+        Inline i ->
+            i
+
+        _ ->
+            n
+
+
+{-| Helper which removes the given annotation to a block node.
+-}
+removeFromBlock : String -> Block -> Block
+removeFromBlock a n =
+    case remove a (Block n) of
+        Block b ->
+            b
+
+        _ ->
+            n
+
+
+{-| Helper which removes the given annotation to an inline node.
+-}
+removeFromInline : String -> Inline -> Inline
+removeFromInline a n =
+    case remove a (Inline n) of
+        Inline i ->
+            i
+
+        _ ->
+            n
 
 
 toggleElementParameters : (String -> Set String -> Set String) -> String -> Element -> Element

@@ -1884,9 +1884,58 @@ splitBlockHeaderToNewParagraph headerElements paragraphElement editorState =
                                         Ok splitEditorState
 
 
-{-| Transform that inserts the given block at the selection. If the selection is a range selection,
-the contents of that selection are first removed, then the insert command happens. Returns an error
-if the block could not be inserted.
+{-| Transform that inserts the given block at the selection. This is useful for inserting things like
+horizontal rules or other block leaf elements.
+
+If the selection is a range selection, the contents of that selection are first removed,
+then the insert command happens. If the inserted block is selectable, then the resulting selection will
+be the block, otherwise it will be the next selectable block or inline.
+Returns an error if the block could not be inserted.
+
+    before : State
+    before =
+        state
+            (block
+                (Element.element doc [])
+                (blockChildren <|
+                    Array.fromList
+                        [ block
+                            (Element.element paragraph [])
+                            (inlineChildren <| Array.fromList [ plainText "test" ])
+                        ]
+                )
+            )
+            (Just <| caret [ 0, 0 ] 2)
+
+
+    horizontalRuleBlock : Block
+    horizontalRuleBlock =
+        block
+            (Element.element horizontalRule [])
+            Leaf
+
+
+    after : State
+    after =
+        state
+            (block
+                (Element.element doc [])
+                (blockChildren <|
+                    Array.fromList
+                        [ block
+                            (Element.element paragraph [])
+                            (inlineChildren <| Array.fromList [ plainText "te" ])
+                        , horizontalRuleBlock
+                        , block
+                            (Element.element paragraph [])
+                            (inlineChildren <| Array.fromList [ plainText "st" ])
+                        ]
+                )
+            )
+            (Just <| caret [ 2, 0 ] 0)
+
+    insertBlock horizontalRuleBlock before == Ok after
+
 -}
 insertBlock : Block -> Transform
 insertBlock node editorState =
@@ -1941,7 +1990,6 @@ insertBlock node editorState =
                                         insertBlockBeforeSelection node splitEditorState
 
 
-{-| -}
 insertBlockBeforeSelection : Block -> Transform
 insertBlockBeforeSelection node editorState =
     case State.selection editorState of
