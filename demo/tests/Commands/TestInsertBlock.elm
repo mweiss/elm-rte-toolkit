@@ -207,7 +207,9 @@ testInsertBlock =
                 Expect.equal
                     (Ok expectedInsertBlockSelected)
                     (insertBlock selectableHorizontalBlock expectedSelectable)
-        , test "it should insert if an inline is selected" <|
+        , -- This is somewhat suspicious... perhaps it should remove the inline element instead
+          -- of split it
+          test "it should insert if an inline is selected" <|
             \_ ->
                 Expect.equal
                     (Ok expectedStateWithInline)

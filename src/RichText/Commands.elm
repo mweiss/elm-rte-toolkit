@@ -3,7 +3,7 @@ module RichText.Commands exposing
     , removeRange, removeRangeAndInsert, removeSelectedLeafElement
     , backspaceBlock, backspaceInlineElement, backspaceText, backspaceWord
     , deleteBlock, deleteInlineElement, deleteText, deleteWord
-    , insertBlock, insertInlineElement, insertLineBreak, insertText
+    , insertBlock, insertInline, insertLineBreak, insertText
     , joinBackward, joinForward
     , lift, liftEmpty
     , splitBlock, splitBlockHeaderToNewParagraph, splitTextBlock
@@ -41,7 +41,7 @@ creating actions that modify the editor's state.
 
 ## Insert
 
-@docs insertBlock, insertInlineElement, insertLineBreak, insertText
+@docs insertBlock, insertInline, insertLineBreak, insertText
 
 
 ## Join
@@ -707,20 +707,70 @@ removeRange editorState =
 {-| -}
 insertLineBreak : Transform
 insertLineBreak =
-    insertInlineElement
+    insertInline
         (Node.inlineElement (Element.element hardBreak []) [])
 
 
-{-| -}
-insertInlineElement : Inline -> Transform
-insertInlineElement leaf editorState =
+{-| Inserts the inline at the current selection. If the inline is selectable,
+it selects it at offset 0, otherwise the selection becomes the next selectable item if it exists.
+Returns an error if it cannot insert.
+
+    img : Inline
+    img =
+        addToInline selectable (inlineElement (Element.element image []) [])
+
+    before : State
+    before =
+        state
+            (block
+                (Element.element doc [])
+                (blockChildren <|
+                    Array.fromList
+                        [ block
+                            (Element.element paragraph [])
+                            (inlineChildren <|
+                                Array.fromList
+                                    [ plainText "text"
+                                    ]
+                            )
+                        ]
+                )
+            )
+            (Just <| caret [ 0, 0 ] 2)
+
+    after : State
+    after =
+        state
+            (block
+                (Element.element doc [])
+                (blockChildren <|
+                    Array.fromList
+                        [ block
+                            (Element.element paragraph [])
+                            (inlineChildren <|
+                                Array.fromList
+                                    [ plainText "te"
+                                    , img
+                                    , plainText "xt"
+                                    ]
+                            )
+                        ]
+                )
+            )
+            (Just <| caret [ 0, 1 ] 0)
+
+    insertInline before == Ok after
+
+-}
+insertInline : Inline -> Transform
+insertInline leaf editorState =
     case State.selection editorState of
         Nothing ->
             Err "Nothing is selected"
 
         Just selection ->
             if not <| isCollapsed selection then
-                removeRange editorState |> Result.andThen (insertInlineElement leaf)
+                removeRange editorState |> Result.andThen (insertInline leaf)
 
             else
                 case nodeAt (anchorNode selection) (State.root editorState) of
@@ -802,7 +852,7 @@ insertInlineElement leaf editorState =
                                                     )
 
                             _ ->
-                                Err "I can not insert an inline element in a block node"
+                                Err "I can not insert an inline element if a block is selected"
 
 
 {-| -}

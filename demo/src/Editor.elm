@@ -284,7 +284,7 @@ handleInsertImage spec model =
                         apply
                             ( "insertImage"
                             , transform <|
-                                Commands.insertInlineElement img
+                                Commands.insertInline img
                             )
                             spec
                             model.editor
