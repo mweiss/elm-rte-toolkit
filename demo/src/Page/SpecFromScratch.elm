@@ -157,6 +157,7 @@ todoList =
         , contentType = ElementDefinition.blockNode [ "items" ]
         , toHtmlNode = todoListToHtml
         , fromHtmlNode = htmlToTodoList
+        , selectable = False
         }
 
 
@@ -180,6 +181,7 @@ item =
         , contentType = ElementDefinition.textBlock [ "inline" ]
         , toHtmlNode = itemToHtml
         , fromHtmlNode = htmlToItem
+        , selectable = False
         }
 
 

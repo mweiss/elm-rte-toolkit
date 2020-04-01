@@ -2,7 +2,7 @@ module Commands.TestInsertBlock exposing (..)
 
 import Array
 import Expect
-import RichText.Annotation exposing (addToBlock, addToInline, selectable)
+import RichText.Annotation exposing (addToBlock, removeFromBlock, selectable)
 import RichText.Commands exposing (insertBlock)
 import RichText.Model.Element as Element
 import RichText.Model.Node
@@ -40,9 +40,10 @@ example =
 
 horizontalBlock : Block
 horizontalBlock =
-    block
-        (Element.element horizontalRule [])
-        Leaf
+    removeFromBlock selectable <|
+        block
+            (Element.element horizontalRule [])
+            Leaf
 
 
 selectableHorizontalBlock : Block
@@ -143,7 +144,7 @@ stateWithInline =
                         (inlineChildren <|
                             Array.fromList
                                 [ plainText "test"
-                                , addToInline selectable (inlineElement (Element.element image []) [])
+                                , inlineElement (Element.element image []) []
                                 , plainText "test2"
                                 ]
                         )
@@ -172,7 +173,7 @@ expectedStateWithInline =
                         (Element.element paragraph [])
                         (inlineChildren <|
                             Array.fromList
-                                [ addToInline selectable (inlineElement (Element.element image []) [])
+                                [ inlineElement (Element.element image []) []
                                 , plainText "test2"
                                 ]
                         )

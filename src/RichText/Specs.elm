@@ -62,6 +62,7 @@ doc =
         , contentType = blockNode [ "block" ]
         , toHtmlNode = docToHtml
         , fromHtmlNode = htmlToDoc
+        , selectable = False
         }
 
 
@@ -94,6 +95,7 @@ paragraph =
         , contentType = textBlock [ "inline" ]
         , toHtmlNode = paragraphToHtml
         , fromHtmlNode = htmlToParagraph
+        , selectable = False
         }
 
 
@@ -124,6 +126,7 @@ blockquote =
         , contentType = blockNode [ "block" ]
         , toHtmlNode = blockquoteToHtml
         , fromHtmlNode = htmlToBlockquote
+        , selectable = False
         }
 
 
@@ -145,6 +148,7 @@ horizontalRule =
         , contentType = blockLeaf
         , toHtmlNode = horizontalRuleToHtml
         , fromHtmlNode = htmlToHorizontalRule
+        , selectable = True
         }
 
 
@@ -175,6 +179,7 @@ heading =
         , contentType = textBlock [ "inline" ]
         , toHtmlNode = headingToHtml
         , fromHtmlNode = htmlToHeading
+        , selectable = False
         }
 
 
@@ -238,6 +243,7 @@ codeBlock =
         , contentType = textBlock [ "text", "hard_break" ]
         , toHtmlNode = codeBlockToHtmlNode
         , fromHtmlNode = htmlNodeToCodeBlock
+        , selectable = False
         }
 
 
@@ -280,6 +286,7 @@ image =
         , contentType = inlineLeaf
         , toHtmlNode = imageToHtmlNode
         , fromHtmlNode = htmlNodeToImage
+        , selectable = True
         }
 
 
@@ -349,6 +356,7 @@ hardBreak =
         , contentType = inlineLeaf
         , toHtmlNode = hardBreakToHtml
         , fromHtmlNode = htmlToHardBreak
+        , selectable = False
         }
 
 
@@ -388,6 +396,7 @@ orderedList =
         , contentType = blockNode [ "list_item" ]
         , toHtmlNode = orderedListToHtml
         , fromHtmlNode = htmlToOrderedList
+        , selectable = False
         }
 
 
@@ -409,6 +418,7 @@ unorderedList =
         , contentType = blockNode [ "list_item" ]
         , toHtmlNode = unorderedListToHtml
         , fromHtmlNode = htmlToUnorderedList
+        , selectable = False
         }
 
 
@@ -430,6 +440,7 @@ listItem =
         , contentType = blockNode [ "block" ]
         , toHtmlNode = listItemToHtml
         , fromHtmlNode = htmlToListItem
+        , selectable = False
         }
 
 

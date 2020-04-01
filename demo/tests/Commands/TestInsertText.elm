@@ -1,9 +1,8 @@
-module Commands.TestInsertInline exposing (..)
+module Commands.TestInsertText exposing (..)
 
 import Array
 import Expect
-import RichText.Commands exposing (insertInline)
-import RichText.Model.Attribute exposing (Attribute(..))
+import RichText.Commands exposing (insertText)
 import RichText.Model.Element as Element
 import RichText.Model.Node
     exposing
@@ -20,16 +19,6 @@ import RichText.Model.Selection exposing (caret, singleNodeRange)
 import RichText.Model.State exposing (State, state, withSelection)
 import RichText.Specs exposing (doc, horizontalRule, image, paragraph)
 import Test exposing (Test, describe, test)
-
-
-img : Inline
-img =
-    inlineElement (Element.element image []) []
-
-
-newImg : Inline
-newImg =
-    inlineElement (Element.element image [ StringAttribute "src" "test" ]) []
 
 
 example : State
@@ -63,19 +52,16 @@ expectedExample =
                         (Element.element paragraph [])
                         (inlineChildren <|
                             Array.fromList
-                                [ plainText "te"
-                                , img
-                                , plainText "xt"
-                                ]
+                                [ plainText "teinsertxt" ]
                         )
                     ]
             )
         )
-        (Just <| caret [ 0, 1 ] 0)
+        (Just <| caret [ 0, 0 ] 8)
 
 
-inlineReplace : State
-inlineReplace =
+expectedRange : State
+expectedRange =
     state
         (block
             (Element.element doc [])
@@ -85,16 +71,16 @@ inlineReplace =
                         (Element.element paragraph [])
                         (inlineChildren <|
                             Array.fromList
-                                [ img ]
+                                [ plainText "insertxt" ]
                         )
                     ]
             )
         )
-        (Just <| caret [ 0, 0 ] 0)
+        (Just <| caret [ 0, 0 ] 6)
 
 
-expectedInlineReplace : State
-expectedInlineReplace =
+blockSelected : State
+blockSelected =
     state
         (block
             (Element.element doc [])
@@ -104,49 +90,7 @@ expectedInlineReplace =
                         (Element.element paragraph [])
                         (inlineChildren <|
                             Array.fromList
-                                [ newImg ]
-                        )
-                    ]
-            )
-        )
-        (Just <| caret [ 0, 0 ] 0)
-
-
-expectedRangeExample : State
-expectedRangeExample =
-    state
-        (block
-            (Element.element doc [])
-            (blockChildren <|
-                Array.fromList
-                    [ block
-                        (Element.element paragraph [])
-                        (inlineChildren <|
-                            Array.fromList
-                                [ plainText ""
-                                , img
-                                , plainText "xt"
-                                ]
-                        )
-                    ]
-            )
-        )
-        (Just <| caret [ 0, 1 ] 0)
-
-
-hrExample : State
-hrExample =
-    state
-        (block
-            (Element.element doc [])
-            (blockChildren <|
-                Array.fromList
-                    [ block
-                        (Element.element paragraph [])
-                        (inlineChildren <|
-                            Array.fromList
-                                [ plainText "text"
-                                ]
+                                [ plainText "insertxt" ]
                         )
                     , block
                         (Element.element horizontalRule [])
@@ -157,21 +101,47 @@ hrExample =
         (Just <| caret [ 1 ] 0)
 
 
-testInsertInlineElement : Test
-testInsertInlineElement =
-    describe "Tests the insertInlineElement transform"
+inlineSelected : State
+inlineSelected =
+    state
+        (block
+            (Element.element doc [])
+            (blockChildren <|
+                Array.fromList
+                    [ block
+                        (Element.element paragraph [])
+                        (inlineChildren <|
+                            Array.fromList
+                                [ inlineElement (Element.element image []) [] ]
+                        )
+                    ]
+            )
+        )
+        (Just <| caret [ 0, 0 ] 0)
+
+
+testInsertText : Test
+testInsertText =
+    describe "Tests the insertText transform"
         [ test "Tests that the example case works as expected" <|
-            \_ -> Expect.equal (Ok expectedExample) (insertInline img example)
-        , test "it should replace a selected inline element" <|
-            \_ -> Expect.equal (Ok expectedInlineReplace) (insertInline newImg inlineReplace)
-        , test "it should replace a range selection" <|
+            \_ -> Expect.equal (Ok expectedExample) (insertText "insert" example)
+        , test "it should insert into a range" <|
             \_ ->
-                Expect.equal (Ok expectedRangeExample)
-                    (insertInline img
-                        (example |> withSelection (Just <| singleNodeRange [ 0, 0 ] 0 2))
+                Expect.equal
+                    (Ok expectedRange)
+                    (insertText "insert"
+                        (example
+                            |> withSelection (Just <| singleNodeRange [ 0, 0 ] 0 2)
+                        )
                     )
-        , test "it should fail if a block is selected" <|
+        , test "it should fail if a block leaf is selected" <|
             \_ ->
-                Expect.equal (Err "I can not insert an inline element if a block is selected")
-                    (insertInline img hrExample)
+                Expect.equal
+                    (Err "I was expecting a text leaf, but instead I found a block node")
+                    (insertText "insert" blockSelected)
+        , test "it should fail if an inline leaf is selected" <|
+            \_ ->
+                Expect.equal
+                    (Err "I was expecting a text leaf, but instead found an inline element")
+                    (insertText "insert" inlineSelected)
         ]

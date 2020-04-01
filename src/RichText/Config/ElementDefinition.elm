@@ -126,11 +126,19 @@ elementDefinition :
     , contentType : ContentType
     , toHtmlNode : ElementToHtml
     , fromHtmlNode : HtmlToElement
+    , selectable : Bool
     }
     -> ElementDefinition
 elementDefinition contents =
     Internal.ElementDefinition
         contents
+
+
+selectable : ElementDefinition -> Bool
+selectable definition_ =
+    case definition_ of
+        Internal.ElementDefinition c ->
+            c.selectable
 
 
 {-| The name of the node this element definition defines.
@@ -251,6 +259,7 @@ defaultElementDefinition name_ group_ contentType_ =
         , contentType = contentType_
         , toHtmlNode = defaultElementToHtml name_
         , fromHtmlNode = defaultHtmlToElement name_
+        , selectable = False
         }
 
 

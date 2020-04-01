@@ -5,6 +5,7 @@ private and avoid dependency loops.
 -}
 
 import Array exposing (Array)
+import RichText.Internal.Constants exposing (selectable)
 import RichText.Model.Attribute exposing (Attribute)
 import RichText.Model.HtmlNode exposing (HtmlNode)
 import Set exposing (Set)
@@ -44,7 +45,16 @@ element : ElementDefinition -> List Attribute -> Element
 element def attrs =
     case def of
         ElementDefinition d ->
-            ElementParameters { name = d.name, attributes = attrs, annotations = Set.empty }
+            ElementParameters
+                { name = d.name
+                , attributes = attrs
+                , annotations =
+                    if d.selectable then
+                        Set.singleton selectable
+
+                    else
+                        Set.empty
+                }
 
 
 nameFromElement : Element -> String
@@ -155,6 +165,7 @@ type alias ElementDefinitionContents =
     , group : String
     , contentType : ContentType
     , fromHtmlNode : HtmlToElement
+    , selectable : Bool
     }
 
 

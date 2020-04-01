@@ -108,6 +108,7 @@ codeBlock =
         , contentType = blockNode []
         , toHtmlNode = codeBlockToHtmlNode
         , fromHtmlNode = htmlNodeToCodeBlock
+        , selectable = False
         }
 
 
@@ -118,6 +119,7 @@ crazyBlock =
         , contentType = blockNode []
         , toHtmlNode = crazyBlockToHtmlNode
         , fromHtmlNode = htmlNodeToCrazyBlock
+        , selectable = False
         }
 
 
@@ -128,6 +130,7 @@ paragraph =
         , contentType = textBlock []
         , toHtmlNode = defaultElementToHtml "p"
         , fromHtmlNode = defaultHtmlToElement "p"
+        , selectable = False
         }
 
 
@@ -138,6 +141,7 @@ image =
         , contentType = inlineLeaf
         , toHtmlNode = defaultElementToHtml "img"
         , fromHtmlNode = defaultHtmlToElement "img"
+        , selectable = False
         }
 
 

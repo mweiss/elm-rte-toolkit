@@ -324,7 +324,7 @@ insertText s editorState =
 
         Just selection ->
             if not <| isCollapsed selection then
-                Err "I can only insert text if the range is collapsed"
+                removeRange editorState |> Result.andThen (insertText s)
 
             else
                 case nodeAt (anchorNode selection) (State.root editorState) of
@@ -334,12 +334,12 @@ insertText s editorState =
                     Just node ->
                         case node of
                             Block _ ->
-                                Err "I was expected a text leaf, but instead I found a block node"
+                                Err "I was expecting a text leaf, but instead I found a block node"
 
                             Inline il ->
                                 case il of
                                     InlineElement _ ->
-                                        Err "I was expecting a text leaf, but instead found a block node"
+                                        Err "I was expecting a text leaf, but instead found an inline element"
 
                                     Text tl ->
                                         let
@@ -366,7 +366,7 @@ insertText s editorState =
                                                             (Just <|
                                                                 caret
                                                                     (anchorNode selection)
-                                                                    (anchorOffset selection + 1)
+                                                                    (anchorOffset selection + String.length s)
                                                             )
                                                     )
 
@@ -704,7 +704,52 @@ removeRange editorState =
                                                         Ok <| Result.withDefault newEditorState (joinForward newEditorState)
 
 
-{-| -}
+{-| Inserts a hard break at the current selection.
+
+    before : State
+    before =
+        state
+            (block
+                (Element.element doc [])
+                (blockChildren <|
+                    Array.fromList
+                        [ block
+                            (Element.element paragraph [])
+                            (inlineChildren <|
+                                Array.fromList
+                                    [ plainText "text"
+                                    ]
+                            )
+                        ]
+                )
+            )
+            (Just <| caret [ 0, 0 ] 2)
+
+
+    after : State
+    after =
+        state
+            (block
+                (Element.element doc [])
+                (blockChildren <|
+                    Array.fromList
+                        [ block
+                            (Element.element paragraph [])
+                            (inlineChildren <|
+                                Array.fromList
+                                    [ plainText "te"
+                                    , inlineElement (Element.element hardBreak []) []
+                                    , plainText "xt"
+                                    ]
+                            )
+                        ]
+                )
+            )
+            (Just <| caret [ 0, 2 ] 0)
+
+    insertLineBreak before == Ok after
+
+-}
 insertLineBreak : Transform
 insertLineBreak =
     insertInline
@@ -717,7 +762,7 @@ Returns an error if it cannot insert.
 
     img : Inline
     img =
-        addToInline selectable (inlineElement (Element.element image []) [])
+        inlineElement (Element.element image []) []
 
     before : State
     before =
@@ -1982,7 +2027,7 @@ Returns an error if the block could not be inserted.
                         ]
                 )
             )
-            (Just <| caret [ 2, 0 ] 0)
+            (Just <| caret [ 1 ] 0)
 
     insertBlock horizontalRuleBlock before == Ok after
 

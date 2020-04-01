@@ -9,7 +9,6 @@ import Html.Attributes exposing (href, title)
 import Html.Events exposing (onClick)
 import Json.Decode as D
 import Links exposing (rteToolkit)
-import RichText.Annotation exposing (selectable)
 import RichText.Commands as Commands
 import RichText.Config.Command exposing (Transform, transform)
 import RichText.Config.Decorations exposing (addElementDecoration, selectableDecoration)
@@ -156,7 +155,6 @@ handleInsertCaptionedImage spec model =
                                 , StringAttribute "alt" insertImageModal.alt
                                 , StringAttribute "caption" insertImageModal.caption
                                 ]
-                                |> Element.withAnnotations (Set.singleton selectable)
 
                         img =
                             block params Leaf
@@ -289,7 +287,6 @@ initialCaptionedImage =
     block
         (element captionedImage
             [ StringAttribute "caption" "The elm logo!", StringAttribute "src" "/logo.svg" ]
-            |> Element.withAnnotations (Set.singleton selectable)
         )
         Leaf
 
@@ -442,6 +439,7 @@ captionedImage =
         , contentType = blockLeaf
         , toHtmlNode = imageToHtmlNode
         , fromHtmlNode = htmlNodeToImage
+        , selectable = True
         }
 
 
@@ -533,7 +531,6 @@ htmlNodeToImage def node =
                             Just attr ->
                                 Just
                                     ( element def attr
-                                        |> Element.withAnnotations (Set.singleton selectable)
                                     , Array.empty
                                     )
 

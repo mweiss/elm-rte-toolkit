@@ -5,7 +5,6 @@ import Controls exposing (EditorMsg(..), InsertImageModal, InsertLinkModal, Styl
 import ExtraMarks exposing (strikethrough, underline)
 import Html exposing (Html, div)
 import Html.Attributes
-import RichText.Annotation exposing (selectable)
 import RichText.Commands as Commands
     exposing
         ( insertBlock
@@ -17,7 +16,13 @@ import RichText.Commands as Commands
         , wrap
         )
 import RichText.Config.Command as Command exposing (CommandMap, inputEvent, key, set, transform)
-import RichText.Config.Decorations exposing (Decorations, addElementDecoration, emptyDecorations, selectableDecoration)
+import RichText.Config.Decorations
+    exposing
+        ( Decorations
+        , addElementDecoration
+        , emptyDecorations
+        , selectableDecoration
+        )
 import RichText.Config.Keys exposing (enter, return)
 import RichText.Config.Spec exposing (Spec)
 import RichText.Editor as Editor exposing (Config, Editor, apply, applyList, state)
@@ -275,7 +280,6 @@ handleInsertImage spec model =
                                 [ StringAttribute "src" insertImageModal.src
                                 , StringAttribute "alt" insertImageModal.alt
                                 ]
-                                |> Element.withAnnotations (Set.singleton selectable)
 
                         img =
                             inlineElement params []
@@ -489,7 +493,6 @@ handleInsertHorizontalRule spec model =
                                 (element
                                     horizontalRule
                                     []
-                                    |> Element.withAnnotations (Set.singleton selectable)
                                 )
                                 Leaf
                             )
