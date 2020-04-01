@@ -3,6 +3,7 @@ module Commands.TestJoinForward exposing (..)
 import Array
 import Expect
 import RichText.Commands exposing (joinForward)
+import RichText.Definitions exposing (doc, horizontalRule, image, paragraph)
 import RichText.Model.Element as Element
 import RichText.Model.Node
     exposing
@@ -17,7 +18,6 @@ import RichText.Model.Node
         )
 import RichText.Model.Selection exposing (caret)
 import RichText.Model.State exposing (State, state)
-import RichText.Specs exposing (doc, horizontalRule, image, paragraph)
 import Test exposing (Test, describe, test)
 
 

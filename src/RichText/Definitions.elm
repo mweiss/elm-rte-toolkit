@@ -1,4 +1,4 @@
-module RichText.Specs exposing
+module RichText.Definitions exposing
     ( blockquote
     , bold
     , code

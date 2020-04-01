@@ -3,6 +3,7 @@ module Commands.TestDeleteText exposing (..)
 import Array
 import Expect
 import RichText.Commands exposing (deleteText)
+import RichText.Definitions exposing (bold, doc, image, paragraph)
 import RichText.Model.Element as Element
 import RichText.Model.Mark exposing (mark)
 import RichText.Model.Node
@@ -19,7 +20,6 @@ import RichText.Model.Node
         )
 import RichText.Model.Selection exposing (caret)
 import RichText.Model.State exposing (State, state, withSelection)
-import RichText.Specs exposing (bold, doc, image, paragraph)
 import Test exposing (Test, describe, test)
 
 

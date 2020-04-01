@@ -3,6 +3,7 @@ module Commands.TestInsertLineBreak exposing (..)
 import Array
 import Expect
 import RichText.Commands exposing (insertLineBreak)
+import RichText.Definitions exposing (doc, hardBreak, paragraph)
 import RichText.Model.Element as Element
 import RichText.Model.Node
     exposing
@@ -17,7 +18,6 @@ import RichText.Model.Node
         )
 import RichText.Model.Selection exposing (caret)
 import RichText.Model.State exposing (State, state)
-import RichText.Specs exposing (doc, hardBreak, paragraph)
 import Test exposing (Test, describe, test)
 
 

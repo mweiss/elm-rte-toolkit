@@ -25,6 +25,20 @@ import RichText.Config.Decorations
         )
 import RichText.Config.Keys exposing (enter, return)
 import RichText.Config.Spec exposing (Spec)
+import RichText.Definitions
+    exposing
+        ( blockquote
+        , bold
+        , code
+        , codeBlock
+        , doc
+        , heading
+        , horizontalRule
+        , image
+        , italic
+        , link
+        , paragraph
+        )
 import RichText.Editor as Editor exposing (Config, Editor, apply, applyList, state)
 import RichText.List exposing (ListType, defaultListDefinition)
 import RichText.Model.Attribute exposing (Attribute(..))
@@ -45,20 +59,6 @@ import RichText.Model.Node
 import RichText.Model.Selection exposing (anchorNode, focusNode, normalize)
 import RichText.Model.State as State exposing (State)
 import RichText.Node exposing (Node(..), anyRange)
-import RichText.Specs
-    exposing
-        ( blockquote
-        , bold
-        , code
-        , codeBlock
-        , doc
-        , heading
-        , horizontalRule
-        , image
-        , italic
-        , link
-        , paragraph
-        )
 import Set
 
 

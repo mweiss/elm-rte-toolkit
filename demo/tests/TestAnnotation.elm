@@ -2,6 +2,7 @@ module TestAnnotation exposing (..)
 
 import Expect
 import RichText.Annotation exposing (isSelectable, selectable)
+import RichText.Definitions exposing (doc)
 import RichText.Model.Element as Element
 import RichText.Model.Node exposing (Block, Children(..), Inline(..), Path, block, plainText)
 import RichText.Node
@@ -9,7 +10,6 @@ import RichText.Node
         ( Fragment(..)
         , Node(..)
         )
-import RichText.Specs exposing (doc)
 import Set
 import Test exposing (Test, describe, test)
 

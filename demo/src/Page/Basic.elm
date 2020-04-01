@@ -5,8 +5,8 @@ import Editor
 import Html exposing (Html, a, h1, p, text)
 import Html.Attributes exposing (href, title)
 import Links exposing (rteToolkit)
+import RichText.Definitions as Specs
 import RichText.Editor as RTE
-import RichText.Specs as Specs
 import Session exposing (Session)
 
 

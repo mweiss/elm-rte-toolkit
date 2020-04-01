@@ -11,6 +11,23 @@ import Markdown.Block as M
 import Markdown.Config as M
 import Markdown.Inline as MI
 import RichText.Config.Spec exposing (Spec, withMarkDefinitions)
+import RichText.Definitions as MarkdownSpec
+    exposing
+        ( blockquote
+        , bold
+        , code
+        , codeBlock
+        , doc
+        , hardBreak
+        , heading
+        , horizontalRule
+        , image
+        , link
+        , listItem
+        , orderedList
+        , paragraph
+        , unorderedList
+        )
 import RichText.Editor as RTE exposing (state)
 import RichText.Model.Attribute
     exposing
@@ -40,23 +57,6 @@ import RichText.Model.Node as Node
         )
 import RichText.Model.State as State exposing (State)
 import RichText.Model.Text as Text
-import RichText.Specs as MarkdownSpec
-    exposing
-        ( blockquote
-        , bold
-        , code
-        , codeBlock
-        , doc
-        , hardBreak
-        , heading
-        , horizontalRule
-        , image
-        , link
-        , listItem
-        , orderedList
-        , paragraph
-        , unorderedList
-        )
 import Session exposing (Session)
 
 

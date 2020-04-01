@@ -3,6 +3,7 @@ module Commands.TestBackspaceText exposing (..)
 import Array
 import Expect
 import RichText.Commands exposing (backspaceText)
+import RichText.Definitions exposing (bold, doc, horizontalRule, image, paragraph)
 import RichText.Model.Element as Element
 import RichText.Model.Mark exposing (mark)
 import RichText.Model.Node
@@ -19,7 +20,6 @@ import RichText.Model.Node
         )
 import RichText.Model.Selection exposing (caret, singleNodeRange)
 import RichText.Model.State exposing (State, state, withSelection)
-import RichText.Specs exposing (bold, doc, horizontalRule, image, paragraph)
 import Test exposing (Test, describe, test)
 
 

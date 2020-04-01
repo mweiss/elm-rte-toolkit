@@ -48,6 +48,7 @@ import RichText.Config.Keys
         , enter
         , return
         )
+import RichText.Definitions exposing (listItem, orderedList, unorderedList)
 import RichText.Model.Element as Element exposing (Element, element)
 import RichText.Model.Node as Node
     exposing
@@ -88,7 +89,6 @@ import RichText.Node
         , replace
         , replaceWithFragment
         )
-import RichText.Specs exposing (listItem, orderedList, unorderedList)
 
 
 type ListType

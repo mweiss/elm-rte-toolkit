@@ -3,11 +3,11 @@ module Commands.TestBackspaceInlineElement exposing (..)
 import Array
 import Expect
 import RichText.Commands exposing (backspaceInlineElement)
+import RichText.Definitions exposing (doc, image, paragraph)
 import RichText.Model.Element as Element
 import RichText.Model.Node exposing (Block, Children(..), Inline, block, blockChildren, inlineChildren, inlineElement, plainText)
 import RichText.Model.Selection exposing (caret)
 import RichText.Model.State exposing (State, state, withSelection)
-import RichText.Specs exposing (doc, image, paragraph)
 import Test exposing (Test, describe, test)
 
 

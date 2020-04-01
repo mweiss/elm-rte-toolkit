@@ -2,6 +2,7 @@ module TestNode exposing (..)
 
 import Array
 import Expect
+import RichText.Definitions exposing (doc, horizontalRule, image, paragraph)
 import RichText.Model.Element as Element
 import RichText.Model.InlineElement as InlineElement
 import RichText.Model.Node as Node
@@ -54,7 +55,6 @@ import RichText.Node
         , splitBlockAtPathAndOffset
         , splitTextLeaf
         )
-import RichText.Specs exposing (doc, horizontalRule, image, paragraph)
 import Set
 import Test exposing (Test, describe, test)
 

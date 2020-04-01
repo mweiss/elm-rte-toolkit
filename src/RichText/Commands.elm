@@ -99,6 +99,7 @@ import RichText.Config.Command
         , withDefaultKeyCommand
         )
 import RichText.Config.Keys exposing (alt, backspace, delete, enter, return, shift, short)
+import RichText.Definitions exposing (hardBreak)
 import RichText.Internal.DeleteWord as DeleteWord
 import RichText.Internal.Event exposing (InputEvent, KeyboardEvent)
 import RichText.Model.Element as Element exposing (Element)
@@ -167,7 +168,6 @@ import RichText.Node as RTNode
         , splitBlockAtPathAndOffset
         , splitTextLeaf
         )
-import RichText.Specs exposing (hardBreak)
 
 
 backspaceCommands =
@@ -1988,7 +1988,49 @@ addLiftMarkToBlocksInSelection selection root =
             root
 
 
-{-| -}
+{-| Lifts the selected block or the closest ancestor block out of its parent node.
+If the current selection is a range selection, this function lifts all blocks that are in the range.
+Returns an error if no lift can be done.
+
+    before : State
+    before =
+        state
+            (block
+                (Element.element doc [])
+                (blockChildren <|
+                    Array.fromList
+                        [ block
+                            (Element.element blockquote [])
+                            (blockChildren <|
+                                Array.fromList
+                                    [ block (Element.element paragraph [])
+                                        (inlineChildren <| Array.fromList [ plainText "text" ])
+                                    ]
+                            )
+                        ]
+                )
+            )
+            (Just <| caret [ 0, 0, 0 ] 0)
+
+
+    after : State
+    after =
+        state
+            (block
+                (Element.element doc [])
+                (blockChildren <|
+                    Array.fromList
+                        [ block
+                            (Element.element paragraph [])
+                            (inlineChildren <| Array.fromList [ plainText "text" ])
+                        ]
+                )
+            )
+            (Just <| caret [ 0, 0 ] 0)
+
+    lift before == Ok after
+
+-}
 lift : Transform
 lift editorState =
     case State.selection editorState of

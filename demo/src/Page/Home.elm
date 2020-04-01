@@ -5,6 +5,7 @@ import Controls exposing (EditorMsg(..))
 import Editor
 import Html exposing (Html, h1, text)
 import Html.Attributes exposing (class)
+import RichText.Definitions as Specs exposing (code, doc, paragraph)
 import RichText.Editor as RTE
 import RichText.Model.Element exposing (element)
 import RichText.Model.Mark exposing (mark)
@@ -19,7 +20,6 @@ import RichText.Model.Node
         )
 import RichText.Model.State as State exposing (State)
 import RichText.Model.Text as Text
-import RichText.Specs as Specs exposing (code, doc, paragraph)
 import Session exposing (Session)
 
 

@@ -3,6 +3,7 @@ module Commands.TestBackspaceBlock exposing (..)
 import Array
 import Expect
 import RichText.Commands exposing (backspaceBlock)
+import RichText.Definitions exposing (doc, horizontalRule, paragraph)
 import RichText.Model.Element as Element
 import RichText.Model.Node
     exposing
@@ -16,7 +17,6 @@ import RichText.Model.Node
         )
 import RichText.Model.Selection exposing (caret, singleNodeRange)
 import RichText.Model.State exposing (State, state, withSelection)
-import RichText.Specs exposing (doc, horizontalRule, paragraph)
 import Test exposing (Test, describe, test)
 
 

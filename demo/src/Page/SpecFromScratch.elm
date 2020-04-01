@@ -21,6 +21,7 @@ import RichText.Config.Spec
         ( emptySpec
         , withElementDefinitions
         )
+import RichText.Definitions exposing (hardBreak)
 import RichText.Editor as Editor
     exposing
         ( Editor
@@ -47,7 +48,6 @@ import RichText.Model.Node as Node
         )
 import RichText.Model.State as State exposing (State, withRoot)
 import RichText.Node as Node exposing (Node(..), nodeAt)
-import RichText.Specs exposing (hardBreak)
 import Session exposing (Session)
 
 

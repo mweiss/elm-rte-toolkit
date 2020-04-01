@@ -28,6 +28,7 @@ import RichText.Config.Spec
         , withElementDefinitions
         , withMarkDefinitions
         )
+import RichText.Definitions as MarkdownSpec exposing (doc, paragraph)
 import RichText.Editor as RTE exposing (apply, applyNoForceSelection)
 import RichText.Model.Attribute
     exposing
@@ -50,7 +51,6 @@ import RichText.Model.Node as Node
         )
 import RichText.Model.State as State exposing (State, withRoot)
 import RichText.Node as Node exposing (Node(..), nodeAt)
-import RichText.Specs as MarkdownSpec exposing (doc, paragraph)
 import Session exposing (Session)
 import Set
 

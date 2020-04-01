@@ -3,6 +3,7 @@ module Commands.TestInsertInline exposing (..)
 import Array
 import Expect
 import RichText.Commands exposing (insertInline)
+import RichText.Definitions exposing (doc, horizontalRule, image, paragraph)
 import RichText.Model.Attribute exposing (Attribute(..))
 import RichText.Model.Element as Element
 import RichText.Model.Node
@@ -18,7 +19,6 @@ import RichText.Model.Node
         )
 import RichText.Model.Selection exposing (caret, singleNodeRange)
 import RichText.Model.State exposing (State, state, withSelection)
-import RichText.Specs exposing (doc, horizontalRule, image, paragraph)
 import Test exposing (Test, describe, test)
 
 
