@@ -315,7 +315,49 @@ insertAt insert pos string =
     String.slice 0 pos string ++ insert ++ String.slice pos (String.length string) string
 
 
-{-| -}
+{-| Inserts text at the state's selection, otherwise returns an error.
+
+    before : State
+    before =
+        state
+            (block
+                (Element.element doc [])
+                (blockChildren <|
+                    Array.fromList
+                        [ block
+                            (Element.element paragraph [])
+                            (inlineChildren <|
+                                Array.fromList
+                                    [ plainText "text"
+                                    ]
+                            )
+                        ]
+                )
+            )
+            (Just <| caret [ 0, 0 ] 2)
+
+
+    after : State
+    after =
+        state
+            (block
+                (Element.element doc [])
+                (blockChildren <|
+                    Array.fromList
+                        [ block
+                            (Element.element paragraph [])
+                            (inlineChildren <|
+                                Array.fromList
+                                    [ plainText "teinsertxt" ]
+                            )
+                        ]
+                )
+            )
+            (Just <| caret [ 0, 0 ] 8)
+
+    insertText before == Ok after
+
+-}
 insertText : String -> Transform
 insertText s editorState =
     case State.selection editorState of
@@ -371,7 +413,59 @@ insertText s editorState =
                                                     )
 
 
-{-| -}
+{-| If the selection is collapsed and at the start of a text block, tries to join the current
+block the previous one. Otherwise, returns an error.
+
+    before : State
+    before =
+        state
+            (block
+                (Element.element doc [])
+                (blockChildren <|
+                    Array.fromList
+                        [ block
+                            (Element.element paragraph [])
+                            (inlineChildren <|
+                                Array.fromList
+                                    [ plainText "text"
+                                    ]
+                            )
+                        , block
+                            (Element.element paragraph [])
+                            (inlineChildren <|
+                                Array.fromList
+                                    [ plainText "text2"
+                                    ]
+                            )
+                        ]
+                )
+            )
+            (Just <| caret [ 1, 0 ] 0)
+
+
+    after : State
+    after =
+        state
+            (block
+                (Element.element doc [])
+                (blockChildren <|
+                    Array.fromList
+                        [ block
+                            (Element.element paragraph [])
+                            (inlineChildren <|
+                                Array.fromList
+                                    [ plainText "text"
+                                    , plainText "text2"
+                                    ]
+                            )
+                        ]
+                )
+            )
+            (Just <| caret [ 0, 0 ] 4)
+
+    joinBackward before == Ok after
+
+-}
 joinBackward : Transform
 joinBackward editorState =
     case State.selection editorState of
@@ -380,7 +474,7 @@ joinBackward editorState =
 
         Just selection ->
             if not <| selectionIsBeginningOfTextBlock selection (State.root editorState) then
-                Err "I cannot join a selection that is not the beginning of a text block"
+                Err "I can only join backward if the selection is at beginning of a text block"
 
             else
                 case findTextBlockNodeAncestor (anchorNode selection) (State.root editorState) of
@@ -428,7 +522,51 @@ joinBackward editorState =
                                         Err "I can only join with text blocks"
 
 
-{-| -}
+{-| If the selection is collapsed and at the end of a text block, tries to join the current
+block the next one. Otherwise, returns an error.
+
+    before : State
+    before =
+        state
+            (block
+                (Element.element doc [])
+                (blockChildren <|
+                    Array.fromList
+                        [ block
+                            (Element.element paragraph [])
+                            (inlineChildren <| Array.fromList [ plainText "text" ])
+                        , block
+                            (Element.element paragraph [])
+                            (inlineChildren <| Array.fromList [ plainText "text2" ])
+                        ]
+                )
+            )
+            (Just <| caret [ 0, 0 ] 4)
+
+
+    after : State
+    after =
+        state
+            (block
+                (Element.element doc [])
+                (blockChildren <|
+                    Array.fromList
+                        [ block
+                            (Element.element paragraph [])
+                            (inlineChildren <|
+                                Array.fromList
+                                    [ plainText "text"
+                                    , plainText "text2"
+                                    ]
+                            )
+                        ]
+                )
+            )
+            (Just <| caret [ 0, 0 ] 4)
+
+    joinForward before == Ok after
+
+-}
 joinForward : Transform
 joinForward editorState =
     case State.selection editorState of
@@ -437,7 +575,7 @@ joinForward editorState =
 
         Just selection ->
             if not <| selectionIsEndOfTextBlock selection (State.root editorState) then
-                Err "I cannot join a selection that is not at the end of a text block"
+                Err "I can only join forward if the selection is at end of a text block"
 
             else
                 case findTextBlockNodeAncestor (anchorNode selection) (State.root editorState) of
