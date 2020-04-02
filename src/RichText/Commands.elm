@@ -1079,6 +1079,7 @@ insertInline leaf editorState =
             (Just <| caret [ 1, 0 ] 0)
 
     splitTextBlock before == Ok after
+    --> True
 
 -}
 splitTextBlock : Transform
@@ -1121,6 +1122,7 @@ If the selection is a range selection, also delete its content.
             (Just <| caret [ 1, 0 ] 0)
 
     splitBlock findTextBlockAncestor before == Ok after
+    --> True
 
 -}
 splitBlock : (Path -> Block -> Maybe ( Path, Block )) -> Transform
@@ -1622,7 +1624,51 @@ toggleMarkSingleInlineNode markOrder mark action editorState =
                                             )
 
 
-{-| -}
+{-| Applies the toggle action for the mark. The affected marks are sorted by the given mark order.
+
+    boldMark : Mark
+    boldMark =
+        mark bold []
+
+
+    markdownMarkOrder : MarkOrder
+    markdownMarkOrder =
+        markOrderFromSpec markdown
+
+
+    before : State
+    before =
+        state
+            (block
+                (Element.element doc [])
+                (blockChildren <|
+                    Array.fromList
+                        [ block (Element.element paragraph [])
+                            (inlineChildren <| Array.fromList [ plainText "text" ])
+                        ]
+                )
+            )
+            (Just <| caret [ 0, 0 ] 0)
+
+
+    after : State
+    after =
+        state
+            (block
+                (Element.element doc [])
+                (blockChildren <|
+                    Array.fromList
+                        [ block
+                            (Element.element paragraph [])
+                            (inlineChildren <| Array.fromList [ markedText "" [ boldMark ], plainText "text" ])
+                        ]
+                )
+            )
+            (Just <| caret [ 0, 0 ] 0)
+
+    toggleMark markdownMarkOrder boldMark Add example == Ok
+
+-}
 toggleMark : MarkOrder -> Mark -> ToggleAction -> Transform
 toggleMark markOrder mark action editorState =
     case State.selection editorState of
@@ -1770,9 +1816,54 @@ toggleMark markOrder mark action editorState =
                     )
 
 
-{-| -}
+{-| Changes the selected block or blocks to the onElement if one or more blocks is not that
+element. Otherwise, it changes it to the off element. If an element is not in the allowedElements,
+then it is unaffected.
+
+The arguments are as follows:
+
+  - `allowedElementNames` - a list of element names that can be affected by this toggle,
+    for example `["paragraph", "header"]`
+  - `onElement` - The element to change to if there is one or more block that is not that element
+  - `offElement` - The element to change to if all blocks are the `onElement`
+
+```
+before : State
+before =
+    state
+        (block
+            (Element.element doc [])
+            (blockChildren <|
+                Array.fromList
+                    [ block (Element.element paragraph [])
+                        (inlineChildren <| Array.fromList [ plainText "text" ])
+                    ]
+            )
+        )
+        (Just <| caret [ 0, 0 ] 0)
+
+
+after : State
+after =
+    state
+        (block
+            (Element.element doc [])
+            (blockChildren <|
+                Array.fromList
+                    [ block
+                        (Element.element heading [])
+                        (inlineChildren <| Array.fromList [ plainText "text" ])
+                    ]
+            )
+        )
+        (Just <| caret [ 0, 0 ] 0)
+
+toggleBlock [ "paragraph", "heading" ] (Element.element heading []) (Element.element paragraph []) before == Ok after
+```
+
+-}
 toggleBlock : List String -> Element -> Element -> Transform
-toggleBlock allowedBlocks onParams offParams editorState =
+toggleBlock allowedElementNames onElement offElement editorState =
     case State.selection editorState of
         Nothing ->
             Err "Nothing is selected."
@@ -1793,7 +1884,7 @@ toggleBlock allowedBlocks onParams offParams editorState =
                         (\node ->
                             case node of
                                 Block bn ->
-                                    Node.element bn == onParams
+                                    Node.element bn == onElement
 
                                 _ ->
                                     True
@@ -1804,10 +1895,10 @@ toggleBlock allowedBlocks onParams offParams editorState =
 
                 newParams =
                     if doOffBehavior then
-                        offParams
+                        offElement
 
                     else
-                        onParams
+                        onElement
 
                 newRoot =
                     case
@@ -1823,7 +1914,7 @@ toggleBlock allowedBlocks onParams offParams editorState =
                                                 p =
                                                     Node.element bn
                                             in
-                                            if List.member (Element.name p) allowedBlocks then
+                                            if List.member (Element.name p) allowedElementNames then
                                                 Block (bn |> withElement newParams)
 
                                             else
@@ -1843,7 +1934,50 @@ toggleBlock allowedBlocks onParams offParams editorState =
             Ok (editorState |> withRoot newRoot)
 
 
-{-| -}
+{-| Wraps the selection in the given element. The first argument is a mapping function for each
+block element affected by the wrap. For normal transforms, using `identity` is okay, but for things
+like lists, you may want to apply a function to wrap an additional list item block around each node.
+
+    before : State
+    before =
+        state
+            (block
+                (Element.element doc [])
+                (blockChildren <|
+                    Array.fromList
+                        [ block (Element.element paragraph [])
+                            (inlineChildren <| Array.fromList [ plainText "text" ])
+                        ]
+                )
+            )
+            (Just <| caret [ 0, 0 ] 0)
+
+
+    after : State
+    after =
+        state
+            (block
+                (Element.element doc [])
+                (blockChildren <|
+                    Array.fromList
+                        [ block
+                            (Element.element blockquote [])
+                            (blockChildren <|
+                                Array.fromList
+                                    [ block
+                                        (Element.element paragraph [])
+                                        (inlineChildren <| Array.fromList [ plainText "text" ])
+                                    ]
+                            )
+                        ]
+                )
+            )
+            (Just <| caret [ 0, 0, 0 ] 0)
+
+    wrap identity (Element.element blockquote []) before == Ok after
+    --> True
+
+-}
 wrap : (Block -> Block) -> Element -> Transform
 wrap contentsMapFunc elementParameters editorState =
     case State.selection editorState of
@@ -1977,7 +2111,42 @@ wrap contentsMapFunc elementParameters editorState =
                                                 Err "Invalid ancestor path... somehow we have an inline leaf"
 
 
-{-| -}
+{-| Updates the state's selection to span the first and last element of the document.
+
+    before : State
+    before =
+        state
+            (block
+                (Element.element doc [])
+                (blockChildren <|
+                    Array.fromList
+                        [ block (Element.element paragraph [])
+                            (inlineChildren <| Array.fromList [ plainText "text" ])
+                        ]
+                )
+            )
+            (Just <| caret [ 0, 0 ] 0)
+
+
+    after : State
+    after =
+        state
+            (block
+                (Element.element doc [])
+                (blockChildren <|
+                    Array.fromList
+                        [ block
+                            (Element.element paragraph [])
+                            (inlineChildren <| Array.fromList [ plainText "text" ])
+                        ]
+                )
+            )
+            (Just <| singleNodeRange [ 0, 0 ] 0 4)
+
+    selectAll before == Ok after
+    --> True
+
+-}
 selectAll : Transform
 selectAll editorState =
     let
@@ -2257,6 +2426,7 @@ header to a paragraph block.
             (Just <| caret [ 1, 0 ] 0)
 
     splitBlockHeaderToNewParagraph before == after
+    --> True
 
 -}
 splitBlockHeaderToNewParagraph : List String -> Element -> Transform
