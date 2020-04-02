@@ -292,6 +292,7 @@ it cannot remove the selection.
             (Just <| caret [ 0, 0 ] 3)
 
     removeRangeAndInsert "t" before == Ok after
+    --> True
 
 -}
 removeRangeAndInsert : String -> Transform
@@ -356,6 +357,7 @@ insertAt insert pos string =
             (Just <| caret [ 0, 0 ] 8)
 
     insertText before == Ok after
+    --> True
 
 -}
 insertText : String -> Transform
@@ -464,6 +466,7 @@ block the previous one. Otherwise, returns an error.
             (Just <| caret [ 0, 0 ] 4)
 
     joinBackward before == Ok after
+    --> True
 
 -}
 joinBackward : Transform
@@ -565,6 +568,7 @@ block the next one. Otherwise, returns an error.
             (Just <| caret [ 0, 0 ] 4)
 
     joinForward before == Ok after
+    --> True
 
 -}
 joinForward : Transform
@@ -707,6 +711,7 @@ removing the nodes failed.
            (Just <| caret [ 0, 0 ] 2)
 
     removeRange before == Ok after
+    --> True
 
 -}
 removeRange : Transform
@@ -886,6 +891,7 @@ removeRange editorState =
             (Just <| caret [ 0, 2 ] 0)
 
     insertLineBreak before == Ok after
+    --> True
 
 -}
 insertLineBreak : Transform
@@ -943,6 +949,7 @@ Returns an error if it cannot insert.
             (Just <| caret [ 0, 1 ] 0)
 
     insertInline before == Ok after
+    --> True
 
 -}
 insertInline : Inline -> Transform
@@ -1038,13 +1045,84 @@ insertInline leaf editorState =
                                 Err "I can not insert an inline element if a block is selected"
 
 
-{-| -}
+{-| Same as `splitBlock` but the searches for a text block ancestor if one exists.
+
+    before : State
+    before =
+        state
+            (block
+                (Element.element doc [])
+                (blockChildren <|
+                    Array.fromList
+                        [ block (Element.element paragraph [])
+                            (inlineChildren <| Array.fromList [ plainText "" ])
+                        ]
+                )
+            )
+            (Just <| caret [ 0, 0 ] 0)
+
+
+    after : State
+    after =
+        state
+            (block
+                (Element.element doc [])
+                (blockChildren <|
+                    Array.fromList
+                        [ block (Element.element paragraph [])
+                            (inlineChildren <| Array.fromList [ plainText "" ])
+                        , block (Element.element paragraph [])
+                            (inlineChildren <| Array.fromList [ plainText "" ])
+                        ]
+                )
+            )
+            (Just <| caret [ 1, 0 ] 0)
+
+    splitTextBlock before == Ok after
+
+-}
 splitTextBlock : Transform
 splitTextBlock =
     splitBlock findTextBlockNodeAncestor
 
 
-{-| -}
+{-| Split the ancestor block determined by the passed in function of the selection.
+If the selection is a range selection, also delete its content.
+
+    before : State
+    before =
+        state
+            (block
+                (Element.element doc [])
+                (blockChildren <|
+                    Array.fromList
+                        [ block (Element.element paragraph [])
+                            (inlineChildren <| Array.fromList [ plainText "" ])
+                        ]
+                )
+            )
+            (Just <| caret [ 0, 0 ] 0)
+
+
+    after : State
+    after =
+        state
+            (block
+                (Element.element doc [])
+                (blockChildren <|
+                    Array.fromList
+                        [ block (Element.element paragraph [])
+                            (inlineChildren <| Array.fromList [ plainText "" ])
+                        , block (Element.element paragraph [])
+                            (inlineChildren <| Array.fromList [ plainText "" ])
+                        ]
+                )
+            )
+            (Just <| caret [ 1, 0 ] 0)
+
+    splitBlock findTextBlockAncestor before == Ok after
+
+-}
 splitBlock : (Path -> Block -> Maybe ( Path, Block )) -> Transform
 splitBlock ancestorFunc editorState =
     case State.selection editorState of
@@ -1060,19 +1138,19 @@ splitBlock ancestorFunc editorState =
                     Nothing ->
                         Err "I cannot find a proper ancestor to split"
 
-                    Just ( textBlockPath, textBlockNode ) ->
+                    Just ( ancestorPath, ancestorNode ) ->
                         let
                             relativePath =
-                                List.drop (List.length textBlockPath) (anchorNode selection)
+                                List.drop (List.length ancestorPath) (anchorNode selection)
                         in
-                        case splitBlockAtPathAndOffset relativePath (anchorOffset selection) textBlockNode of
+                        case splitBlockAtPathAndOffset relativePath (anchorOffset selection) ancestorNode of
                             Nothing ->
                                 Err <| "Can not split block at path " ++ toString (anchorNode selection)
 
                             Just ( before, after ) ->
                                 case
                                     replaceWithFragment
-                                        textBlockPath
+                                        ancestorPath
                                         (BlockFragment (Array.fromList [ before, after ]))
                                         (State.root editorState)
                                 of
@@ -1082,7 +1160,10 @@ splitBlock ancestorFunc editorState =
                                     Ok newRoot ->
                                         let
                                             newSelectionPath =
-                                                increment textBlockPath ++ [ 0 ]
+                                                increment ancestorPath
+                                                    ++ List.repeat
+                                                        (List.length (anchorNode selection) - List.length ancestorPath)
+                                                        0
 
                                             newSelection =
                                                 caret newSelectionPath 0
@@ -1219,6 +1300,7 @@ removeNodeOrTextWithRange nodePath start maybeEnd root =
             (Just <| caret [ 0, 0 ] 5)
 
     removeSelectedLeafElement before == Ok after
+    --> True
 
 -}
 removeSelectedLeafElement : Transform
@@ -1320,6 +1402,7 @@ after =
         (Just <| caret [ 0, 0 ] 3)
 
 backspaceText before == Ok after
+--> True
 ```
 
 -}
@@ -2029,6 +2112,7 @@ Returns an error if no lift can be done.
             (Just <| caret [ 0, 0 ] 0)
 
     lift before == Ok after
+    --> True
 
 -}
 lift : Transform
@@ -2065,7 +2149,48 @@ lift editorState =
                 )
 
 
-{-| -}
+{-| Same as `lift` but only succeeds if the selection is an empty text block.
+
+    before : State
+    before =
+        state
+            (block
+                (Element.element doc [])
+                (blockChildren <|
+                    Array.fromList
+                        [ block
+                            (Element.element blockquote [])
+                            (blockChildren <|
+                                Array.fromList
+                                    [ block (Element.element paragraph [])
+                                        (inlineChildren <| Array.fromList [ plainText "" ])
+                                    ]
+                            )
+                        ]
+                )
+            )
+            (Just <| caret [ 0, 0, 0 ] 0)
+
+
+    after : State
+    after =
+        state
+            (block
+                (Element.element doc [])
+                (blockChildren <|
+                    Array.fromList
+                        [ block
+                            (Element.element paragraph [])
+                            (inlineChildren <| Array.fromList [ plainText "" ])
+                        ]
+                )
+            )
+            (Just <| caret [ 0, 0 ] 0)
+
+    liftEmpty before == Ok after
+    --> True
+
+-}
 liftEmpty : Transform
 liftEmpty editorState =
     case State.selection editorState of
@@ -2087,7 +2212,7 @@ liftEmpty editorState =
 
                     Just node ->
                         if not <| isEmptyTextBlock node then
-                            Err "I cannot lift a node that is not an empty text block"
+                            Err "I can only lift an empty text block"
 
                         else if List.length p < 2 then
                             Err "I cannot lift a node that's root or an immediate child of root"
@@ -2096,7 +2221,44 @@ liftEmpty editorState =
                             lift editorState
 
 
-{-| -}
+{-| Does the split block logic, but also additionally changes the second part of the split
+to the given element if it's an empty text block. This is useful for splitting a
+header to a paragraph block.
+
+    before : State
+    before =
+        state
+            (block
+                (Element.element doc [])
+                (blockChildren <|
+                    Array.fromList
+                        [ block (Element.element heading [])
+                            (inlineChildren <| Array.fromList [ plainText "" ])
+                        ]
+                )
+            )
+            (Just <| caret [ 0, 0 ] 0)
+
+
+    after : State
+    after =
+        state
+            (block
+                (Element.element doc [])
+                (blockChildren <|
+                    Array.fromList
+                        [ block (Element.element heading [])
+                            (inlineChildren <| Array.fromList [ plainText "" ])
+                        , block (Element.element paragraph [])
+                            (inlineChildren <| Array.fromList [ plainText "" ])
+                        ]
+                )
+            )
+            (Just <| caret [ 1, 0 ] 0)
+
+    splitBlockHeaderToNewParagraph before == after
+
+-}
 splitBlockHeaderToNewParagraph : List String -> Element -> Transform
 splitBlockHeaderToNewParagraph headerElements paragraphElement editorState =
     case splitTextBlock editorState of
@@ -2210,6 +2372,7 @@ Returns an error if the block could not be inserted.
             (Just <| caret [ 1 ] 0)
 
     insertBlock horizontalRuleBlock before == Ok after
+    --> True
 
 -}
 insertBlock : Block -> Transform
@@ -2376,6 +2539,7 @@ Returns an error if it was unable to remove the element.
             (Just <| caret [ 0, 1 ] 0)
 
     backspaceInlineElement before == Ok after
+    --> True
 
 -}
 backspaceInlineElement : Transform
@@ -2472,6 +2636,7 @@ returns an error.
             (Just <| caret [ 1, 0 ] 0)
 
     backspaceBlock before == Ok after
+    --> True
 
 -}
 backspaceBlock : Transform
@@ -2617,6 +2782,7 @@ lengthsFromGroup leaves =
             (Just <| caret [ 0, 0 ] 11)
 
     backspaceWord before == Ok after
+    --> True
 
 -}
 backspaceWord : Transform
@@ -2787,6 +2953,7 @@ advantage of native backspace behavior, namely:
             (Just <| caret [ 0, 1 ] 0)
 
     deleteText before == Ok after
+    --> True
 
 -}
 deleteText : Transform
@@ -2978,6 +3145,7 @@ with an error.
             (Just <| caret [ 0, 0 ] 2)
 
     deleteBlock before == Ok after
+    --> True
 
 -}
 deleteBlock : Transform
@@ -3063,6 +3231,7 @@ deleteBlock editorState =
             (Just <| caret [ 0, 0 ] 11)
 
     deleteWord before == Ok after
+    --> True
 
 -}
 deleteWord : Transform
