@@ -13,6 +13,7 @@
         "RichText.Config.Keys",
         "RichText.Config.MarkDefinition",
         "RichText.Config.Spec",
+        "RichText.List",
         "RichText.Model.Attribute",
         "RichText.Model.Element",
         "RichText.Model.History",

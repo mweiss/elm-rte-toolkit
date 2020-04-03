@@ -98,7 +98,7 @@ initialState =
 
 
 listCommandBindings =
-    RichText.List.commandBindings RichText.List.defaultListDefinition
+    RichText.List.defaultCommandMap RichText.List.defaultListDefinition
 
 
 commandBindings =
