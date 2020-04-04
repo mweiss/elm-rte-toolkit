@@ -12,7 +12,7 @@ import RichText.Internal.Event exposing (EditorChange, InitEvent, InputEvent, Ke
 import RichText.Internal.History exposing (History, contents, empty, fromContents)
 import RichText.Model.Selection exposing (Selection)
 import RichText.Model.State exposing (State)
-import RichText.State exposing (reduceEditorState, validate)
+import RichText.State exposing (reduce, validate)
 
 
 type alias Tagger msg =
@@ -318,7 +318,7 @@ applyCommand ( name, command ) spec editor_ =
                 Ok v ->
                     let
                         reducedState =
-                            reduceEditorState v
+                            reduce v
                     in
                     Ok <| forceReselection (updateEditorState name reducedState editor_)
 
@@ -337,7 +337,7 @@ applyCommandNoForceSelection ( name, command ) spec editor_ =
                 Ok v ->
                     let
                         reducedState =
-                            reduceEditorState v
+                            reduce v
                     in
                     Ok <| updateEditorState name reducedState editor_
 

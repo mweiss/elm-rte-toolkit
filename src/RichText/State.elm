@@ -1,4 +1,11 @@
-module RichText.State exposing (reduceEditorState, validate)
+module RichText.State exposing (reduce, validate)
+
+{-| This module contains functions to validate and reduce editor state. These methods are used
+every time a command is applied.
+
+@docs reduce, validate
+
+-}
 
 import Array exposing (Array)
 import List.Extra
@@ -31,7 +38,7 @@ import RichText.Model.Selection
         , range
         )
 import RichText.Model.State as State exposing (State, withRoot, withSelection)
-import RichText.Model.Text as Text exposing (text, withText)
+import RichText.Model.Text as Text exposing (marks, text, withText)
 import RichText.Node exposing (Node(..), findTextBlockNodeAncestor, map)
 import Set exposing (Set)
 
@@ -80,7 +87,7 @@ mergeSimilarInlineLeaves inlineLeaves =
                 Text xL ->
                     case y of
                         Text yL ->
-                            if xL == yL then
+                            if marks xL == marks yL then
                                 mergeSimilarInlineLeaves (Text (xL |> withText (text xL ++ text yL)) :: xs)
 
                             else
@@ -126,8 +133,51 @@ reduceNode node =
             node
 
 
-reduceEditorState : State -> State
-reduceEditorState editorState =
+{-| Reduces the state with the following rules:
+
+  - Neighboring text nodes with the same marks are merged into one text node
+  - Empty text nodes (regardless of marks) that are not part of the current collapsed
+    selection are removed if there is another neighboring text node
+
+```
+before : State
+before =
+    state
+        (block
+            (Element.element doc [])
+            (blockChildren <|
+                Array.fromList
+                    [ block
+                        (Element.element paragraph [])
+                        (inlineChildren <| Array.fromList [ plainText "te", plainText "xt" ])
+                    ]
+            )
+        )
+        (Just <| caret [ 0, 1 ] 2)
+
+
+after : State
+after =
+    state
+        (block
+            (Element.element doc [])
+            (blockChildren <|
+                Array.fromList
+                    [ block
+                        (Element.element paragraph [])
+                        (inlineChildren <| Array.fromList [ plainText "text" ])
+                    ]
+            )
+        )
+        (Just <| caret [ 0, 0 ] 4)
+
+reduce before == after
+--> True
+```
+
+-}
+reduce : State -> State
+reduce editorState =
     let
         markedRoot =
             case State.selection editorState of
@@ -262,6 +312,28 @@ childOffset leaves offset =
     ( newIndex, newOffset )
 
 
+{-| Validates the state against the spec and returns the valid state if everything is okay, otherwise
+returns a comma separated string of error messages.
+
+    example : State
+    example =
+        state
+            (block
+                (Element.element doc [])
+                (blockChildren <|
+                    Array.fromList
+                        [ block
+                            (Element.element paragraph [])
+                            (inlineChildren <| Array.fromList [ plainText "text" ])
+                        ]
+                )
+            )
+            (Just <| caret [ 0, 0 ] 2)
+
+    (Ok example) == (validate markdown example)
+    --> True
+
+-}
 validate : Spec -> State -> Result String State
 validate spec editorState =
     let
@@ -306,9 +378,9 @@ validateAllowedGroups allowedGroups group name =
             else
                 [ "Group "
                     ++ group
-                    ++ " is not in allowed groups {"
+                    ++ " is not in allowed groups ["
                     ++ String.join ", " (Set.toList groups)
-                    ++ "}"
+                    ++ "]"
                 ]
 
 
