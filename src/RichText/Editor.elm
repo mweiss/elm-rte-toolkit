@@ -2,7 +2,7 @@ module RichText.Editor exposing
     ( Editor, init, state, shortKey, history, withHistory
     , Config, config, commandMap, decorations, spec
     , Message, update, apply, applyList, applyNoForceSelection
-    , view
+    , view, readOnlyView
     )
 
 {-| This is the main module for an editor, and contains functions for initializing, updating, and
@@ -26,7 +26,7 @@ rendering an editor.
 
 # View
 
-@docs view
+@docs view, readOnlyView
 
 -}
 
@@ -729,7 +729,7 @@ view cfg editor_ =
                 spec_ =
                     c.spec
 
-                st =
+                state_ =
                     state editor_
             in
             Html.Keyed.node "elm-editor"
@@ -746,7 +746,7 @@ view cfg editor_ =
                         [ Html.Attributes.contenteditable True
                         , Html.Attributes.class "rte-main"
                         , Html.Attributes.attribute "data-rte-main" "true"
-                        , Html.Attributes.classList [ ( "rte-hide-caret", shouldHideCaret st ) ]
+                        , Html.Attributes.classList [ ( "rte-hide-caret", shouldHideCaret state_ ) ]
                         , onBeforeInput tagger commandMap_ spec_ editor_
                         , onKeyDown tagger commandMap_ spec_ editor_
                         ]
@@ -755,7 +755,7 @@ view cfg editor_ =
                                 spec_
                                 decorations_
                                 []
-                                (markCaretSelectionOnEditorNodes st)
+                                (markCaretSelectionOnEditorNodes state_)
                           )
                         ]
                   )
@@ -771,6 +771,36 @@ view cfg editor_ =
                         ]
                         []
                   )
+                ]
+
+
+{-| Renders the contents of the editor with `contenteditable` set to false and the event listeners
+removed.
+-}
+readOnlyView : Config msg -> Editor -> Html msg
+readOnlyView cfg editor_ =
+    case cfg of
+        Config c ->
+            let
+                decorations_ =
+                    c.decorations
+
+                spec_ =
+                    c.spec
+
+                state_ =
+                    state editor_
+            in
+            Html.node "div"
+                [ Html.Attributes.class "rte-main"
+                , Html.Attributes.attribute "data-rte-main" "true"
+                , Html.Attributes.classList [ ( "rte-hide-caret", shouldHideCaret state_ ) ]
+                ]
+                [ viewEditorBlockNode
+                    spec_
+                    decorations_
+                    []
+                    (markCaretSelectionOnEditorNodes state_)
                 ]
 
 

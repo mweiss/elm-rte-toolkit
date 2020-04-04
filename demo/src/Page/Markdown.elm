@@ -10,7 +10,6 @@ import Links exposing (rteToolkit)
 import Markdown.Block as M
 import Markdown.Config as M
 import Markdown.Inline as MI
-import RichText.Config.Spec exposing (Spec, withMarkDefinitions)
 import RichText.Definitions as MarkdownSpec
     exposing
         ( blockquote
@@ -22,6 +21,7 @@ import RichText.Definitions as MarkdownSpec
         , heading
         , horizontalRule
         , image
+        , italic
         , link
         , listItem
         , orderedList
@@ -94,19 +94,9 @@ config =
     RTE.config
         { decorations = Editor.decorations
         , commandMap = Editor.commandBindings
-        , spec = customMarkdownSpec
+        , spec = MarkdownSpec.markdown
         , toMsg = InternalMsg
         }
-
-
-customMarkdownSpec : Spec
-customMarkdownSpec =
-    MarkdownSpec.markdown
-        |> withMarkDefinitions
-            [ link
-            , bold
-            , code
-            ]
 
 
 type Msg
@@ -218,7 +208,7 @@ init session =
 
 markdownMarkOrder : MarkOrder
 markdownMarkOrder =
-    markOrderFromSpec customMarkdownSpec
+    markOrderFromSpec MarkdownSpec.markdown
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -314,7 +304,7 @@ initializeEditor state =
         initialEditor =
             Editor.init state
     in
-    { initialEditor | styles = [ Bold ] }
+    { initialEditor | styles = [ Bold, Italic ] }
 
 
 toSession : Model -> Session
@@ -461,6 +451,9 @@ inlineToMarkdown leaves tree =
                     case Mark.name m.mark of
                         "bold" ->
                             Ok <| [ MI.Emphasis 2 flattenedChildren ]
+
+                        "italic" ->
+                            Ok <| [ MI.Emphasis 1 flattenedChildren ]
 
                         "code" ->
                             Ok <|
@@ -871,9 +864,20 @@ markdownInlineToInlineLeaves marks inline =
         MI.Emphasis i children ->
             let
                 emphasis =
-                    Mark.mark bold [ IntegerAttribute "delimiterLength" i ]
+                    case i of
+                        1 ->
+                            [ Mark.mark italic [] ]
+
+                        2 ->
+                            [ Mark.mark bold [] ]
+
+                        3 ->
+                            [ Mark.mark bold [], Mark.mark italic [] ]
+
+                        _ ->
+                            []
             in
-            markdownInlineListToInlineLeaves (emphasis :: marks) children
+            markdownInlineListToInlineLeaves (emphasis ++ marks) children
 
         MI.HtmlInline _ _ _ ->
             Err "Not implemented"
