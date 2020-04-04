@@ -29,27 +29,6 @@ td, th {
   border: 1px solid #ccc;
 }
 
-.rte-main {
-  margin-top: 16px;
-  min-height: 100px;
-  text-align: left;
-  outline: none;
-  user-select: text;
-  -webkit-user-select: text;
-  white-space: pre-wrap;
-  word-wrap: break-word;
-}
-
-.rte-main img {
-  min-width: 20px;
-  min-height: 20px;
-  max-width: 200px;
-  border: 1px solid #f2f2f2;
-}
-
-.rte-hide-caret {
-  caret-color: transparent;
-}
 
 .page-main {
   background:

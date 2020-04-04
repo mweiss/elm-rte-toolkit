@@ -23,7 +23,7 @@ import RichText.Config.Decorations
         , emptyDecorations
         , selectableDecoration
         )
-import RichText.Config.Keys exposing (enter, return)
+import RichText.Config.Keys exposing (enter, return, short)
 import RichText.Config.Spec exposing (Spec)
 import RichText.Definitions
     exposing
@@ -101,7 +101,12 @@ listCommandBindings =
     RichText.List.defaultCommandMap RichText.List.defaultListDefinition
 
 
-commandBindings =
+commandBindings : Spec -> CommandMap
+commandBindings spec =
+    let
+        markOrder =
+            markOrderFromSpec spec
+    in
     Command.combine
         listCommandBindings
         (Commands.defaultCommandMap
@@ -113,6 +118,12 @@ commandBindings =
                             [ "heading" ]
                             (element paragraph [])
                   )
+                ]
+            |> set [ inputEvent "formatBold", key [ short, "b" ] ]
+                [ ( "toggleStyle", transform <| toggleMark markOrder (mark bold []) Flip )
+                ]
+            |> set [ inputEvent "formatItalic", key [ short, "i" ] ]
+                [ ( "toggleStyle", transform <| toggleMark markOrder (mark italic []) Flip )
                 ]
         )
 

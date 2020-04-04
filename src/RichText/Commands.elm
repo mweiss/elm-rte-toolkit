@@ -209,9 +209,9 @@ defaultCommandMap =
             (deleteCommands ++ [ ( "deleteWord", transform deleteWord ) ])
         |> set [ key [ short, "a" ] ]
             [ ( "selectAll", transform selectAll ) ]
-        |> set [ key [ short, "z" ] ]
+        |> set [ inputEvent "historyUndo", key [ short, "z" ] ]
             [ ( "undo", internal Undo ) ]
-        |> set [ key [ short, shift, "z" ] ]
+        |> set [ inputEvent "historyRedo", key [ short, shift, "z" ] ]
             [ ( "redo", internal Redo ) ]
         |> withDefaultKeyCommand defaultKeyCommand
         |> withDefaultInputEventCommand defaultInputEventCommand

@@ -1,7 +1,13 @@
-
-
 const zeroWidthSpace = "\u200B";
 
+/**
+ * Finds the selection path given the node, editor, and selection offset
+ *
+ * @param node - the DOM Node we're searching for
+ * @param editor - a reference to the editor webcomponent
+ * @param offset - the selection path offset if one exists
+ * @returns {null|*[]} an array of indexes from the editor document root to the node, otherwise null.
+ */
 const getSelectionPath = (node, editor, offset) => {
     const originalNode = node;
     if (!node) {
@@ -52,14 +58,19 @@ const getSelectionPath = (node, editor, offset) => {
         indexPath.shift();
 
         return indexPath.slice();
-    }
-    catch (e) {
+    } catch (e) {
         // Sometimes we can get errors from trying to access properties like "tagName".  In that
         // just return null.
         return null;
     }
 };
 
+/**
+ * Finds a node given a path.  Returns null if no node exists
+ * @param path - an array of indexes or null
+ * @param editor - a reference to the editor webcomponent
+ * @returns {null|ChildNode|*} Returns the node this path refers to, null otherwise.
+ */
 const findNodeFromPath = (path, editor) => {
     if (!path) {
         return null;
@@ -80,6 +91,13 @@ const findNodeFromPath = (path, editor) => {
 };
 
 
+/**
+ * Helper method to account for zeroWidthSpace and selection offsets that exceed the actual node
+ * length.
+ * @param node - a reference to the node this offset refers to
+ * @param offset - the offset in question
+ * @returns {number|*} the new offset
+ */
 let adjustOffsetReverse = (node, offset) => {
     if (node.nodeType === Node.TEXT_NODE && node.nodeValue === zeroWidthSpace) {
         return 1;
@@ -90,6 +108,16 @@ let adjustOffsetReverse = (node, offset) => {
     return offset;
 };
 
+/**
+ * Helper method to account for zeroWidthSpace and simplifying boundary selection by selecting
+ * the child node and setting the offset to 0.  Note that this sometimes leads to invalid
+ * selections, but I think it's better than the alternative of trying to derive the boundary logic
+ * in Elm.
+ *
+ * @param node - a reference to the node this offset refers to
+ * @param offset - the offset in question
+ * @returns {number|*} the new offset
+ */
 let adjustOffset = (node, offset) => {
     if ((node.nodeType === Node.TEXT_NODE && node.nodeValue === zeroWidthSpace)) {
         return 0;
@@ -105,6 +133,10 @@ let adjustOffset = (node, offset) => {
     return offset;
 };
 
+/**
+ * SelectionState is a webcomponent that syncs the editor's selection state with the selection
+ * API.
+ */
 class SelectionState extends HTMLElement {
     static get observedAttributes() {
         return ["selection"];
@@ -190,11 +222,16 @@ class SelectionState extends HTMLElement {
         if (!selection.selectionExists) {
             return;
         }
-        let event = new CustomEvent("editorselectionchange", { detail: selection });
+        let event = new CustomEvent("editorselectionchange", {detail: selection});
         this.parentNode.dispatchEvent(event);
     };
 }
 
+/**
+ * ElmEditor is the top level webcomponent responsible for enabling web APIs like clipboard
+ * and mutation observers to be visible in Elm.  It uses custom events which are handled
+ * by Elm event listeners.
+ */
 class ElmEditor extends HTMLElement {
     constructor() {
         super();
@@ -207,7 +244,14 @@ class ElmEditor extends HTMLElement {
     }
 
     connectedCallback() {
-        this._observer.observe(this,  { characterDataOldValue: true, attributeOldValue: false, attributes: false, childList: true, subtree: true, characterData: true });
+        this._observer.observe(this, {
+            characterDataOldValue: true,
+            attributeOldValue: false,
+            attributes: false,
+            childList: true,
+            subtree: true,
+            characterData: true
+        });
         this.initInterval = setInterval(this.dispatchInit, 1000)
     }
 
@@ -253,7 +297,7 @@ class ElmEditor extends HTMLElement {
         return mutations;
     }
 
-    mutationObserverCallback(mutationsList, observer) {
+    mutationObserverCallback(mutationsList, _) {
         const element = this.querySelector('[data-rte-main="true"]');
         const selection = this.childNodes[1].getSelectionObject();
 

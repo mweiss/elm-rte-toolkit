@@ -93,7 +93,7 @@ type alias Model =
 config =
     RTE.config
         { decorations = Editor.decorations
-        , commandMap = Editor.commandBindings
+        , commandMap = Editor.commandBindings MarkdownSpec.markdown
         , spec = MarkdownSpec.markdown
         , toMsg = InternalMsg
         }

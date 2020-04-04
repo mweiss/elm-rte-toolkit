@@ -9,8 +9,8 @@ import Html.Attributes exposing (href, title)
 import Html.Events exposing (onClick)
 import Json.Decode as D
 import Links exposing (rteToolkit)
-import RichText.Commands as Commands
-import RichText.Config.Command exposing (Transform, transform)
+import RichText.Commands as Commands exposing (toggleMark)
+import RichText.Config.Command exposing (CommandMap, Transform, inputEvent, key, set, transform)
 import RichText.Config.Decorations exposing (addElementDecoration, selectableDecoration)
 import RichText.Config.ElementDefinition
     exposing
@@ -20,6 +20,7 @@ import RichText.Config.ElementDefinition
         , blockLeaf
         , elementDefinition
         )
+import RichText.Config.Keys exposing (short)
 import RichText.Config.Spec
     exposing
         ( Spec
@@ -38,6 +39,7 @@ import RichText.Model.Attribute
         )
 import RichText.Model.Element as Element exposing (Element, element)
 import RichText.Model.HtmlNode exposing (HtmlNode(..))
+import RichText.Model.Mark exposing (ToggleAction(..), mark, markOrderFromSpec)
 import RichText.Model.Node as Node
     exposing
         ( Block
@@ -85,10 +87,25 @@ config : RTE.Config EditorMsg
 config =
     RTE.config
         { decorations = newDecorations
-        , commandMap = Editor.commandBindings
+        , commandMap = commandBindings customSpec
         , spec = customSpec
         , toMsg = InternalMsg
         }
+
+
+commandBindings : Spec -> CommandMap
+commandBindings spec =
+    let
+        markOrder =
+            markOrderFromSpec spec
+    in
+    Editor.commandBindings customSpec
+        |> set [ inputEvent "formatUnderline", key [ short, "u" ] ]
+            [ ( "toggleStyle", transform <| toggleMark markOrder (mark underline []) Flip )
+            ]
+        |> set [ inputEvent "formatStrikeThrough", key [ short, "d" ] ]
+            [ ( "toggleStyle", transform <| toggleMark markOrder (mark strikethrough []) Flip )
+            ]
 
 
 handleShowInsertCaptionedImageModal : Model -> Model

@@ -24,7 +24,7 @@ type Msg
 config =
     RTE.config
         { decorations = Editor.decorations
-        , commandMap = Editor.commandBindings
+        , commandMap = Editor.commandBindings Specs.markdown
         , spec = Specs.markdown
         , toMsg = InternalMsg
         }
