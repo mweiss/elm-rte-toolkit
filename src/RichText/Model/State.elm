@@ -30,8 +30,22 @@ type alias Contents =
 
   - `selection` is a `Maybe Selection` that is the selected part of the editor
 
-            state root Nothing
-            --> initializes an editor state with no selection
+```
+root : Block
+root =
+    block
+        (Element.element doc [])
+        (blockChildren <|
+            Array.fromList
+                [ block
+                    (Element.element paragraph [])
+                    (inlineChildren <| Array.fromList [ plainText "" ])
+                ]
+        )
+
+state root Nothing
+--> an empty editor state with no selection
+```
 
 -}
 state : Block -> Maybe Selection -> State

@@ -13,6 +13,8 @@
         "RichText.Config.Keys",
         "RichText.Config.MarkDefinition",
         "RichText.Config.Spec",
+        "RichText.Definitions",
+        "RichText.Editor",
         "RichText.List",
         "RichText.Model.Attribute",
         "RichText.Model.Element",
@@ -22,6 +24,7 @@
         "RichText.Model.Mark",
         "RichText.Model.Node",
         "RichText.Model.Selection",
+        "RichText.Model.State",
         "RichText.Model.Text",
         "RichText.Node",
         "RichText.State"

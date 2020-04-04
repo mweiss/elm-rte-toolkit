@@ -20,11 +20,11 @@ type alias Element =
 
 {-| Creates an element. The arguments are as follows:
 
-  - `element definition` is the `ElementDefinition` that defines this element. Note that even though
-    elements require an element definition, it's still safe to use (==) because the function arguments
-    are not stored.
+  - The first argument is the `ElementDefinition` that defines this element. Note that even though
+    elements require an element definition, it's still safe to use `(==)` because the function arguments
+    are not stored on the resulting `Element`.
 
-  - `attributes` are a list of attributes
+  - The second argument is element's list of attributes.
 
 ```
     element header [IntegerAttribute "level" 1]

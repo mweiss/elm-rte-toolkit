@@ -1,21 +1,35 @@
 module RichText.Definitions exposing
-    ( blockquote
-    , bold
-    , code
-    , codeBlock
-    , doc
-    , hardBreak
-    , heading
-    , horizontalRule
-    , image
-    , italic
-    , link
-    , listItem
-    , markdown
-    , orderedList
-    , paragraph
-    , unorderedList
+    ( markdown
+    , doc, blockquote, codeBlock, hardBreak, heading, horizontalRule, image, paragraph
+    , listItem, orderedList, unorderedList
+    , bold, code, italic, link
     )
+
+{-|
+
+
+# Markdown spec
+
+@docs markdown
+
+
+# Definitions
+
+The definitions used in the markdown specification.
+
+
+## Elements
+
+@docs doc, blockquote, codeBlock, hardBreak, heading, horizontalRule, image, paragraph
+
+@docs listItem, orderedList, unorderedList
+
+
+## Marks
+
+@docs bold, code, italic, link
+
+-}
 
 import Array exposing (Array)
 import RichText.Annotation exposing (selectable)
@@ -54,6 +68,8 @@ import RichText.Model.Mark as Mark exposing (mark)
 import Set
 
 
+{-| The root level element of a document.
+-}
 doc : ElementDefinition
 doc =
     elementDefinition
@@ -87,6 +103,8 @@ htmlToDoc definition node =
             Nothing
 
 
+{-| A paragraph element. It can have inline children.
+-}
 paragraph : ElementDefinition
 paragraph =
     elementDefinition
@@ -118,6 +136,8 @@ htmlToParagraph definition node =
             Nothing
 
 
+{-| A blockquote element. It can have block children.
+-}
 blockquote : ElementDefinition
 blockquote =
     elementDefinition
@@ -140,6 +160,8 @@ htmlToBlockquote =
     defaultHtmlToElement "blockquote"
 
 
+{-| A horizontal rule element. It is a block leaf, e.g. it can have no children.
+-}
 horizontalRule : ElementDefinition
 horizontalRule =
     elementDefinition
@@ -171,6 +193,9 @@ htmlToHorizontalRule def node =
             Nothing
 
 
+{-| A heading element. It can have inline children. It supports one integer attribute `level`,
+which defaults to 1 if not set.
+-}
 heading : ElementDefinition
 heading =
     elementDefinition
@@ -235,6 +260,8 @@ htmlToHeading def node =
             Nothing
 
 
+{-| A code block element.
+-}
 codeBlock : ElementDefinition
 codeBlock =
     elementDefinition
@@ -278,6 +305,13 @@ htmlNodeToCodeBlock def node =
             Nothing
 
 
+{-| An inline image. It is an inline element and can have three different string attributes:
+
+  - `src` is the uri of the image to show
+  - `alt` is the alt text of the image
+  - `title` is the title of the image
+
+-}
 image : ElementDefinition
 image =
     elementDefinition
@@ -348,6 +382,8 @@ htmlNodeToImage def node =
             Nothing
 
 
+{-| Hard break is an inline leaf which represents a line break in a document.
+-}
 hardBreak : ElementDefinition
 hardBreak =
     elementDefinition
@@ -388,6 +424,8 @@ filterAttributesToHtml attrs =
 --- List element definitions
 
 
+{-| An ordered list element definition. It can have list item children.
+-}
 orderedList : ElementDefinition
 orderedList =
     elementDefinition
@@ -410,6 +448,8 @@ htmlToOrderedList =
     defaultHtmlToElement "ol"
 
 
+{-| An unordered list element definition. It can have list item children.
+-}
 unorderedList : ElementDefinition
 unorderedList =
     elementDefinition
@@ -432,6 +472,8 @@ htmlToUnorderedList =
     defaultHtmlToElement "ul"
 
 
+{-| A list item element definition. It can have block children.
+-}
 listItem : ElementDefinition
 listItem =
     elementDefinition
@@ -458,6 +500,12 @@ htmlToListItem =
 -- Mark definitions
 
 
+{-| A link mark definition. It can have two different string attributes:
+
+  - `href` is the url to link to
+  - `title` is the title of the link
+
+-}
 link : MarkDefinition
 link =
     markDefinition { name = "link", toHtmlNode = linkToHtmlNode, fromHtmlNode = htmlNodeToLink }
@@ -516,6 +564,8 @@ htmlNodeToLink def node =
             Nothing
 
 
+{-| A bold mark definition.
+-}
 bold : MarkDefinition
 bold =
     markDefinition { name = "bold", toHtmlNode = boldToHtmlNode, fromHtmlNode = htmlNodeToBold }
@@ -531,6 +581,8 @@ htmlNodeToBold =
     defaultHtmlToMark "b"
 
 
+{-| An italic mark definition.
+-}
 italic : MarkDefinition
 italic =
     markDefinition
@@ -550,6 +602,8 @@ htmlNodeToItalic =
     defaultHtmlToMark "i"
 
 
+{-| A code mark definition.
+-}
 code : MarkDefinition
 code =
     markDefinition { name = "code", toHtmlNode = codeToHtmlNode, fromHtmlNode = htmlNodeToCode }
@@ -565,6 +619,8 @@ htmlNodeToCode =
     defaultHtmlToMark "code"
 
 
+{-| A spec which is compatible with the CommonMark flavor of markdown.
+-}
 markdown : Spec
 markdown =
     emptySpec

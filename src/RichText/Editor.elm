@@ -1,22 +1,34 @@
 module RichText.Editor exposing
-    ( Config
-    , Editor
-    , Message
-    , apply
-    , applyList
-    , applyNoForceSelection
-    , commandMap
-    , config
-    , decorations
-    , history
-    , init
-    , shortKey
-    , spec
-    , state
-    , update
+    ( Editor, init, state, shortKey, history, withHistory
+    , Config, config, commandMap, decorations, spec
+    , Message, update, apply, applyList, applyNoForceSelection
     , view
-    , withHistory
     )
+
+{-| This is the main module for an editor, and contains functions for initializing, updating, and
+rendering an editor.
+
+
+# Model
+
+@docs Editor, init, state, shortKey, history, withHistory
+
+
+# Config
+
+@docs Config, config, commandMap, decorations, spec
+
+
+# Update
+
+@docs Message, update, apply, applyList, applyNoForceSelection
+
+
+# View
+
+@docs view
+
+-}
 
 import Array exposing (Array)
 import Dict
@@ -105,6 +117,10 @@ import RichText.Model.Text as Text
 import RichText.Node exposing (Node(..), nodeAt)
 
 
+{-| This type represents your Editor configuration, e.g. the non-comparable things that define
+the behavior of the editor. This includes the document specification, key and input event command
+bindings, decorative functions, and tagger function.
+-}
 type Config msg
     = Config
         { decorations : Decorations msg
@@ -114,6 +130,25 @@ type Config msg
         }
 
 
+{-| Create the config for your `view` and `update` functions.
+
+    import RichText.Commands exposing (defaultCommandMap)
+    import RichText.Config.Decorations exposing (emptyDecorations)
+    import RichText.Definitions exposing (markdown)
+
+    type MyMsg
+        = InternalMsg Message | ...
+
+    myConfig : Config
+    myConfig =
+        config
+            { decorations = emptyDecorations
+            , commandMap = defaultCommandMap
+            , spec = markdown
+            , toMsg = InternalMsg
+            }
+
+-}
 config :
     { decorations : Decorations msg
     , spec : Spec
@@ -125,6 +160,8 @@ config cfg =
     Config cfg
 
 
+{-| The decorations from the config object.
+-}
 decorations : Config msg -> Decorations msg
 decorations cfg =
     case cfg of
@@ -132,6 +169,8 @@ decorations cfg =
             c.decorations
 
 
+{-| The spec from the config object.
+-}
 spec : Config msg -> Spec
 spec cfg =
     case cfg of
@@ -139,6 +178,8 @@ spec cfg =
             c.spec
 
 
+{-| The commandMap from the config object.
+-}
 commandMap : Config msg -> CommandMap
 commandMap cfg =
     case cfg of
@@ -168,6 +209,16 @@ updateSelection maybeSelection isDomPath spec_ editor_ =
             editor_ |> withState (editorState |> withSelection translatedSelection)
 
 
+{-| The editor's internal update function. It's important that the editor process all `Message`
+events with the update function so it doesn't go out of sync with the virtual DOM.
+
+    update : Msg -> Model -> ( Model, Cmd Msg )
+    update msg model =
+        case msg of
+            EditorMsg editorMsg ->
+                ( { model | editor = RichText.Editor.update config editorMsg model.editor }, Cmd.none )
+
+-}
 update : Config msg -> Message -> Editor -> Editor
 update cfg msg editor_ =
     case cfg of
@@ -659,6 +710,8 @@ editorToDomSelection spec_ editor_ =
             editorToDom spec_ (State.root (state editor_)) selection
 
 
+{-| Take an editor model and config and render it in the DOM.
+-}
 view : Config msg -> Editor -> Html msg
 view cfg editor_ =
     case cfg of
@@ -855,6 +908,18 @@ type alias Editor =
 
 {-| Initializes an editor
 
+    docNode : Block
+    docNode =
+        block
+            (Element.element doc [])
+            (blockChildren <|
+                Array.fromList
+                    [ block
+                        (Element.element paragraph [])
+                        (inlineChildren <| Array.fromList [ plainText "Hello world" ])
+                    ]
+            )
+
     init <| State.state docNode Nothing
 
 -}
@@ -883,8 +948,10 @@ history =
     InternalEditor.history
 
 
-{-| Retrieves the shortKey from the editor. Note that this gets updated after the editor has been
-rendered.
+{-| The editor shortKey is a platform dependent key for command map bindings. It is initialized
+to either `"Control"` or `"Meta"` depending on if the editor webcomponent detects if the platform
+is mac/iOS or something else. Note that this gets updated after the editor has been rendered, and
+defaults to `"Meta"`.
 -}
 shortKey : Editor -> String
 shortKey =
@@ -902,16 +969,76 @@ withHistory =
     InternalEditor.withHistory
 
 
+{-| Apply a list of named commands to the editor to try in order, returning the updated editor after
+the first command has been successful. If no command was successfuly, a String describing the last
+command's error is returned.
+
+This method stops execution of the commands after the first success. Its intent is to
+allow you to group your commands for different contexts, like lift, join, split,
+into one chained command. If you want multiple commands to be executed, you may want to compose
+the respective transform functions or call apply for each command.
+
+As with the `apply` command, each command is validated after it is applied, and if successful,
+the editor state is reduced and the history is updated.
+
+    liftBlock : Spec -> Model -> Model
+    liftBlock spec model =
+        { model
+            | editor =
+                Result.withDefault model.editor
+                    (applyList
+                        [ ( "liftList"
+                          , transform <| RichText.List.lift defaultListDefinition
+                          )
+                        , ( "lift"
+                          , transform <| lift
+                          )
+                        ]
+                        spec
+                        model.editor
+                    )
+        }
+
+-}
 applyList : NamedCommandList -> Spec -> Editor -> Result String Editor
 applyList =
     InternalEditor.applyNamedCommandList
 
 
+{-| Apply a named command to the editor. If the command was successful, the resulting editor
+will be returned, otherwise a String describing the command's error is returned.
+
+Note that after the command is executed, it is validated against the spec. If it is not valid, then
+an error is returned. If the command is successful and validated, the resulting editor state is reduced
+(via `RichText.State.reduce`) and the history is updated.
+
+    wrapBlockNode : Spec -> Model -> Model
+    wrapBlockNode spec model =
+        { model
+            | editor =
+                Result.withDefault model.editor
+                    (apply
+                        ( "wrapBlockquote"
+                        , transform <|
+                            wrap
+                                identity
+                                (element blockquote [])
+                        )
+                        spec
+                        model.editor
+                    )
+        }
+
+-}
 apply : NamedCommand -> Spec -> Editor -> Result String Editor
 apply =
     InternalEditor.applyCommand
 
 
+{-| Same as `apply`, but the selection state is not forced to update if it hasn't changed. This normally
+should not be used, but can be useful for situations like if you have an embedded input element in a
+"contentediable=false" wrapper that requires focus or independent selection.
+-}
 applyNoForceSelection : NamedCommand -> Spec -> Editor -> Result String Editor
 applyNoForceSelection =
     InternalEditor.applyCommandNoForceSelection

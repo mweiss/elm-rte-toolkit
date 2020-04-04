@@ -7,8 +7,8 @@ module RichText.Config.Keys exposing (short, alt, meta, ctrl, shift, return, ent
 -}
 
 
-{-| Platform specific modifier that is initialized on InternalEditorMsg.Init. It is equivalent
-to meta on the mac/iOS and control on other platforms.
+{-| Platform specific modifier that is initialized on InternalEditorMsg.Init. When resolving a
+command binding, it resolves to `"Meta"` on mac/iOS and `"Control"` on other platforms.
 -}
 short : String
 short =

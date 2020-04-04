@@ -13,7 +13,7 @@ module RichText.Commands exposing
     )
 
 {-| This module contains pre defined commands and transforms, which are the building blocks for
-creating actions that modify the editor's state.
+modifying the editor.
 
 
 # Commands
@@ -188,7 +188,7 @@ deleteCommands =
     ]
 
 
-{-| Starting point for creating your own command map. Contains deletion, line break, lift,
+{-| A starting point for creating your own command map. Contains deletion, line break, lift,
 split, select all, and undo/redo behavior.
 -}
 defaultCommandMap : CommandMap
@@ -230,7 +230,8 @@ defaultKeyCommand event =
 
 
 {-| The default input event command does remove range when a range is selected and an insertText
-event occurs. In this case, we want to remove range and insert the character related to that key.
+event occurs. In this case, we want to remove range and insert the text related to the input
+data.
 -}
 defaultInputEventCommand : InputEvent -> NamedCommandList
 defaultInputEventCommand event =

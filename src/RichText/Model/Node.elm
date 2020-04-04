@@ -267,7 +267,7 @@ type alias InlineLeafArrayContents =
     { array : Array Inline, tree : Array InlineTree, reverseLookup : Array Path }
 
 
-{-| An inline tree is the nested structure of an inline array. Because mark when rendered can span
+{-| An inline tree is the nested structure of an inline array. Because marks when rendered can span
 multiple inline nodes, inline content is still technically hierarchical. When rendering or
 parsing, it can be useful to see this information as a tree instead of an array.
 

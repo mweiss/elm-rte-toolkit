@@ -39,9 +39,9 @@ type alias Mark =
 {-| Creates a mark. The arguments are as follows:
 
   - `definition` is the `MarkDefinition` that defines this node. Note that even though marks require a mark definition,
-    it's still safe to use (==) because the function arguments are not stored on the Mark
+    it's still safe to use `(==)` because the function arguments are not stored on the Mark
 
-  - `attributes` are a list of attributes, for example [StringAttribute 'href' 'www.google.com']
+  - `attributes` are a list of attributes, for example `[StringAttribute 'href' 'www.google.com']`
 
 ```
     mark link [StringAttribute 'href' 'www.google.com']

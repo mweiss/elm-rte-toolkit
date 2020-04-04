@@ -3,7 +3,7 @@ module RichText.Model.Attribute exposing
     , findBoolAttribute, findFloatAttribute, findIntegerAttribute, findStringAttribute, replaceOrAddBoolAttribute, replaceOrAddFloatAttribute, replaceOrAddIntegerAttribute, replaceOrAddStringAttribute
     )
 
-{-| This module contains basic methods for accessing and defining node attributes.
+{-| This module contains basic methods for accessing and defining element and mark attributes.
 
 
 # Attribute type
@@ -20,7 +20,7 @@ module RichText.Model.Attribute exposing
 import String
 
 
-{-| An editor attribute is a key value pair. It's used to store information on a node or mark.
+{-| An attribute is a key value pair. It's used to store information on an element or mark.
 Information you can store are things like color, font type, or image or link locations.
 
     StringAttribute "href" "www.google.com"

@@ -1,5 +1,5 @@
 module RichText.Config.Command exposing
-    ( Command(..), transform, internal, InternalAction(..), NamedCommand, NamedCommandList
+    ( transform, internal, InternalAction(..), NamedCommand, NamedCommandList, Command(..)
     , CommandMap, CommandBinding, key, inputEvent, emptyCommandMap, set, withDefaultInputEventCommand, withDefaultKeyCommand, defaultKeyCommand, defaultInputEventCommand, combine
     , Transform
     , InputEvent, KeyboardEvent, namedCommandListFromInputEvent, namedCommandListFromKeyboardEvent
@@ -10,7 +10,7 @@ module RichText.Config.Command exposing
 
 # Command
 
-@docs Command, transform, internal, InternalAction, NamedCommand, NamedCommandList
+@docs transform, internal, InternalAction, NamedCommand, NamedCommandList, Command
 
 
 # Command map
