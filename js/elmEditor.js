@@ -172,8 +172,7 @@ class SelectionState extends HTMLElement {
             try {
                 sel.setBaseAndExtent(anchorNode, anchorOffset, focusNode, focusOffset);
             } catch (e) {
-                console.log("Uh oh, the selection state was incorrect!" +
-                    "This maybe happens because attributes are stale on the web component?", focusOffset, focusNode, anchorOffset, anchorNode);
+                // ignore selection errors
             }
         }
     }
@@ -265,7 +264,6 @@ class ElmEditor extends HTMLElement {
         const clipboardData = e.clipboardData || window.clipboardData;
         const text = clipboardData.getData('text') || "";
         const html = clipboardData.getData('text/html') || "";
-        // console.log('paste', text, html);
         const newEvent = new CustomEvent("pastewithdata", {
             detail: {
                 text: text,
