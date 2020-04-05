@@ -5,14 +5,14 @@ Rich Text Editor Toolkit is an open source project to make cross platform editor
 
 This project was heavily inspired by other browser rich text editor frameworks like ProseMirror, Trix, and DraftJS.  
 
+## Resources
+- Elm Package: https://package.elm-lang.org/packages/mweiss/elm-rte-toolkit/latest/ 
+- Demo page: https://mweiss.github.io/elm-rte-toolkit (source code is in the [demo](demo) directory)
+- Wiki: https://github.com/mweiss/elm-rte-toolkit/wiki
+
 ## Getting started
 
-TODO: add getting started
-
-## Examples
-Examples can be seen in the demo page.
-
-TODO: add links to demo page. 
+This project requires some webcomponents to get started.  You can install them byy
 
 ## Contributing
 
@@ -43,5 +43,8 @@ For now, because of mysterious package issues with elm-test I don't want to debu
 
 ```bash
 cd demo
-elm-test
+./build.sh
 ```
+
+The demo is hosted with gh-pages, so to update the demo, please update the gh-pages branch with the latest
+build.
