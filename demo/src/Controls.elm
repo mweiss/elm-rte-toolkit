@@ -87,6 +87,25 @@ statusForStyle style controlState =
         Enabled
 
 
+titleForStyle : Style -> String
+titleForStyle style =
+    case style of
+        Bold ->
+            "bold"
+
+        Italic ->
+            "italic"
+
+        Code ->
+            "code"
+
+        Underline ->
+            "underline"
+
+        Strikethrough ->
+            "strikethrough"
+
+
 styleToString : Style -> String
 styleToString style =
     case style of
@@ -156,14 +175,17 @@ createButtonForStyle controlState style icon =
     let
         status =
             statusForStyle style controlState
+
+        title =
+            titleForStyle style
     in
-    createButton status (onButtonPressToggleStyle style) icon
+    createButton status (onButtonPressToggleStyle style) icon title
 
 
-createButton : Status -> Html.Attribute EditorMsg -> Icon -> Html EditorMsg
-createButton status actionAttribute icon =
+createButton : Status -> Html.Attribute EditorMsg -> Icon -> String -> Html EditorMsg
+createButton status actionAttribute icon title =
     span
-        ([ actionAttribute, class "rte-button" ]
+        ([ actionAttribute, Html.Attributes.title title, class "rte-button" ]
             ++ (case status of
                     Active ->
                         [ class "rte-active" ]
@@ -208,9 +230,9 @@ inlineElementButtons controlState =
             else
                 Enabled
     in
-    [ createButton codeStatus onButtonPressInsertCode Solid.code
-    , createButton linkStatus onButtonPressInsertLink Solid.link
-    , createButton imageStatus onButtonPressInsertImage Solid.image
+    [ createButton codeStatus onButtonPressInsertCode Solid.code "code"
+    , createButton linkStatus onButtonPressInsertLink Solid.link "link"
+    , createButton imageStatus onButtonPressInsertImage Solid.image "image"
     ]
 
 
@@ -231,18 +253,18 @@ blockElements controlStatus =
             else
                 Disabled
     in
-    [ createButton blockStatus (onButtonPressToggleList Ordered) Solid.listOl
-    , createButton blockStatus (onButtonPressToggleList Unordered) Solid.listUl
-    , createButton blockStatus onButtonPressInsertHR Solid.minus
-    , createButton blockStatus onButtonPressWrapBlockquote Solid.quoteRight
-    , createButton liftStatus onButtonPressLiftOutOfBlock Solid.outdent
+    [ createButton blockStatus (onButtonPressToggleList Ordered) Solid.listOl "ordered list"
+    , createButton blockStatus (onButtonPressToggleList Unordered) Solid.listUl "unordered list"
+    , createButton blockStatus onButtonPressInsertHR Solid.minus "horizontal rule"
+    , createButton blockStatus onButtonPressWrapBlockquote Solid.quoteRight "blockquote"
+    , createButton liftStatus onButtonPressLiftOutOfBlock Solid.outdent "lift"
     ]
 
 
 headerElements : ControlState -> List (Html EditorMsg)
 headerElements controlState =
-    List.map2
-        (\block icon ->
+    List.map3
+        (\block icon title ->
             createButton
                 (if controlState.hasInline then
                     Enabled
@@ -252,9 +274,11 @@ headerElements controlState =
                 )
                 (onButtonPressToggleBlock block)
                 icon
+                title
         )
         [ "H1", "Code block" ]
         [ Solid.heading, Solid.codeBranch ]
+        [ "header", "code block" ]
 
 
 type alias ControlState =
@@ -395,6 +419,7 @@ undoRedo controlState =
         )
         (preventDefaultOn "click" (succeed ( Undo, True )))
         Solid.undo
+        "undo"
     , createButton
         (if controlState.hasRedo then
             Enabled
@@ -404,6 +429,7 @@ undoRedo controlState =
         )
         (preventDefaultOn "click" (succeed ( Redo, True )))
         Solid.redo
+        "redo"
     ]
 
 
