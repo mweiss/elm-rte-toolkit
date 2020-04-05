@@ -3,7 +3,7 @@ Create rich text editors in Elm.
 
 Rich Text Editor Toolkit is an open source project to make cross platform editors on the web. This package treats contenteditable as an I/O device, and uses browser events and mutation observers to detect changes and update itself.  The editor's model is defined and validated by a programmable specification that allows you to create a custom tailored editor that fits your needs.
 
-This project was heavily inspired by other browser rich text editor frameworks like ProseMirror, Trix, and DraftJS.  
+This project was heavily inspired by other rich text editor frameworks like ProseMirror, Trix, and DraftJS.  
 
 ## Resources
 - Elm Package: https://package.elm-lang.org/packages/mweiss/elm-rte-toolkit/latest/ 
@@ -12,7 +12,48 @@ This project was heavily inspired by other browser rich text editor frameworks l
 
 ## Getting started
 
-This project requires some webcomponents to get started.  You can install them byy
+This project requires some webcomponents to get started.
+
+If you don't want to use a polyfill and can support ES6, you can include
+[js/elmEditor.js](js/elmEditor.js) in your project and import it
+
+```js
+    import 'elmEditor.js'
+```
+
+The demo in this repository does it this way.
+
+If you want to use a bundler and polyfill, you can import your favorite polyfill and
+import the npm package that has this repository's js compiled to es5 with npm, e.g:
+
+```bash
+npm install --save @webcomponents/webcomponentsjs
+npm install --save elm-rte-toolkit
+```
+
+And in your javascript, you can import it like so:
+
+```js
+import '@webcomponents/webcomponentsjs/custom-elements-es5-adapter.js'
+import 'elm-rte-toolkit';
+```
+
+### Starting CSS
+
+You can use whatever styles you want for the editor, but you may want to use the following as
+a jumping off point.  Most importantly, you'll probably want `white-space: pre-wrap;` to distinguish
+between multiple spaces:
+
+```css
+.rte-main {
+    text-align: left;
+    outline: none;
+    user-select: text;
+    -webkit-user-select: text;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+```
 
 ## Contributing
 
@@ -33,8 +74,11 @@ elm-app start
 To build the demo, run the following from the repository's root directory:
 ```bash
 cd demo
-elm-app build
+./build.sh
 ```
+
+The demo is hosted with gh-pages, so to update the demo, please update the gh-pages branch with the latest
+build.
 
 ### Running tests
 
@@ -43,8 +87,7 @@ For now, because of mysterious package issues with elm-test I don't want to debu
 
 ```bash
 cd demo
-./build.sh
+elm-test
 ```
 
-The demo is hosted with gh-pages, so to update the demo, please update the gh-pages branch with the latest
-build.
+
