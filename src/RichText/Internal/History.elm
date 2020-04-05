@@ -38,6 +38,27 @@ contents history =
             c
 
 
+peek : History -> Maybe ( String, State )
+peek history =
+    case history of
+        History c ->
+            BoundedDeque.first c.undoDeque
+
+
+undoList : History -> List ( String, State )
+undoList history =
+    case history of
+        History c ->
+            BoundedDeque.toList c.undoDeque
+
+
+redoList : History -> List State
+redoList history =
+    case history of
+        History c ->
+            c.redoStack
+
+
 {-| Initializes history from `Contents`
 -}
 fromContents : Contents -> History

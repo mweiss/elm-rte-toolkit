@@ -223,3 +223,9 @@ div.checkbox.not-checked::before {
 div.checkbox.not-checked::after {
     background-color: transparent;
 }
+
+
+.not-found {
+    padding: 16px;
+    text-align: center;
+}

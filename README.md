@@ -21,7 +21,7 @@ If you don't want to use a polyfill and can support ES6, you can include
 import 'elmEditor.js'
 ```
 
-The demo in this repository does it this way.
+The demo in this repository does it that way.
 
 If you want to use a bundler and polyfill, you can import your favorite polyfill and
 import the npm package that has this repository's js compiled to es5 with npm, e.g:

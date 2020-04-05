@@ -39,17 +39,20 @@
 }
 
 .rte-controls {
-    text-align: center;
+    text-align: left;
     font-size: 14px;
     padding-bottom: 8px;
     -webkit-user-select: none;
     -moz-user-select: none;
     -ms-user-select: none;
     user-select: none;
+    display: inline-block;
+    margin-left: 16px;
 }
 
 .rte-controls-container {
     border-bottom: 1px solid #f2f2f2;
+    text-align: left;
 }
 
 .editor-container {

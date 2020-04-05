@@ -68,10 +68,10 @@ view model =
     in
     case model of
         Redirect session ->
-            Page.view Page.Home Home.dummyView
+            Page.view Page.Home Home.notFoundView
 
         NotFound session ->
-            Page.view Page.Home Home.dummyView
+            Page.view Page.Home Home.notFoundView
 
         Home home ->
             viewPage Page.Home GotHomeMsg (Home.view home)

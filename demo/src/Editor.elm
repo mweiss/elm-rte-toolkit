@@ -15,7 +15,7 @@ import RichText.Commands as Commands
         , toggleMark
         , wrap
         )
-import RichText.Config.Command as Command exposing (CommandMap, inputEvent, key, set, transform)
+import RichText.Config.Command as Command exposing (CommandMap, inputEvent, internal, key, set, transform)
 import RichText.Config.Decorations
     exposing
         ( Decorations
@@ -405,6 +405,12 @@ update cfg msg model =
         WrapInList listType ->
             ( handleWrapInList spec listType model, Cmd.none )
 
+        Undo ->
+            ( handleUndo spec model, Cmd.none )
+
+        Redo ->
+            ( handleRedo spec model, Cmd.none )
+
         Noop ->
             ( model, Cmd.none )
 
@@ -437,6 +443,24 @@ handleWrapInList spec listType model =
         | editor =
             Result.withDefault model.editor
                 (apply ( "wrapList", transform <| RichText.List.wrap defaultListDefinition listType ) spec model.editor)
+    }
+
+
+handleRedo : Spec -> Model -> Model
+handleRedo spec model =
+    { model
+        | editor =
+            Result.withDefault model.editor
+                (apply ( "redo", internal <| Command.Redo ) spec model.editor)
+    }
+
+
+handleUndo : Spec -> Model -> Model
+handleUndo spec model =
+    { model
+        | editor =
+            Result.withDefault model.editor
+                (apply ( "undo", internal <| Command.Undo ) spec model.editor)
     }
 
 

@@ -6,7 +6,8 @@ import Html exposing (Attribute, Html, div, span)
 import Html.Attributes exposing (class)
 import Html.Events exposing (preventDefaultOn)
 import Json.Decode exposing (succeed)
-import RichText.Editor exposing (Editor, Message, state)
+import RichText.Editor exposing (Editor, Message, history, state)
+import RichText.Internal.History exposing (peek, redoList)
 import RichText.List exposing (ListType(..))
 import RichText.Model.Element as Element
 import RichText.Model.Mark as Mark
@@ -70,6 +71,8 @@ type EditorMsg
     | LiftOutOfBlock
     | Noop
     | CaptionedImage Path String
+    | Undo
+    | Redo
 
 
 statusForStyle : Style -> ControlState -> Status
@@ -257,6 +260,8 @@ headerElements controlState =
 type alias ControlState =
     { hasInline : Bool
     , hasSelection : Bool
+    , hasUndo : Bool
+    , hasRedo : Bool
     , nodes : Set String
     , marks : Set String
     , canLift : Bool
@@ -265,7 +270,7 @@ type alias ControlState =
 
 emptyControlState : ControlState
 emptyControlState =
-    { hasInline = False, hasSelection = False, nodes = Set.empty, marks = Set.empty, canLift = False }
+    { hasUndo = False, hasRedo = False, hasInline = False, hasSelection = False, nodes = Set.empty, marks = Set.empty, canLift = False }
 
 
 accumulateControlState : Node -> ControlState -> ControlState
@@ -285,14 +290,27 @@ accumulateControlState node controlState =
             { controlState | hasInline = True, marks = Set.union (Set.fromList names) controlState.marks }
 
 
-deriveControlState : State -> ControlState
-deriveControlState state =
-    case State.selection state of
+deriveControlState : Editor -> ControlState
+deriveControlState editor =
+    let
+        state_ =
+            state editor
+
+        history_ =
+            history editor
+    in
+    case State.selection state_ of
         Nothing ->
             emptyControlState
 
         Just selection ->
             let
+                hasUndo =
+                    peek history_ /= Nothing
+
+                hasRedo =
+                    not <| List.isEmpty (redoList history_)
+
                 normalizedSelection =
                     normalize selection
 
@@ -301,7 +319,7 @@ deriveControlState state =
                         (focusNode normalizedSelection)
                         accumulateControlState
                         { emptyControlState | hasSelection = True }
-                        (State.root state)
+                        (State.root state_)
             in
             { controlState
                 | canLift =
@@ -313,6 +331,8 @@ deriveControlState state =
                         > 2
                         || Set.member "blockquote" controlState.nodes
                         || Set.member "li" controlState.nodes
+                , hasUndo = hasUndo
+                , hasRedo = hasRedo
             }
 
 
@@ -339,7 +359,7 @@ editorControlPanel : List Style -> Editor -> Html EditorMsg
 editorControlPanel styles editor =
     let
         controlState =
-            deriveControlState (state editor)
+            deriveControlState editor
     in
     div [ class "rte-controls-container" ]
         [ div [ class "rte-controls" ]
@@ -357,7 +377,34 @@ editorControlPanel styles editor =
             [ class "rte-controls" ]
           <|
             headerElements controlState
+        , div
+            [ class "rte-controls" ]
+          <|
+            undoRedo controlState
         ]
+
+
+undoRedo : ControlState -> List (Html EditorMsg)
+undoRedo controlState =
+    [ createButton
+        (if controlState.hasUndo then
+            Enabled
+
+         else
+            Disabled
+        )
+        (preventDefaultOn "click" (succeed ( Undo, True )))
+        Solid.undo
+    , createButton
+        (if controlState.hasRedo then
+            Enabled
+
+         else
+            Disabled
+        )
+        (preventDefaultOn "click" (succeed ( Redo, True )))
+        Solid.redo
+    ]
 
 
 modal : Bool -> List (Html msg) -> Html msg
