@@ -40,7 +40,7 @@ import Json.Decode as D
 import RichText.Annotation exposing (annotateSelection)
 import RichText.Commands exposing (removeRange)
 import RichText.Config.Command exposing (CommandMap, NamedCommand, NamedCommandList, transform)
-import RichText.Config.Decorations exposing (Decorations, elementDecorators, markDecorators)
+import RichText.Config.Decorations exposing (Decorations, elementDecorations, markDecorations)
 import RichText.Config.ElementDefinition as ElementDefinition
 import RichText.Config.MarkDefinition as MarkDefinition
 import RichText.Config.Spec exposing (Spec)
@@ -836,7 +836,7 @@ viewMark spec_ decorations_ backwardsNodePath mark children =
             Maybe.withDefault []
                 (Dict.get
                     (Mark.name mark)
-                    (markDecorators decorations_)
+                    (markDecorations decorations_)
                 )
 
         decorators =
@@ -861,7 +861,7 @@ viewElement spec_ decorations_ elementParameters backwardsNodePath children =
             Maybe.withDefault []
                 (Dict.get
                     (Element.name elementParameters)
-                    (elementDecorators decorations_)
+                    (elementDecorations decorations_)
                 )
 
         decorators =

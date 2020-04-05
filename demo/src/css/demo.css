@@ -15,6 +15,9 @@ header, article, footer nav {
     margin: 0 auto;
 }
 
+body {
+    padding: 8px;
+}
 .nav-links {
     flex-grow: 1;
     display: flex;

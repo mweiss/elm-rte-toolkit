@@ -79,9 +79,10 @@ view model =
     , content =
         [ h1 [] [ text "Creating a new specification" ]
         , p []
-            [ text """This example shows how you can create a specification from scratch"""
+            [ text """This example shows how you can a completely new specification from scratch.
+            Here is a very simple checklist editor.
+            """
             ]
-        , Editor.view config model.editor
         , p []
             [ text "You can see the code for this example in the "
             , a
@@ -90,6 +91,7 @@ view model =
                 ]
                 [ text "git repo." ]
             ]
+        , Editor.view config model.editor
         ]
     }
 

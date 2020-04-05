@@ -251,10 +251,10 @@ view model =
     , content =
         [ h1 [] [ text "Extending a specification" ]
         , p []
-            [ text """This example shows how you can extend a specification"""
+            [ text """This example shows how you can extend a specification.  Namely, we add two
+            extra marks for strikethrough and underline, and we add a new block leaf element to
+            display a captioned image."""
             ]
-        , captionedImageView model
-        , Html.map EditorMsg (Editor.view config model.editor)
         , p []
             [ text "You can see the code for this example in the "
             , a
@@ -263,6 +263,8 @@ view model =
                 ]
                 [ text "git repo." ]
             ]
+        , captionedImageView model
+        , Html.map EditorMsg (Editor.view config model.editor)
         ]
     }
 

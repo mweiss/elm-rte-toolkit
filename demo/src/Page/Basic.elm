@@ -42,7 +42,6 @@ view model =
                     In this example, we use the default spec to create an editor which supports
                     things like headers, lists, as well as links and images."""
             ]
-        , Html.map EditorMsg (Editor.view config model.editor)
         , p []
             [ text "You can see the code for this example in the "
             , a
@@ -51,6 +50,7 @@ view model =
                 ]
                 [ text "git repo." ]
             ]
+        , Html.map EditorMsg (Editor.view config model.editor)
         ]
     }
 

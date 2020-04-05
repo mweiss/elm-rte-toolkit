@@ -1,16 +1,15 @@
 module RichText.Config.Decorations exposing
-    ( Decorations, ElementDecoratorFunction, MarkDecoratorFunction, emptyDecorations, elementDecorators, markDecorators, withMarkDecorators, withElementDecorators
+    ( Decorations, ElementDecoration, MarkDecoration, emptyDecorations, elementDecorations, markDecorations, withMarkDecorations, withElementDecorations
     , addElementDecoration, addMarkDecoration, selectableDecoration
     )
 
-{-| Decorations are functions which add a list of Html.Attribute to rendered nodes and marks. They're
-useful for adding things like event listeners and conditional styles/attributes
-outside of the node and mark definitions.
+{-| Decorations are functions which add a list of Html.Attribute to rendered elements and marks. They're
+useful for adding things like event listeners and conditional styles/attributes outside of those defined in the spec.
 
 
 # Decorations
 
-@docs Decorations, ElementDecoratorFunction, MarkDecoratorFunction, emptyDecorations, elementDecorators, markDecorators, withMarkDecorators, withElementDecorators
+@docs Decorations, ElementDecoration, MarkDecoration, emptyDecorations, elementDecorations, markDecorations, withMarkDecorations, withElementDecorations
 
 
 # Helpers
@@ -49,17 +48,17 @@ type Decorations msg
 
 
 type alias DecorationsContents msg =
-    { marks : Dict String (List (MarkDecoratorFunction msg))
-    , elements : Dict String (List (ElementDecoratorFunction msg))
+    { marks : Dict String (List (MarkDecoration msg))
+    , elements : Dict String (List (ElementDecoration msg))
     }
 
 
-{-| `ElementDecoratorFunction` is a type alias for an element decoration function. The arguments
+{-| `ElementDecoration` is a type alias for an element decoration function. The arguments
 are as follows:
 
-  - `editor path` is the path to this node from the editor root
-  - `element` is the element to decorate
-  - `relative html node path` is the relative path of the rendered html node. This is useful if you
+  - the first argument is the path to this node from the editor root
+  - the second argument is the element to decorate
+  - The third argument is the relative path of the rendered html node. This is useful if you
     want to apply attributes to only a subset of the rendered html nodes of an element.
 
 ```
@@ -78,16 +77,16 @@ toggleCheckboxDecoration editorNodePath element relativeHtmlNodePath =
 ```
 
 -}
-type alias ElementDecoratorFunction msg =
+type alias ElementDecoration msg =
     Path -> Element -> Path -> List (Html.Attribute msg)
 
 
-{-| `ElementDecoratorFunction` is a type alias for an mark decoration function. The arguments
+{-| `MarkDecoration` is a type alias for an mark decoration function. The arguments
 are as follows:
 
-  - `editor path` is the path to this node from the editor root
-  - `mark` is the mark to decorate
-  - `relative html node path` is the relative path of the rendered html node. This is useful if you
+  - the first argument is the path to this node from the editor root
+  - the second argument is the mark to decorate
+  - the third argument is the relative path of the rendered html node. This is useful if you
     want to apply attributes to only a subset of the rendered html nodes of an element.
 
 ```
@@ -98,7 +97,7 @@ highlight _ _ _ =
 ```
 
 -}
-type alias MarkDecoratorFunction msg =
+type alias MarkDecoration msg =
     Path -> Mark -> Path -> List (Html.Attribute msg)
 
 
@@ -111,8 +110,8 @@ emptyDecorations =
 
 {-| A dictionary of mark name to a list of mark decorations.
 -}
-markDecorators : Decorations msg -> Dict String (List (MarkDecoratorFunction msg))
-markDecorators d =
+markDecorations : Decorations msg -> Dict String (List (MarkDecoration msg))
+markDecorations d =
     case d of
         Decorations c ->
             c.marks
@@ -120,8 +119,8 @@ markDecorators d =
 
 {-| A dictionary of element names to a list of mark decorations.
 -}
-elementDecorators : Decorations msg -> Dict String (List (ElementDecoratorFunction msg))
-elementDecorators d =
+elementDecorations : Decorations msg -> Dict String (List (ElementDecoration msg))
+elementDecorations d =
     case d of
         Decorations c ->
             c.elements
@@ -129,8 +128,8 @@ elementDecorators d =
 
 {-| Creates a decorations object with the given mark decorations set
 -}
-withMarkDecorators : Dict String (List (MarkDecoratorFunction msg)) -> Decorations msg -> Decorations msg
-withMarkDecorators marks d =
+withMarkDecorations : Dict String (List (MarkDecoration msg)) -> Decorations msg -> Decorations msg
+withMarkDecorations marks d =
     case d of
         Decorations c ->
             Decorations { c | marks = marks }
@@ -138,8 +137,8 @@ withMarkDecorators marks d =
 
 {-| Creates a decorations object with the given element decorations set
 -}
-withElementDecorators : Dict String (List (ElementDecoratorFunction msg)) -> Decorations msg -> Decorations msg
-withElementDecorators elements d =
+withElementDecorations : Dict String (List (ElementDecoration msg)) -> Decorations msg -> Decorations msg
+withElementDecorations elements d =
     case d of
         Decorations c ->
             Decorations { c | elements = elements }
@@ -155,11 +154,11 @@ withElementDecorators elements d =
     --> a collection of decorations that contains a single element decoration for image
 
 -}
-addElementDecoration : ElementDefinition -> ElementDecoratorFunction msg -> Decorations msg -> Decorations msg
+addElementDecoration : ElementDefinition -> ElementDecoration msg -> Decorations msg -> Decorations msg
 addElementDecoration definition decorator decorations =
     let
         eleDecorators =
-            elementDecorators decorations
+            elementDecorations decorations
 
         name =
             ElementDefinition.name definition
@@ -168,7 +167,7 @@ addElementDecoration definition decorator decorations =
             Maybe.withDefault [] (Dict.get name eleDecorators)
     in
     decorations
-        |> withElementDecorators (Dict.insert name (decorator :: previousDecorations) eleDecorators)
+        |> withElementDecorations (Dict.insert name (decorator :: previousDecorations) eleDecorators)
 
 
 {-| Adds a mark decoration for a defined mark.
@@ -181,11 +180,11 @@ addElementDecoration definition decorator decorations =
     --> a collection of decorations that contains a single mark decoration for a link
 
 -}
-addMarkDecoration : MarkDefinition -> MarkDecoratorFunction msg -> Decorations msg -> Decorations msg
+addMarkDecoration : MarkDefinition -> MarkDecoration msg -> Decorations msg -> Decorations msg
 addMarkDecoration definition decorator decorations =
     let
         mDecorators =
-            markDecorators decorations
+            markDecorations decorations
 
         name =
             MarkDefinition.name definition
@@ -194,11 +193,11 @@ addMarkDecoration definition decorator decorations =
             Maybe.withDefault [] (Dict.get name mDecorators)
     in
     decorations
-        |> withMarkDecorators (Dict.insert name (decorator :: previousDecorations) mDecorators)
+        |> withMarkDecorations (Dict.insert name (decorator :: previousDecorations) mDecorators)
 
 
-{-| Useful decoration for selectable elements. Adds an onclick listener on select, as well as a
-rte-selected class if this item has the selected annotation.
+{-| Useful decoration for selectable elements. Adds an onclick listener that will select the element,
+as well as adds an rte-selected class if this item is selected.
 -}
 selectableDecoration : Tagger msg -> Path -> Element -> Path -> List (Html.Attribute msg)
 selectableDecoration tagger editorNodePath elementParameters _ =

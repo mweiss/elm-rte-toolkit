@@ -1,6 +1,10 @@
 # Rich Text Editor Toolkit
 Create rich text editors in Elm.
 
+Rich Text Editor Toolkit is an open source project to make cross platform editors on the web. This package treats contenteditable as an I/O device, and uses browser events and mutation observers to detect changes and update itself.  The editor's model is defined and validated by a programmable specification that allows you to create a custom tailored editor that fits your needs.
+
+This project was heavily inspired by other browser rich text editor frameworks like ProseMirror, Trix, and DraftJS.  
+
 ## Getting started
 
 TODO: add getting started
@@ -18,8 +22,7 @@ Contributions in the form of bug reports, pull requests, or thoughtful discussio
 
 ### Running the demo
 
-The demo was bootstrapped with [create-elm-app](https://github.com/halfzebra/create-elm-app).  
-See that repository for instructions of how to install the `elm-app` command.
+The demo was bootstrapped with [create-elm-app](https://github.com/halfzebra/create-elm-app).  See that repository for instructions of how to install the `elm-app` command.
 
 To debug the demo locally, run the following from the repository's root directory:
 ```bash

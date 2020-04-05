@@ -112,7 +112,9 @@ view model =
     , content =
         [ h1 [] [ text "Markdown example" ]
         , p []
-            [ text """This is a markdown example."""
+            [ text """This is a markdown example.  In combination with the """
+            , Html.code [] [ text "pablohirafuji/elm-markdown" ]
+            , text """ package, it coverts to and from CommonMark and the editor's state."""
             ]
         , p []
             [ text "You can see the code for this example in the "
