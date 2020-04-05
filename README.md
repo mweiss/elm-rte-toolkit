@@ -18,7 +18,7 @@ If you don't want to use a polyfill and can support ES6, you can include
 [js/elmEditor.js](js/elmEditor.js) in your project and import it
 
 ```js
-    import 'elmEditor.js'
+import 'elmEditor.js'
 ```
 
 The demo in this repository does it this way.
