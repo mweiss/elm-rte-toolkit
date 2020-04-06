@@ -273,6 +273,36 @@ changeEditorTypeToMarkdown model =
             }
 
 
+{-| We filter out blank lines so we don't render them in the document.
+-}
+filterBlankLines : List MBlock -> List MBlock
+filterBlankLines blocks =
+    let
+        newBlocks =
+            List.filterMap
+                (\block ->
+                    case block of
+                        M.BlankLine s ->
+                            Nothing
+
+                        M.BlockQuote children ->
+                            Just <| M.BlockQuote (filterBlankLines children)
+
+                        M.List lb listItems ->
+                            Just <| M.List lb (List.map filterBlankLines listItems)
+
+                        _ ->
+                            Just block
+                )
+                blocks
+    in
+    if List.isEmpty newBlocks then
+        blocks
+
+    else
+        newBlocks
+
+
 changeEditorTypeToWYSIWYG : Model -> Model
 changeEditorTypeToWYSIWYG model =
     let
@@ -286,7 +316,7 @@ changeEditorTypeToWYSIWYG model =
                 model.textMarkdown
 
         result =
-            markdownToBlock markdownNodes
+            markdownToBlock (filterBlankLines markdownNodes)
     in
     case result of
         Err e ->
@@ -761,8 +791,8 @@ markdownBlockToString block =
             markdownCodeBlockToString cb s
 
         M.Paragraph _ children ->
-            Result.map (\x -> x)
-                (inlineMarkdownChildrenToString children)
+            Result.map (\x -> x ++ "\n") <|
+                inlineMarkdownChildrenToString children
 
         M.BlockQuote children ->
             Result.map
