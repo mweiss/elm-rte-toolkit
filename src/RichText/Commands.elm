@@ -3,7 +3,7 @@ module RichText.Commands exposing
     , removeRange, removeRangeAndInsert, removeSelectedLeafElement
     , backspaceBlock, backspaceInlineElement, backspaceText, backspaceWord
     , deleteBlock, deleteInlineElement, deleteText, deleteWord
-    , insertBlock, insertInline, insertLineBreak, insertText
+    , insertBlock, insertInline, insertLineBreak, insertText, insertAfterBlockLeaf
     , joinBackward, joinForward
     , lift, liftEmpty
     , splitBlock, splitBlockHeaderToNewParagraph, splitTextBlock
@@ -41,7 +41,7 @@ modifying the editor.
 
 ## Insert
 
-@docs insertBlock, insertInline, insertLineBreak, insertText
+@docs insertBlock, insertInline, insertLineBreak, insertText, insertAfterBlockLeaf
 
 
 ## Join
@@ -99,34 +99,13 @@ import RichText.Config.Command
         , withDefaultKeyCommand
         )
 import RichText.Config.Keys exposing (alt, backspace, delete, enter, return, shift, short)
-import RichText.Definitions exposing (hardBreak)
+import RichText.Definitions exposing (hardBreak, paragraph)
 import RichText.Internal.DeleteWord as DeleteWord
 import RichText.Internal.Event exposing (InputEvent, KeyboardEvent)
 import RichText.Model.Element as Element exposing (Element)
 import RichText.Model.InlineElement as InlineElement
 import RichText.Model.Mark as Mark exposing (Mark, MarkOrder, ToggleAction(..), hasMarkWithName, toggle)
-import RichText.Model.Node as Node
-    exposing
-        ( Block
-        , BlockChildren
-        , Children(..)
-        , Inline(..)
-        , Path
-        , block
-        , blockChildren
-        , childNodes
-        , commonAncestor
-        , decrement
-        , increment
-        , inlineChildren
-        , marks
-        , parent
-        , toBlockArray
-        , toInlineArray
-        , toString
-        , withChildNodes
-        , withElement
-        )
+import RichText.Model.Node as Node exposing (Block, BlockChildren, Children(..), Inline(..), Path, block, blockChildren, childNodes, commonAncestor, decrement, increment, inlineChildren, marks, parent, plainText, toBlockArray, toInlineArray, toString, withChildNodes, withElement)
 import RichText.Model.Selection
     exposing
         ( Selection
@@ -154,6 +133,7 @@ import RichText.Node as RTNode
         , findTextBlockNodeAncestor
         , indexedFoldl
         , indexedMap
+        , insertAfter
         , isEmptyTextBlock
         , joinBlocks
         , next
@@ -3515,3 +3495,113 @@ deleteWord editorState =
 
                             _ ->
                                 Err "I expected an inline leaf array"
+
+
+isBlockLeaf : Selection -> Block -> Bool
+isBlockLeaf selection root =
+    case nodeAt (anchorNode selection) root of
+        Nothing ->
+            False
+
+        Just n ->
+            case n of
+                Block b ->
+                    case childNodes b of
+                        Leaf ->
+                            True
+
+                        _ ->
+                            False
+
+                _ ->
+                    False
+
+
+firstSelectablePath : Block -> Maybe Path
+firstSelectablePath block =
+    case findForwardFromExclusive (\_ n -> isSelectable n) [] block of
+        Nothing ->
+            Nothing
+
+        Just ( p, _ ) ->
+            Just p
+
+
+{-| Inserts the block after a block leaf.
+
+    emptyParagraph : Block
+    emptyParagraph =
+        block
+            (Element.element paragraph [])
+            (inlineChildren <| Array.fromList [ plainText "" ])
+
+
+    before : State
+    before =
+        state
+            (block
+                (Element.element doc [])
+                (blockChildren <|
+                    Array.fromList
+                        [ block
+                            (Element.element paragraph [])
+                            (inlineChildren <| Array.fromList [ plainText "test" ])
+                        , block
+                            (Element.element horizontalRule [])
+                            Leaf
+                        ]
+                )
+            )
+            (Just <| caret [ 1 ] 0)
+
+
+    after : State
+    after =
+        state
+            (block
+                (Element.element doc [])
+                (blockChildren <|
+                    Array.fromList
+                        [ block
+                            (Element.element paragraph [])
+                            (inlineChildren <| Array.fromList [ plainText "test" ])
+                        , block
+                            (Element.element horizontalRule [])
+                            Leaf
+                        , emptyParagraph
+                        ]
+                )
+            )
+            (Just <| caret [ 2, 0 ] 0)
+
+    insertAfterBlockLeaf emptyParagraph before == Ok after
+    --> True
+
+-}
+insertAfterBlockLeaf : Block -> Transform
+insertAfterBlockLeaf blockToInsert state =
+    case State.selection state of
+        Nothing ->
+            Err "Nothing is selected"
+
+        Just selection ->
+            if not <| isCollapsed selection then
+                Err "I cannot insert an empty paragraph unless the selection is collapsed"
+
+            else if not <| isBlockLeaf selection (State.root state) then
+                Err "I can only insert an element after a block leaf"
+
+            else
+                case insertAfter (anchorNode selection) (BlockFragment <| Array.fromList [ blockToInsert ]) (State.root state) of
+                    Err s ->
+                        Err s
+
+                    Ok newRoot ->
+                        let
+                            relativeSelectablePath =
+                                Maybe.withDefault [] (firstSelectablePath blockToInsert)
+
+                            newAnchorPath =
+                                increment (anchorNode selection) ++ relativeSelectablePath
+                        in
+                        Ok (State.state newRoot (Just <| caret newAnchorPath 0))

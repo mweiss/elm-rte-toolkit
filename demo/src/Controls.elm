@@ -7,9 +7,9 @@ import Html.Attributes exposing (class)
 import Html.Events exposing (preventDefaultOn)
 import Json.Decode exposing (succeed)
 import RichText.Editor exposing (Editor, Message, history, state)
-import RichText.Internal.History exposing (peek, redoList)
 import RichText.List exposing (ListType(..))
 import RichText.Model.Element as Element
+import RichText.Model.History exposing (peek, redoList)
 import RichText.Model.Mark as Mark
 import RichText.Model.Node
     exposing

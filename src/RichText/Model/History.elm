@@ -1,4 +1,4 @@
-module RichText.Model.History exposing (History, empty)
+module RichText.Model.History exposing (History, empty, peek, undoList, redoList)
 
 {-| This module contains the type used to store undo/redo history.
 

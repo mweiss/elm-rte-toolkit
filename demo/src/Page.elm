@@ -76,7 +76,7 @@ viewFooter =
             [ span [ class "attribution" ]
                 [ text "This is a demo for the "
                 , a [ href "https://github.com/mweiss/elm-rte-toolkit" ] [ text " Elm Rich Text Editor Toolkit" ]
-                , text ". Code & design licensed under BSD License."
+                , text ". Code & design licensed under BSD-3-Clause License."
                 ]
             ]
         ]

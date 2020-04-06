@@ -23,7 +23,7 @@ import 'elmEditor.js'
 
 The demo in this repository does it that way.
 
-If you want to use a bundler and polyfill, you can import your favorite polyfill and
+However, if you want to use a bundler and polyfill, you can import your favorite polyfill and
 import the npm package that has this repository's js compiled to es5 with npm, e.g:
 
 ```bash
@@ -57,7 +57,7 @@ between multiple spaces:
 
 ## Contributing
 
-This package is open-source software, freely distributable under the terms of an [BSD-3 license](LICENSE). The [source code is hosted on GitHub](https://github.com/mweiss/elm-rte-toolkit).
+This package is open-source software, freely distributable under the terms of an [BSD-3-Clause license](LICENSE). The [source code is hosted on GitHub](https://github.com/mweiss/elm-rte-toolkit).
 
 Contributions in the form of bug reports, pull requests, or thoughtful discussions in the [GitHub issue tracker](https://github.com/mweiss/elm-rte-toolkit/issues) are welcome. Please see the [Code of Conduct](CODE_OF_CONDUCT.md) for our pledge to contributors.
 

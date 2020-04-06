@@ -87,7 +87,7 @@ view model =
                 features
         , h2 [] [ text "About" ]
         , p []
-            [ text "Elm Rich Text Editor Toolkit is an "
+            [ text "Rich Text Editor Toolkit is an "
             , a [ href "https://github.com/mweiss/elm-rte-toolkit/blob/master/LICENSE" ]
                 [ text "open source" ]
             , text " project that you are free to use commercially. The "

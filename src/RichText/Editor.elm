@@ -1000,7 +1000,7 @@ withHistory =
 
 
 {-| Apply a list of named commands to the editor to try in order, returning the updated editor after
-the first command has been successful. If no command was successfuly, a String describing the last
+the first command has been successful. If no command was successful, a String describing the last
 command's error is returned.
 
 This method stops execution of the commands after the first success. Its intent is to
