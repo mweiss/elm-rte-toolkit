@@ -127,7 +127,7 @@ paragraph =
     elementDefinition
         { name = "paragraph"
         , group = "block"
-        , contentType = textBlock []
+        , contentType = textBlock { allowedGroups = [ "inline" ], allowedMarks = [] }
         , toHtmlNode = defaultElementToHtml "p"
         , fromHtmlNode = defaultHtmlToElement "p"
         , selectable = False

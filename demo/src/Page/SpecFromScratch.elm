@@ -180,7 +180,7 @@ item =
     elementDefinition
         { name = "todo_item"
         , group = "items"
-        , contentType = ElementDefinition.textBlock [ "inline" ]
+        , contentType = ElementDefinition.textBlock { allowedGroups = [ "inline" ], allowedMarks = [] }
         , toHtmlNode = itemToHtml
         , fromHtmlNode = htmlToItem
         , selectable = False

@@ -227,21 +227,34 @@ blockNode allowedGroups =
             Just <| Set.fromList allowedGroups
 
 
-{-| A text block node is a Block that has inline children, like a header or paragraph. The
-argument is the group or name of the nodes that it allows as children.
+{-| A text block node is a Block that has inline children, like a header or paragraph.
 
-    textBlock [ "inline" ]
-    --> A content type for a node that only accepts child nodes who are in the "inline" group
+  - `allowedGroups` the group or name of the nodes that it allows as children. If a list is empty, then
+    all groups are allowed.
+
+  - `allowedMarks` the name of the marks that this textblock allows. If a list is empty, then
+    all marks are allowed.
+
+    textBlock {allowedGroups: [ "inline" ], allowedMarks: []}
+    --> A content type for a node that only accepts child nodes who are in the "inline" group and allows all marks
 
 -}
-textBlock : List String -> ContentType
-textBlock allowedGroups =
-    TextBlockNodeType <|
-        if List.isEmpty allowedGroups then
-            Nothing
+textBlock : { allowedGroups : List String, allowedMarks : List String } -> ContentType
+textBlock config =
+    TextBlockNodeType
+        { allowedGroups =
+            if List.isEmpty config.allowedGroups then
+                Nothing
 
-        else
-            Just <| Set.fromList allowedGroups
+            else
+                Just <| Set.fromList config.allowedGroups
+        , allowedMarks =
+            if List.isEmpty config.allowedMarks then
+                Nothing
+
+            else
+                Just <| Set.fromList config.allowedMarks
+        }
 
 
 {-| Creates an element definition which assumes the name of the editor node is the same as the name of the

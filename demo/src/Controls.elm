@@ -11,12 +11,7 @@ import RichText.List exposing (ListType(..))
 import RichText.Model.Element as Element
 import RichText.Model.History exposing (peek, redoList)
 import RichText.Model.Mark as Mark
-import RichText.Model.Node
-    exposing
-        ( Path
-        , element
-        , marks
-        )
+import RichText.Model.Node exposing (Block, Path, element, marks, parent)
 import RichText.Model.Selection exposing (anchorNode, focusNode, normalize)
 import RichText.Model.State as State exposing (State)
 import RichText.Node as Node exposing (Node(..))
@@ -267,7 +262,11 @@ headerElements controlState =
         (\block icon title ->
             createButton
                 (if controlState.hasInline then
-                    Enabled
+                    if Set.member title controlState.nodes then
+                        Active
+
+                    else
+                        Enabled
 
                  else
                     Disabled
@@ -278,7 +277,7 @@ headerElements controlState =
         )
         [ "H1", "Code block" ]
         [ Solid.heading, Solid.codeBranch ]
-        [ "header", "code block" ]
+        [ "heading", "code_block" ]
 
 
 type alias ControlState =
@@ -314,6 +313,20 @@ accumulateControlState node controlState =
             { controlState | hasInline = True, marks = Set.union (Set.fromList names) controlState.marks }
 
 
+accumulateControlStateWithRanges : List ( Path, Path ) -> Block -> ControlState -> ControlState
+accumulateControlStateWithRanges ranges root controlState =
+    List.foldl
+        (\( start, end ) cs ->
+            Node.foldlRange start
+                end
+                accumulateControlState
+                cs
+                root
+        )
+        controlState
+        ranges
+
+
 deriveControlState : Editor -> ControlState
 deriveControlState editor =
     let
@@ -338,12 +351,20 @@ deriveControlState editor =
                 normalizedSelection =
                     normalize selection
 
+                parentFocus =
+                    parent (focusNode normalizedSelection)
+
+                parentAnchor =
+                    parent (anchorNode normalizedSelection)
+
                 controlState =
-                    Node.foldlRange (anchorNode normalizedSelection)
-                        (focusNode normalizedSelection)
-                        accumulateControlState
-                        { emptyControlState | hasSelection = True }
+                    accumulateControlStateWithRanges
+                        [ ( anchorNode normalizedSelection, focusNode normalizedSelection )
+                        , ( parentFocus, parentFocus )
+                        , ( parentAnchor, parentAnchor )
+                        ]
                         (State.root state_)
+                        { emptyControlState | hasSelection = True }
             in
             { controlState
                 | canLift =

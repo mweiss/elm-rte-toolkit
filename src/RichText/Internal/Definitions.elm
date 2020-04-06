@@ -25,7 +25,7 @@ the definition.
 -}
 type ContentType
     = BlockNodeType (Maybe (Set String))
-    | TextBlockNodeType (Maybe (Set String))
+    | TextBlockNodeType { allowedGroups : Maybe (Set String), allowedMarks : Maybe (Set String) }
     | BlockLeafNodeType
     | InlineLeafNodeType
 

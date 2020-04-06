@@ -3,7 +3,7 @@ module RichText.Commands exposing
     , removeRange, removeRangeAndInsert, removeSelectedLeafElement
     , backspaceBlock, backspaceInlineElement, backspaceText, backspaceWord
     , deleteBlock, deleteInlineElement, deleteText, deleteWord
-    , insertBlock, insertInline, insertLineBreak, insertText, insertAfterBlockLeaf
+    , insertBlock, insertInline, insertLineBreak, insertText, insertNewline, insertAfterBlockLeaf
     , joinBackward, joinForward
     , lift, liftEmpty
     , splitBlock, splitBlockHeaderToNewParagraph, splitTextBlock
@@ -41,7 +41,7 @@ modifying the editor.
 
 ## Insert
 
-@docs insertBlock, insertInline, insertLineBreak, insertText, insertAfterBlockLeaf
+@docs insertBlock, insertInline, insertLineBreak, insertText, insertNewline, insertAfterBlockLeaf
 
 
 ## Join
@@ -1605,6 +1605,140 @@ toggleMarkSingleInlineNode markOrder mark action editorState =
                                             )
 
 
+hugLeft : State -> State
+hugLeft state =
+    case State.selection state of
+        Nothing ->
+            state
+
+        Just selection ->
+            if isCollapsed selection then
+                state
+
+            else
+                let
+                    normalizedSelection =
+                        normalize selection
+
+                    anchorPath =
+                        anchorNode normalizedSelection
+
+                    root =
+                        State.root state
+                in
+                case nodeAt anchorPath root of
+                    Nothing ->
+                        state
+
+                    Just n ->
+                        case n of
+                            Inline il ->
+                                case il of
+                                    Text t ->
+                                        if String.length (Text.text t) == anchorOffset normalizedSelection then
+                                            case nodeAt (increment anchorPath) root of
+                                                Nothing ->
+                                                    state
+
+                                                Just n2 ->
+                                                    case n2 of
+                                                        Inline il2 ->
+                                                            case il2 of
+                                                                Text _ ->
+                                                                    state
+                                                                        |> withSelection
+                                                                            (Just <| range (increment anchorPath) 0 (focusNode normalizedSelection) (focusOffset normalizedSelection))
+
+                                                                _ ->
+                                                                    state
+
+                                                        _ ->
+                                                            state
+
+                                        else
+                                            state
+
+                                    _ ->
+                                        state
+
+                            _ ->
+                                state
+
+
+hugRight : State -> State
+hugRight state =
+    case State.selection state of
+        Nothing ->
+            state
+
+        Just selection ->
+            if isCollapsed selection then
+                state
+
+            else
+                let
+                    normalizedSelection =
+                        normalize selection
+
+                    focusPath =
+                        focusNode normalizedSelection
+
+                    root =
+                        State.root state
+                in
+                case nodeAt focusPath root of
+                    Nothing ->
+                        state
+
+                    Just n ->
+                        case n of
+                            Inline il ->
+                                case il of
+                                    Text _ ->
+                                        if 0 == focusOffset normalizedSelection then
+                                            case nodeAt (decrement focusPath) root of
+                                                Nothing ->
+                                                    state
+
+                                                Just n2 ->
+                                                    case n2 of
+                                                        Inline il2 ->
+                                                            case il2 of
+                                                                Text t ->
+                                                                    state
+                                                                        |> withSelection
+                                                                            (Just <|
+                                                                                range (anchorNode normalizedSelection)
+                                                                                    (anchorOffset normalizedSelection)
+                                                                                    (decrement focusPath)
+                                                                                    (String.length (Text.text t))
+                                                                            )
+
+                                                                _ ->
+                                                                    state
+
+                                                        _ ->
+                                                            state
+
+                                        else
+                                            state
+
+                                    _ ->
+                                        state
+
+                            _ ->
+                                state
+
+
+{-| Sometimes a selection is right on the outside of a text node, which can confuse the toggle logic.
+This method hugs the selection by pushing the normalized anchor and focus to the closest neighbor if the anchor offset is at the
+end of a text node or a the focus is at the beginning.
+-}
+hug : State -> State
+hug state =
+    hugRight <| hugLeft state
+
+
 {-| Applies the toggle action for the mark. The affected marks are sorted by the given mark order.
 
     boldMark : Mark
@@ -1652,6 +1786,11 @@ toggleMarkSingleInlineNode markOrder mark action editorState =
 -}
 toggleMark : MarkOrder -> Mark -> ToggleAction -> Transform
 toggleMark markOrder mark action editorState =
+    toggleMarkFull markOrder mark action (hug editorState)
+
+
+toggleMarkFull : MarkOrder -> Mark -> ToggleAction -> Transform
+toggleMarkFull markOrder mark action editorState =
     case State.selection editorState of
         Nothing ->
             Err "Nothing is selected"
@@ -3055,56 +3194,58 @@ backspaceWord editorState =
 
 
 {-| Delete (forward) transform for a single character. This function has a few quirks in order to take
-advantage of native backspace behavior, namely:
+advantage of native delete behavior, namely:
 
-      - selection offset = end of text leaf, try to delete the next text node's text
-      - selection offset = 1 - end of text leaf, remove the last character (afterwards, the reduce behavior of `apply`
-        may remove the text node)
-      - any other offset, return an error to allow browser to do the default behavior
+  - selection offset = end of text leaf, try to delete the next text node's text
+  - selection offset = 1 - end of text leaf, remove the last character (afterwards, the reduce behavior of `apply`
+    may remove the text node)
+  - any other offset, return an error to allow browser to do the default behavior
 
-    before : State
-    before =
-        state
-            (block
-                (Element.element doc [])
-                (blockChildren <|
-                    Array.fromList
-                        [ block
-                            (Element.element paragraph [])
-                            (inlineChildren <|
-                                Array.fromList
-                                    [ plainText "text"
-                                    , markedText "text2" [ mark bold [] ]
-                                    ]
-                            )
-                        ]
-                )
+```
+before : State
+before =
+    state
+        (block
+            (Element.element doc [])
+            (blockChildren <|
+                Array.fromList
+                    [ block
+                        (Element.element paragraph [])
+                        (inlineChildren <|
+                            Array.fromList
+                                [ plainText "text"
+                                , markedText "text2" [ mark bold [] ]
+                                ]
+                        )
+                    ]
             )
-            (Just <| caret [ 0, 0 ] 4)
+        )
+        (Just <| caret [ 0, 0 ] 4)
 
 
-    after : State
-    after =
-        state
-            (block
-                (Element.element doc [])
-                (blockChildren <|
-                    Array.fromList
-                        [ block
-                            (Element.element paragraph [])
-                            (inlineChildren <|
-                                Array.fromList
-                                    [ plainText "text"
-                                    , markedText "ext2" [ mark bold [] ]
-                                    ]
-                            )
-                        ]
-                )
+after : State
+after =
+    state
+        (block
+            (Element.element doc [])
+            (blockChildren <|
+                Array.fromList
+                    [ block
+                        (Element.element paragraph [])
+                        (inlineChildren <|
+                            Array.fromList
+                                [ plainText "text"
+                                , markedText "ext2" [ mark bold [] ]
+                                ]
+                        )
+                    ]
             )
-            (Just <| caret [ 0, 1 ] 0)
+        )
+        (Just <| caret [ 0, 1 ] 0)
 
-    deleteText before == Ok after
-    --> True
+deleteText before == Ok after
+--> True
+```
 
 -}
 deleteText : Transform
@@ -3605,3 +3746,35 @@ insertAfterBlockLeaf blockToInsert state =
                                 increment (anchorNode selection) ++ relativeSelectablePath
                         in
                         Ok (State.state newRoot (Just <| caret newAnchorPath 0))
+
+
+{-| Insert a newline at the selection in elements with the name whitelisted by the String list. This
+is used by the code block element, since it only allows text (no line breaks or marks).
+This is a somewhat specialized method, but may be useful outside of its narrow context.
+-}
+insertNewline : List String -> Transform
+insertNewline elements editorState =
+    Debug.log "InsertNewline" <|
+        let
+            removedRangeEditorState =
+                Result.withDefault editorState (removeRange editorState)
+        in
+        case State.selection removedRangeEditorState of
+            Nothing ->
+                Err "Invalid selection"
+
+            Just selection ->
+                if not <| isCollapsed selection then
+                    Err "I can only try to insert a newline if the selection is collapsed"
+
+                else
+                    case findTextBlockNodeAncestor (anchorNode selection) (State.root removedRangeEditorState) of
+                        Nothing ->
+                            Err "No textblock node ancestor found"
+
+                        Just ( _, textblock ) ->
+                            if List.member (Element.name (Node.element textblock)) elements then
+                                insertText "\n" removedRangeEditorState
+
+                            else
+                                Err "Selection is not a textblock"

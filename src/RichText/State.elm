@@ -15,6 +15,7 @@ import RichText.Config.Spec exposing (Spec)
 import RichText.Internal.Definitions exposing (ContentType(..), toStringContentType)
 import RichText.Internal.Spec exposing (elementDefinitionWithDefault)
 import RichText.Model.InlineElement as InlineElement
+import RichText.Model.Mark as Mark
 import RichText.Model.Node as Node
     exposing
         ( Block
@@ -348,18 +349,42 @@ validate spec editorState =
             Err <| String.join ", " result
 
 
-validateInlineLeaf : Spec -> Maybe (Set String) -> Inline -> List String
-validateInlineLeaf spec allowedGroups leaf =
-    case leaf of
-        Node.Text _ ->
+validateAllowedMarks : Maybe (Set String) -> Inline -> List String
+validateAllowedMarks allowedMarks leaf =
+    case allowedMarks of
+        Nothing ->
             []
 
-        Node.InlineElement il ->
+        Just allowed ->
             let
-                definition =
-                    elementDefinitionWithDefault (InlineElement.element il) spec
+                notAllowed =
+                    Set.diff (Set.fromList (List.map (\m -> Mark.name m) (Node.marks leaf))) allowed
             in
-            validateAllowedGroups allowedGroups (ElementDefinition.group definition) (ElementDefinition.name definition)
+            if Set.isEmpty notAllowed then
+                []
+
+            else
+                [ "Inline node is only allowed the following marks: "
+                    ++ String.join "," (Set.toList allowed)
+                    ++ ", but found "
+                    ++ String.join "," (Set.toList notAllowed)
+                ]
+
+
+validateInlineLeaf : Spec -> Maybe (Set String) -> Maybe (Set String) -> Inline -> List String
+validateInlineLeaf spec allowedGroups allowedMarks leaf =
+    validateAllowedMarks allowedMarks leaf
+        ++ (case leaf of
+                Node.Text c ->
+                    []
+
+                Node.InlineElement il ->
+                    let
+                        definition =
+                            elementDefinitionWithDefault (InlineElement.element il) spec
+                    in
+                    validateAllowedGroups allowedGroups (ElementDefinition.group definition) (ElementDefinition.name definition)
+           )
 
 
 validateAllowedGroups : Maybe (Set String) -> String -> String -> List String
@@ -420,8 +445,8 @@ validateEditorBlockNode spec allowedGroups node =
 
             InlineChildren la ->
                 case contentType of
-                    TextBlockNodeType groups ->
-                        List.concatMap (validateInlineLeaf spec groups) (Array.toList (toInlineArray la))
+                    TextBlockNodeType config ->
+                        List.concatMap (validateInlineLeaf spec config.allowedGroups config.allowedMarks) (Array.toList (toInlineArray la))
 
                     _ ->
                         [ "I was expecting textblock content type, but instead I got " ++ toStringContentType contentType ]

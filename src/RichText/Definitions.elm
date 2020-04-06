@@ -110,7 +110,7 @@ paragraph =
     elementDefinition
         { name = "paragraph"
         , group = "block"
-        , contentType = textBlock [ "inline" ]
+        , contentType = textBlock { allowedGroups = [ "inline" ], allowedMarks = [] }
         , toHtmlNode = paragraphToHtml
         , fromHtmlNode = htmlToParagraph
         , selectable = False
@@ -201,7 +201,7 @@ heading =
     elementDefinition
         { name = "heading"
         , group = "block"
-        , contentType = textBlock [ "inline" ]
+        , contentType = textBlock { allowedGroups = [ "inline" ], allowedMarks = [] }
         , toHtmlNode = headingToHtml
         , fromHtmlNode = htmlToHeading
         , selectable = False
@@ -267,7 +267,7 @@ codeBlock =
     elementDefinition
         { name = "code_block"
         , group = "block"
-        , contentType = textBlock [ "text", "hard_break" ]
+        , contentType = textBlock { allowedGroups = [ "text" ], allowedMarks = [ "__nothing__" ] }
         , toHtmlNode = codeBlockToHtmlNode
         , fromHtmlNode = htmlNodeToCodeBlock
         , selectable = False

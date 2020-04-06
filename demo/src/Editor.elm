@@ -5,7 +5,7 @@ import Controls exposing (EditorMsg(..), InsertImageModal, InsertLinkModal, Styl
 import ExtraMarks exposing (strikethrough, underline)
 import Html exposing (Html, div)
 import Html.Attributes
-import RichText.Commands as Commands exposing (insertAfterBlockLeaf, insertBlock, lift, liftEmpty, splitBlockHeaderToNewParagraph, toggleBlock, toggleMark, wrap)
+import RichText.Commands as Commands exposing (insertAfterBlockLeaf, insertBlock, insertNewline, lift, liftEmpty, splitBlockHeaderToNewParagraph, toggleBlock, toggleMark, wrap)
 import RichText.Config.Command as Command exposing (CommandMap, inputEvent, internal, key, set, transform)
 import RichText.Config.Decorations
     exposing
@@ -109,7 +109,10 @@ commandBindings spec =
         listCommandBindings
         (Commands.defaultCommandMap
             |> set [ inputEvent "insertParagraph", key [ enter ], key [ return ] ]
-                [ ( "liftEmpty", transform <| liftEmpty )
+                [ ( "insertNewline"
+                  , transform <| insertNewline [ "code_block" ]
+                  )
+                , ( "liftEmpty", transform <| liftEmpty )
                 , ( "splitBlockHeaderToNewParagraph"
                   , transform <|
                         splitBlockHeaderToNewParagraph

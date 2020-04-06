@@ -148,7 +148,7 @@ last node =
 
 
 {-| Type alias for a function that takes a path and a root block and returns a path and node. Useful
-for functions like previous and next that can iterate through a Block.
+for generalizing functions like previous and next that can iterate through a Block.
 -}
 type alias Iterator =
     Path -> Block -> Maybe ( Path, Node )
