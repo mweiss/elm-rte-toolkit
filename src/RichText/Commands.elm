@@ -99,7 +99,7 @@ import RichText.Config.Command
         , withDefaultKeyCommand
         )
 import RichText.Config.Keys exposing (alt, backspace, delete, enter, return, shift, short)
-import RichText.Definitions exposing (hardBreak, paragraph)
+import RichText.Definitions exposing (hardBreak)
 import RichText.Internal.DeleteWord as DeleteWord
 import RichText.Internal.Event exposing (InputEvent, KeyboardEvent)
 import RichText.Model.Element as Element exposing (Element)
@@ -2040,9 +2040,6 @@ toggleTextBlock onElement offElement convertToPlainText editorState =
                                             case childNodes bn of
                                                 InlineChildren ic ->
                                                     let
-                                                        p =
-                                                            Node.element bn
-
                                                         newInlineChildren =
                                                             if convertToPlainText then
                                                                 inlineChildren (Array.fromList [ plainText (convertInlineChildrenToString ic) ])
@@ -3788,30 +3785,29 @@ This is a somewhat specialized method, but may be useful outside of its narrow c
 -}
 insertNewline : List String -> Transform
 insertNewline elements editorState =
-    Debug.log "InsertNewline" <|
-        let
-            removedRangeEditorState =
-                Result.withDefault editorState (removeRange editorState)
-        in
-        case State.selection removedRangeEditorState of
-            Nothing ->
-                Err "Invalid selection"
+    let
+        removedRangeEditorState =
+            Result.withDefault editorState (removeRange editorState)
+    in
+    case State.selection removedRangeEditorState of
+        Nothing ->
+            Err "Invalid selection"
 
-            Just selection ->
-                if not <| isCollapsed selection then
-                    Err "I can only try to insert a newline if the selection is collapsed"
+        Just selection ->
+            if not <| isCollapsed selection then
+                Err "I can only try to insert a newline if the selection is collapsed"
 
-                else
-                    case findTextBlockNodeAncestor (anchorNode selection) (State.root removedRangeEditorState) of
-                        Nothing ->
-                            Err "No textblock node ancestor found"
+            else
+                case findTextBlockNodeAncestor (anchorNode selection) (State.root removedRangeEditorState) of
+                    Nothing ->
+                        Err "No textblock node ancestor found"
 
-                        Just ( _, textblock ) ->
-                            if List.member (Element.name (Node.element textblock)) elements then
-                                insertText "\n" removedRangeEditorState
+                    Just ( _, textblock ) ->
+                        if List.member (Element.name (Node.element textblock)) elements then
+                            insertText "\n" removedRangeEditorState
 
-                            else
-                                Err "Selection is not a textblock"
+                        else
+                            Err "Selection is not a textblock"
 
 
 {-| If the selection is collapsed at the beginning of a text block, this will select the previous
