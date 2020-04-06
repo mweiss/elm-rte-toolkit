@@ -148,6 +148,7 @@ import RichText.Node as RTNode
         , splitBlockAtPathAndOffset
         , splitTextLeaf
         )
+import RichText.State exposing (translateReducedTextBlockSelection)
 
 
 backspaceCommands =
@@ -1979,7 +1980,7 @@ after =
         )
         (Just <| caret [ 0, 0 ] 0)
 
-toggleBlock (Element.element heading []) (Element.element paragraph []) False before == Ok after
+toggleTextBlock (Element.element heading []) (Element.element paragraph []) False before == Ok after
 ```
 
 -}
@@ -2065,7 +2066,11 @@ toggleTextBlock onElement offElement convertToPlainText editorState =
                         _ ->
                             State.root editorState
             in
-            Ok (editorState |> withRoot newRoot)
+            if convertToPlainText then
+                Ok <| translateReducedTextBlockSelection newRoot editorState
+
+            else
+                Ok (editorState |> withRoot newRoot)
 
 
 convertInlineChildrenToString : InlineChildren -> String

@@ -262,7 +262,7 @@ headerElements controlState =
         (\block icon title ->
             createButton
                 (if controlState.hasInline then
-                    if Set.member title controlState.nodes then
+                    if Set.member (String.replace " " "_" title) controlState.nodes then
                         Active
 
                     else
@@ -277,7 +277,7 @@ headerElements controlState =
         )
         [ "H1", "Code block" ]
         [ Solid.heading, Solid.codeBranch ]
-        [ "heading", "code_block" ]
+        [ "heading", "code block" ]
 
 
 type alias ControlState =

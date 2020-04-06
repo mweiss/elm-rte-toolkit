@@ -85,3 +85,8 @@
 .rte-main pre {
     white-space: pre-wrap;
 }
+
+.rte-main p {
+    margin-bottom: 1em;
+    margin-top: 1em;
+}

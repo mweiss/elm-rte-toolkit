@@ -19,7 +19,8 @@ body {
 article h1, article h2, article h3, article p {
   text-align: left;
 }
-h1 {
+
+article > h1 {
   font-size: 30px;
   margin: 24px 8px;
 }

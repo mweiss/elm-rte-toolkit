@@ -1,9 +1,20 @@
-module RichText.State exposing (reduce, validate)
+module RichText.State exposing
+    ( reduce, validate
+    , translateReducedTextBlockSelection
+    )
 
 {-| This module contains functions to validate and reduce editor state. These methods are used
 every time a command is applied.
 
+
+# State functions
+
 @docs reduce, validate
+
+
+# Helpers
+
+@docs translateReducedTextBlockSelection
 
 -}
 
@@ -191,20 +202,29 @@ reduce editorState =
         reducedRoot =
             clearSelectionAnnotations <| reduceNode markedRoot
     in
-    case State.selection editorState of
+    translateReducedTextBlockSelection reducedRoot editorState
+
+
+{-| Just the selection translation function that gets called in `reduce`. Note that this is really only
+useful if you're creating transforms that merge or remove inline nodes and you can't find a way
+to easily figure out the new selection state.
+-}
+translateReducedTextBlockSelection : Block -> State -> State
+translateReducedTextBlockSelection root state =
+    case State.selection state of
         Nothing ->
-            editorState |> withRoot reducedRoot
+            state |> withRoot root
 
         Just selection ->
             let
                 ( aP, aO ) =
-                    translatePath (State.root editorState) reducedRoot (anchorNode selection) (anchorOffset selection)
+                    translatePath (State.root state) root (anchorNode selection) (anchorOffset selection)
 
                 ( fP, fO ) =
-                    translatePath (State.root editorState) reducedRoot (focusNode selection) (focusOffset selection)
+                    translatePath (State.root state) root (focusNode selection) (focusOffset selection)
             in
-            editorState
-                |> withRoot reducedRoot
+            state
+                |> withRoot root
                 |> withSelection (Just <| range aP aO fP fO)
 
 
