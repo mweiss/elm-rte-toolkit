@@ -72,7 +72,7 @@ type EditorMsg
 
 statusForStyle : Style -> ControlState -> Status
 statusForStyle style controlState =
-    if not controlState.hasInline then
+    if not controlState.hasInline || Set.member "code_block" controlState.nodes then
         Disabled
 
     else if Set.member (styleToString style) controlState.marks then

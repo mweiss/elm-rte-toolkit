@@ -5,7 +5,7 @@ import Controls exposing (EditorMsg(..), InsertImageModal, InsertLinkModal, Styl
 import ExtraMarks exposing (strikethrough, underline)
 import Html exposing (Html, div)
 import Html.Attributes
-import RichText.Commands as Commands exposing (insertAfterBlockLeaf, insertBlock, insertNewline, lift, liftEmpty, splitBlockHeaderToNewParagraph, toggleBlock, toggleMark, wrap)
+import RichText.Commands as Commands exposing (insertAfterBlockLeaf, insertBlock, insertNewline, lift, liftEmpty, splitBlockHeaderToNewParagraph, toggleMark, toggleTextBlock, wrap)
 import RichText.Config.Command as Command exposing (CommandMap, inputEvent, internal, key, set, transform)
 import RichText.Config.Decorations
     exposing
@@ -472,8 +472,11 @@ handleUndo spec model =
 handleToggleBlock : Spec -> String -> Model -> Model
 handleToggleBlock spec block model =
     let
+        isCode =
+            block == "Code block"
+
         onParams =
-            if block == "Code block" then
+            if isCode then
                 element
                     codeBlock
                     []
@@ -494,7 +497,7 @@ handleToggleBlock spec block model =
             Result.withDefault model.editor
                 (apply
                     ( "toggleBlock"
-                    , transform <| toggleBlock [ "heading", "code_block", "paragraph" ] onParams offParams
+                    , transform <| toggleTextBlock onParams offParams isCode
                     )
                     spec
                     model.editor

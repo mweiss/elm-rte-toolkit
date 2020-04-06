@@ -1,13 +1,13 @@
 module RichText.Commands exposing
     ( defaultCommandMap, defaultInputEventCommand, defaultKeyCommand
     , removeRange, removeRangeAndInsert, removeSelectedLeafElement
-    , backspaceBlock, backspaceInlineElement, backspaceText, backspaceWord
-    , deleteBlock, deleteInlineElement, deleteText, deleteWord
+    , backspaceBlock, backspaceInlineElement, backspaceText, backspaceWord, selectBackward
+    , deleteBlock, deleteInlineElement, deleteText, deleteWord, selectForward
     , insertBlock, insertInline, insertLineBreak, insertText, insertNewline, insertAfterBlockLeaf
     , joinBackward, joinForward
     , lift, liftEmpty
     , splitBlock, splitBlockHeaderToNewParagraph, splitTextBlock
-    , toggleBlock, toggleMark
+    , toggleTextBlock, toggleMark
     , selectAll
     , wrap
     )
@@ -31,12 +31,12 @@ modifying the editor.
 
 ## Backspace
 
-@docs backspaceBlock, backspaceInlineElement, backspaceText, backspaceWord
+@docs backspaceBlock, backspaceInlineElement, backspaceText, backspaceWord, selectBackward
 
 
 ## Deletion
 
-@docs deleteBlock, deleteInlineElement, deleteText, deleteWord
+@docs deleteBlock, deleteInlineElement, deleteText, deleteWord, selectForward
 
 
 ## Insert
@@ -63,7 +63,7 @@ modifying the editor.
 
 Toggle commands for elements and marks
 
-@docs toggleBlock, toggleMark
+@docs toggleTextBlock, toggleMark
 
 
 ## Selection
@@ -105,7 +105,7 @@ import RichText.Internal.Event exposing (InputEvent, KeyboardEvent)
 import RichText.Model.Element as Element exposing (Element)
 import RichText.Model.InlineElement as InlineElement
 import RichText.Model.Mark as Mark exposing (Mark, MarkOrder, ToggleAction(..), hasMarkWithName, toggle)
-import RichText.Model.Node as Node exposing (Block, BlockChildren, Children(..), Inline(..), Path, block, blockChildren, childNodes, commonAncestor, decrement, increment, inlineChildren, marks, parent, plainText, toBlockArray, toInlineArray, toString, withChildNodes, withElement)
+import RichText.Model.Node as Node exposing (Block, BlockChildren, Children(..), Inline(..), InlineChildren, Path, block, blockChildren, childNodes, commonAncestor, decrement, increment, inlineChildren, marks, parent, plainText, toBlockArray, toInlineArray, toString, withChildNodes, withElement)
 import RichText.Model.Selection
     exposing
         ( Selection
@@ -156,6 +156,7 @@ backspaceCommands =
     , ( "backspaceInlineElement", transform backspaceInlineElement )
     , ( "backspaceBlock", transform backspaceBlock )
     , ( "joinBackward", transform joinBackward )
+    , ( "selectBackward", transform selectBackward )
     ]
 
 
@@ -165,6 +166,7 @@ deleteCommands =
     , ( "deleteInlineElement", transform deleteInlineElement )
     , ( "deleteBlock", transform deleteBlock )
     , ( "joinForward", transform joinForward )
+    , ( "selectForward", transform selectForward )
     ]
 
 
@@ -1942,10 +1944,9 @@ then it is unaffected.
 
 The arguments are as follows:
 
-  - `allowedElementNames` - a list of element names that can be affected by this toggle,
-    for example `["paragraph", "header"]`
   - `onElement` - The element to change to if there is one or more block that is not that element
   - `offElement` - The element to change to if all blocks are the `onElement`
+  - `convertToPlainText` - if true, strips the inline content of all marks and inline elements.
 
 ```
 before : State
@@ -1978,12 +1979,12 @@ after =
         )
         (Just <| caret [ 0, 0 ] 0)
 
-toggleBlock [ "paragraph", "heading" ] (Element.element heading []) (Element.element paragraph []) before == Ok after
+toggleBlock (Element.element heading []) (Element.element paragraph []) False before == Ok after
 ```
 
 -}
-toggleBlock : List String -> Element -> Element -> Transform
-toggleBlock allowedElementNames onElement offElement editorState =
+toggleTextBlock : Element -> Element -> Bool -> Transform
+toggleTextBlock onElement offElement convertToPlainText editorState =
     case State.selection editorState of
         Nothing ->
             Err "Nothing is selected."
@@ -2004,7 +2005,12 @@ toggleBlock allowedElementNames onElement offElement editorState =
                         (\node ->
                             case node of
                                 Block bn ->
-                                    Node.element bn == onElement
+                                    case childNodes bn of
+                                        InlineChildren _ ->
+                                            Node.element bn == onElement
+
+                                        _ ->
+                                            True
 
                                 _ ->
                                     True
@@ -2030,15 +2036,23 @@ toggleBlock allowedElementNames onElement offElement editorState =
                                 else
                                     case node of
                                         Block bn ->
-                                            let
-                                                p =
-                                                    Node.element bn
-                                            in
-                                            if List.member (Element.name p) allowedElementNames then
-                                                Block (bn |> withElement newParams)
+                                            case childNodes bn of
+                                                InlineChildren ic ->
+                                                    let
+                                                        p =
+                                                            Node.element bn
 
-                                            else
-                                                node
+                                                        newInlineChildren =
+                                                            if convertToPlainText then
+                                                                inlineChildren (Array.fromList [ plainText (convertInlineChildrenToString ic) ])
+
+                                                            else
+                                                                InlineChildren ic
+                                                    in
+                                                    Block (bn |> withElement newParams |> withChildNodes newInlineChildren)
+
+                                                _ ->
+                                                    node
 
                                         Inline _ ->
                                             node
@@ -2052,6 +2066,21 @@ toggleBlock allowedElementNames onElement offElement editorState =
                             State.root editorState
             in
             Ok (editorState |> withRoot newRoot)
+
+
+convertInlineChildrenToString : InlineChildren -> String
+convertInlineChildrenToString ic =
+    Array.foldl
+        (\i s ->
+            case i of
+                Text t ->
+                    s ++ Text.text t
+
+                _ ->
+                    s
+        )
+        ""
+        (toInlineArray ic)
 
 
 {-| Wraps the selection in the given element. The first argument is a mapping function for each
@@ -3778,3 +3807,71 @@ insertNewline elements editorState =
 
                             else
                                 Err "Selection is not a textblock"
+
+
+{-| If the selection is collapsed at the beginning of a text block, this will select the previous
+selectable node, and change the offset to the end if it's a text node. This is useful for default
+backspace behavior in case a join backward operation could not be made.
+-}
+selectBackward : Transform
+selectBackward state =
+    case State.selection state of
+        Nothing ->
+            Err "There is no selection to move forward"
+
+        Just selection ->
+            let
+                root =
+                    State.root state
+            in
+            if not <| selectionIsBeginningOfTextBlock selection (State.root state) then
+                Err "I can only select a node backwards if this is the beginning of a text block"
+
+            else
+                case findBackwardFromExclusive (\_ n -> isSelectable n) (anchorNode selection) root of
+                    Nothing ->
+                        Err "I could not find a selectable node prior to the selected one"
+
+                    Just ( newAnchor, n ) ->
+                        let
+                            offset =
+                                case n of
+                                    Inline i ->
+                                        case i of
+                                            Text t ->
+                                                String.length (Text.text t)
+
+                                            _ ->
+                                                0
+
+                                    _ ->
+                                        0
+                        in
+                        Ok (state |> withSelection (Just <| caret newAnchor offset))
+
+
+{-| If the selection is collapsed at the end of a text block, this will select the next
+selectable node at offset 0. This is useful for default delete behavior in case a
+join forward operation could not be made.
+-}
+selectForward : Transform
+selectForward state =
+    case State.selection state of
+        Nothing ->
+            Err "There is no selection to move forward"
+
+        Just selection ->
+            let
+                root =
+                    State.root state
+            in
+            if not <| selectionIsEndOfTextBlock selection (State.root state) then
+                Err "I can only select a node forward if this is the end of a text block"
+
+            else
+                case findForwardFromExclusive (\_ n -> isSelectable n) (anchorNode selection) root of
+                    Nothing ->
+                        Err "I could not find a selectable node after the selected one"
+
+                    Just ( newAnchor, _ ) ->
+                        Ok (state |> withSelection (Just <| caret newAnchor 0))

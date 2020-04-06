@@ -2,7 +2,7 @@ module Commands.TestToggleBlock exposing (..)
 
 import Array
 import Expect
-import RichText.Commands exposing (toggleBlock)
+import RichText.Commands exposing (toggleTextBlock)
 import RichText.Definitions exposing (doc, heading, paragraph)
 import RichText.Model.Element as Element
 import RichText.Model.Node
@@ -57,19 +57,19 @@ testToggleBlock =
         [ test "the example case works as expected" <|
             \_ ->
                 Expect.equal (Ok expectedExample)
-                    (toggleBlock
-                        [ "paragraph", "heading" ]
+                    (toggleTextBlock
                         (Element.element heading [])
                         (Element.element paragraph [])
+                        False
                         example
                     )
         , test "the reverse case works as expected" <|
             \_ ->
                 Expect.equal (Ok example)
-                    (toggleBlock
-                        [ "paragraph", "heading" ]
+                    (toggleTextBlock
                         (Element.element heading [])
                         (Element.element paragraph [])
+                        False
                         expectedExample
                     )
         ]
