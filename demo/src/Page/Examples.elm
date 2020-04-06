@@ -42,7 +42,7 @@ values =
 
 
 view : Model -> { title : String, content : List (Html Msg) }
-view model =
+view _ =
     { title = "Examples"
     , content =
         [ h1 [] [ text "Examples of some of the things this toolkit can do" ]
@@ -70,7 +70,7 @@ init session =
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
-update msg model =
+update _ model =
     ( model, Cmd.none )
 
 

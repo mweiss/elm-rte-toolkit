@@ -395,7 +395,7 @@ validateInlineLeaf : Spec -> Maybe (Set String) -> Maybe (Set String) -> Inline 
 validateInlineLeaf spec allowedGroups allowedMarks leaf =
     validateAllowedMarks allowedMarks leaf
         ++ (case leaf of
-                Node.Text c ->
+                Node.Text _ ->
                     []
 
                 Node.InlineElement il ->

@@ -50,7 +50,6 @@ import RichText.Model.Node
 import RichText.Model.Selection exposing (anchorNode, focusNode, normalize)
 import RichText.Model.State as State exposing (State)
 import RichText.Node exposing (Node(..), anyRange)
-import Set
 
 
 type alias EditorMsg =

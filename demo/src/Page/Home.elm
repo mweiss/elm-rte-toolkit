@@ -3,7 +3,7 @@ module Page.Home exposing (..)
 import Array
 import Controls exposing (EditorMsg(..))
 import Editor
-import Html exposing (Html, a, h1, h2, h3, li, p, text, ul)
+import Html exposing (Html, a, h1, h2, li, p, text, ul)
 import Html.Attributes exposing (class, href)
 import RichText.Definitions as Specs exposing (code, doc, paragraph)
 import RichText.Editor as RTE

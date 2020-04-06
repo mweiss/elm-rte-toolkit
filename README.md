@@ -53,6 +53,11 @@ between multiple spaces:
     white-space: pre-wrap;
     word-wrap: break-word;
 }
+
+.rte-hide-caret {
+    caret-color: transparent;
+}
+
 ```
 
 ## Contributing

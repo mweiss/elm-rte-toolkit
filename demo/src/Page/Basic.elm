@@ -38,7 +38,7 @@ view model =
         , p []
             [ text """You can use this package to create all sorts of editors. Trying to write
                     one from scratch can be a little overwhelming though, so the package provides a
-                    default spec and commands as a jumping off point for your own editors.
+                    default spec and default commands as a jumping off point for your own editor.
                     In this example, we use the default spec to create an editor which supports
                     things like headers, lists, as well as links and images."""
             ]

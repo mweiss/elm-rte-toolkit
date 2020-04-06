@@ -68,7 +68,7 @@ import RichText.Model.Mark as Mark exposing (mark)
 import Set
 
 
-{-| The root level element of a document.
+{-| The root element of a document.
 -}
 doc : ElementDefinition
 doc =
@@ -305,7 +305,7 @@ htmlNodeToCodeBlock def node =
             Nothing
 
 
-{-| An inline image. It is an inline element and can have three different string attributes:
+{-| An inline image. It can have three different string attributes:
 
   - `src` is the uri of the image to show
   - `alt` is the alt text of the image

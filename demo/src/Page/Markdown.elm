@@ -282,7 +282,7 @@ filterBlankLines blocks =
             List.filterMap
                 (\block ->
                     case block of
-                        M.BlankLine s ->
+                        M.BlankLine _ ->
                             Nothing
 
                         M.BlockQuote children ->

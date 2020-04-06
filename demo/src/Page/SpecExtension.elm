@@ -54,7 +54,6 @@ import RichText.Model.Node as Node
 import RichText.Model.State as State exposing (State, withRoot)
 import RichText.Node as Node exposing (Node(..), nodeAt)
 import Session exposing (Session)
-import Set
 
 
 type alias Model =

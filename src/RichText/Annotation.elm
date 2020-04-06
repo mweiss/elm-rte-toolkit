@@ -164,7 +164,7 @@ addToInline a n =
             n
 
 
-{-| Helper which removes the given annotation to a block node.
+{-| Helper which removes the given annotation from a block node.
 -}
 removeFromBlock : String -> Block -> Block
 removeFromBlock a n =
@@ -176,7 +176,7 @@ removeFromBlock a n =
             n
 
 
-{-| Helper which removes the given annotation to an inline node.
+{-| Helper which removes the given annotation from an inline node.
 -}
 removeFromInline : String -> Inline -> Inline
 removeFromInline a n =
