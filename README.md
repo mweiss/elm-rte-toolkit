@@ -14,10 +14,11 @@ This project was heavily inspired by other rich text editor frameworks like Pros
 
 This project requires some webcomponents to get started.
 
-If you don't want to use a polyfill and can support ES6, you can include
-[js/elmEditor.js](js/elmEditor.js) in your project and import it
+If you can support ES6, you can include [js/elmEditor.js](js/elmEditor.js) in your project and import it
+along with your favorite webcomponent polyfill.
 
 ```js
+import '@webcomponents/webcomponentsjs/webcomponents-bundle.js'
 import 'elmEditor.js'
 ```
 
@@ -34,7 +35,7 @@ npm install --save elm-rte-toolkit
 And in your javascript, you can import it like so:
 
 ```js
-import '@webcomponents/webcomponentsjs/custom-elements-es5-adapter.js'
+import '@webcomponents/webcomponentsjs/webcomponents-bundle.js'
 import 'elm-rte-toolkit';
 ```
 
