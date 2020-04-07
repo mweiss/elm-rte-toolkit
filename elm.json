@@ -15,6 +15,7 @@
         "RichText.Config.Spec",
         "RichText.Definitions",
         "RichText.Editor",
+        "RichText.Html",
         "RichText.List",
         "RichText.Model.Attribute",
         "RichText.Model.Element",
