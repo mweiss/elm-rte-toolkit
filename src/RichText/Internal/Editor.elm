@@ -35,6 +35,7 @@ type alias EditorContents =
     , isComposing : Bool
     , bufferedEditorState : Maybe State
     , history : History
+    , changeCount : Int
     }
 
 
@@ -54,6 +55,7 @@ editor iState =
         , isComposing = False
         , state = iState
         , history = empty { size = defaultDequeSize, groupDelayMilliseconds = 500 }
+        , changeCount = 0
         }
 
 
@@ -142,6 +144,13 @@ history e =
             c.history
 
 
+changeCount : Editor -> Int
+changeCount e =
+    case e of
+        Editor c ->
+            c.changeCount
+
+
 shortKey : Editor -> String
 shortKey e =
     case e of
@@ -161,6 +170,13 @@ withShortKey key e =
     case e of
         Editor c ->
             Editor { c | shortKey = key }
+
+
+incrementChangeCount : Editor -> Editor
+incrementChangeCount e =
+    case e of
+        Editor c ->
+            Editor { c | changeCount = c.changeCount + 1 }
 
 
 forceRerender : Editor -> Editor
@@ -205,7 +221,8 @@ handleUndo editor_ =
                 newHistory =
                     { editorHistory | undoDeque = newUndoDeque, redoStack = editorState :: editorHistory.redoStack, lastTextChangeTimestamp = 0 }
             in
-            editor_ |> withState newState |> withHistory (fromContents newHistory)
+            incrementChangeCount
+                (editor_ |> withState newState |> withHistory (fromContents newHistory))
 
 
 handleRedo : Editor -> Result String Editor
@@ -228,7 +245,10 @@ handleRedo editor_ =
                         , redoStack = xs
                     }
             in
-            Ok (editor_ |> withState newState |> withHistory (fromContents newHistory))
+            Ok
+                (incrementChangeCount
+                    (editor_ |> withState newState |> withHistory (fromContents newHistory))
+                )
 
 
 updateEditorState : String -> State -> Editor -> Editor
@@ -272,7 +292,7 @@ updateEditorStateWithTimestamp maybeTimestamp action newState editor_ =
                 , lastTextChangeTimestamp = timestamp
             }
     in
-    editor_ |> withState newState |> withHistory (fromContents newHistory)
+    incrementChangeCount (editor_ |> withState newState |> withHistory (fromContents newHistory))
 
 
 applyInternalCommand : InternalAction -> Editor -> Result String Editor

@@ -1,5 +1,5 @@
 module RichText.Config.Decorations exposing
-    ( Decorations, ElementDecoration, MarkDecoration, emptyDecorations, elementDecorations, markDecorations, withMarkDecorations, withElementDecorations
+    ( Decorations, ElementDecoration, MarkDecoration, emptyDecorations, elementDecorations, markDecorations, topLevelAttributes, withMarkDecorations, withElementDecorations, withTopLevelAttributes
     , addElementDecoration, addMarkDecoration, selectableDecoration
     )
 
@@ -9,7 +9,7 @@ useful for adding things like event listeners and conditional styles/attributes 
 
 # Decorations
 
-@docs Decorations, ElementDecoration, MarkDecoration, emptyDecorations, elementDecorations, markDecorations, withMarkDecorations, withElementDecorations
+@docs Decorations, ElementDecoration, MarkDecoration, emptyDecorations, elementDecorations, markDecorations, topLevelAttributes, withMarkDecorations, withElementDecorations, withTopLevelAttributes
 
 
 # Helpers
@@ -50,6 +50,7 @@ type Decorations msg
 type alias DecorationsContents msg =
     { marks : Dict String (List (MarkDecoration msg))
     , elements : Dict String (List (ElementDecoration msg))
+    , topLevelAttributes : List (Html.Attribute msg)
     }
 
 
@@ -105,7 +106,7 @@ type alias MarkDecoration msg =
 -}
 emptyDecorations : Decorations msg
 emptyDecorations =
-    Decorations { marks = Dict.empty, elements = Dict.empty }
+    Decorations { marks = Dict.empty, elements = Dict.empty, topLevelAttributes = [] }
 
 
 {-| A dictionary of mark name to a list of mark decorations.
@@ -126,6 +127,15 @@ elementDecorations d =
             c.elements
 
 
+{-| The extra attributes added to the node with `contenteditable="true"` set.
+-}
+topLevelAttributes : Decorations msg -> List (Html.Attribute msg)
+topLevelAttributes d =
+    case d of
+        Decorations c ->
+            c.topLevelAttributes
+
+
 {-| Creates a decorations object with the given mark decorations set
 -}
 withMarkDecorations : Dict String (List (MarkDecoration msg)) -> Decorations msg -> Decorations msg
@@ -142,6 +152,16 @@ withElementDecorations elements d =
     case d of
         Decorations c ->
             Decorations { c | elements = elements }
+
+
+{-| Creates a decorations object with the given top level attributes, e.g. extra attributes that are added
+to the editor node with `contenteditable="true"` set.
+-}
+withTopLevelAttributes : List (Html.Attribute msg) -> Decorations msg -> Decorations msg
+withTopLevelAttributes topLevelAttributes_ d =
+    case d of
+        Decorations c ->
+            Decorations { c | topLevelAttributes = topLevelAttributes_ }
 
 
 {-| Adds an element decoration for a defined node.

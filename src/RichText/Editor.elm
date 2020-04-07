@@ -1,5 +1,5 @@
 module RichText.Editor exposing
-    ( Editor, init, state, shortKey, history, withHistory
+    ( Editor, init, state, shortKey, history, withHistory, changeCount
     , Config, config, commandMap, decorations, spec
     , Message, update, apply, applyList, applyNoForceSelection
     , view, readOnlyView
@@ -11,7 +11,7 @@ rendering an editor.
 
 # Model
 
-@docs Editor, init, state, shortKey, history, withHistory
+@docs Editor, init, state, shortKey, history, withHistory, changeCount
 
 
 # Config
@@ -40,7 +40,7 @@ import Json.Decode as D
 import RichText.Annotation exposing (annotateSelection)
 import RichText.Commands exposing (removeRange)
 import RichText.Config.Command exposing (CommandMap, NamedCommand, NamedCommandList, transform)
-import RichText.Config.Decorations exposing (Decorations, elementDecorations, markDecorations)
+import RichText.Config.Decorations exposing (Decorations, elementDecorations, markDecorations, topLevelAttributes)
 import RichText.Config.ElementDefinition as ElementDefinition
 import RichText.Config.MarkDefinition as MarkDefinition
 import RichText.Config.Spec exposing (Spec)
@@ -743,13 +743,15 @@ view cfg editor_ =
                 ]
                 [ ( String.fromInt (completeRerenderCount editor_)
                   , Html.Keyed.node "div"
-                        [ Html.Attributes.contenteditable True
-                        , Html.Attributes.class "rte-main"
-                        , Html.Attributes.attribute "data-rte-main" "true"
-                        , Html.Attributes.classList [ ( "rte-hide-caret", shouldHideCaret state_ ) ]
-                        , onBeforeInput tagger commandMap_ spec_ editor_
-                        , onKeyDown tagger commandMap_ spec_ editor_
-                        ]
+                        ([ Html.Attributes.contenteditable True
+                         , Html.Attributes.class "rte-main"
+                         , Html.Attributes.attribute "data-rte-main" "true"
+                         , Html.Attributes.classList [ ( "rte-hide-caret", shouldHideCaret state_ ) ]
+                         , onBeforeInput tagger commandMap_ spec_ editor_
+                         , onKeyDown tagger commandMap_ spec_ editor_
+                         ]
+                            ++ topLevelAttributes decorations_
+                        )
                         [ ( String.fromInt (renderCount editor_)
                           , viewEditorBlockNode
                                 spec_
@@ -792,10 +794,11 @@ readOnlyView cfg editor_ =
                     state editor_
             in
             Html.node "div"
-                [ Html.Attributes.class "rte-main"
-                , Html.Attributes.attribute "data-rte-main" "true"
-                , Html.Attributes.classList [ ( "rte-hide-caret", shouldHideCaret state_ ) ]
-                ]
+                ([ Html.Attributes.class "rte-main"
+                 , Html.Attributes.attribute "data-rte-main" "true"
+                 ]
+                    ++ topLevelAttributes decorations_
+                )
                 [ viewEditorBlockNode
                     spec_
                     decorations_
@@ -986,6 +989,16 @@ defaults to `"Meta"`.
 shortKey : Editor -> String
 shortKey =
     InternalEditor.shortKey
+
+
+{-| Change count is a counter that gets incremented any time the editor's state gets updated. You
+may want to use this as a quick way to see if the editor has changed via a command after the
+`update` function. Note: this is a stop gap until a good story for how programmers can react to
+editor state changes has been thought out.
+-}
+changeCount : Editor -> Int
+changeCount =
+    InternalEditor.changeCount
 
 
 {-| Sets the history on the editor.
