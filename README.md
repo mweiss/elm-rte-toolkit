@@ -36,6 +36,7 @@ And in your javascript, you can import it like so:
 
 ```js
 import '@webcomponents/webcomponentsjs/webcomponents-bundle.js'
+import '@webcomponents/webcomponentsjs/custom-elements-es5-adapter.js'
 import 'elm-rte-toolkit';
 ```
 
