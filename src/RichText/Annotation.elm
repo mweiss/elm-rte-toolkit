@@ -102,7 +102,7 @@ addAtPath annotation path node =
             replace path (add annotation n) node
 
 
-{-| Removes the given annotation to the node at the given path. Returns an error if no node
+{-| Removes the given annotation from the node at the given path. Returns an error if no node
 exists at that path.
 
     Annotation.removeAtPath "myAnnotation" path root
@@ -224,7 +224,7 @@ toggle func annotation node =
                         Text <| (tl |> Text.withAnnotations (func annotation <| Text.annotations tl))
 
 
-{-| Removes the given annotation this node and its children.
+{-| Removes the given annotation from this node and its children.
 
     clear Annotation.lift root
     --> Returns `root` but with all the lift annotations removed.
