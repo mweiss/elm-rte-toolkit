@@ -232,6 +232,13 @@ handleShowInsertLinkModal spec model =
                 }
 
 
+{-| Dummy transform that always returns the result it receives.
+-}
+setResult : Result String State -> State -> Result String State
+setResult result _ =
+    result
+
+
 handleInsertLink : Spec -> Model -> Model
 handleInsertLink spec model =
     let
@@ -243,7 +250,7 @@ handleInsertLink spec model =
                 Nothing ->
                     model.editor
 
-                Just _ ->
+                Just state_ ->
                     let
                         attributes =
                             [ StringAttribute "href" insertLinkModal.href
@@ -260,7 +267,7 @@ handleInsertLink spec model =
                         apply
                             ( "insertLink"
                             , transform <|
-                                Commands.toggleMark markOrder linkMark Add
+                                setResult (Commands.toggleMark markOrder linkMark Add state_)
                             )
                             spec
                             model.editor
@@ -288,7 +295,7 @@ handleInsertImage spec model =
                 Nothing ->
                     model.editor
 
-                Just _ ->
+                Just state_ ->
                     let
                         params =
                             element image
@@ -303,7 +310,7 @@ handleInsertImage spec model =
                         apply
                             ( "insertImage"
                             , transform <|
-                                Commands.insertInline img
+                                setResult (Commands.insertInline img state_)
                             )
                             spec
                             model.editor
