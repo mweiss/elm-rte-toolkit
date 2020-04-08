@@ -3,7 +3,7 @@ Create rich text editors in Elm.
 
 Rich Text Editor Toolkit is an open source project to make cross platform editors on the web. This package treats contenteditable as an I/O device, and uses browser events and mutation observers to detect changes and update itself.  The editor's model is defined and validated by a programmable specification that allows you to create a custom tailored editor that fits your needs.
 
-This project was heavily inspired by other rich text editor frameworks like ProseMirror, Trix, and DraftJS.  
+This package was heavily inspired by other rich text editor frameworks like ProseMirror, Trix, and DraftJS.  
 
 ## Resources
 - Elm Package: https://package.elm-lang.org/packages/mweiss/elm-rte-toolkit/latest/ 
@@ -12,7 +12,7 @@ This project was heavily inspired by other rich text editor frameworks like Pros
 
 ## Getting started
 
-This project requires some webcomponents to get started.
+This package requires some webcomponents to get started.
 
 If you can support ES6, you can include [js/elmEditor.js](js/elmEditor.js) in your project and import it
 along with your favorite webcomponent polyfill.
