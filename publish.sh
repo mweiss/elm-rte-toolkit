@@ -1,6 +1,6 @@
 #!/bin/bash -e
 
-npm build
+npm run build
 cd js-dist
 cp ../package.json .
 npm publish
