@@ -122,47 +122,47 @@ styleToString style =
 
 onButtonPressToggleStyle : Style -> Attribute EditorMsg
 onButtonPressToggleStyle style =
-    preventDefaultOn "click" (succeed ( ToggleStyle style, True ))
+    preventDefaultOn "mousedown" (succeed ( ToggleStyle style, True ))
 
 
 onButtonPressToggleList : ListType -> Attribute EditorMsg
 onButtonPressToggleList listType =
-    preventDefaultOn "click" (succeed ( WrapInList listType, True ))
+    preventDefaultOn "mousedown" (succeed ( WrapInList listType, True ))
 
 
 onButtonPressToggleBlock : String -> Attribute EditorMsg
 onButtonPressToggleBlock action =
-    preventDefaultOn "click" (succeed ( ToggleBlock action, True ))
+    preventDefaultOn "mousedown" (succeed ( ToggleBlock action, True ))
 
 
 onButtonPressWrapBlockquote : Attribute EditorMsg
 onButtonPressWrapBlockquote =
-    preventDefaultOn "click" (succeed ( WrapInBlockQuote, True ))
+    preventDefaultOn "mousedown" (succeed ( WrapInBlockQuote, True ))
 
 
 onButtonPressInsertLink : Attribute EditorMsg
 onButtonPressInsertLink =
-    preventDefaultOn "click" (succeed ( ShowInsertLinkModal, True ))
+    preventDefaultOn "mousedown" (succeed ( ShowInsertLinkModal, True ))
 
 
 onButtonPressInsertImage : Attribute EditorMsg
 onButtonPressInsertImage =
-    preventDefaultOn "click" (succeed ( ShowInsertImageModal, True ))
+    preventDefaultOn "mousedown" (succeed ( ShowInsertImageModal, True ))
 
 
 onButtonPressInsertCode : Attribute EditorMsg
 onButtonPressInsertCode =
-    preventDefaultOn "click" (succeed ( ToggleStyle Code, True ))
+    preventDefaultOn "mousedown" (succeed ( ToggleStyle Code, True ))
 
 
 onButtonPressLiftOutOfBlock : Attribute EditorMsg
 onButtonPressLiftOutOfBlock =
-    preventDefaultOn "click" (succeed ( LiftOutOfBlock, True ))
+    preventDefaultOn "mousedown" (succeed ( LiftOutOfBlock, True ))
 
 
 onButtonPressInsertHR : Attribute EditorMsg
 onButtonPressInsertHR =
-    preventDefaultOn "click" (succeed ( InsertHorizontalRule, True ))
+    preventDefaultOn "mousedown" (succeed ( InsertHorizontalRule, True ))
 
 
 createButtonForStyle : ControlState -> Style -> Icon -> Html EditorMsg
@@ -438,7 +438,7 @@ undoRedo controlState =
          else
             Disabled
         )
-        (preventDefaultOn "click" (succeed ( Undo, True )))
+        (preventDefaultOn "mousedown" (succeed ( Undo, True )))
         Solid.undo
         "undo"
     , createButton
@@ -448,7 +448,7 @@ undoRedo controlState =
          else
             Disabled
         )
-        (preventDefaultOn "click" (succeed ( Redo, True )))
+        (preventDefaultOn "mousedown" (succeed ( Redo, True )))
         Solid.redo
         "redo"
     ]

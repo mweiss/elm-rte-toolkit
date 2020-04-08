@@ -163,7 +163,7 @@ handleInsertCaptionedImage spec model =
                 Nothing ->
                     model.editor.editor
 
-                Just _ ->
+                Just state_ ->
                     let
                         params =
                             element captionedImage
@@ -179,7 +179,7 @@ handleInsertCaptionedImage spec model =
                         apply
                             ( "insertImage"
                             , transform <|
-                                Commands.insertBlock img
+                                Editor.setResult (Commands.insertBlock img state_)
                             )
                             spec
                             model.editor.editor
