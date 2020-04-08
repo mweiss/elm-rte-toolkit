@@ -5,7 +5,7 @@
   "main": "elmEditor.js",
   "scripts": {
     "build": "babel js -d js-dist",
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
     "type": "git",
