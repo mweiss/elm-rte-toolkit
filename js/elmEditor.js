@@ -1,9 +1,5 @@
 const zeroWidthSpace = "\u200B";
 
-const isSafari = () => {
-    return window.safari !== undefined
-};
-
 const isAndroid = () => { return /(android)/i.test(navigator.userAgent); };
 
 /**
@@ -222,11 +218,6 @@ class SelectionState extends HTMLElement {
     }
 
     selectionChange(e) {
-        // In Safari, modifying the selection while composing causes text composition to end
-        // unexpectedly.  So for that browser, we do not update the selection state during composition.
-        if (isSafari() && this.parentNode.composing) {
-            return;
-        }
         let selection = this.getSelectionObject(e);
         let event = new CustomEvent("editorselectionchange", {detail: selection});
         this.parentNode.dispatchEvent(event);
