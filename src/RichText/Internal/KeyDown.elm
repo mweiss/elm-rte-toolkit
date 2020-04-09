@@ -3,7 +3,7 @@ module RichText.Internal.KeyDown exposing (..)
 import Json.Decode as D
 import RichText.Config.Command exposing (CommandMap, namedCommandListFromKeyboardEvent)
 import RichText.Config.Spec exposing (Spec)
-import RichText.Internal.Editor exposing (Editor, Message(..), Tagger, applyNamedCommandList, shortKey)
+import RichText.Internal.Editor exposing (Editor, Message(..), Tagger, applyNamedCommandList, isComposing, shortKey)
 import RichText.Internal.Event exposing (KeyboardEvent)
 
 
@@ -11,7 +11,7 @@ preventDefaultOn : CommandMap -> Spec -> Editor -> Message -> ( Message, Bool )
 preventDefaultOn commandMap spec editor msg =
     case msg of
         KeyDownEvent key ->
-            if key.isComposing then
+            if key.isComposing || isComposing editor then
                 ( msg, False )
 
             else
@@ -60,7 +60,7 @@ handleKeyDownEvent commandMap spec editor event =
 
 handleKeyDown : KeyboardEvent -> CommandMap -> Spec -> Editor -> Editor
 handleKeyDown keyboardEvent commandMap spec editor =
-    if keyboardEvent.isComposing then
+    if keyboardEvent.isComposing || isComposing editor then
         editor
 
     else

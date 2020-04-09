@@ -516,7 +516,7 @@ onCompositionStart msgFunc =
 
 onCompositionEnd : (Message -> msg) -> Html.Attribute msg
 onCompositionEnd msgFunc =
-    Html.Events.on "compositionend" (D.map msgFunc (D.succeed CompositionEnd))
+    Html.Events.on "editorcompositionend" (D.map msgFunc (D.succeed CompositionEnd))
 
 
 onPasteWithData : (Message -> msg) -> Html.Attribute msg

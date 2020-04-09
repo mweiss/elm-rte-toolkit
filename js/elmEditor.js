@@ -2,9 +2,11 @@ const zeroWidthSpace = "\u200B";
 
 let composing = false;
 
-let isSafari = () => {
+const isSafari = () => {
     return window.safari !== undefined
 };
+
+const isAndroid = () => { return /(android)/i.test(navigator.userAgent); };
 
 /**
  * Finds the selection path given the node, editor, and selection offset
@@ -239,10 +241,35 @@ class ElmEditor extends HTMLElement {
 
     compositionStart() {
         composing = true;
+
+        if (isAndroid()) {
+            const lastCompositionTimeout = setTimeout(() => {
+                if (composing && lastCompositionTimeout === this.lastCompositionTimeout) {
+                    composing = false;
+                    const newEvent = new CustomEvent("editorcompositionend", {
+                        detail: {}
+                    });
+                    this.dispatchEvent(newEvent);
+                }
+            }, 5000);
+            this.lastCompositionTimeout = lastCompositionTimeout
+        }
+
     }
 
     compositionEnd() {
         composing = false;
+        // Use a custom composition end function since in some browsers, it gets fired before
+        // the last keydown event occurs.
+        setTimeout(() => {
+            if (!composing) {
+                const newEvent = new CustomEvent("editorcompositionend", {
+                    detail: {}
+                });
+                this.dispatchEvent(newEvent);
+            }
+        },  0)
+
     }
 
     constructor() {

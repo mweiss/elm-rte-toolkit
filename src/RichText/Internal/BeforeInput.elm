@@ -3,14 +3,7 @@ module RichText.Internal.BeforeInput exposing (..)
 import Json.Decode as D
 import RichText.Config.Command exposing (CommandMap, namedCommandListFromInputEvent)
 import RichText.Config.Spec exposing (Spec)
-import RichText.Internal.Editor
-    exposing
-        ( Editor
-        , Message(..)
-        , Tagger
-        , applyNamedCommandList
-        , forceRerender
-        )
+import RichText.Internal.Editor exposing (Editor, Message(..), Tagger, applyNamedCommandList, forceRerender, isComposing)
 import RichText.Internal.Event exposing (InputEvent)
 
 
@@ -18,7 +11,7 @@ preventDefaultOn : CommandMap -> Spec -> Editor -> Message -> ( Message, Bool )
 preventDefaultOn commandMap spec editor msg =
     case msg of
         BeforeInputEvent inputEvent ->
-            if inputEvent.isComposing then
+            if inputEvent.isComposing || isComposing editor then
                 ( msg, False )
 
             else
@@ -64,7 +57,7 @@ handleInputEvent commandMap spec editor inputEvent =
 
 handleBeforeInput : InputEvent -> CommandMap -> Spec -> Editor -> Editor
 handleBeforeInput inputEvent commandMap spec editor =
-    if inputEvent.isComposing then
+    if inputEvent.isComposing || isComposing editor then
         editor
 
     else
