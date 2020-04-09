@@ -1,7 +1,5 @@
 const zeroWidthSpace = "\u200B";
 
-let composing = false;
-
 const isSafari = () => {
     return window.safari !== undefined
 };
@@ -224,11 +222,14 @@ class SelectionState extends HTMLElement {
     }
 
     selectionChange(e) {
-        if (!(isSafari() && composing)) {
-            let selection = this.getSelectionObject(e);
-            let event = new CustomEvent("editorselectionchange", {detail: selection});
-            this.parentNode.dispatchEvent(event);
+        // In Safari, modifying the selection while composing causes text composition to end
+        // unexpectedly.  So for that browser, we do not update the selection state during composition.
+        if (isSafari() && this.parentNode.composing) {
+            return;
         }
+        let selection = this.getSelectionObject(e);
+        let event = new CustomEvent("editorselectionchange", {detail: selection});
+        this.parentNode.dispatchEvent(event);
     };
 }
 
@@ -240,12 +241,17 @@ class SelectionState extends HTMLElement {
 class ElmEditor extends HTMLElement {
 
     compositionStart() {
-        composing = true;
+        this.composing = true;
 
+        // Sometimes Android never fires compositionend... so we need to make sure it gets called
+        // eventually.
         if (isAndroid()) {
+            if (this.lastCompositionTimeout) {
+                clearTimeout(this.lastCompositionTimeout)
+            }
             const lastCompositionTimeout = setTimeout(() => {
-                if (composing && lastCompositionTimeout === this.lastCompositionTimeout) {
-                    composing = false;
+                if (this.composing && lastCompositionTimeout === this.lastCompositionTimeout) {
+                    this.composing = false;
                     const newEvent = new CustomEvent("editorcompositionend", {
                         detail: {}
                     });
@@ -258,11 +264,11 @@ class ElmEditor extends HTMLElement {
     }
 
     compositionEnd() {
-        composing = false;
+        this.composing = false;
         // Use a custom composition end function since in some browsers, it gets fired before
         // the last keydown event occurs.
         setTimeout(() => {
-            if (!composing) {
+            if (!this.composing) {
                 const newEvent = new CustomEvent("editorcompositionend", {
                     detail: {}
                 });
@@ -346,7 +352,7 @@ class ElmEditor extends HTMLElement {
             detail: {
                 root: element,
                 selection: selection,
-                isComposing: composing,
+                isComposing: this.composing,
                 characterDataMutations: characterDataMutations,
                 timestamp: (new Date()).getTime()
             }
