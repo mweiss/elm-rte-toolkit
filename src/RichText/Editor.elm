@@ -206,7 +206,11 @@ updateSelection maybeSelection isDomPath spec_ editor_ =
                     else
                         Just selection
             in
-            editor_ |> withState (editorState |> withSelection translatedSelection)
+            if isComposing editor_ then
+                editor_
+
+            else
+                editor_ |> withState (editorState |> withSelection translatedSelection)
 
 
 {-| The editor's internal update function. It's important that the editor process all `Message`
@@ -257,9 +261,6 @@ update cfg msg editor_ =
 
                 Init e ->
                     handleInitEvent e editor_
-
-                ReplaceWith e ->
-                    e
 
 
 handleInitEvent : InitEvent -> Editor -> Editor
@@ -333,11 +334,12 @@ updateChangeEvent change spec_ editor_ =
                     editor_
 
                 Ok root ->
-                    updateChangeEventFullScan change.timestamp root change.selection spec_ editor_
+                    updateChangeEventFullScan change.timestamp change.isComposing root change.selection spec_ editor_
 
         Just characterDataMutations ->
             updateChangeEventTextChanges
                 change.timestamp
+                change.isComposing
                 (sanitizeMutations characterDataMutations)
                 change.selection
                 spec_
@@ -379,8 +381,8 @@ differentText root ( path, t ) =
                     True
 
 
-updateChangeEventTextChanges : Int -> List TextChange -> Maybe Selection -> Spec -> Editor -> Editor
-updateChangeEventTextChanges timestamp textChanges selection spec_ editor_ =
+updateChangeEventTextChanges : Int -> Bool -> List TextChange -> Maybe Selection -> Spec -> Editor -> Editor
+updateChangeEventTextChanges timestamp composing textChanges selection spec_ editor_ =
     case textChangesDomToEditor spec_ (State.root (state editor_)) textChanges of
         Nothing ->
             applyForceFunctionOnEditor forceRerender editor_
@@ -408,7 +410,7 @@ updateChangeEventTextChanges timestamp textChanges selection spec_ editor_ =
                                     |> withSelection (selection |> Maybe.andThen (domToEditor spec_ (State.root editorState)))
                                     |> withRoot replacedEditorNodes
                         in
-                        if isComposing editor_ then
+                        if composing || isComposing editor_ then
                             editor_
                                 |> withBufferedEditorState (Just newEditorState)
 
@@ -420,8 +422,8 @@ updateChangeEventTextChanges timestamp textChanges selection spec_ editor_ =
                             applyForceFunctionOnEditor forceReselection newEditor
 
 
-updateChangeEventFullScan : Int -> DomNode -> Maybe Selection -> Spec -> Editor -> Editor
-updateChangeEventFullScan timestamp domRoot selection spec_ editor_ =
+updateChangeEventFullScan : Int -> Bool -> DomNode -> Maybe Selection -> Spec -> Editor -> Editor
+updateChangeEventFullScan timestamp isComposing domRoot selection spec_ editor_ =
     case extractRootEditorBlockNode domRoot of
         Nothing ->
             applyForceFunctionOnEditor forceCompleteRerender editor_
@@ -433,7 +435,7 @@ updateChangeEventFullScan timestamp domRoot selection spec_ editor_ =
             else
                 case deriveTextChanges spec_ (State.root (state editor_)) editorRootDomNode of
                     Ok changes ->
-                        updateChangeEventTextChanges timestamp changes selection spec_ editor_
+                        updateChangeEventTextChanges timestamp isComposing changes selection spec_ editor_
 
                     Err _ ->
                         applyForceFunctionOnEditor forceRerender editor_
@@ -453,11 +455,12 @@ needCompleteRerender root =
 editorChangeDecoder : D.Decoder Message
 editorChangeDecoder =
     D.map ChangeEvent
-        (D.map4 EditorChange
+        (D.map5 EditorChange
             (D.at [ "detail", "root" ] D.value)
             (D.at [ "detail", "selection" ] selectionDecoder)
             (D.maybe (D.at [ "detail", "characterDataMutations" ] characterDataMutationsDecoder))
             (D.at [ "detail", "timestamp" ] D.int)
+            (D.at [ "detail", "isComposing" ] (D.oneOf [ D.bool, D.succeed False ]))
         )
 
 

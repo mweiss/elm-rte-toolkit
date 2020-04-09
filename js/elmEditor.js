@@ -1,5 +1,11 @@
 const zeroWidthSpace = "\u200B";
 
+let composing = false;
+
+let isSafari = () => {
+    return window.safari !== undefined
+};
+
 /**
  * Finds the selection path given the node, editor, and selection offset
  *
@@ -216,9 +222,11 @@ class SelectionState extends HTMLElement {
     }
 
     selectionChange(e) {
-        let selection = this.getSelectionObject(e);
-        let event = new CustomEvent("editorselectionchange", {detail: selection});
-        this.parentNode.dispatchEvent(event);
+        if (!(isSafari() && composing)) {
+            let selection = this.getSelectionObject(e);
+            let event = new CustomEvent("editorselectionchange", {detail: selection});
+            this.parentNode.dispatchEvent(event);
+        }
     };
 }
 
@@ -228,12 +236,23 @@ class SelectionState extends HTMLElement {
  * by Elm event listeners.
  */
 class ElmEditor extends HTMLElement {
+
+    compositionStart() {
+        composing = true;
+    }
+
+    compositionEnd() {
+        composing = false;
+    }
+
     constructor() {
         super();
         this.mutationObserverCallback = this.mutationObserverCallback.bind(this);
         this.pasteCallback = this.pasteCallback.bind(this);
         this._observer = new MutationObserver(this.mutationObserverCallback);
         this.addEventListener("paste", this.pasteCallback);
+        this.addEventListener("compositionstart", this.compositionStart.bind(this));
+        this.addEventListener("compositionend", this.compositionEnd.bind(this));
         this.dispatchInit = this.dispatchInit.bind(this)
 
     }
@@ -300,6 +319,7 @@ class ElmEditor extends HTMLElement {
             detail: {
                 root: element,
                 selection: selection,
+                isComposing: composing,
                 characterDataMutations: characterDataMutations,
                 timestamp: (new Date()).getTime()
             }

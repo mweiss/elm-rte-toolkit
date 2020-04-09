@@ -18,23 +18,24 @@ preventDefaultOn : CommandMap -> Spec -> Editor -> Message -> ( Message, Bool )
 preventDefaultOn commandMap spec editor msg =
     case msg of
         BeforeInputEvent inputEvent ->
-            shouldPreventDefault commandMap spec editor inputEvent
+            if inputEvent.isComposing then
+                ( msg, False )
+
+            else
+                ( msg, shouldPreventDefault commandMap spec editor inputEvent )
 
         _ ->
             ( msg, False )
 
 
-shouldPreventDefault : CommandMap -> Spec -> Editor -> InputEvent -> ( Message, Bool )
+shouldPreventDefault : CommandMap -> Spec -> Editor -> InputEvent -> Bool
 shouldPreventDefault commandMap spec editor inputEvent =
     case handleInputEvent commandMap spec editor inputEvent of
         Err _ ->
-            ( ReplaceWith editor, False )
+            False
 
-        Ok newEditor ->
-            -- HACK: Android has very strange behavior with regards to before input events, e.g.
-            -- prevent default doesn't actually stop the DOM from being modified, so
-            -- we're forcing a rerender if we update the editor state on a command
-            ( ReplaceWith <| forceRerender newEditor, True )
+        Ok _ ->
+            True
 
 
 preventDefaultOnBeforeInputDecoder : Tagger msg -> CommandMap -> Spec -> Editor -> D.Decoder ( msg, Bool )
@@ -63,12 +64,16 @@ handleInputEvent commandMap spec editor inputEvent =
 
 handleBeforeInput : InputEvent -> CommandMap -> Spec -> Editor -> Editor
 handleBeforeInput inputEvent commandMap spec editor =
-    case handleInputEvent commandMap spec editor inputEvent of
-        Err _ ->
-            editor
+    if inputEvent.isComposing then
+        editor
 
-        Ok newEditor ->
-            -- HACK: Android has very strange behavior with regards to before input events, e.g.
-            -- prevent default doesn't actually stop the DOM from being modified, so
-            -- we're forcing a rerender if we update the editor state on a command
-            forceRerender newEditor
+    else
+        case handleInputEvent commandMap spec editor inputEvent of
+            Err _ ->
+                editor
+
+            Ok newEditor ->
+                -- HACK: Android has very strange behavior with regards to before input events, e.g.
+                -- prevent default doesn't actually stop the DOM from being modified, so
+                -- we're forcing a rerender if we update the editor state on a command
+                forceRerender newEditor

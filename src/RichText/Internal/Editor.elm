@@ -70,7 +70,6 @@ type Message
     | CompositionEnd
     | PasteWithDataEvent PasteEvent
     | CutEvent
-    | ReplaceWith Editor
     | Init InitEvent
 
 

@@ -11,20 +11,24 @@ preventDefaultOn : CommandMap -> Spec -> Editor -> Message -> ( Message, Bool )
 preventDefaultOn commandMap spec editor msg =
     case msg of
         KeyDownEvent key ->
-            shouldPreventDefault commandMap spec editor key
+            if key.isComposing then
+                ( msg, False )
+
+            else
+                ( msg, shouldPreventDefault commandMap spec editor key )
 
         _ ->
             ( msg, False )
 
 
-shouldPreventDefault : CommandMap -> Spec -> Editor -> KeyboardEvent -> ( Message, Bool )
+shouldPreventDefault : CommandMap -> Spec -> Editor -> KeyboardEvent -> Bool
 shouldPreventDefault comamndMap spec editor keyboardEvent =
     case handleKeyDownEvent comamndMap spec editor keyboardEvent of
         Err _ ->
-            ( ReplaceWith editor, False )
+            False
 
-        Ok newEditor ->
-            ( ReplaceWith newEditor, True )
+        Ok _ ->
+            True
 
 
 preventDefaultOnKeyDownDecoder : Tagger msg -> CommandMap -> Spec -> Editor -> D.Decoder ( msg, Bool )
@@ -56,4 +60,8 @@ handleKeyDownEvent commandMap spec editor event =
 
 handleKeyDown : KeyboardEvent -> CommandMap -> Spec -> Editor -> Editor
 handleKeyDown keyboardEvent commandMap spec editor =
-    Result.withDefault editor <| handleKeyDownEvent commandMap spec editor keyboardEvent
+    if keyboardEvent.isComposing then
+        editor
+
+    else
+        Result.withDefault editor <| handleKeyDownEvent commandMap spec editor keyboardEvent
