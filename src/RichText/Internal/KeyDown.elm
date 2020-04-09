@@ -3,7 +3,7 @@ module RichText.Internal.KeyDown exposing (..)
 import Json.Decode as D
 import RichText.Config.Command exposing (CommandMap, namedCommandListFromKeyboardEvent)
 import RichText.Config.Spec exposing (Spec)
-import RichText.Internal.Editor exposing (Editor, Message(..), Tagger, applyNamedCommandList, shortKey)
+import RichText.Internal.Editor exposing (Editor, Message(..), Tagger, applyNamedCommandList, isComposing, shortKey)
 import RichText.Internal.Event exposing (KeyboardEvent)
 
 
@@ -11,20 +11,24 @@ preventDefaultOn : CommandMap -> Spec -> Editor -> Message -> ( Message, Bool )
 preventDefaultOn commandMap spec editor msg =
     case msg of
         KeyDownEvent key ->
-            shouldPreventDefault commandMap spec editor key
+            if key.isComposing || isComposing editor then
+                ( msg, False )
+
+            else
+                ( msg, shouldPreventDefault commandMap spec editor key )
 
         _ ->
             ( msg, False )
 
 
-shouldPreventDefault : CommandMap -> Spec -> Editor -> KeyboardEvent -> ( Message, Bool )
+shouldPreventDefault : CommandMap -> Spec -> Editor -> KeyboardEvent -> Bool
 shouldPreventDefault comamndMap spec editor keyboardEvent =
     case handleKeyDownEvent comamndMap spec editor keyboardEvent of
         Err _ ->
-            ( ReplaceWith editor, False )
+            False
 
-        Ok newEditor ->
-            ( ReplaceWith newEditor, True )
+        Ok _ ->
+            True
 
 
 preventDefaultOnKeyDownDecoder : Tagger msg -> CommandMap -> Spec -> Editor -> D.Decoder ( msg, Bool )
@@ -56,4 +60,8 @@ handleKeyDownEvent commandMap spec editor event =
 
 handleKeyDown : KeyboardEvent -> CommandMap -> Spec -> Editor -> Editor
 handleKeyDown keyboardEvent commandMap spec editor =
-    Result.withDefault editor <| handleKeyDownEvent commandMap spec editor keyboardEvent
+    if keyboardEvent.isComposing || isComposing editor then
+        editor
+
+    else
+        Result.withDefault editor <| handleKeyDownEvent commandMap spec editor keyboardEvent

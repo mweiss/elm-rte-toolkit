@@ -1,5 +1,7 @@
 const zeroWidthSpace = "\u200B";
 
+const isAndroid = () => { return /(android)/i.test(navigator.userAgent); };
+
 /**
  * Finds the selection path given the node, editor, and selection offset
  *
@@ -228,12 +230,53 @@ class SelectionState extends HTMLElement {
  * by Elm event listeners.
  */
 class ElmEditor extends HTMLElement {
+
+    compositionStart() {
+        this.composing = true;
+
+        // Sometimes Android never fires compositionend... so we need to make sure it gets called
+        // eventually.
+        if (isAndroid()) {
+            if (this.lastCompositionTimeout) {
+                clearTimeout(this.lastCompositionTimeout)
+            }
+            const lastCompositionTimeout = setTimeout(() => {
+                if (this.composing && lastCompositionTimeout === this.lastCompositionTimeout) {
+                    this.composing = false;
+                    const newEvent = new CustomEvent("editorcompositionend", {
+                        detail: {}
+                    });
+                    this.dispatchEvent(newEvent);
+                }
+            }, 5000);
+            this.lastCompositionTimeout = lastCompositionTimeout
+        }
+
+    }
+
+    compositionEnd() {
+        this.composing = false;
+        // Use a custom composition end function since in some browsers, it gets fired before
+        // the last keydown event occurs.
+        setTimeout(() => {
+            if (!this.composing) {
+                const newEvent = new CustomEvent("editorcompositionend", {
+                    detail: {}
+                });
+                this.dispatchEvent(newEvent);
+            }
+        },  0)
+
+    }
+
     constructor() {
         super();
         this.mutationObserverCallback = this.mutationObserverCallback.bind(this);
         this.pasteCallback = this.pasteCallback.bind(this);
         this._observer = new MutationObserver(this.mutationObserverCallback);
         this.addEventListener("paste", this.pasteCallback);
+        this.addEventListener("compositionstart", this.compositionStart.bind(this));
+        this.addEventListener("compositionend", this.compositionEnd.bind(this));
         this.dispatchInit = this.dispatchInit.bind(this)
 
     }
@@ -300,6 +343,7 @@ class ElmEditor extends HTMLElement {
             detail: {
                 root: element,
                 selection: selection,
+                isComposing: this.composing,
                 characterDataMutations: characterDataMutations,
                 timestamp: (new Date()).getTime()
             }

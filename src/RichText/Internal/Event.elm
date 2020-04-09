@@ -19,6 +19,7 @@ type alias EditorChange =
     , selection : Maybe Selection
     , characterDataMutations : Maybe (List TextChange)
     , timestamp : Int
+    , isComposing : Bool
     }
 
 
