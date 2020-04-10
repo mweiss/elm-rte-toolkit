@@ -17,8 +17,19 @@
     border: 1px solid #f2f2f2;
 }
 
+
 .rte-hide-caret {
     caret-color: transparent;
+}
+
+/*
+ * Workaround for https://github.com/mweiss/elm-rte-toolkit/issues/16, iOS has issues
+ * changing caret color on elements that are already selected.
+ */
+@supports (-webkit-touch-callout: none) {
+    .rte-hide-caret {
+        caret-color: auto;
+    }
 }
 
 .rte-button {
