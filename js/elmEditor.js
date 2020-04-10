@@ -238,7 +238,7 @@ class ElmEditor extends HTMLElement {
         // eventually.
         if (isAndroid()) {
             if (this.lastCompositionTimeout) {
-                clearTimeout(this.lastCompositionTimeout)
+                clearTimeout(this.lastCompositionTimeout);
             }
             const lastCompositionTimeout = setTimeout(() => {
                 if (this.composing && lastCompositionTimeout === this.lastCompositionTimeout) {
