@@ -207,7 +207,11 @@ updateSelection maybeSelection isDomPath spec_ editor_ =
                         Just selection
             in
             if isComposing editor_ then
-                editor_
+                let
+                    bufferedState =
+                        Maybe.withDefault editorState (bufferedEditorState editor_)
+                in
+                editor_ |> withBufferedEditorState (Just (bufferedState |> withSelection translatedSelection))
 
             else
                 editor_ |> withState (editorState |> withSelection translatedSelection)
