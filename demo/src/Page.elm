@@ -37,7 +37,10 @@ view page { title, content } =
 
 fontAwesomeStyle : Html msg
 fontAwesomeStyle =
-    FontAwesome.Styles.css
+    -- Fix to Issue #20:
+    -- Wrap font awesome styles in a div because of dangerous extensions: https://discourse.elm-lang.org/t/runtime-errors-caused-by-chrome-extensions/
+    Html.div []
+        [ FontAwesome.Styles.css ]
 
 
 viewContent : List (Html msg) -> Html msg
