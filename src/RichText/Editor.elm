@@ -674,7 +674,7 @@ handleCompositionEnd editor_ =
             editor_ |> withComposing False
 
         Just _ ->
-            applyForceFunctionOnEditor forceReselection (editor_ |> withComposing False)
+            applyForceFunctionOnEditor forceReselection editor_
 
 
 shouldHideCaret : State -> Bool
