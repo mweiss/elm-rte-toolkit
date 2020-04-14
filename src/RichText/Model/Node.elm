@@ -127,7 +127,7 @@ commonAncestor xPath yPath =
                         []
 
 
-{-| A `Block` represents a block element in your document. An block can either
+{-| A `Block` represents a block element in your document. A block can either
 have other block nodes as children, have all inline leaf nodes as children (e.g a text block),
 or be a leaf node.
 -}

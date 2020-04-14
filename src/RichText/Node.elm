@@ -963,7 +963,7 @@ replaceWithFragment path fragment root =
                                 )
 
                         BlockFragment _ ->
-                            Err "I cannot replace an inline fragment with an block fragment"
+                            Err "I cannot replace an inline fragment with a block fragment"
 
                 Leaf ->
                     Err "Not implemented"
@@ -1715,7 +1715,7 @@ insertAfter path fragment root =
                             replaceWithFragment path newFragment root
 
                         InlineFragment _ ->
-                            Err "I cannot insert an inline leaf fragment fragment into an block node fragment"
+                            Err "I cannot insert an inline leaf fragment fragment into a block node fragment"
 
 
 {-| Inserts the fragments before the node at the given path and returns the result. Returns an
@@ -1755,7 +1755,7 @@ insertBefore path fragment root =
                             replaceWithFragment path newFragment root
 
                         InlineFragment _ ->
-                            Err "I cannot insert an inline leaf fragment fragment into an block node fragment"
+                            Err "I cannot insert an inline leaf fragment fragment into a block node fragment"
 
 
 {-| Runs the toggle action on the node for the given mark.
