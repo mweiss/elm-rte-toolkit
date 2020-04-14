@@ -1,6 +1,6 @@
 {
   "name": "elm-rte-toolkit",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Elm toolkit for rich text editors",
   "main": "elmEditor.js",
   "scripts": {
