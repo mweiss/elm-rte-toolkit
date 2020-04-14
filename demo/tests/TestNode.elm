@@ -793,10 +793,10 @@ testInsertBefore =
                 Expect.equal
                     (Err "I cannot insert a block node fragment into an inline leaf fragment")
                     (insertBefore [ 0, 0 ] blockInsertFragment rootNode)
-        , test "Trying to insert an inline fragment into an block array should result in an error" <|
+        , test "Trying to insert an inline fragment into a block array should result in an error" <|
             \_ ->
                 Expect.equal
-                    (Err "I cannot insert an inline leaf fragment fragment into an block node fragment")
+                    (Err "I cannot insert an inline leaf fragment fragment into a block node fragment")
                     (insertBefore [ 0 ] inlineInsertFragment rootNode)
         ]
 
@@ -845,10 +845,10 @@ testInsertAfter =
                 Expect.equal
                     (Err "I cannot insert a block node fragment into an inline leaf fragment")
                     (insertAfter [ 0, 0 ] blockInsertFragment rootNode)
-        , test "Trying to insert an inline fragment into an block array should result in an error" <|
+        , test "Trying to insert an inline fragment into a block array should result in an error" <|
             \_ ->
                 Expect.equal
-                    (Err "I cannot insert an inline leaf fragment fragment into an block node fragment")
+                    (Err "I cannot insert an inline leaf fragment fragment into a block node fragment")
                     (insertAfter [ 0 ] inlineInsertFragment rootNode)
         ]
 

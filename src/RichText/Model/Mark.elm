@@ -107,7 +107,7 @@ type alias Order =
                 ]
 
     sort (markOrderFromSpec spec) [mark italic [], mark bold []]
-    --> [mark bold [], mark bold []]
+    --> [mark bold [], mark italic []]
 
 -}
 sort : MarkOrder -> List Mark -> List Mark

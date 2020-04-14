@@ -387,7 +387,20 @@ differentText root ( path, t ) =
 
 updateChangeEventTextChanges : Int -> Bool -> List TextChange -> Maybe Selection -> Spec -> Editor -> Editor
 updateChangeEventTextChanges timestamp composing textChanges selection spec_ editor_ =
-    case textChangesDomToEditor spec_ (State.root (state editor_)) textChanges of
+    let
+        editorComposing =
+            composing || isComposing editor_
+
+        -- Fix to issue #4: when composing text, we want to do the text comparison with the
+        -- buffered state if it exists.
+        stateToCompare =
+            if editorComposing then
+                Maybe.withDefault (state editor_) (bufferedEditorState editor_)
+
+            else
+                state editor_
+    in
+    case textChangesDomToEditor spec_ (State.root stateToCompare) textChanges of
         Nothing ->
             applyForceFunctionOnEditor forceRerender editor_
 
@@ -397,7 +410,7 @@ updateChangeEventTextChanges timestamp composing textChanges selection spec_ edi
                     state editor_
 
                 actualChanges =
-                    List.filter (differentText (State.root editorState)) changes
+                    List.filter (differentText (State.root stateToCompare)) changes
             in
             if List.isEmpty actualChanges then
                 editor_
@@ -414,7 +427,7 @@ updateChangeEventTextChanges timestamp composing textChanges selection spec_ edi
                                     |> withSelection (selection |> Maybe.andThen (domToEditor spec_ (State.root editorState)))
                                     |> withRoot replacedEditorNodes
                         in
-                        if composing || isComposing editor_ then
+                        if editorComposing then
                             editor_
                                 |> withBufferedEditorState (Just newEditorState)
 
@@ -661,7 +674,7 @@ handleCompositionEnd editor_ =
             editor_ |> withComposing False
 
         Just _ ->
-            applyForceFunctionOnEditor forceReselection editor_
+            applyForceFunctionOnEditor forceReselection (editor_ |> withComposing False)
 
 
 shouldHideCaret : State -> Bool
