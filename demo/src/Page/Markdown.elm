@@ -573,7 +573,7 @@ listToMarkdown : M.ListType -> Element -> Children -> Result String MBlock
 listToMarkdown type_ parameters cn =
     let
         delimiter =
-            Maybe.withDefault "." <|
+            Maybe.withDefault "*" <|
                 findStringAttribute
                     "delimiter"
                     (Element.attributes parameters)
