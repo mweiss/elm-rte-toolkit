@@ -572,8 +572,16 @@ codeBlockToMarkdown cn =
 listToMarkdown : M.ListType -> Element -> Children -> Result String MBlock
 listToMarkdown type_ parameters cn =
     let
+        defaultDelimiter =
+            case type_ of
+                M.Unordered ->
+                    "*"
+
+                M.Ordered _ ->
+                    "."
+
         delimiter =
-            Maybe.withDefault "*" <|
+            Maybe.withDefault defaultDelimiter <|
                 findStringAttribute
                     "delimiter"
                     (Element.attributes parameters)
