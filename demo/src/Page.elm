@@ -45,7 +45,7 @@ fontAwesomeStyle =
 
 viewContent : List (Html msg) -> Html msg
 viewContent content =
-    article [ Html.Attributes.attribute "data-gramm_editor" "false" ] content
+    article [] content
 
 
 viewHeader : Page -> Html msg
