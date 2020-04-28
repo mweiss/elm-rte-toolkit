@@ -7,13 +7,7 @@ import Html exposing (Html, div)
 import Html.Attributes
 import RichText.Commands as Commands exposing (insertAfterBlockLeaf, insertBlock, insertNewline, lift, liftEmpty, splitBlockHeaderToNewParagraph, toggleMark, toggleTextBlock, wrap)
 import RichText.Config.Command as Command exposing (CommandMap, inputEvent, internal, key, set, transform)
-import RichText.Config.Decorations
-    exposing
-        ( Decorations
-        , addElementDecoration
-        , emptyDecorations
-        , selectableDecoration
-        )
+import RichText.Config.Decorations exposing (Decorations, addElementDecoration, emptyDecorations, selectableDecoration, withTopLevelAttributes)
 import RichText.Config.Keys exposing (enter, return, short)
 import RichText.Config.Spec exposing (Spec)
 import RichText.Definitions
@@ -136,6 +130,8 @@ decorations =
     emptyDecorations
         |> addElementDecoration image (selectableDecoration InternalMsg)
         |> addElementDecoration horizontalRule (selectableDecoration InternalMsg)
+        -- The grammarly plugin breaks the virtual dom, so let's disable it.
+        |> withTopLevelAttributes [ Html.Attributes.attribute "data-gramm_editor" "false" ]
 
 
 initEditor : State -> Editor
@@ -609,7 +605,7 @@ handleUpdateLinkHref href model =
 
 view : Config Msg -> Model -> Html Msg
 view cfg model =
-    div [ Html.Attributes.class "editor-container" ]
+    div [ Html.Attributes.class "editor-container", Html.Attributes.attribute "data-gramm_editor" "false" ]
         [ Controls.editorControlPanel model.styles model.editor
         , Editor.view cfg model.editor
         , Controls.renderInsertLinkModal model.insertLinkModal

@@ -178,6 +178,7 @@ markdownTextArea model =
         [ textarea
             [ Html.Attributes.class "markdown-textarea"
             , Html.Attributes.value model.textMarkdown
+            , Html.Attributes.attribute "data-gramm_editor" "false"
             , Html.Events.onInput TextAreaChange
             ]
             []

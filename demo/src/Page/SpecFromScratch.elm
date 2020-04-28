@@ -7,7 +7,7 @@ import Html.Events
 import Links exposing (rteToolkit)
 import RichText.Commands as Commands
 import RichText.Config.Command exposing (Transform, transform)
-import RichText.Config.Decorations exposing (addElementDecoration, emptyDecorations)
+import RichText.Config.Decorations exposing (addElementDecoration, emptyDecorations, withTopLevelAttributes)
 import RichText.Config.ElementDefinition as ElementDefinition
     exposing
         ( ElementDefinition
@@ -266,6 +266,7 @@ htmlToItem def node =
 decorations =
     emptyDecorations
         |> addElementDecoration item toggleCheckboxDecoration
+        |> withTopLevelAttributes [ Html.Attributes.attribute "data-gramm_editor" "false" ]
 
 
 toggleCheckboxDecoration : Path -> Element -> Path -> List (Html.Attribute Msg)
