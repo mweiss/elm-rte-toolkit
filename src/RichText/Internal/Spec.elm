@@ -33,19 +33,19 @@ import RichText.Model.Text as Text
 import RichText.Node exposing (Fragment(..))
 
 
-resultFilterMap : (a -> Result c b) -> Array a -> Array b
+resultFilterMap : (a -> Result String b) -> Array a -> ( Array b, List String )
 resultFilterMap f xs =
     let
-        maybePush : (a -> Result c b) -> a -> Array b -> Array b
+        maybePush : (a -> Result String b) -> a -> ( Array b, List String ) -> ( Array b, List String )
         maybePush f_ mx xs_ =
             case f_ mx of
                 Ok x ->
-                    Array.push x xs_
+                    Tuple.mapFirst (Array.push x) xs_
 
-                Err _ ->
-                    xs_
+                Err err ->
+                    Tuple.mapSecond ((::) err) xs_
     in
-    Array.foldl (maybePush f) Array.empty xs
+    Array.foldl (maybePush f) ( Array.empty, [] ) xs
 
 
 htmlToElementArray : Spec -> String -> Result String (Array Fragment)
@@ -56,11 +56,16 @@ htmlToElementArray spec html =
 
         Ok htmlNodeArray ->
             let
-                newArray =
+                ( newArray, errList ) =
                     resultFilterMap (htmlNodeToEditorFragment spec []) htmlNodeArray
             in
             if Array.length newArray /= Array.length htmlNodeArray then
-                Err "Could not create a valid editor node array from html node array"
+                Err <|
+                    "Could not create a valid editor node array from html node array:\n"
+                        ++ List.foldr
+                            (++)
+                            ""
+                            (errList |> List.map ((++) "\n"))
 
             else
                 Ok <| reduceEditorFragmentArray newArray
