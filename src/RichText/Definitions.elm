@@ -536,7 +536,7 @@ htmlNodeToLink def node =
                             (\( k, v ) ->
                                 case k of
                                     "href" ->
-                                        Just <| StringAttribute "src" v
+                                        Just <| StringAttribute "href" v
 
                                     "title" ->
                                         Just <| StringAttribute "title" v
