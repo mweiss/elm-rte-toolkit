@@ -3,7 +3,7 @@
     "name": "mweiss/elm-rte-toolkit",
     "summary": "Build rich text editors in Elm",
     "license": "BSD-3-Clause",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "exposed-modules": [
         "RichText.Annotation",
         "RichText.Commands",
