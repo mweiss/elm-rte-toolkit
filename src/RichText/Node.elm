@@ -1260,7 +1260,7 @@ removeInRange start end node =
                                     Array.empty
 
                                 Just b ->
-                                    Array.fromList [ removeInRange startRest endRest b ]
+                                    Array.fromList [ removeInRange startRest (last b |> Tuple.first) b ]
 
                     rightRest =
                         if List.isEmpty endRest then
@@ -1272,7 +1272,7 @@ removeInRange start end node =
                                     Array.empty
 
                                 Just b ->
-                                    Array.fromList [ removeInRange startRest endRest b ]
+                                    Array.fromList [ removeInRange [] endRest b ]
                 in
                 node |> withChildNodes (blockChildren <| List.foldr Array.append Array.empty [ left, leftRest, rightRest, right ])
 
