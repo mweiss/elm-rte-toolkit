@@ -10,7 +10,7 @@ module RichText.Node exposing
     , Fragment(..), Node(..)
     )
 
-{-| This module contains convenience functions for working with Block and Inline nodes.
+{-| This module contains convenience functions for working with `Block` and `Inline` nodes.
 
 
 # Insert / Replace

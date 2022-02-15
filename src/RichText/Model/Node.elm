@@ -7,7 +7,7 @@ module RichText.Model.Node exposing
 
 {-| This module contains types related to the nodes in an editor.
 
-An editor consists of two types of nodes, block and inline. Block nodes are used to represent
+An editor consists of two types of nodes, block and inline. `Block` nodes are used to represent
 hierarchical structures like blockquotes, tables and nested lists. Inline nodes are used to
 represent flat structures, like text, inline images, and hard breaks.
 
