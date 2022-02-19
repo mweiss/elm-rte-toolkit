@@ -1,6 +1,6 @@
 module RichText.Model.State exposing (State, state, root, selection, withRoot, withSelection)
 
-{-| A State consists of a root block and a selection. State allows you to keep
+{-| A `State` consists of a root block and a selection. `State` allows you to keep
 track of and manipulate the contents of the editor.
 
 @docs State, state, root, selection, withRoot, withSelection
@@ -11,7 +11,7 @@ import RichText.Model.Node exposing (Block)
 import RichText.Model.Selection exposing (Selection)
 
 
-{-| A State consists of a root block and a selection. State allows you to keep
+{-| A `State` consists of a root block and a selection. `State` allows you to keep
 track of and manipulate the contents of the editor.
 -}
 type State

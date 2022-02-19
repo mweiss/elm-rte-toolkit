@@ -4,8 +4,8 @@ module RichText.Model.Selection exposing
     , isCollapsed, normalize
     )
 
-{-| A selection represents the information received and translated from the selection web API. Note that
-the anchorNode and focusNode are translations of the node paths relative to the editor.
+{-| A `Selection` represents the information received and translated from the selection web API. Note that
+the `anchorNode` and `focusNode` are translations of the node paths relative to the editor.
 
 
 # Selection
@@ -28,7 +28,7 @@ import RichText.Model.Node exposing (Path)
 
 
 {-| A `Selection` represents the information received and translated from the selection API. Note that
-the anchorNode and focusNode are translations of the node paths relative to the editor.
+the `anchorNode` and `focusNode` are translations of the node paths relative to the editor.
 -}
 type Selection
     = Selection Contents

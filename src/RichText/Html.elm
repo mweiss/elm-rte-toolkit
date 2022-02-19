@@ -1,6 +1,6 @@
 module RichText.Html exposing (toHtml, toHtmlNode, fromHtml, blockFromHtml)
 
-{-| This module contains convenience functions for econding and decoding editor nodes to and from
+{-| This module contains convenience functions for encoding and decoding editor nodes to and from
 html. Its intent is to help developers who want to import and export editor state
 as html.
 
