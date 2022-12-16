@@ -179,22 +179,30 @@ or an error if there was an issue decoding the html.
 blockFromHtml : Spec -> String -> Result String Block
 blockFromHtml spec html =
     Result.andThen
-        (\fragment ->
-            case Array.get 0 fragment of
-                Nothing ->
-                    Err "There are no fragments to parse"
-
-                Just f ->
-                    case f of
-                        BlockFragment bf ->
-                            case Array.get 0 bf of
-                                Nothing ->
-                                    Err "Invalid initial fragment"
-
-                                Just block ->
-                                    Ok block
-
-                        _ ->
-                            Err "I was expecting a block, but instead I received an inline"
-        )
+        fragmentsToBlock
         (htmlToElementArray spec html)
+
+
+fragmentsToBlock : Array Fragment -> Result String Block
+fragmentsToBlock fragment =
+    case Array.get 0 fragment of
+        Nothing ->
+            Err "There are no fragments to parse"
+
+        Just f ->
+            fragmentToBlock f
+
+
+fragmentToBlock : Fragment -> Result String Block
+fragmentToBlock fragments =
+    case fragments of
+        BlockFragment bf ->
+            case Array.get 0 bf of
+                Nothing ->
+                    Err "Invalid initial fragment"
+
+                Just block ->
+                    Ok block
+
+        _ ->
+            Err "I was expecting a block, but instead I received an inline"
