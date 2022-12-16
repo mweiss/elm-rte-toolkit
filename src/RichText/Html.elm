@@ -1,10 +1,15 @@
-module RichText.Html exposing (toHtml, toHtmlNode, fromHtml, fromHtmlNode, blockFromHtml)
+module RichText.Html exposing
+    ( toHtml, toHtmlNode, fromHtml, fromHtmlNode, blockFromHtml
+    , fragmentsToBlock, fragmentToBlock
+    )
 
 {-| This module contains convenience functions for encoding and decoding editor nodes to and from
 html. Its intent is to help developers who want to import and export editor state
 as html.
 
 @docs toHtml, toHtmlNode, fromHtml, fromHtmlNode, blockFromHtml
+
+@docs fragmentsToBlock, fragmentToBlock
 
 -}
 
@@ -183,6 +188,7 @@ blockFromHtml spec html =
         (htmlToElementArray spec html)
 
 
+{-| -}
 fragmentsToBlock : Array Fragment -> Result String Block
 fragmentsToBlock fragment =
     case Array.get 0 fragment of
@@ -193,6 +199,7 @@ fragmentsToBlock fragment =
             fragmentToBlock f
 
 
+{-| -}
 fragmentToBlock : Fragment -> Result String Block
 fragmentToBlock fragments =
     case fragments of
