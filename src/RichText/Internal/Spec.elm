@@ -1,4 +1,4 @@
-module RichText.Internal.Spec exposing (elementDefinitionWithDefault, htmlToElementArray, markDefinitionWithDefault)
+module RichText.Internal.Spec exposing (elementDefinitionWithDefault, htmlNodeToEditorFragment, htmlToElementArray, markDefinitionWithDefault)
 
 import Array exposing (Array)
 import Html.Parser as Html exposing (Node(..))

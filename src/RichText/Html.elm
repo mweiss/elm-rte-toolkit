@@ -1,10 +1,10 @@
-module RichText.Html exposing (toHtml, toHtmlNode, fromHtml, blockFromHtml)
+module RichText.Html exposing (toHtml, toHtmlNode, fromHtml, fromHtmlNode, blockFromHtml)
 
 {-| This module contains convenience functions for encoding and decoding editor nodes to and from
 html. Its intent is to help developers who want to import and export editor state
 as html.
 
-@docs toHtml, toHtmlNode, fromHtml, blockFromHtml
+@docs toHtml, toHtmlNode, fromHtml, fromHtmlNode, blockFromHtml
 
 -}
 
@@ -12,7 +12,7 @@ import Array exposing (Array)
 import Html.Parser exposing (Node(..), nodeToString)
 import RichText.Config.Spec exposing (Spec)
 import RichText.Internal.HtmlNode exposing (editorBlockNodeToHtmlNode)
-import RichText.Internal.Spec exposing (htmlToElementArray)
+import RichText.Internal.Spec exposing (htmlNodeToEditorFragment, htmlToElementArray)
 import RichText.Model.HtmlNode exposing (HtmlNode(..))
 import RichText.Model.Node exposing (Block)
 import RichText.Node exposing (Fragment(..))
@@ -139,6 +139,12 @@ issue decoding the html.
 fromHtml : Spec -> String -> Result String (Array Fragment)
 fromHtml =
     htmlToElementArray
+
+
+{-| -}
+fromHtmlNode : Spec -> HtmlNode -> Result String Fragment
+fromHtmlNode spec =
+    htmlNodeToEditorFragment spec []
 
 
 {-| Convenience function that parses html and returns the first editor block that was decoded,
