@@ -1,10 +1,15 @@
-module RichText.Html exposing (toHtml, toHtmlNode, fromHtml, blockFromHtml)
+module RichText.Html exposing
+    ( toHtml, toHtmlNode, fromHtml, fromHtmlNode, blockFromHtml
+    , fragmentsToBlock, fragmentToBlock
+    )
 
 {-| This module contains convenience functions for encoding and decoding editor nodes to and from
 html. Its intent is to help developers who want to import and export editor state
 as html.
 
-@docs toHtml, toHtmlNode, fromHtml, blockFromHtml
+@docs toHtml, toHtmlNode, fromHtml, fromHtmlNode, blockFromHtml
+
+@docs fragmentsToBlock, fragmentToBlock
 
 -}
 
@@ -12,7 +17,7 @@ import Array exposing (Array)
 import Html.Parser exposing (Node(..), nodeToString)
 import RichText.Config.Spec exposing (Spec)
 import RichText.Internal.HtmlNode exposing (editorBlockNodeToHtmlNode)
-import RichText.Internal.Spec exposing (htmlToElementArray)
+import RichText.Internal.Spec exposing (htmlNodeToEditorFragment, htmlToElementArray)
 import RichText.Model.HtmlNode exposing (HtmlNode(..))
 import RichText.Model.Node exposing (Block)
 import RichText.Node exposing (Fragment(..))
@@ -141,6 +146,12 @@ fromHtml =
     htmlToElementArray
 
 
+{-| -}
+fromHtmlNode : Spec -> HtmlNode -> Result String Fragment
+fromHtmlNode spec =
+    htmlNodeToEditorFragment spec []
+
+
 {-| Convenience function that parses html and returns the first editor block that was decoded,
 or an error if there was an issue decoding the html.
 
@@ -173,22 +184,32 @@ or an error if there was an issue decoding the html.
 blockFromHtml : Spec -> String -> Result String Block
 blockFromHtml spec html =
     Result.andThen
-        (\fragment ->
-            case Array.get 0 fragment of
-                Nothing ->
-                    Err "There are no fragments to parse"
-
-                Just f ->
-                    case f of
-                        BlockFragment bf ->
-                            case Array.get 0 bf of
-                                Nothing ->
-                                    Err "Invalid initial fragment"
-
-                                Just block ->
-                                    Ok block
-
-                        _ ->
-                            Err "I was expecting a block, but instead I received an inline"
-        )
+        fragmentsToBlock
         (htmlToElementArray spec html)
+
+
+{-| -}
+fragmentsToBlock : Array Fragment -> Result String Block
+fragmentsToBlock fragment =
+    case Array.get 0 fragment of
+        Nothing ->
+            Err "There are no fragments to parse"
+
+        Just f ->
+            fragmentToBlock f
+
+
+{-| -}
+fragmentToBlock : Fragment -> Result String Block
+fragmentToBlock fragments =
+    case fragments of
+        BlockFragment bf ->
+            case Array.get 0 bf of
+                Nothing ->
+                    Err "Invalid initial fragment"
+
+                Just block ->
+                    Ok block
+
+        _ ->
+            Err "I was expecting a block, but instead I received an inline"
