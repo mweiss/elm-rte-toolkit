@@ -135,9 +135,23 @@ htmlNodeToEditorFragment spec marks node =
                                 Ok <| BlockFragment <| Array.fromList [ Node.block element childNodes ]
 
                 Nothing ->
+                    let
+                        checkEmptyChildren : Array (Result String Fragment) -> Result String Fragment
+                        checkEmptyChildren b =
+                            if Array.isEmpty b then
+                                Ok <| InlineFragment <| Array.fromList []
+
+                            else
+                                arrayToFragment b
+                    in
                     case htmlNodeToMark spec node of
                         Nothing ->
-                            Err "No mark or node matches the spec"
+                            case node of
+                                ElementNode _ _ children ->
+                                    checkEmptyChildren <| Array.map (htmlNodeToEditorFragment spec marks) children
+
+                                TextNode b ->
+                                    Ok <| InlineFragment <| Array.fromList [ Node.plainText b ]
 
                         Just ( mark, children ) ->
                             let
@@ -147,7 +161,7 @@ htmlNodeToEditorFragment spec marks node =
                                 newChildren =
                                     Array.map (htmlNodeToEditorFragment spec newMarks) children
                             in
-                            arrayToFragment newChildren
+                            checkEmptyChildren newChildren
 
 
 htmlNodeToMark : Spec -> HtmlNode -> Maybe ( Mark, Array HtmlNode )
