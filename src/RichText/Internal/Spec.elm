@@ -146,7 +146,12 @@ htmlNodeToEditorFragment spec marks node =
                     in
                     case htmlNodeToMark spec node of
                         Nothing ->
-                            Err "No mark or node matches the spec"
+                            case node of
+                                ElementNode _ _ children ->
+                                    checkEmptyChildren <| Array.map (htmlNodeToEditorFragment spec marks) children
+
+                                TextNode b ->
+                                    Ok <| InlineFragment <| Array.fromList [ Node.plainText b ]
 
                         Just ( mark, children ) ->
                             let
