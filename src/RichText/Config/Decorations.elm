@@ -29,7 +29,6 @@ import RichText.Internal.Editor exposing (Message(..), Tagger)
 import RichText.Model.Element exposing (Element, annotations)
 import RichText.Model.Mark exposing (Mark)
 import RichText.Model.Node exposing (Path)
-import RichText.Model.Selection exposing (caret)
 import Set
 
 
@@ -229,6 +228,6 @@ selectableDecoration tagger editorNodePath elementParameters _ =
     )
         ++ [ Html.Events.onClick
                 (tagger <|
-                    SelectionEvent (Just (caret editorNodePath 0)) False
+                    SelectElement editorNodePath
                 )
            ]

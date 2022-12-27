@@ -187,8 +187,8 @@ commandMap cfg =
             c.commandMap
 
 
-updateSelection : Maybe Selection -> Bool -> Spec -> Editor -> Editor
-updateSelection maybeSelection isDomPath spec_ editor_ =
+updateSelection : Maybe Selection -> Spec -> Editor -> Editor
+updateSelection maybeSelection spec_ editor_ =
     let
         editorState =
             state editor_
@@ -200,11 +200,7 @@ updateSelection maybeSelection isDomPath spec_ editor_ =
         Just selection ->
             let
                 translatedSelection =
-                    if isDomPath then
-                        domToEditor spec_ (State.root editorState) selection
-
-                    else
-                        Just selection
+                    domToEditor spec_ (State.root editorState) selection
             in
             if isComposing editor_ then
                 let
@@ -215,6 +211,23 @@ updateSelection maybeSelection isDomPath spec_ editor_ =
 
             else
                 editor_ |> withState (editorState |> withSelection translatedSelection)
+
+
+selectElement : Path -> Spec -> Editor -> Editor
+selectElement path _ editor_ =
+    let
+        editorState =
+            state editor_
+
+        selection =
+            case RichText.Node.next path (State.root editorState) of
+                Just ( b, _ ) ->
+                    range b 0 path 0
+
+                Nothing ->
+                    RichText.Model.Selection.caret path 0
+    in
+    editor_ |> withState (editorState |> withSelection (Just selection)) |> forceReselection
 
 
 {-| The editor's internal update function. It's important that the editor process all `Message`
@@ -242,8 +255,11 @@ update cfg msg editor_ =
                 ChangeEvent change ->
                     updateChangeEvent change spec_ editor_
 
-                SelectionEvent selection isDomPath ->
-                    updateSelection selection isDomPath spec_ editor_
+                SelectionEvent selection ->
+                    updateSelection selection spec_ editor_
+
+                SelectElement path ->
+                    selectElement path spec_ editor_
 
                 BeforeInputEvent inputEvent ->
                     BeforeInput.handleBeforeInput inputEvent commandMap_ spec_ editor_
@@ -504,9 +520,8 @@ selectionDecoder =
 
 editorSelectionChangeDecoder : D.Decoder Message
 editorSelectionChangeDecoder =
-    D.map2 SelectionEvent
+    D.map SelectionEvent
         (D.at [ "detail" ] selectionDecoder)
-        (D.succeed True)
 
 
 pasteWithDataDecoder : D.Decoder Message

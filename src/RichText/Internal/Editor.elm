@@ -10,6 +10,7 @@ import RichText.Config.Keys exposing (meta)
 import RichText.Config.Spec exposing (Spec)
 import RichText.Internal.Event exposing (EditorChange, InitEvent, InputEvent, KeyboardEvent, PasteEvent)
 import RichText.Internal.History exposing (History, contents, empty, fromContents)
+import RichText.Model.Node exposing (Path)
 import RichText.Model.Selection exposing (Selection)
 import RichText.Model.State exposing (State)
 import RichText.State exposing (reduce, validate)
@@ -62,7 +63,8 @@ editor iState =
 {-| The internal events that an editor has to respond to. These events should be mapped via a Tagger.
 -}
 type Message
-    = SelectionEvent (Maybe Selection) Bool
+    = SelectionEvent (Maybe Selection)
+    | SelectElement Path
     | ChangeEvent EditorChange
     | BeforeInputEvent InputEvent
     | KeyDownEvent KeyboardEvent
