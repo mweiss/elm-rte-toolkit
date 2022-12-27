@@ -1,7 +1,7 @@
 module RichText.Editor exposing
     ( Editor, init, state, shortKey, history, withHistory, changeCount
     , Config, config, commandMap, decorations, spec
-    , Message, update, apply, applyList, applyNoForceSelection
+    , Message, update, apply, applyList, applyNoForceSelection, select
     , view, readOnlyView
     )
 
@@ -21,7 +21,7 @@ rendering an editor.
 
 # Update
 
-@docs Message, update, apply, applyList, applyNoForceSelection
+@docs Message, update, apply, applyList, applyNoForceSelection, select
 
 
 # View
@@ -1105,3 +1105,11 @@ should not be used, but can be useful for situations like if you have an embedde
 applyNoForceSelection : NamedCommand -> Spec -> Editor -> Result String Editor
 applyNoForceSelection =
     InternalEditor.applyCommandNoForceSelection
+
+
+{-| -}
+select : Selection -> Editor -> Editor
+select selection editor_ =
+    editor_
+        |> withState (state editor_ |> withSelection (Just selection))
+        |> forceReselection
