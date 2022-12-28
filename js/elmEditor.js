@@ -45,10 +45,10 @@ const getSelectionPath = (node, editor, offset) => {
             indexPath.unshift(index);
         }
 
+        let indexOffset = offset
         if (originalNode.nodeType === Node.ELEMENT_NODE && offset > 0) {
-            indexPath.push(offset - 1)
-        } else if (originalNode.nodeType === Node.ELEMENT_NODE && originalNode.childNodes[0]) {
-            indexPath.push(0)
+            indexPath.push(offset)
+            indexOffset = 0
         }
 
         if (indexPath.length <= 2) {
@@ -59,7 +59,7 @@ const getSelectionPath = (node, editor, offset) => {
         indexPath.shift();
         indexPath.shift();
 
-        return indexPath.slice();
+        return { path: indexPath, offset : indexOffset }
     } catch (e) {
         // Sometimes we can get errors from trying to access properties like "tagName".  In that
         // just return null.
@@ -206,14 +206,14 @@ class SelectionState extends HTMLElement {
         if (!anchorPath || !focusPath) {
             return selection
         }
-        const anchorOffset = adjustOffset(selectionObj.anchorNode, selectionObj.anchorOffset);
-        const focusOffset = adjustOffset(selectionObj.focusNode, selectionObj.focusOffset);
+        const anchorOffset = adjustOffset(selectionObj.anchorNode, anchorPath.offset);
+        const focusOffset = adjustOffset(selectionObj.focusNode, focusPath.offset);
         return {
             "selectionExists": true,
             "anchorOffset": anchorOffset,
             "focusOffset": focusOffset,
-            "anchorNode": anchorPath,
-            "focusNode": focusPath,
+            "anchorNode": anchorPath.path,
+            "focusNode": focusPath.path,
         }
     }
 
@@ -327,7 +327,7 @@ class ElmEditor extends HTMLElement {
                 return null;
             }
             mutations.push({
-                path: getSelectionPath(mutation.target, this, 0),
+                path: getSelectionPath(mutation.target, this, 0).path,
                 text: mutation.target.nodeValue
             });
         }
