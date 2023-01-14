@@ -218,10 +218,10 @@ class SelectionState extends HTMLElement {
     }
 
     selectionChange(e) {
-        let selection = this.getSelectionObject(e);
-        let event = new CustomEvent("editorselectionchange", {detail: selection});
+        let selection = this.getSelectionObject();
+        let event = new CustomEvent("editorselectionchange", { detail: selection });
         this.parentNode.dispatchEvent(event);
-    };
+    }
 }
 
 /**
