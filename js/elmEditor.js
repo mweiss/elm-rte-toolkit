@@ -147,6 +147,9 @@ class SelectionState extends HTMLElement {
     constructor() {
         super();
         this.selectionChange = this.selectionChange.bind(this);
+        this.pointerDown = this.pointerDown.bind(this);
+        this.pointerUp = this.pointerUp.bind(this);
+        this.pointerIsUp = true;
     }
 
     attributeChangedCallback(name, oldValue, newValue) {
@@ -166,7 +169,7 @@ class SelectionState extends HTMLElement {
         let anchorOffset = Number(selectionObj["anchor-offset"]);
         const anchorNode = this.findNodeFromPath(selectionObj["anchor-node"]);
 
-        if (focusNode && anchorNode) {
+        if (focusNode && anchorNode && this.pointerIsUp) {
             const sel = document.getSelection();
 
             anchorOffset = adjustOffsetReverse(anchorNode, anchorOffset);
@@ -181,10 +184,14 @@ class SelectionState extends HTMLElement {
 
     connectedCallback() {
         document.addEventListener("selectionchange", this.selectionChange)
+        document.addEventListener("pointerdown", this.pointerDown)
+        document.addEventListener("pointerup", this.pointerUp)
     }
 
     disconnectedCallback() {
         document.removeEventListener("selectionchange", this.selectionChange)
+        document.removeEventListener("pointerdown", this.pointerDown)
+        document.removeEventListener("pointerup", this.pointerUp)
     }
 
     getSelectionPath(node, offset) {
@@ -221,6 +228,14 @@ class SelectionState extends HTMLElement {
         let selection = this.getSelectionObject();
         let event = new CustomEvent("editorselectionchange", { detail: selection });
         this.parentNode.dispatchEvent(event);
+    }
+
+    pointerDown(e) {
+        this.pointerIsUp = false;
+    }
+
+    pointerUp(e) {
+        this.pointerIsUp = true;
     }
 }
 
