@@ -1800,7 +1800,7 @@ toggleMarkFull markOrder mark action editorState =
 
         Just selection ->
             if focusNode selection == anchorNode selection then
-                toggleMarkSingleInlineNode markOrder mark Flip editorState
+                toggleMarkSingleInlineNode markOrder mark action editorState
 
             else
                 let
