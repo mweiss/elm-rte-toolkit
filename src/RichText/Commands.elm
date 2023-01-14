@@ -748,10 +748,14 @@ removeRange editorState =
                                 (State.root editorState)
                     in
                     case
-                        removeNodeOrTextWithRange (focusNode normalizedSelection)
-                            0
-                            (Just (focusOffset normalizedSelection))
-                            (State.root editorState)
+                        if focusOffset normalizedSelection == 0 then
+                            Ok ( State.root editorState, Nothing )
+
+                        else
+                            removeNodeOrTextWithRange (focusNode normalizedSelection)
+                                0
+                                (Just (focusOffset normalizedSelection))
+                                (State.root editorState)
                     of
                         Err s ->
                             Err s
